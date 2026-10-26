@@ -13,6 +13,10 @@
 
     window.bhTheme = {
         get: () => localStorage.getItem(key) || "system",
+        isDark: () => {
+            const mode = localStorage.getItem(key);
+            return mode ? mode === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+        },
         set: (mode) => {
             if (mode === "light" || mode === "dark") {
                 localStorage.setItem(key, mode);
