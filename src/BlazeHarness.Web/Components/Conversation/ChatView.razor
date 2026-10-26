@@ -28,6 +28,11 @@ else
                 <Icon Name="folder" />
                 <span class="chat-context-name">@(Folders.Find(folderPath)?.Name ?? FolderPaths.DisplayName(folderPath))</span>
                 <span class="chat-context-path mono">@folderPath</span>
+                @if (_info is not null)
+                {
+                    <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
+                }
+
                 @if (!Directory.Exists(folderPath))
                 {
                     <span class="chat-context-warning" role="status"><Icon Name="alert" /> Folder not found</span>
@@ -67,6 +72,8 @@ else
         {
             <Composer SessionId="@SessionId" Remembered="_info" Running="_session?.IsRunning ?? false" CanRetry="_session?.CanRetry ?? false" OnSend="SendAsync" OnRetry="RetryAsync" OnStop="Stop" />
         }
+
+        <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
     </section>
 }
 
@@ -94,11 +101,14 @@ else
     [Parameter]
     public string? FolderPath { get; set; }
 
+    private SessionInfo? _moving;
+
     private string? ContextPath => _openId is null ? Folders.Find(FolderPath)?.Path : _info?.FolderPath;
 
     protected override void OnInitialized()
     {
         _throttle = new RenderThrottle(() => InvokeAsync(Refresh), TimeSpan.FromMilliseconds(50), Time);
+        Sessions.Store.Changed += OnStoreChanged;
     }
 
     protected override async Task OnParametersSetAsync()
@@ -151,8 +161,21 @@ else
 
     public void Dispose()
     {
+        Sessions.Store.Changed -= OnStoreChanged;
         Detach();
         _throttle.Dispose();
+    }
+
+    private void OnStoreChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (_openId is not null && !_loading)
+            {
+                _info = Sessions.Store.Find(_openId);
+                StateHasChanged();
+            }
+        });
     }
 
     private void Attach(ChatSession session)

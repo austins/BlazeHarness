@@ -25,6 +25,8 @@
                 <div class="chat-actions">
                     <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@("Rename " + DisplayTitle(chat))"
                             title="Rename" @onclick="() => StartRename(chat)"><Icon Name="pencil" /></button>
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@("Move " + DisplayTitle(chat) + " to a folder")"
+                            title="Move to folder" @onclick="() => _moving = chat"><Icon Name="arrow-right" /></button>
                     <button type="button" class="btn btn-ghost btn-sm btn-icon btn-danger" aria-label="@("Delete " + DisplayTitle(chat))"
                             title="Delete" @onclick="() => _deleting = chat"><Icon Name="trash" /></button>
                 </div>
@@ -32,6 +34,8 @@
         </li>
     }
 </ul>
+
+<MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
 
 <Dialog Title="Delete this chat?" Open="_deleting is not null" OnClose="() => _deleting = null">
     <ChildContent>
@@ -48,6 +52,7 @@
     private string _renameText = string.Empty;
     private bool _focusRename;
     private SessionInfo? _deleting;
+    private SessionInfo? _moving;
     private ElementReference _renameInput;
 
     /// <summary>

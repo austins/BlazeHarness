@@ -163,6 +163,10 @@ code, pre, kbd { font-family: var(--font-mono); font-size: 0.9em; }
     color: var(--fg); font: inherit; font-size: var(--text-sm); font-weight: 600; text-align: start; cursor: pointer;
 }
 .folder-toggle:hover { background: var(--bg-hover); }
+.folder-actions { display: flex; opacity: 0; pointer-events: none; }
+.folder-item:hover .folder-actions, .folder-item:focus-within .folder-actions { opacity: 1; pointer-events: auto; }
+@media (hover: none) { .folder-actions { opacity: 1; pointer-events: auto; } }
+.folder-item:has(.folder-warning) .folder-actions { opacity: 1; pointer-events: auto; }
 .folder-toggle .icon { width: 0.9rem; height: 0.9rem; flex: none; }
 .folder-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .folder-warning { display: inline-flex; color: var(--danger, #c0392b); }

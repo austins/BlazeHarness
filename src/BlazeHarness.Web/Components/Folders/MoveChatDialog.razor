@@ -1,0 +1,73 @@
+@inject FolderRegistry Folders
+@inject SessionService Sessions
+@inject ToastService Toasts
+
+<Dialog Title="Move chat to" Open="Chat is not null" OnClose="CloseAsync">
+    <ChildContent>
+        <p class="hint">Choose where this chat works. Its messages stay as they are, and nothing in the folders is changed.</p>
+        <ul class="folder-entries" aria-label="Destinations">
+            <li>
+                <button type="button" class="folder-entry" disabled="@(Chat?.FolderPath is null)" @onclick="() => MoveAsync(null)">
+                    <Icon Name="chat" /> <span>No folder</span>
+                </button>
+            </li>
+            @foreach (var folder in Folders.List().Where(FolderRegistry.IsAvailable))
+            {
+                <li @key="folder.Path">
+                    <button type="button" class="folder-entry" title="@folder.Path"
+                            disabled="@IsCurrent(folder)" @onclick="() => MoveAsync(folder.Path)">
+                        <Icon Name="folder" /> <span>@folder.Name</span>
+                    </button>
+                </li>
+            }
+        </ul>
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn" @onclick="CloseAsync">Cancel</button>
+    </Footer>
+</Dialog>
+
+@code {
+    /// <summary>
+    /// Gets or sets the chat to move, or null while the dialog is closed.
+    /// </summary>
+    [Parameter]
+    public SessionInfo? Chat { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for when the dialog is dismissed or the chat was moved.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private bool IsCurrent(FolderInfo folder)
+    {
+        return Chat?.FolderPath is { } path && FolderPaths.Comparer.Equals(path, folder.Path);
+    }
+
+    private async Task MoveAsync(string? folderPath)
+    {
+        var chat = Chat;
+        if (chat is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Sessions.Store.UpdateAsync(chat.Id, s => s with { FolderPath = folderPath });
+            if (folderPath is not null)
+            {
+                await Folders.TouchAsync(folderPath);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Toasts.Show("The chat could not be moved because its file could not be written.", ToastKind.Error);
+        }
+
+        await CloseAsync();
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+}

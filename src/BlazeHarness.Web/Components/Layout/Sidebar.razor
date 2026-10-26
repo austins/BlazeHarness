@@ -3,6 +3,7 @@
 @inject SessionService Sessions
 @inject NavigationManager Navigation
 @inject FolderRegistry Folders
+@inject ToastService Toasts
 
 <nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="Main">
     <div class="sidebar-brand"><span class="logo" aria-hidden="true">🔥</span> BlazeHarness</div>
@@ -68,11 +69,20 @@
                                     <span class="folder-warning" title="Folder not found" role="img" aria-label="Folder not found"><Icon Name="alert" /></span>
                                 }
                             </button>
-                            @if (available)
-                            {
-                                <a class="btn btn-ghost btn-sm btn-icon" href="@NewChatHref(folder)" title="New chat in this folder"
-                                   aria-label="@("New chat in " + folder.Name)"><Icon Name="plus" /></a>
-                            }
+                            <div class="folder-actions">
+                                @if (available)
+                                {
+                                    <a class="btn btn-ghost btn-sm btn-icon" href="@NewChatHref(folder)" title="New chat in this folder"
+                                       aria-label="@("New chat in " + folder.Name)"><Icon Name="plus" /></a>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Find this folder"
+                                            aria-label="@("Find " + folder.Name)" @onclick="() => _locating = folder"><Icon Name="folder" /></button>
+                                }
+                                <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Remove from list"
+                                        aria-label="@("Remove " + folder.Name + " from the list")" @onclick="() => _removing = folder"><Icon Name="close" /></button>
+                            </div>
                         </div>
                         @if (!available)
                         {
@@ -108,12 +118,27 @@
     </div>
 </nav>
 
-<OpenFolderDialog Open="_picking" OnClose="() => _picking = false" OnOpened="OnFolderOpened" />
+<OpenFolderDialog Open="_picking" OnClose="() => _picking = false" OnPicked="OnFolderPickedAsync" />
+
+<OpenFolderDialog Open="_locating is not null" OnClose="() => _locating = null" OnPicked="RelocateAsync"
+                  Title="Find folder" Hint="Choose where this folder is now. Its chats move with it." ConfirmText="Use this folder" />
+
+<Dialog Title="Remove this folder?" Open="_removing is not null" OnClose="() => _removing = null">
+    <ChildContent>
+        <p><strong>@_removing?.Name</strong> is removed from this list. The folder on your computer is not touched, and its chats stay, moved to Chats.</p>
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn" @onclick="() => _removing = null">Keep</button>
+        <button type="button" class="btn btn-primary" @onclick="RemoveAsync">Remove</button>
+    </Footer>
+</Dialog>
 
 @code {
     private readonly HashSet<string> _collapsed = new(FolderPaths.Comparer);
     private bool _dark;
     private bool _picking;
+    private FolderInfo? _locating;
+    private FolderInfo? _removing;
 
     private string Filter { get; set; } = string.Empty;
 
@@ -166,11 +191,64 @@
         }
     }
 
-    private void OnFolderOpened(FolderInfo folder)
+    private async Task OnFolderPickedAsync(string path)
     {
+        var result = await Folders.OpenAsync(path);
+        if (result.Folder is null)
+        {
+            Toasts.Show("That folder could not be opened.", ToastKind.Error);
+            return;
+        }
+
         _picking = false;
-        _collapsed.Remove(folder.Path);
-        Navigation.NavigateTo(NewChatHref(folder));
+        _collapsed.Remove(result.Folder.Path);
+        Navigation.NavigateTo(NewChatHref(result.Folder));
+    }
+
+    private async Task RelocateAsync(string path)
+    {
+        var old = _locating;
+        _locating = null;
+        if (old is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await Folders.RelocateAsync(old.Path, path);
+            if (result.Folder is null)
+            {
+                Toasts.Show("That folder could not be used.", ToastKind.Error);
+                return;
+            }
+
+            await Sessions.Store.RepointFolderAsync(old.Path, result.Folder.Path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Toasts.Show("The folder could not be updated because a file could not be written.", ToastKind.Error);
+        }
+    }
+
+    private async Task RemoveAsync()
+    {
+        var folder = _removing;
+        _removing = null;
+        if (folder is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Folders.RemoveAsync(folder.Path);
+            await Sessions.Store.RepointFolderAsync(folder.Path, null);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Toasts.Show("The folder could not be removed because a file could not be written.", ToastKind.Error);
+        }
     }
 
     private async Task ToggleThemeAsync()

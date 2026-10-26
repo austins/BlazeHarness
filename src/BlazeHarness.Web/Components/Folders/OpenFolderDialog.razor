@@ -2,9 +2,9 @@
 @inject FolderRegistry Folders
 @inject AppPaths Paths
 
-<Dialog Title="Open a folder" Open="Open" OnClose="CloseAsync" Wide="true">
+<Dialog Title="@Title" Open="Open" OnClose="CloseAsync" Wide="true">
     <ChildContent>
-        <p class="hint">Choose a project folder on this computer. Chats you start in it use it as their working folder.</p>
+        <p class="hint">@Hint</p>
         <div class="field">
             <label for="folder-path">Folder path</label>
             <div class="row folder-path-row">
@@ -62,7 +62,7 @@
     </ChildContent>
     <Footer>
         <button type="button" class="btn" @onclick="CloseAsync">Cancel</button>
-        <button type="button" class="btn btn-primary" disabled="@(string.IsNullOrWhiteSpace(_path))" @onclick="OpenAsync">Open this folder</button>
+        <button type="button" class="btn btn-primary" disabled="@(string.IsNullOrWhiteSpace(_path))" @onclick="PickAsync">@ConfirmText</button>
     </Footer>
 </Dialog>
 
@@ -87,10 +87,28 @@
     public EventCallback OnClose { get; set; }
 
     /// <summary>
-    /// Gets or sets the callback for when a folder was opened.
+    /// Gets or sets the callback for when a usable folder path was chosen. The caller decides what to do with it.
     /// </summary>
     [Parameter]
-    public EventCallback<FolderInfo> OnOpened { get; set; }
+    public EventCallback<string> OnPicked { get; set; }
+
+    /// <summary>
+    /// Gets or sets the dialog title.
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = "Open a folder";
+
+    /// <summary>
+    /// Gets or sets the explanation shown above the path.
+    /// </summary>
+    [Parameter]
+    public string Hint { get; set; } = "Choose a project folder on this computer. Chats you start in it use it as their working folder.";
+
+    /// <summary>
+    /// Gets or sets the label of the confirm button.
+    /// </summary>
+    [Parameter]
+    public string ConfirmText { get; set; } = "Open this folder";
 
     protected override void OnParametersSet()
     {
@@ -161,16 +179,16 @@
         }
     }
 
-    private async Task OpenAsync()
+    private async Task PickAsync()
     {
-        var result = await Folders.OpenAsync(_path);
-        if (result.Folder is null)
+        var error = Folders.Check(_path);
+        if (error != FolderError.None)
         {
-            _error = Describe(result.Error);
+            _error = Describe(error);
             return;
         }
 
-        await OnOpened.InvokeAsync(result.Folder);
+        await OnPicked.InvokeAsync(_path);
     }
 
     private Task CloseAsync() => OnClose.InvokeAsync();
