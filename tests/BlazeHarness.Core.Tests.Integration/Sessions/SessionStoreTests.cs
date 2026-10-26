@@ -223,6 +223,37 @@ public sealed class SessionStoreTests : IDisposable
         _sut.GetLog(info.Id).Should().BeSameAs(log);
     }
 
+    [Fact]
+    public async Task RepointFolderAsync_MovesOnlyTheSessionsInThatFolder()
+    {
+        // Arrange
+        var inOld = await _sut.CreateAsync("/work/old", TestContext.Current.CancellationToken);
+        var elsewhere = await _sut.CreateAsync("/work/other", TestContext.Current.CancellationToken);
+
+        // Act
+        var moved = await _sut.RepointFolderAsync("/work/old", "/work/new", TestContext.Current.CancellationToken);
+
+        // Assert
+        moved.Should().Be(1);
+        _sut.Find(inOld.Id)!.FolderPath.Should().Be("/work/new");
+        _sut.Find(elsewhere.Id)!.FolderPath.Should().Be("/work/other");
+    }
+
+    [Fact]
+    public async Task RepointFolderAsync_NullTarget_DetachesTheSessionsAndSavesThat()
+    {
+        // Arrange
+        var info = await _sut.CreateAsync("/work/old", TestContext.Current.CancellationToken);
+
+        // Act
+        await _sut.RepointFolderAsync("/work/old", null, TestContext.Current.CancellationToken);
+
+        // Assert
+        _sut.Find(info.Id)!.FolderPath.Should().BeNull();
+        using var reopened = Create();
+        reopened.Find(info.Id)!.FolderPath.Should().BeNull();
+    }
+
     private SessionStore Create()
     {
         return new SessionStore(_paths, NullLoggerFactory.Instance, _time);

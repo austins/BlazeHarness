@@ -230,6 +230,55 @@ public sealed class FolderRegistryTests : IDisposable
         raised.Should().Be(2);
     }
 
+    [Fact]
+    public async Task RelocateAsync_MissingFolder_IsReplacedByTheNewOne()
+    {
+        // Arrange
+        var old = MakeFolder("old-name");
+        var opened = await _sut.OpenAsync(old, TestContext.Current.CancellationToken);
+        Directory.Delete(old);
+        var moved = MakeFolder("new-name");
+
+        // Act
+        var result = await _sut.RelocateAsync(opened.Folder!.Path, moved, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Error.Should().Be(FolderError.None);
+        result.Folder!.Name.Should().Be("new-name");
+        _sut.List().Should().ContainSingle().Which.Should().Be(result.Folder);
+    }
+
+    [Fact]
+    public async Task RelocateAsync_NewFolderAlreadyListed_MergesIntoOneEntry()
+    {
+        // Arrange
+        var old = MakeFolder("old");
+        var existing = MakeFolder("existing");
+        await _sut.OpenAsync(old, TestContext.Current.CancellationToken);
+        await _sut.OpenAsync(existing, TestContext.Current.CancellationToken);
+
+        // Act
+        await _sut.RelocateAsync(old, existing, TestContext.Current.CancellationToken);
+
+        // Assert
+        _sut.List().Should().ContainSingle().Which.Name.Should().Be("existing");
+    }
+
+    [Fact]
+    public async Task RelocateAsync_NewPathDoesNotExist_KeepsTheOldEntryAndReportsTheError()
+    {
+        // Arrange
+        var old = MakeFolder("old");
+        await _sut.OpenAsync(old, TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _sut.RelocateAsync(old, Path.Combine(_root, "nope"), TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Error.Should().Be(FolderError.NotFound);
+        _sut.List().Should().ContainSingle().Which.Name.Should().Be("old");
+    }
+
     private FolderRegistry Create() => new(_paths, NullLoggerFactory.Instance, _time);
 
     private string MakeFolder(string name)

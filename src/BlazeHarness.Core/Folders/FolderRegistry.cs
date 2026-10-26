@@ -179,6 +179,43 @@ public sealed class FolderRegistry : IDisposable
         return removed;
     }
 
+    /// <summary>
+    /// Replace a listed folder with the place it moved to. If the new folder is already listed, the two entries become one.
+    /// </summary>
+    /// <param name="oldPath">The path of the listed folder, which may no longer exist.</param>
+    /// <param name="newPath">The path as typed or picked. A leading <c>~</c> means the home folder.</param>
+    /// <param name="cancellationToken">A token to cancel the write.</param>
+    /// <returns>The folder now listed in its place, or the reason the new path could not be used.</returns>
+    public async Task<OpenFolderResult> RelocateAsync(string oldPath, string? newPath, CancellationToken cancellationToken = default)
+    {
+        var old = Find(oldPath);
+        if (old is null)
+        {
+            return await OpenAsync(newPath, cancellationToken).ConfigureAwait(false);
+        }
+
+        var error = Check(newPath);
+        if (error != FolderError.None)
+        {
+            return new OpenFolderResult(null, error);
+        }
+
+        var typed = FolderPaths.ToFullPath(newPath, _paths.UserHome)!;
+        var key = FolderPaths.Normalize(newPath, _paths.UserHome)!;
+        FolderInfo? moved = null;
+        await _store.UpdateAsync(
+            doc =>
+            {
+                moved = new FolderInfo { Path = key, Name = FolderPaths.DisplayName(typed), LastOpenedAt = _time.GetUtcNow() };
+                var others = doc.Folders.Where(f => !FolderPaths.Comparer.Equals(f.Path, old.Path) && !FolderPaths.Comparer.Equals(f.Path, key));
+                return doc with { Folders = [.. others, moved] };
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return new OpenFolderResult(moved, FolderError.None);
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {

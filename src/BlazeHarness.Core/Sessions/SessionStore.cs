@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Config;
+using BlazeHarness.Core.Folders;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Text.Json;
@@ -163,6 +164,26 @@ public sealed partial class SessionStore : IDisposable
 
         RaiseChanged();
         return updated;
+    }
+
+    /// <summary>
+    /// Move every session that works in one folder to another folder, or detach them from any folder.
+    /// </summary>
+    /// <param name="oldPath">The folder the sessions currently work in.</param>
+    /// <param name="newPath">The folder to move them to, or null to detach them.</param>
+    /// <param name="cancellationToken">A token to cancel the writes.</param>
+    /// <returns>The number of sessions that were changed.</returns>
+    public async Task<int> RepointFolderAsync(string oldPath, string? newPath, CancellationToken cancellationToken = default)
+    {
+        var moved = 0;
+        var ids = _index.Values.Where(s => s.FolderPath is { } path && FolderPaths.Comparer.Equals(path, oldPath)).Select(s => s.Id).ToList();
+        foreach (var id in ids)
+        {
+            var updated = await UpdateAsync(id, s => s with { FolderPath = newPath }, cancellationToken: cancellationToken);
+            moved += updated is null ? 0 : 1;
+        }
+
+        return moved;
     }
 
     /// <summary>
