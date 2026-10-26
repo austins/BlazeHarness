@@ -19,16 +19,20 @@ public enum EntryStatus
 
     /// <summary>The user stopped the reply, which keeps the text received so far.</summary>
     Cancelled,
+
+    /// <summary>The app stopped while the reply was arriving, so it ends where the saved text does.</summary>
+    Interrupted,
 }
 
 /// <summary>
 /// One message in a conversation, as the UI shows it.
 /// </summary>
 /// <remarks>
-/// Like <see cref="ChatSession"/>, it is meant for one synchronization context, such as a Blazor circuit.
+/// The text is safe to read while a reply streams in on another thread. Other properties are replaced as whole values.
 /// </remarks>
 public sealed class ChatEntry
 {
+    private readonly Lock _gate = new();
     private readonly StringBuilder _text = new();
     private readonly StringBuilder _reasoning = new();
     private string? _textCache;
@@ -39,16 +43,18 @@ public sealed class ChatEntry
     /// </summary>
     /// <param name="role">Who wrote the message.</param>
     /// <param name="text">The initial text.</param>
-    public ChatEntry(ChatRole role, string text = "")
+    /// <param name="id">The id of the message, or null for a new one; a saved message keeps its id.</param>
+    public ChatEntry(ChatRole role, string text = "", Guid? id = null)
     {
         Role = role;
+        Id = id ?? Guid.NewGuid();
         _text.Append(text);
     }
 
     /// <summary>
-    /// Gets a unique id, which the UI uses to keep elements matched to messages.
+    /// Gets a unique id, which the UI uses to keep elements matched to messages and the log refers to.
     /// </summary>
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; }
 
     /// <summary>
     /// Gets who wrote the message.
@@ -58,12 +64,30 @@ public sealed class ChatEntry
     /// <summary>
     /// Gets the visible text.
     /// </summary>
-    public string Text => _textCache ??= _text.ToString();
+    public string Text
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _textCache ??= _text.ToString();
+            }
+        }
+    }
 
     /// <summary>
     /// Gets the thinking text the model streamed, which is shown but never sent back to the model.
     /// </summary>
-    public string Reasoning => _reasoningCache ??= _reasoning.ToString();
+    public string Reasoning
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _reasoningCache ??= _reasoning.ToString();
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets the state of the message.
@@ -96,8 +120,11 @@ public sealed class ChatEntry
     /// <param name="text">The text to append.</param>
     public void AppendText(string text)
     {
-        _text.Append(text);
-        _textCache = null;
+        lock (_gate)
+        {
+            _text.Append(text);
+            _textCache = null;
+        }
     }
 
     /// <summary>
@@ -106,7 +133,10 @@ public sealed class ChatEntry
     /// <param name="text">The text to append.</param>
     public void AppendReasoning(string text)
     {
-        _reasoning.Append(text);
-        _reasoningCache = null;
+        lock (_gate)
+        {
+            _reasoning.Append(text);
+            _reasoningCache = null;
+        }
     }
 }

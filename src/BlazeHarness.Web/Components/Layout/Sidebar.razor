@@ -1,4 +1,6 @@
+@implements IDisposable
 @inject IJSRuntime JS
+@inject SessionService Sessions
 
 <nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="Main">
     <div class="sidebar-brand"><span class="logo" aria-hidden="true">🔥</span> BlazeHarness</div>
@@ -12,7 +14,32 @@
 
     <section class="sidebar-section" aria-labelledby="chats-heading">
         <div class="sidebar-heading"><span id="chats-heading">Chats</span></div>
-        <p class="sidebar-empty">No chats yet.</p>
+        @if (Sessions.Store.List().Count > 0)
+        {
+            <input type="search" class="input input-sm sidebar-search" placeholder="Search chats"
+                   aria-label="Search chat titles" @bind="Filter" @bind:event="oninput" />
+        }
+
+        @{
+            var chats = Sessions.Store.List(Filter);
+        }
+        @if (chats.Count == 0)
+        {
+            <p class="sidebar-empty">@(string.IsNullOrWhiteSpace(Filter) ? "No chats yet." : "No chats match.")</p>
+        }
+        else
+        {
+            <ul class="chat-list">
+                @foreach (var chat in chats)
+                {
+                    <li @key="chat.Id">
+                        <NavLink class="chat-link" href="@("chat/" + chat.Id)">
+                            @(string.IsNullOrWhiteSpace(chat.Title) ? "Untitled chat" : chat.Title)
+                        </NavLink>
+                    </li>
+                }
+            </ul>
+        }
     </section>
 
     <div class="sidebar-spacer"></div>
@@ -40,8 +67,25 @@
 @code {
     private bool _dark;
 
+    private string Filter { get; set; } = string.Empty;
+
     [Parameter]
     public bool Collapsed { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Sessions.Store.Changed += OnSessionsChanged;
+    }
+
+    public void Dispose()
+    {
+        Sessions.Store.Changed -= OnSessionsChanged;
+    }
+
+    private void OnSessionsChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

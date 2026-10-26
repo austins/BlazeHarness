@@ -1,70 +1,165 @@
 @implements IDisposable
 @inject ProviderService Providers
-@inject ChatSession Session
+@inject SessionService Sessions
+@inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-<section class="chat" data-pinned="true" @ref="_root" aria-label="Conversation">
-    <div class="chat-scroll" @ref="_scroll" tabindex="-1">
-        <div class="chat-thread" role="log" aria-live="off">
-            @if (Session.Entries.Count == 0)
-            {
-                <div class="chat-empty">
-                    <h1>What can I help with?</h1>
-                    <p class="muted">Pick a model below and send a message. Press Enter to send and Shift+Enter for a new line.</p>
+@if (_missing)
+{
+    <section class="chat">
+        <div class="chat-scroll">
+            <div class="chat-thread">
+                <div class="alert alert-warning" role="alert">
+                    <span>This chat no longer exists.</span>
+                    <a href="">Start a new chat</a>
                 </div>
-            }
-
-            @{
-                string? previousLabel = null;
-            }
-            @foreach (var entry in Session.Entries)
-            {
-                var showLabel = entry.Role == ChatRole.Assistant && entry.Label != previousLabel;
-                if (entry.Role == ChatRole.Assistant)
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    <section class="chat" data-pinned="true" @ref="_root" aria-label="Conversation">
+        <div class="chat-scroll" @ref="_scroll" tabindex="-1">
+            <div class="chat-thread" role="log" aria-live="off">
+                @if (_entries.Count == 0)
                 {
-                    previousLabel = entry.Label;
+                    <div class="chat-empty">
+                        <h1>What can I help with?</h1>
+                        <p class="muted">Pick a model below and send a message. Press Enter to send and Shift+Enter for a new line.</p>
+                    </div>
                 }
 
-                <MessageView @key="entry.Id" Entry="entry" ShowLabel="showLabel" />
-            }
+                @{
+                    string? previousLabel = null;
+                }
+                @foreach (var entry in _entries)
+                {
+                    var showLabel = entry.Role == ChatRole.Assistant && entry.Label != previousLabel;
+                    if (entry.Role == ChatRole.Assistant)
+                    {
+                        previousLabel = entry.Label;
+                    }
+
+                    <MessageView @key="entry.Id" Entry="entry" ShowLabel="showLabel" />
+                }
+            </div>
         </div>
-    </div>
 
-    <button type="button" class="btn btn-sm chat-jump" onclick="bhChat.toBottom(this)">Jump to latest</button>
+        <button type="button" class="btn btn-sm chat-jump" onclick="bhChat.toBottom(this)">Jump to latest</button>
 
-    <Composer Running="Session.IsRunning" CanRetry="Session.CanRetry" OnSend="SendAsync" OnRetry="RetryAsync" OnStop="Stop" />
-</section>
+        @if (!_loading)
+        {
+            <Composer SessionId="@SessionId" Remembered="_info" Running="_session?.IsRunning ?? false" CanRetry="_session?.CanRetry ?? false" OnSend="SendAsync" OnRetry="RetryAsync" OnStop="Stop" />
+        }
+    </section>
+}
 
 @code {
     private readonly RenderThrottle _throttle;
+    private IReadOnlyList<ChatEntry> _entries = [];
+    private ChatSession? _session;
+    private SessionInfo? _info;
+    private string? _openId;
+    private bool _missing;
+    private bool _loading;
+    private bool _watching;
     private ElementReference _root;
     private ElementReference _scroll;
+
+    /// <summary>
+    /// Gets or sets the id of the chat to show, or null for a new chat that is created on the first message.
+    /// </summary>
+    [Parameter]
+    public string? SessionId { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ChatView"/> class.
     /// </summary>
     public ChatView()
     {
-        _throttle = new RenderThrottle(() => InvokeAsync(StateHasChanged), TimeSpan.FromMilliseconds(50));
+        _throttle = new RenderThrottle(() => InvokeAsync(Refresh), TimeSpan.FromMilliseconds(50));
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnParametersSetAsync()
     {
-        Session.Changed += OnChanged;
+        if (SessionId == _openId)
+        {
+            return;
+        }
+
+        Detach();
+        _openId = SessionId;
+        _missing = false;
+        _info = null;
+        _entries = [];
+        if (SessionId is null)
+        {
+            return;
+        }
+
+        _loading = true;
+        ChatSession? session;
+        try
+        {
+            session = await Sessions.OpenAsync(SessionId);
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        if (session is null)
+        {
+            _missing = true;
+            _watching = false;
+            return;
+        }
+
+        Attach(session);
+        _info = Sessions.Store.Find(SessionId);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!_missing && !_watching)
         {
+            _watching = true;
             await JS.InvokeVoidAsync("bhChat.watch", _root, _scroll);
         }
     }
 
     public void Dispose()
     {
-        Session.Changed -= OnChanged;
+        Detach();
         _throttle.Dispose();
+    }
+
+    private void Attach(ChatSession session)
+    {
+        _session = session;
+        _entries = session.Entries;
+        session.Changed += OnChanged;
+    }
+
+    private void Detach()
+    {
+        if (_session is not null)
+        {
+            _session.Changed -= OnChanged;
+            _session = null;
+        }
+    }
+
+    private void Refresh()
+    {
+        _entries = _session?.Entries ?? [];
+        if (_openId is not null)
+        {
+            _info = Sessions.Store.Find(_openId);
+        }
+
+        StateHasChanged();
     }
 
     private void OnChanged(object? sender, EventArgs e)
@@ -75,13 +170,29 @@
     private async Task SendAsync((string Text, ChatTarget Target) message)
     {
         await FollowAsync();
-        await Session.SendAsync(message.Text, message.Target);
+        var id = _openId;
+        if (id is null)
+        {
+            var created = await Sessions.CreateAsync();
+            id = created.Id;
+            var session = await Sessions.OpenAsync(id);
+            Detach();
+            Attach(session!);
+            _openId = id;
+            _info = created;
+            Navigation.NavigateTo("chat/" + id);
+        }
+
+        await Sessions.SendAsync(id, message.Text, message.Target);
     }
 
     private async Task RetryAsync(ChatTarget target)
     {
-        await FollowAsync();
-        await Session.RetryAsync(target);
+        if (_openId is { } id)
+        {
+            await FollowAsync();
+            await Sessions.RetryAsync(id, target);
+        }
     }
 
     private async Task FollowAsync()
@@ -91,6 +202,9 @@
 
     private void Stop()
     {
-        Session.Stop();
+        if (_openId is { } id)
+        {
+            Sessions.Stop(id);
+        }
     }
 }

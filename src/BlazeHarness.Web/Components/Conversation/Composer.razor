@@ -98,6 +98,21 @@ else
     private SamplingEditModel _override = new();
     private SamplingEditModel? _inherited;
     private bool _resize;
+    private bool _applied;
+    private bool _creating;
+    private string? _appliedFor;
+
+    /// <summary>
+    /// Gets or sets the id of the open chat, or null for a new one.
+    /// </summary>
+    [Parameter]
+    public string? SessionId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the saved details of the open chat, whose model, thinking level and sampling are restored.
+    /// </summary>
+    [Parameter]
+    public SessionInfo? Remembered { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether a reply is being produced.
@@ -132,11 +147,23 @@ else
     protected override void OnInitialized()
     {
         LoadModels();
-        var config = Providers.Config;
-        var preferred = _models.Find(m => m.Provider.Id == config.DefaultProviderId && m.Model.Id == config.DefaultModelId);
-        _selected = (preferred ?? _models.FirstOrDefault())?.Key ?? string.Empty;
-        LoadLevels();
-        LoadInherited();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_applied && SessionId == _appliedFor)
+        {
+            return;
+        }
+
+        var createdByThisComposer = _creating && SessionId is not null;
+        _creating = false;
+        _applied = true;
+        _appliedFor = SessionId;
+        if (!createdByThisComposer)
+        {
+            ApplyChoices();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -156,6 +183,22 @@ else
             _resize = false;
             await JS.InvokeVoidAsync("bhChat.resize", _input);
         }
+    }
+
+    private void ApplyChoices()
+    {
+        var config = Providers.Config;
+        var remembered = Remembered is null
+            ? null
+            : _models.Find(m => m.Provider.Id == Remembered.ProviderId && m.Model.Id == Remembered.ModelId);
+        var preferred = remembered ?? _models.Find(m => m.Provider.Id == config.DefaultProviderId && m.Model.Id == config.DefaultModelId);
+        _selected = (preferred ?? _models.FirstOrDefault())?.Key ?? string.Empty;
+        LoadLevels();
+        _level = remembered is not null && Remembered?.Level is { } level && _levels.Contains(level) ? level.ToString() : string.Empty;
+        _note = null;
+        _override = remembered is null ? new SamplingEditModel() : SamplingEditModel.FromConfig(Remembered?.Sampling);
+        _overrideError = null;
+        LoadInherited();
     }
 
     private static string KeyOf(ProviderConfig provider, ModelConfig model)
@@ -248,6 +291,7 @@ else
         }
 
         var text = _text;
+        _creating = SessionId is null;
         _text = string.Empty;
         _resize = true;
         await OnSend.InvokeAsync((text, target));

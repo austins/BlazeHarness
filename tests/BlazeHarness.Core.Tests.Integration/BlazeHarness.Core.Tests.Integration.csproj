@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
         <ProjectReference Include="..\..\src\BlazeHarness.Core\BlazeHarness.Core.csproj" />
+        <Compile Include="..\BlazeHarness.Core.Tests.Unit\Agent\ScriptedChatClient.cs" Link="Agent\ScriptedChatClient.cs" />
     </ItemGroup>
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />

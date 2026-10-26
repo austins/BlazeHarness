@@ -12,7 +12,7 @@ namespace BlazeHarness.Core.Sessions;
 /// Appends are serialized, so concurrent writers never interleave lines. A crash can leave a truncated last line;
 /// reading skips it, and the next append starts on a fresh line so it is never glued to the fragment.
 /// </remarks>
-public sealed partial class SessionLog : IDisposable
+public sealed partial class SessionLog : ISessionLog, IDisposable
 {
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
 
@@ -34,12 +34,7 @@ public sealed partial class SessionLog : IDisposable
         _logger = logger;
     }
 
-    /// <summary>
-    /// Append events to the end of the log.
-    /// </summary>
-    /// <param name="events">The events to write, in order.</param>
-    /// <param name="cancellationToken">A token to cancel the wait or the write.</param>
-    /// <returns>A task that completes once the events are flushed to the file.</returns>
+    /// <inheritdoc />
     public async Task AppendAsync(IReadOnlyCollection<SessionEvent> events, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(events);
@@ -74,14 +69,7 @@ public sealed partial class SessionLog : IDisposable
         }
     }
 
-    /// <summary>
-    /// Read every event in the log.
-    /// </summary>
-    /// <remarks>
-    /// A line that is not a valid event, such as a truncated last line, is skipped and logged.
-    /// </remarks>
-    /// <param name="cancellationToken">A token to cancel the read.</param>
-    /// <returns>The events in the order they were written, or none when the log does not exist.</returns>
+    /// <inheritdoc />
     public async Task<IReadOnlyList<SessionEvent>> ReadAsync(CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken);

@@ -1,4 +1,5 @@
 @page "/"
+@page "/chat/{Id}"
 @inject ProviderService Service
 
 <PageTitle>BlazeHarness</PageTitle>
@@ -15,5 +16,13 @@
 }
 else
 {
-    <ChatView />
+    <ChatView SessionId="@(string.IsNullOrEmpty(Id) ? null : Id)" />
+}
+
+@code {
+    /// <summary>
+    /// Gets or sets the id of the open chat, or null for a new one.
+    /// </summary>
+    [Parameter]
+    public string? Id { get; set; }
 }

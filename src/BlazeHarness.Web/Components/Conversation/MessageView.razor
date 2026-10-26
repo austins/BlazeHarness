@@ -35,6 +35,11 @@
         <div class="hint">Stopped.</div>
     }
 
+    @if (Entry.Status == EntryStatus.Interrupted)
+    {
+        <div class="hint">This reply was cut off when the app stopped. Retry to generate it again.</div>
+    }
+
     @if (Entry.Error is not null)
     {
         <div class="alert alert-error" role="alert">@Entry.Error</div>
