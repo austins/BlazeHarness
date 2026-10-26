@@ -304,11 +304,12 @@ public sealed partial class SessionService : IDisposable
 
         try
         {
-            var tools = BuiltInTools.Create(folderPath);
+            var shell = ShellInfo.DetectCurrent();
+            var tools = BuiltInTools.Create(folderPath, shell);
             if (session.Tools?.Context.Root != tools.Context.Root)
             {
                 session.Tools = tools;
-                session.BasePrompt = SystemPrompt.Build(RuntimeInformation.OSDescription, shell: null, tools.Context.Root);
+                session.BasePrompt = SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root);
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
