@@ -230,7 +230,6 @@ public sealed class SessionService : IDisposable
                 ProviderId = target.Provider.Id,
                 ModelId = target.Model.Id,
                 Level = target.Level,
-                Sampling = target.SessionOverride,
                 Title = s.Title.Length == 0 && firstText is not null ? Placeholder(firstText) : s.Title,
             },
             touch: true);

@@ -160,6 +160,47 @@ public sealed class ChatSessionPersistenceTests
     }
 
     [Fact]
+    public async Task SendAsync_StampsTheUserMessageWhenSentAndTheReplyWhenFinished()
+    {
+        // Arrange
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 14, 55, 0, TimeSpan.Zero)) { AutoAdvanceAmount = TimeSpan.FromMinutes(1) };
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        using var sut = Create(client, time);
+
+        // Act
+        await sut.SendAsync("hi", TestTargets.Create());
+
+        // Assert
+        sut.Entries[0].At.Should().Be(_log.Events.OfType<UserMessageEvent>().Single().At);
+        sut.Entries[1].At.Should().Be(_log.Events.OfType<AssistantEndEvent>().Single().At);
+        sut.Entries[1].At.Should().BeAfter(sut.Entries[0].At);
+    }
+
+    [Fact]
+    public void Restore_KeepsTheOriginalTimes_AndAnInterruptedReplyKeepsItsStartTime()
+    {
+        // Arrange
+        var first = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
+        var done = Guid.NewGuid();
+        var cut = Guid.NewGuid();
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+
+        // Act
+        sut.Restore(
+        [
+            new UserMessageEvent(first, Guid.NewGuid(), "one"),
+            new AssistantStartEvent(first.AddMinutes(1), done, null),
+            new AssistantEndEvent(first.AddMinutes(2), done, EntryStatus.Done, null, null),
+            new UserMessageEvent(first.AddMinutes(3), Guid.NewGuid(), "two"),
+            new AssistantStartEvent(first.AddMinutes(4), cut, null),
+            new AssistantDeltaEvent(first.AddMinutes(5), cut, "half", string.Empty),
+        ]);
+
+        // Assert
+        sut.Entries.Select(e => e.At).Should().Equal(first, first.AddMinutes(2), first.AddMinutes(3), first.AddMinutes(4));
+    }
+
+    [Fact]
     public void Restore_ReplyWithNoEnd_IsInterruptedAndCanBeRetried()
     {
         // Arrange

@@ -118,10 +118,10 @@ public sealed partial class ChatSession : IDisposable
                 switch (e)
                 {
                     case UserMessageEvent user:
-                        _entries.Add(new ChatEntry(ChatRole.User, user.Text, user.EntryId) { Status = EntryStatus.Done });
+                        _entries.Add(new ChatEntry(ChatRole.User, user.Text, user.EntryId) { Status = EntryStatus.Done, At = user.At });
                         break;
                     case AssistantStartEvent start:
-                        _entries.Add(new ChatEntry(ChatRole.Assistant, id: start.EntryId) { Status = EntryStatus.Interrupted, Label = start.Label });
+                        _entries.Add(new ChatEntry(ChatRole.Assistant, id: start.EntryId) { Status = EntryStatus.Interrupted, Label = start.Label, At = start.At });
                         break;
                     case AssistantDeltaEvent delta when Find(delta.EntryId) is { } target:
                         target.AppendText(delta.Text);
@@ -131,6 +131,7 @@ public sealed partial class ChatSession : IDisposable
                         target.Status = end.Status;
                         target.Error = end.Error;
                         target.Usage = end.Usage;
+                        target.At = end.At;
                         break;
                     case RewindEvent rewind:
                         var keep = _entries.FindIndex(x => x.Id == rewind.ToEntryId);
@@ -178,7 +179,8 @@ public sealed partial class ChatSession : IDisposable
             return Task.CompletedTask;
         }
 
-        var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done };
+        var sentAt = _time.GetUtcNow();
+        var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt };
         return TurnAsync(
             target,
             () =>
@@ -187,7 +189,7 @@ public sealed partial class ChatSession : IDisposable
                 _history.Add(new ChatMessage(ChatRole.User, text));
                 return true;
             },
-            () => [new UserMessageEvent(_time.GetUtcNow(), user.Id, text)]);
+            () => [new UserMessageEvent(sentAt, user.Id, text)]);
     }
 
     /// <summary>
@@ -275,10 +277,12 @@ public sealed partial class ChatSession : IDisposable
 
     private async Task ReplyAsync(ChatTarget target, IReadOnlyList<SessionEvent> leading, CancellationToken cancellation)
     {
+        var startedAt = _time.GetUtcNow();
         var entry = new ChatEntry(ChatRole.Assistant)
         {
             Status = EntryStatus.Streaming,
             Label = target.Label,
+            At = startedAt,
         };
         lock (_gate)
         {
@@ -287,7 +291,7 @@ public sealed partial class ChatSession : IDisposable
             Publish();
         }
 
-        await SaveAsync([.. leading, new AssistantStartEvent(_time.GetUtcNow(), entry.Id, entry.Label)]);
+        await SaveAsync([.. leading, new AssistantStartEvent(startedAt, entry.Id, entry.Label)]);
         RaiseChanged();
 
         var pendingText = new StringBuilder();
@@ -299,7 +303,7 @@ public sealed partial class ChatSession : IDisposable
         try
         {
             using var client = await _clientFactory(target, cancellation);
-            var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level, target.SessionOverride);
+            var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level);
             await foreach (var e in ChatRunner.RunAsync(client, working, options, cancellation))
             {
                 Apply(entry, e, pendingText, pendingReasoning);
@@ -339,7 +343,9 @@ public sealed partial class ChatSession : IDisposable
                 closing.Add(TakeDelta(entry, pendingText, pendingReasoning));
             }
 
-            closing.Add(new AssistantEndEvent(_time.GetUtcNow(), entry.Id, entry.Status, entry.Error, entry.Usage));
+            var endedAt = _time.GetUtcNow();
+            entry.At = endedAt;
+            closing.Add(new AssistantEndEvent(endedAt, entry.Id, entry.Status, entry.Error, entry.Usage));
             await SaveAsync(closing);
         }
     }

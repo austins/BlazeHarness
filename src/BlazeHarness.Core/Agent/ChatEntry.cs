@@ -37,6 +37,7 @@ public sealed class ChatEntry
     private readonly StringBuilder _reasoning = new();
     private string? _textCache;
     private string? _reasoningCache;
+    private long _atTicks;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ChatEntry"/> class.
@@ -87,6 +88,15 @@ public sealed class ChatEntry
                 return _reasoningCache ??= _reasoning.ToString();
             }
         }
+    }
+
+    /// <summary>
+    /// Gets or sets when the message was sent, or for a reply when it began, and when it finished once it has.
+    /// </summary>
+    public DateTimeOffset At
+    {
+        get => new(Volatile.Read(ref _atTicks), TimeSpan.Zero);
+        set => Volatile.Write(ref _atTicks, value.UtcTicks);
     }
 
     /// <summary>

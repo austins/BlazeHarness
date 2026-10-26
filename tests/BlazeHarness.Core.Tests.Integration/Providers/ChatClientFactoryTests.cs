@@ -30,7 +30,7 @@ public sealed class ChatClientFactoryTests
         var (provider, model) = CreateProvider(server.BaseUrl);
         using var http = new HttpClient();
         using var client = ChatClientFactory.Create(provider, model.Id, "key", http);
-        var options = ChatClientFactory.BuildOptions(provider, model, ThinkingLevel.High, null);
+        var options = ChatClientFactory.BuildOptions(provider, model, ThinkingLevel.High);
 
         // Act
         var updates = new List<ChatResponseUpdate>();
@@ -62,7 +62,7 @@ public sealed class ChatClientFactoryTests
         var (provider, model) = CreateProvider(server.BaseUrl);
         using var http = new HttpClient();
         using var client = ChatClientFactory.Create(provider, model.Id, "key", http);
-        var options = ChatClientFactory.BuildOptions(provider, model, ThinkingLevel.Off, null);
+        var options = ChatClientFactory.BuildOptions(provider, model, ThinkingLevel.Off);
 
         // Act
         var count = 0;
@@ -100,7 +100,7 @@ public sealed class ChatClientFactoryTests
         // Act
         await client.GetStreamingResponseAsync(
                 [new ChatMessage(ChatRole.User, "hi")],
-                ChatClientFactory.BuildOptions(provider, model, null, null),
+                ChatClientFactory.BuildOptions(provider, model, null),
                 TestContext.Current.CancellationToken)
             .ToChatResponseAsync(TestContext.Current.CancellationToken);
 
@@ -122,7 +122,7 @@ public sealed class ChatClientFactoryTests
         // Act
         var response = await client.GetStreamingResponseAsync(
                 [new ChatMessage(ChatRole.User, "hi")],
-                ChatClientFactory.BuildOptions(provider, model, null, null),
+                ChatClientFactory.BuildOptions(provider, model, null),
                 TestContext.Current.CancellationToken)
             .ToChatResponseAsync(TestContext.Current.CancellationToken);
 

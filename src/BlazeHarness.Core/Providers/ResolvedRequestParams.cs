@@ -14,19 +14,17 @@ public sealed record ResolvedRequestParams(SamplingParams Sampling, JsonObject B
     /// Work out the effective parameters for a request.
     /// </summary>
     /// <remarks>
-    /// Effective params are the model defaults, then the active thinking level's overrides, then the per-session override.
+    /// Effective params are the model defaults, then the active thinking level's overrides.
     /// Non-standard sampling fields and the thinking value end up in <see cref="BodyFields"/>.
     /// </remarks>
     /// <param name="provider">The provider, which supplies the default thinking wire format.</param>
     /// <param name="model">The model, which supplies defaults, levels and an optional thinking wire format.</param>
     /// <param name="level">The selected thinking level, or null for none. A level the model does not list sends nothing.</param>
-    /// <param name="sessionOverride">Sampling values the user set for this session.</param>
     /// <returns>The resolved parameters.</returns>
     public static ResolvedRequestParams Resolve(
         ProviderConfig provider,
         ModelConfig model,
-        ThinkingLevel? level,
-        SamplingParams? sessionOverride)
+        ThinkingLevel? level)
     {
         var sampling = model.SamplingParams ?? new SamplingParams();
         LevelConfig? levelConfig = null;
@@ -34,8 +32,6 @@ public sealed record ResolvedRequestParams(SamplingParams Sampling, JsonObject B
         {
             sampling = sampling.MergeOver(levelConfig.Overrides);
         }
-
-        sampling = sampling.MergeOver(sessionOverride);
 
         var body = new JsonObject();
         if (sampling.TopK is { } topK)

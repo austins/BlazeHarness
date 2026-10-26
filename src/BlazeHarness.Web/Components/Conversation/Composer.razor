@@ -54,33 +54,7 @@ else
         {
             <div class="hint" role="status">@_note</div>
         }
-        @if (_overrideError is not null)
-        {
-            <div class="alert alert-error" role="alert">@_overrideError</div>
-        }
     </form>
-    <details class="composer-advanced">
-        <summary>
-            Advanced
-            @if (_override.Count > 0)
-            {
-                <span class="badge badge-accent">@_override.Count</span>
-            }
-        </summary>
-        <div class="details-body stack">
-            <p class="hint">These values apply to every message in this session until reset, and win over the model's and the thinking level's values. Custom fields are set on the model.</p>
-            <div class="params">
-                @foreach (var range in SamplingRange.All)
-                {
-                    var key = range.Key;
-                    <ParamRow Range="range" Value="_override.Get(key)" ValueChanged="v => SetOverride(key, v)" Inherited="_inherited?.Get(key)" />
-                }
-            </div>
-            <div>
-                <button type="button" class="btn btn-sm" @onclick="ResetOverride" disabled="@(_override.Count == 0)">Reset all</button>
-            </div>
-        </div>
-    </details>
     </div>
 }
 
@@ -94,9 +68,6 @@ else
     private string _selected = string.Empty;
     private string _level = string.Empty;
     private string? _note;
-    private string? _overrideError;
-    private SamplingEditModel _override = new();
-    private SamplingEditModel? _inherited;
     private bool _resize;
     private bool _applied;
     private bool _creating;
@@ -109,7 +80,7 @@ else
     public string? SessionId { get; set; }
 
     /// <summary>
-    /// Gets or sets the saved details of the open chat, whose model, thinking level and sampling are restored.
+    /// Gets or sets the saved details of the open chat, whose model and thinking level are restored.
     /// </summary>
     [Parameter]
     public SessionInfo? Remembered { get; set; }
@@ -196,9 +167,6 @@ else
         LoadLevels();
         _level = remembered is not null && Remembered?.Level is { } level && _levels.Contains(level) ? level.ToString() : string.Empty;
         _note = null;
-        _override = remembered is null ? new SamplingEditModel() : SamplingEditModel.FromConfig(Remembered?.Sampling);
-        _overrideError = null;
-        LoadInherited();
     }
 
     private static string KeyOf(ProviderConfig provider, ModelConfig model)
@@ -217,32 +185,6 @@ else
         _levels = levels is null ? [] : [.. levels.Keys.Order()];
     }
 
-    private void LoadInherited()
-    {
-        var target = CurrentTarget();
-        _inherited = target is null
-            ? null
-            : SamplingEditModel.FromConfig(ResolvedRequestParams.Resolve(target.Provider, target.Model, target.Level, null).Sampling);
-    }
-
-    private void SetOverride(string key, double? value)
-    {
-        _override.Set(key, value);
-        _overrideError = null;
-    }
-
-    private void ResetOverride()
-    {
-        _override = new SamplingEditModel();
-        _overrideError = null;
-    }
-
-    private string? ValidateOverride()
-    {
-        var invalid = SamplingRange.All.FirstOrDefault(r => _override.Get(r.Key) is { } v && (double.IsNaN(v) || v < r.Min || v > r.Max));
-        return invalid is null ? null : $"{invalid.Label} is outside its allowed range, so the message was not sent.";
-    }
-
     private void OnModelChanged(ChangeEventArgs e)
     {
         _selected = e.Value?.ToString() ?? string.Empty;
@@ -254,14 +196,12 @@ else
             _level = string.Empty;
         }
 
-        LoadInherited();
     }
 
     private void OnLevelChanged(ChangeEventArgs e)
     {
         _level = e.Value?.ToString() ?? string.Empty;
         _note = null;
-        LoadInherited();
     }
 
     private ChatTarget? CurrentTarget()
@@ -273,19 +213,13 @@ else
         }
 
         ThinkingLevel? level = Enum.TryParse<ThinkingLevel>(_level, out var parsed) ? parsed : null;
-        return new ChatTarget(choice.Provider, choice.Model, level) { SessionOverride = _override.ToConfig() };
+        return new ChatTarget(choice.Provider, choice.Model, level);
     }
 
     private async Task SubmitAsync()
     {
         var target = CurrentTarget();
         if (target is null || Running || string.IsNullOrWhiteSpace(_text))
-        {
-            return;
-        }
-
-        _overrideError = ValidateOverride();
-        if (_overrideError is not null)
         {
             return;
         }
@@ -299,8 +233,7 @@ else
 
     private async Task RetryAsync()
     {
-        _overrideError = ValidateOverride();
-        if (_overrideError is null && CurrentTarget() is { } target)
+        if (CurrentTarget() is { } target)
         {
             await OnRetry.InvokeAsync(target);
         }

@@ -53,6 +53,44 @@ window.bhChat = {
             }
         });
     },
+    // Message times are rendered as UTC instants and shown in the browser's own locale and time zone.
+    initTimes: () => {
+        const clock = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
+        const dated = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+        const full = new Intl.DateTimeFormat(undefined, { dateStyle: "full", timeStyle: "medium" });
+        const show = (el) => {
+            const when = new Date(el.getAttribute("datetime"));
+            if (Number.isNaN(when.getTime())) {
+                return;
+            }
+
+            const text = when.toDateString() === new Date().toDateString() ? clock.format(when) : dated.format(when);
+            if (el.textContent !== text) {
+                el.textContent = text;
+            }
+
+            el.title = full.format(when);
+        };
+        const scan = (root) => {
+            if (root.matches && root.matches("time.msg-time")) {
+                show(root);
+            }
+
+            if (root.querySelectorAll) {
+                root.querySelectorAll("time.msg-time").forEach(show);
+            }
+        };
+        new MutationObserver((records) => {
+            for (const record of records) {
+                if (record.type === "attributes") {
+                    show(record.target);
+                } else {
+                    record.addedNodes.forEach((node) => scan(node));
+                }
+            }
+        }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["datetime"] });
+        scan(document.documentElement);
+    },
     resize: (input) => {
         if (input) {
             input.style.height = "auto";
@@ -81,3 +119,4 @@ window.bhChat = {
 };
 
 window.bhChat.initCopy();
+window.bhChat.initTimes();

@@ -57,15 +57,13 @@ public static class ChatClientFactory
     /// <param name="provider">The provider, which decides the wire format.</param>
     /// <param name="model">The model, which supplies defaults and limits.</param>
     /// <param name="level">The selected thinking level, or null to send no thinking setting.</param>
-    /// <param name="sessionOverride">Sampling values the user set for this session, which win over the model's.</param>
     /// <returns>The options to pass to the chat client.</returns>
     public static ChatOptions BuildOptions(
         ProviderConfig provider,
         ModelConfig model,
-        ThinkingLevel? level,
-        SamplingParams? sessionOverride)
+        ThinkingLevel? level)
     {
-        var resolved = ResolvedRequestParams.Resolve(provider, model, level, sessionOverride);
+        var resolved = ResolvedRequestParams.Resolve(provider, model, level);
         var sampling = resolved.Sampling;
 
         return new ChatOptions

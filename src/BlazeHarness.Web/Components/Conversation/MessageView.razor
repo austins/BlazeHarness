@@ -1,3 +1,4 @@
+@using System.Globalization
 @inject MarkdownRenderer Markdown
 
 <article class="msg" data-role="@(Entry.Role == ChatRole.User ? "user" : "assistant")" data-status="@Entry.Status.ToString().ToLowerInvariant()">
@@ -45,10 +46,13 @@
         <div class="alert alert-error" role="alert">@Entry.Error</div>
     }
 
-    @if (Entry.Usage is { } usage)
-    {
-        <div class="hint mono">@usage.PromptTokens in · @usage.CompletionTokens out</div>
-    }
+    <footer class="msg-meta">
+        <time class="msg-time" datetime="@Entry.At.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)"></time>
+        @if (Entry.Usage is { } usage)
+        {
+            <span class="mono">@usage.PromptTokens in · @usage.CompletionTokens out</span>
+        }
+    </footer>
 </article>
 
 @code {

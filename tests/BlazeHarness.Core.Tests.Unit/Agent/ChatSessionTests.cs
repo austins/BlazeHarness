@@ -137,21 +137,6 @@ public sealed class ChatSessionTests
             .Should().Equal("P1 · fast", "P2 · smart · low");
     }
 
-    [Fact]
-    public async Task SendAsync_WithSessionOverride_SendsTheOverriddenSampling()
-    {
-        // Arrange
-        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
-        using var sut = CreateSession(client);
-        var target = Fast with { SessionOverride = new SamplingParams { Temperature = 0.1 } };
-
-        // Act
-        await sut.SendAsync("hi", target);
-
-        // Assert
-        client.Options[0]!.Temperature.Should().Be(0.1f);
-    }
-
     private static ChatSession CreateSession(ScriptedChatClient client, Action<ChatTarget>? onTarget = null) =>
         new((target, _) =>
         {

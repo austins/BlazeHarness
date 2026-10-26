@@ -26,7 +26,7 @@ public sealed class ResolvedRequestParamsTests
         };
 
         // Act
-        var result = ResolvedRequestParams.Resolve(Provider, model, ThinkingLevel.Off, null);
+        var result = ResolvedRequestParams.Resolve(Provider, model, ThinkingLevel.Off);
 
         // Assert
         result.Sampling.Temperature.Should().Be(0.7);
@@ -35,31 +35,10 @@ public sealed class ResolvedRequestParamsTests
     }
 
     [Fact]
-    public void Resolve_SessionOverride_WinsOverLevel()
-    {
-        // Arrange
-        var model = new ModelConfig
-        {
-            Id = "m",
-            SamplingParams = new SamplingParams { Temperature = 1.0 },
-            Levels = new Dictionary<ThinkingLevel, LevelConfig>
-            {
-                [ThinkingLevel.High] = new() { Overrides = new SamplingParams { Temperature = 0.6 } },
-            },
-        };
-
-        // Act
-        var result = ResolvedRequestParams.Resolve(Provider, model, ThinkingLevel.High, new SamplingParams { Temperature = 0.2 });
-
-        // Assert
-        result.Sampling.Temperature.Should().Be(0.2);
-    }
-
-    [Fact]
     public void Resolve_NothingSet_OmitsEverything()
     {
         // Act
-        var result = ResolvedRequestParams.Resolve(Provider, new ModelConfig { Id = "m" }, null, null);
+        var result = ResolvedRequestParams.Resolve(Provider, new ModelConfig { Id = "m" }, null);
 
         // Assert
         result.Sampling.Temperature.Should().BeNull();
@@ -77,7 +56,7 @@ public sealed class ResolvedRequestParamsTests
         };
 
         // Act
-        var result = ResolvedRequestParams.Resolve(Provider, model, null, null);
+        var result = ResolvedRequestParams.Resolve(Provider, model, null);
 
         // Assert
         result.BodyFields.ToJsonString().Should().Be("""{"top_k":20,"min_p":0.05,"repetition_penalty":1.1}""");
@@ -98,7 +77,7 @@ public sealed class ResolvedRequestParamsTests
         };
 
         // Act
-        var result = ResolvedRequestParams.Resolve(provider, model, ThinkingLevel.High, null);
+        var result = ResolvedRequestParams.Resolve(provider, model, ThinkingLevel.High);
 
         // Assert
         result.BodyFields.ToJsonString().Should().Be(expected);
@@ -119,7 +98,7 @@ public sealed class ResolvedRequestParamsTests
         };
 
         // Act
-        var result = ResolvedRequestParams.Resolve(provider, model, ThinkingLevel.Off, null);
+        var result = ResolvedRequestParams.Resolve(provider, model, ThinkingLevel.Off);
 
         // Assert
         result.BodyFields.ToJsonString().Should().Be("""{"chat_template_kwargs":{"enable_thinking":false}}""");
@@ -136,7 +115,7 @@ public sealed class ResolvedRequestParamsTests
         };
 
         // Act
-        var result = ResolvedRequestParams.Resolve(Provider, model, ThinkingLevel.Low, null);
+        var result = ResolvedRequestParams.Resolve(Provider, model, ThinkingLevel.Low);
 
         // Assert
         result.BodyFields.Should().BeEmpty();

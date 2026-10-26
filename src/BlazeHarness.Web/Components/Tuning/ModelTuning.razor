@@ -240,7 +240,7 @@
 
     private string Preview()
     {
-        var json = ResolvedRequestParams.Resolve(Provider!.ToConfig(), Model!.ToConfig(), ActiveTab, null).ToRequestJson();
+        var json = ResolvedRequestParams.Resolve(Provider!.ToConfig(), Model!.ToConfig(), ActiveTab).ToRequestJson();
         return json.Count == 0 ? "{}  (nothing added; the server defaults apply)" : json.ToJsonString(Indented);
     }
 }

@@ -63,7 +63,7 @@ public sealed class ThinkingPresetTests
         };
 
         // Act
-        var json = ResolvedRequestParams.Resolve(provider, model, ThinkingLevel.Off, null).ToRequestJson();
+        var json = ResolvedRequestParams.Resolve(provider, model, ThinkingLevel.Off).ToRequestJson();
 
         // Assert
         json["temperature"]!.GetValue<double>().Should().Be(0.7);

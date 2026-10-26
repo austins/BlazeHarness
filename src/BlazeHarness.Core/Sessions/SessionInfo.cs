@@ -66,9 +66,4 @@ public sealed record SessionInfo
     /// Gets the thinking level the session last used, or null for the server default.
     /// </summary>
     public ThinkingLevel? Level { get; init; }
-
-    /// <summary>
-    /// Gets the sampling overrides set for this session, or null for none.
-    /// </summary>
-    public SamplingParams? Sampling { get; init; }
 }
