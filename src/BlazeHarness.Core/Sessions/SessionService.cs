@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Folders;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
@@ -64,7 +65,9 @@ public sealed class SessionService : IDisposable
     public async Task<SessionInfo> CreateAsync(string? folderPath = null, CancellationToken cancellationToken = default)
     {
         var info = await _store.CreateAsync(folderPath, cancellationToken).ConfigureAwait(false);
-        _live[info.Id] = NewSession(info.Id);
+        var session = NewSession(info.Id);
+        _live[info.Id] = session;
+        await RefreshProjectAsync(info.Id, session).ConfigureAwait(false);
         return info;
     }
 
@@ -97,6 +100,7 @@ public sealed class SessionService : IDisposable
             var session = NewSession(id);
 #pragma warning restore CA2000
             session.Restore(await _store.GetLog(id).ReadAsync().ConfigureAwait(false));
+            await RefreshProjectAsync(id, session).ConfigureAwait(false);
             _live[id] = session;
             return session;
         }
@@ -122,6 +126,7 @@ public sealed class SessionService : IDisposable
         }
 
         await RememberAsync(id, target, text).ConfigureAwait(false);
+        await RefreshProjectAsync(id, session).ConfigureAwait(false);
         await session.SendAsync(text, target).ConfigureAwait(false);
     }
 
@@ -140,6 +145,7 @@ public sealed class SessionService : IDisposable
         }
 
         await RememberAsync(id, target, null).ConfigureAwait(false);
+        await RefreshProjectAsync(id, session).ConfigureAwait(false);
         await session.RetryAsync(target).ConfigureAwait(false);
     }
 
@@ -197,6 +203,40 @@ public sealed class SessionService : IDisposable
         }
 
         _opening.Dispose();
+    }
+
+    /// <summary>
+    /// Read the project instructions that apply to a folder.
+    /// </summary>
+    /// <param name="folderPath">The folder, or null for a chat without one.</param>
+    /// <returns>The instructions, or null when there is no folder.</returns>
+    public static async Task<ProjectContext?> LoadProjectAsync(string? folderPath)
+    {
+        return folderPath is null || !Directory.Exists(folderPath)
+            ? null
+            : await ProjectContextLoader.LoadAsync(folderPath).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Re-read the project instructions of every open session, for after folders were moved, removed or re-pointed.
+    /// </summary>
+    /// <returns>A task that completes when every session has been updated.</returns>
+    public async Task RefreshProjectsAsync()
+    {
+        foreach (var (id, session) in _live.ToArray())
+        {
+            await RefreshProjectAsync(id, session).ConfigureAwait(false);
+        }
+    }
+
+    private async Task RefreshProjectAsync(string id, ChatSession session)
+    {
+        var loaded = await LoadProjectAsync(_store.Find(id)?.FolderPath).ConfigureAwait(false);
+        var current = session.Project;
+        if (loaded is null ? current is not null : !loaded.SameAs(current))
+        {
+            session.Project = loaded;
+        }
     }
 
     private ChatSession NewSession(string id)

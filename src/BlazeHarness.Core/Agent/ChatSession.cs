@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
 using Microsoft.Extensions.AI;
@@ -37,6 +38,7 @@ public sealed partial class ChatSession : IDisposable
     private readonly List<ChatEntry> _entries = [];
     private readonly List<ChatMessage> _history = [];
     private IReadOnlyList<ChatEntry> _snapshot = [];
+    private ProjectContext? _project;
     private Action? _stop;
 
     /// <summary>
@@ -80,6 +82,22 @@ public sealed partial class ChatSession : IDisposable
             {
                 return [.. _history];
             }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the project instructions sent to the model as a system message, or null for none.
+    /// </summary>
+    /// <remarks>
+    /// A reply reads this once when it starts, so changing it never alters a reply that is running.
+    /// </remarks>
+    public ProjectContext? Project
+    {
+        get => Volatile.Read(ref _project);
+        set
+        {
+            Volatile.Write(ref _project, value);
+            RaiseChanged();
         }
     }
 
@@ -299,6 +317,11 @@ public sealed partial class ChatSession : IDisposable
         var lastSave = _time.GetTimestamp();
         List<ChatMessage> working = [.. History];
         var before = working.Count;
+        if (Project?.ToPrompt() is { } instructions)
+        {
+            working.Insert(0, new ChatMessage(ChatRole.System, instructions));
+            before++;
+        }
 
         try
         {

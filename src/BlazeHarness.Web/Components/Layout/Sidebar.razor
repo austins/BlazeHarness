@@ -224,6 +224,7 @@
             }
 
             await Sessions.Store.RepointFolderAsync(old.Path, result.Folder.Path);
+            await Sessions.RefreshProjectsAsync();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -244,6 +245,7 @@
         {
             await Folders.RemoveAsync(folder.Path);
             await Sessions.Store.RepointFolderAsync(folder.Path, null);
+            await Sessions.RefreshProjectsAsync();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

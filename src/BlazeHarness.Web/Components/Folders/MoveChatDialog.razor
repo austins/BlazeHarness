@@ -60,6 +60,8 @@
             {
                 await Folders.TouchAsync(folderPath);
             }
+
+            await Sessions.RefreshProjectsAsync();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

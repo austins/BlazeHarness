@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Providers;
 using Microsoft.Extensions.AI;
 
@@ -101,6 +102,38 @@ public sealed class ChatSessionTests
         sut.History.Select(m => m.Text).Should().Equal("hi", "full answer");
         client.Requests[1].Select(m => m.Text).Should().Equal("hi");
         targets.Should().Equal("fast", "smart");
+    }
+
+    [Fact]
+    public async Task SendAsync_WithProjectContext_SendsItAsASystemMessageAndKeepsItOutOfHistory()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        using var sut = CreateSession(client);
+        sut.Project = new ProjectContext("/work/app", [new ProjectFile("/work/app/AGENTS.md", "Use tabs.", false)]);
+
+        // Act
+        await sut.SendAsync("hi", Fast);
+
+        // Assert
+        client.Requests.Should().ContainSingle();
+        client.Requests[0].Select(m => m.Role).Should().Equal(ChatRole.System, ChatRole.User);
+        client.Requests[0][0].Text.Should().Contain("Use tabs.").And.Contain("/work/app/AGENTS.md");
+        sut.History.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant);
+    }
+
+    [Fact]
+    public async Task SendAsync_WithoutProjectContext_SendsNoSystemMessage()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        using var sut = CreateSession(client);
+
+        // Act
+        await sut.SendAsync("hi", Fast);
+
+        // Assert
+        client.Requests[0].Select(m => m.Role).Should().Equal(ChatRole.User);
     }
 
     [Fact]

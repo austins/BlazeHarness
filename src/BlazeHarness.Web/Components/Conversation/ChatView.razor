@@ -28,6 +28,24 @@ else
                 <Icon Name="folder" />
                 <span class="chat-context-name">@(Folders.Find(folderPath)?.Name ?? FolderPaths.DisplayName(folderPath))</span>
                 <span class="chat-context-path mono">@folderPath</span>
+                @if (Project is { Files.Count: > 0 } project)
+                {
+                    <details class="chat-context-files">
+                        <summary title="Project instructions the model was given"><Icon Name="file" /> AGENTS.md <span class="badge">@project.Files.Count</span></summary>
+                        <ul>
+                            @foreach (var file in project.Files)
+                            {
+                                <li>
+                                    <span class="mono">@file.Path</span>
+                                    @if (file.Truncated)
+                                    {
+                                        <span class="hint">@(file.Content.Length == 0 ? "Too large, not included." : "Too large, cut off.")</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </details>
+                }
                 @if (_info is not null)
                 {
                     <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
@@ -102,6 +120,10 @@ else
     public string? FolderPath { get; set; }
 
     private SessionInfo? _moving;
+    private ProjectContext? _newProject;
+    private string? _newProjectFolder;
+
+    private ProjectContext? Project => _openId is null ? _newProject : _session?.Project;
 
     private string? ContextPath => _openId is null ? Folders.Find(FolderPath)?.Path : _info?.FolderPath;
 
@@ -113,6 +135,16 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        if (SessionId is null)
+        {
+            var folder = Folders.Find(FolderPath)?.Path;
+            if (folder != _newProjectFolder)
+            {
+                _newProjectFolder = folder;
+                _newProject = await SessionService.LoadProjectAsync(folder);
+            }
+        }
+
         if (SessionId == _openId)
         {
             return;
