@@ -33,11 +33,6 @@ public sealed class SamplingEditModel
     public Collection<ExtraParamRow> Extra { get; } = [];
 
     /// <summary>
-    /// Gets the number of standard values that are set.
-    /// </summary>
-    public int Count => _values.Count;
-
-    /// <summary>
     /// Gets a value indicating whether nothing is set.
     /// </summary>
     public bool IsEmpty => _values.Count == 0 && Extra.All(e => string.IsNullOrWhiteSpace(e.Name));

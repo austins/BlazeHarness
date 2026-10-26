@@ -72,7 +72,7 @@ public sealed class SamplingEditModelTests
     }
 
     [Fact]
-    public void Count_CountsOnlyValuesThatAreSet()
+    public void Set_Null_ClearsTheValue()
     {
         // Arrange
         var sut = new SamplingEditModel();
@@ -83,6 +83,7 @@ public sealed class SamplingEditModelTests
         sut.Set("topP", null);
 
         // Assert
-        sut.Count.Should().Be(1);
+        sut.Get("topP").Should().BeNull();
+        sut.Get("temperature").Should().Be(0.5);
     }
 }
