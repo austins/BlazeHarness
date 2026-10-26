@@ -274,6 +274,115 @@ public sealed class SessionServiceTests : IDisposable
         sut.IsRunning(info.Id).Should().BeFalse();
     }
 
+    [Fact]
+    public async Task SendAsync_WithATitleGenerator_ReplacesThePlaceholderAfterTheFirstExchange()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hello")]);
+        var titles = Substitute.For<ITitleGenerator>();
+        titles.GenerateAsync(Arg.Any<ChatTarget>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns("Greeting");
+        var sut = Create(client, titles);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+
+        // Act
+        await sut.SendAsync(info.Id, "hi there", Target("p1", "fast"));
+        await sut.PendingTitleAsync(info.Id);
+
+        // Assert
+        var saved = sut.Store.Find(info.Id)!;
+        saved.Title.Should().Be("Greeting");
+        saved.TitleSource.Should().Be(TitleSource.Generated);
+        await titles.Received(1).GenerateAsync(Arg.Any<ChatTarget>(), "hi there", "Hello", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SendAsync_AfterAGeneratedTitle_DoesNotAskAgain()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hello")]).Enqueue([ScriptedChatClient.Text("Again")]);
+        var titles = Substitute.For<ITitleGenerator>();
+        titles.GenerateAsync(Arg.Any<ChatTarget>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns("Greeting");
+        var sut = Create(client, titles);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await sut.PendingTitleAsync(info.Id);
+
+        // Act
+        await sut.SendAsync(info.Id, "more", Target("p1", "fast"));
+        await sut.PendingTitleAsync(info.Id);
+
+        // Assert
+        await titles.Received(1).GenerateAsync(Arg.Any<ChatTarget>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenTheTitleRequestFails_KeepsThePlaceholder()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hello")]);
+        var titles = Substitute.For<ITitleGenerator>();
+        titles.GenerateAsync(Arg.Any<ChatTarget>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns<string?>(_ => throw new InvalidOperationException("boom"));
+        var sut = Create(client, titles);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+
+        // Act
+        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await sut.PendingTitleAsync(info.Id);
+
+        // Assert
+        var saved = sut.Store.Find(info.Id)!;
+        saved.Title.Should().Be("hi");
+        saved.TitleSource.Should().Be(TitleSource.Placeholder);
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenTheUserRenamesWhileTitling_KeepsTheUsersTitle()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hello")]);
+        var release = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var titles = Substitute.For<ITitleGenerator>();
+#pragma warning disable VSTHRD003, IDISP013 // The source is completed by this test, and the client outlives the call.
+        titles.GenerateAsync(Arg.Any<ChatTarget>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(_ => release.Task);
+#pragma warning restore VSTHRD003, IDISP013
+        var sut = Create(client, titles);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+
+        // Act
+        await sut.Store.RenameAsync(info.Id, "Mine", ct);
+        release.SetResult("Generated");
+        await sut.PendingTitleAsync(info.Id);
+
+        // Assert
+        var saved = sut.Store.Find(info.Id)!;
+        saved.Title.Should().Be("Mine");
+        saved.TitleSource.Should().Be(TitleSource.User);
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenTheReplyFails_DoesNotAskForATitle()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hel")], failure: new InvalidOperationException("down"));
+        var titles = Substitute.For<ITitleGenerator>();
+        var sut = Create(client, titles);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+
+        // Act
+        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await sut.PendingTitleAsync(info.Id);
+
+        // Assert
+        await titles.DidNotReceiveWithAnyArgs().GenerateAsync(default!, default!, default!, ct);
+    }
+
     private static ChatTarget Target(string provider, string model)
     {
         var modelConfig = new ModelConfig { Id = model, ContextWindow = 8000, MaxOutputTokens = 1000 };
@@ -287,10 +396,10 @@ public sealed class SessionServiceTests : IDisposable
         return new ChatTarget(providerConfig, modelConfig, null);
     }
 
-    private SessionService Create(IChatClient client)
+    private SessionService Create(IChatClient client, ITitleGenerator? titles = null)
     {
         var store = new SessionStore(_paths, NullLoggerFactory.Instance);
-        var service = new SessionService(store, (_, _) => Task.FromResult(client), NullLoggerFactory.Instance);
+        var service = new SessionService(store, (_, _) => Task.FromResult(client), NullLoggerFactory.Instance, titles: titles);
         _disposables.Add(service);
         _disposables.Add(store);
         return service;

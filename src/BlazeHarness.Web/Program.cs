@@ -29,7 +29,8 @@ builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<SessionStore>(),
     sp.GetRequiredService<ChatClientSource>().CreateAsync,
     sp.GetRequiredService<ILoggerFactory>(),
-    sp.GetRequiredService<TimeProvider>()));
+    sp.GetRequiredService<TimeProvider>(),
+    new ModelTitleGenerator(sp.GetRequiredService<ChatClientSource>().CreateAsync)));
 builder.Services.AddSingleton(sp => new FolderRegistry(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<LaunchCredentials>();
 builder.Services.AddHttpClient();

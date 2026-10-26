@@ -3,6 +3,7 @@ using BlazeHarness.Core.Folders;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace BlazeHarness.Core.Sessions;
 
@@ -13,7 +14,8 @@ namespace BlazeHarness.Core.Sessions;
 /// <remarks>
 /// Sessions are restored from their log on first use and then kept in memory until they are deleted.
 /// </remarks>
-public sealed class SessionService : IDisposable
+[SuppressMessage("Major Code Smell", "S8949", Justification = "The shutdown token only stops title requests; the other calls are short store writes that should finish.")]
+public sealed partial class SessionService : IDisposable
 {
     private const int PlaceholderLength = 48;
 
@@ -21,6 +23,10 @@ public sealed class SessionService : IDisposable
     private readonly Func<ChatTarget, CancellationToken, Task<IChatClient>> _clientFactory;
     private readonly ILoggerFactory _loggers;
     private readonly TimeProvider _time;
+    private readonly ITitleGenerator? _titles;
+    private readonly ILogger _log;
+    private readonly CancellationTokenSource _shutdown = new();
+    private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, ChatSession> _live = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _opening = new(1, 1);
 
@@ -31,11 +37,13 @@ public sealed class SessionService : IDisposable
     /// <param name="clientFactory">Creates the chat client for a target.</param>
     /// <param name="loggers">Creates loggers for the sessions.</param>
     /// <param name="time">The clock for timestamps; defaults to the system clock.</param>
+    /// <param name="titles">Writes a title after the first exchange; without it a session keeps its placeholder title.</param>
     public SessionService(
         SessionStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
         ILoggerFactory loggers,
-        TimeProvider? time = null)
+        TimeProvider? time = null,
+        ITitleGenerator? titles = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
@@ -44,6 +52,8 @@ public sealed class SessionService : IDisposable
         _clientFactory = clientFactory;
         _loggers = loggers;
         _time = time ?? TimeProvider.System;
+        _titles = titles;
+        _log = loggers.CreateLogger<SessionService>();
     }
 
     /// <summary>
@@ -128,6 +138,7 @@ public sealed class SessionService : IDisposable
         await RememberAsync(id, target, text).ConfigureAwait(false);
         await RefreshProjectAsync(id, session).ConfigureAwait(false);
         await session.SendAsync(text, target).ConfigureAwait(false);
+        StartTitle(id, session, target);
     }
 
     /// <summary>
@@ -147,6 +158,7 @@ public sealed class SessionService : IDisposable
         await RememberAsync(id, target, null).ConfigureAwait(false);
         await RefreshProjectAsync(id, session).ConfigureAwait(false);
         await session.RetryAsync(target).ConfigureAwait(false);
+        StartTitle(id, session, target);
     }
 
     /// <summary>
@@ -197,12 +209,14 @@ public sealed class SessionService : IDisposable
     /// </summary>
     public void Dispose()
     {
+        _shutdown.Cancel();
         foreach (var session in _live.Values)
         {
             session.Dispose();
         }
 
         _opening.Dispose();
+        _shutdown.Dispose();
     }
 
     /// <summary>
@@ -229,6 +243,16 @@ public sealed class SessionService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Get a task that completes when the title request of a session, if one is running, has ended.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <returns>The pending task, or a completed one.</returns>
+    internal Task PendingTitleAsync(string id)
+    {
+        return _titling.TryGetValue(id, out var task) ? task : Task.CompletedTask;
+    }
+
     private async Task RefreshProjectAsync(string id, ChatSession session)
     {
         var loaded = await LoadProjectAsync(_store.Find(id)?.FolderPath).ConfigureAwait(false);
@@ -237,6 +261,45 @@ public sealed class SessionService : IDisposable
         {
             session.Project = loaded;
         }
+    }
+
+    private void StartTitle(string id, ChatSession session, ChatTarget target)
+    {
+        if (_titles is null
+            || _store.Find(id) is not { TitleSource: TitleSource.Placeholder }
+            || session.Entries is not [{ Role.Value: "user" } first, { Role.Value: "assistant", Status: EntryStatus.Done, Text.Length: > 0 } reply, ..])
+        {
+            return;
+        }
+
+        var gate = new TaskCompletionSource();
+        if (!_titling.TryAdd(id, gate.Task))
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                if (await _titles.GenerateAsync(target, first.Text, reply.Text, _shutdown.Token).ConfigureAwait(false) is { } title)
+                {
+                    await _store.UpdateAsync(
+                        id,
+                        s => s.TitleSource == TitleSource.Placeholder ? s with { Title = title, TitleSource = TitleSource.Generated } : s,
+                        cancellationToken: _shutdown.Token).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                LogTitleFailed(ex);
+            }
+            finally
+            {
+                _titling.TryRemove(id, out _);
+                gate.SetResult();
+            }
+        });
     }
 
     private ChatSession NewSession(string id)
@@ -274,6 +337,9 @@ public sealed class SessionService : IDisposable
             },
             touch: true);
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not write a title for a session; it keeps its placeholder title.")]
+    private partial void LogTitleFailed(Exception ex);
 
     private static string Placeholder(string text)
     {
