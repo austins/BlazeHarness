@@ -116,6 +116,13 @@ code, pre, kbd { font-family: var(--font-mono); font-size: 0.9em; }
 .sidebar-spacer { flex: 1; }
 .sidebar-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .sidebar-footer .nav-link { flex: 1; }
+.icon-spin { animation: spin 0.9s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .icon-spin { animation-duration: 3s; } }
+.sidebar-heading:has(> .icon) { justify-content: flex-start; gap: var(--space-2); }
+.sidebar-heading .icon { width: 0.9rem; height: 0.9rem; }
+.chat-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.chat-busy { display: inline-flex; color: var(--accent); }
+.chat-busy .icon { width: 0.9rem; height: 0.9rem; }
 .icon { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentcolor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .nav-link {
@@ -131,14 +138,19 @@ code, pre, kbd { font-family: var(--font-mono); font-size: 0.9em; }
 .sidebar-search { width: 100%; }
 .chat-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
 .chat-link {
-    display: block; padding: var(--space-2) var(--space-3);
+    display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm); color: var(--fg); text-decoration: none; font-size: var(--text-sm);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .chat-item { position: relative; display: flex; align-items: center; }
 .chat-item .chat-link { flex: 1; min-width: 0; }
-.chat-actions { display: none; position: absolute; inset-inline-end: 2px; background: var(--bg-hover); border-radius: var(--radius-sm); }
-.chat-item:hover .chat-actions, .chat-item:focus-within .chat-actions { display: flex; }
+.chat-actions {
+    display: flex; position: absolute; inset-inline-end: 2px;
+    background: var(--bg-hover); border-radius: var(--radius-sm);
+    opacity: 0; pointer-events: none;
+}
+.chat-item:hover .chat-actions, .chat-item:focus-within .chat-actions { opacity: 1; pointer-events: auto; }
+@media (hover: none) { .chat-actions { opacity: 1; pointer-events: auto; } }
 .chat-item > .input { width: 100%; }
 .chat-link:hover { background: var(--bg-hover); }
 .chat-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }

@@ -39,15 +39,15 @@ else
             <span class="composer-spacer"></span>
             @if (CanRetry)
             {
-                <button type="button" class="btn" @onclick="RetryAsync">Retry</button>
+                <button type="button" class="btn" @onclick="RetryAsync"><Icon Name="retry" /> Retry</button>
             }
             @if (Running)
             {
-                <button type="button" class="btn btn-danger" @onclick="OnStop">Stop</button>
+                <button type="button" class="btn btn-danger" @onclick="OnStop"><Icon Name="stop" /> Stop</button>
             }
             else
             {
-                <button type="submit" class="btn btn-primary">Send</button>
+                <button type="submit" class="btn btn-primary"><Icon Name="send" /> Send</button>
             }
         </div>
         @if (_note is not null)

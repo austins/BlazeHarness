@@ -5,7 +5,7 @@
     <dialog class="dialog@(Wide ? " dialog-wide" : "")" @ref="_dialog" aria-labelledby="@_titleId" @oncancel="Close" @oncancel:preventDefault>
         <div class="dialog-header">
             <h2 id="@_titleId">@Title</h2>
-            <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Close" @onclick="Close">✕</button>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Close" @onclick="Close"><Icon Name="close" /></button>
         </div>
         <div class="dialog-body">@ChildContent</div>
         @if (Footer is not null)

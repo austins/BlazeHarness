@@ -242,6 +242,38 @@ public sealed class SessionServiceTests : IDisposable
         Directory.GetDirectories(_paths.SessionsDirectory).Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task ActivityChanged_ReplyStartsAndEnds_IsRaisedForBoth()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new GatedChatClient();
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        var seen = new List<bool>();
+        sut.ActivityChanged += (_, _) =>
+        {
+            lock (seen)
+            {
+                seen.Add(sut.IsRunning(info.Id));
+            }
+        };
+
+        // Act
+        var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await client.Started.WaitAsync(ct);
+        client.Release();
+        await turn;
+
+        // Assert
+        lock (seen)
+        {
+            seen.Should().Contain(true);
+        }
+
+        sut.IsRunning(info.Id).Should().BeFalse();
+    }
+
     private static ChatTarget Target(string provider, string model)
     {
         var modelConfig = new ModelConfig { Id = model, ContextWindow = 8000, MaxOutputTokens = 1000 };

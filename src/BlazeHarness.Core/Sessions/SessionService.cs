@@ -46,6 +46,11 @@ public sealed class SessionService : IDisposable
     }
 
     /// <summary>
+    /// Raised, on any thread, when a session starts or stops replying.
+    /// </summary>
+    public event EventHandler? ActivityChanged;
+
+    /// <summary>
     /// Gets the saved sessions.
     /// </summary>
     public SessionStore Store => _store;
@@ -196,7 +201,24 @@ public sealed class SessionService : IDisposable
 
     private ChatSession NewSession(string id)
     {
-        return new ChatSession(_clientFactory, _store.GetLog(id), _time, _loggers.CreateLogger<ChatSession>());
+        var session = new ChatSession(_clientFactory, _store.GetLog(id), _time, _loggers.CreateLogger<ChatSession>());
+        var wasRunning = false;
+        session.Changed += (_, _) =>
+        {
+            bool flipped;
+            lock (session)
+            {
+                var running = session.IsRunning;
+                flipped = running != wasRunning;
+                wasRunning = running;
+            }
+
+            if (flipped)
+            {
+                ActivityChanged?.Invoke(this, EventArgs.Empty);
+            }
+        };
+        return session;
     }
 
     private Task RememberAsync(string id, ChatTarget target, string? firstText)
