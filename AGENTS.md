@@ -25,11 +25,16 @@
 
 - Log IDs and counts only, never message or file contents.
 - Namespaces under `BlazeHarness.Core`: `Agent`, `Providers`, `Tools`, `Sessions`, `Compaction`, `Sandbox`, `Mcp`, `Skills`.
+- Every public type and member needs XML docs (CS1591 is an error in `src/`): a `<summary>`, plus `<remarks>`, `<param>`,
+  `<returns>` and `<exception>` where they add something. Use `<inheritdoc />` on interface implementations, and `<param>`
+  on the type for positional records. Properties start with "Gets" or "Gets or sets". Method summaries use the imperative.
 
 ## Tests
 
 - One test project per source project and kind: `<Project>.Tests.Unit` (no I/O or network) and `<Project>.Tests.Integration`
   (real file system, processes, fake HTTP servers). Shared settings live in `tests/Directory.Build.props`.
+- Test files mirror the source layout: a test for `BlazeHarness.Core.Secrets.ApiKeyResolver` lives in
+  `Secrets/ApiKeyResolverTests.cs` and uses namespace `BlazeHarness.Core.Tests.Unit.Secrets`. One test class per file.
 - xUnit v3 on Microsoft.Testing.Platform, NSubstitute, AwesomeAssertions (`.Should()`).
 - `Method_Scenario_Expected` names, `// Arrange` / `// Act` / `// Assert`, class under test in `_sut`.
 - Use `LoggerFake<T>` for loggers, and pass `TestContext.Current.CancellationToken` to async calls.

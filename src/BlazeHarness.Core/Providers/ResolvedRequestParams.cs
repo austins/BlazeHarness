@@ -3,13 +3,25 @@ using System.Text.Json.Nodes;
 
 namespace BlazeHarness.Core.Providers;
 
-/// <summary>The sampling values and extra body fields that will actually be sent for one request.</summary>
+/// <summary>
+/// The sampling values and extra body fields that will actually be sent for one request.
+/// </summary>
+/// <param name="Sampling">The effective sampling values.</param>
+/// <param name="BodyFields">Fields to merge into the request body: non-standard sampling fields and the thinking value.</param>
 public sealed record ResolvedRequestParams(SamplingParams Sampling, JsonObject BodyFields)
 {
     /// <summary>
-    /// Effective params = model defaults, then the active thinking level's overrides, then the per-session override.
-    /// Non-standard sampling fields and the thinking value end up in <see cref="BodyFields"/>.
+    /// Work out the effective parameters for a request.
     /// </summary>
+    /// <remarks>
+    /// Effective params are the model defaults, then the active thinking level's overrides, then the per-session override.
+    /// Non-standard sampling fields and the thinking value end up in <see cref="BodyFields"/>.
+    /// </remarks>
+    /// <param name="provider">The provider, which supplies the default thinking wire format.</param>
+    /// <param name="model">The model, which supplies defaults, levels and an optional thinking wire format.</param>
+    /// <param name="level">The selected thinking level, or null for none. A level the model does not list sends nothing.</param>
+    /// <param name="sessionOverride">Sampling values the user set for this session.</param>
+    /// <returns>The resolved parameters.</returns>
     public static ResolvedRequestParams Resolve(
         ProviderConfig provider,
         ModelConfig model,

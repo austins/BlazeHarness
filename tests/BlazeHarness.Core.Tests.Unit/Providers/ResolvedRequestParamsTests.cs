@@ -1,6 +1,6 @@
 using BlazeHarness.Core.Providers;
 
-namespace BlazeHarness.Core.Tests.Unit;
+namespace BlazeHarness.Core.Tests.Unit.Providers;
 
 public sealed class ResolvedRequestParamsTests
 {

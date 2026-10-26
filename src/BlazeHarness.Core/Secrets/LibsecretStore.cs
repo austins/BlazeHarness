@@ -1,19 +1,27 @@
 namespace BlazeHarness.Core.Secrets;
 
-/// <summary>Linux: the freedesktop Secret Service (GNOME Keyring, KWallet) through the <c>secret-tool</c> CLI.</summary>
+/// <summary>
+/// Linux: the freedesktop Secret Service (GNOME Keyring, KWallet) through the <c>secret-tool</c> CLI.
+/// </summary>
+/// <remarks>
+/// Values are passed to <c>secret-tool</c> over stdin so they never appear in the process list.
+/// </remarks>
+/// <param name="serviceName">The service attribute the secrets are filed under. Tests use a throwaway name.</param>
 public sealed class LibsecretStore(string serviceName = "blazeharness") : ISecretStore
 {
     private const string Tool = "secret-tool";
 
-    public void Dispose()
-    {
-    }
-
+    /// <inheritdoc />
     public string Name => "Secret Service (libsecret)";
 
+    /// <inheritdoc />
     public bool IsSecure => true;
 
-    /// <summary>True when <c>secret-tool</c> exists and a Secret Service answers on the session bus.</summary>
+    /// <summary>
+    /// Check whether <c>secret-tool</c> exists and a Secret Service answers on the session bus.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the probe.</param>
+    /// <returns>True when the store can be used; always false on other operating systems.</returns>
     public static async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
     {
         if (!OperatingSystem.IsLinux())
@@ -37,12 +45,19 @@ public sealed class LibsecretStore(string serviceName = "blazeharness") : ISecre
         }
     }
 
+    /// <inheritdoc />
+    public void Dispose()
+    {
+    }
+
+    /// <inheritdoc />
     public async Task<string?> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         var result = await ProcessRunner.RunAsync(Tool, ["lookup", "service", serviceName, "account", key], null, cancellationToken);
         return result.ExitCode == 0 && result.StdOut.Length > 0 ? result.StdOut : null;
     }
 
+    /// <inheritdoc />
     public async Task SetAsync(string key, string value, CancellationToken cancellationToken = default)
     {
         var result = await ProcessRunner.RunAsync(
@@ -56,6 +71,7 @@ public sealed class LibsecretStore(string serviceName = "blazeharness") : ISecre
         }
     }
 
+    /// <inheritdoc />
     public Task DeleteAsync(string key, CancellationToken cancellationToken = default)
     {
         return ProcessRunner.RunAsync(Tool, ["clear", "service", serviceName, "account", key], null, cancellationToken);

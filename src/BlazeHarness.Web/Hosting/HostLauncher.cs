@@ -5,13 +5,26 @@ using System.Net;
 
 namespace BlazeHarness.Web.Hosting;
 
-/// <summary>Starts the server on a free loopback port and opens the browser with the one-time launch URL.</summary>
+/// <summary>
+/// Starts the server on a free loopback port and opens the browser with the one-time launch URL.
+/// </summary>
 public static class HostLauncher
 {
+    /// <summary>
+    /// The environment variable that pins the listening port.
+    /// </summary>
     public const string PortEnvironmentVariable = "BLAZEHARNESS_PORT";
 
+    /// <summary>
+    /// The environment variable that, when set to any value, stops the browser from opening automatically.
+    /// </summary>
     public const string NoBrowserEnvironmentVariable = "BLAZEHARNESS_NO_BROWSER";
 
+    /// <summary>
+    /// Get the port the user asked for.
+    /// </summary>
+    /// <param name="args">The command line arguments; <c>--port N</c> wins over the environment variable.</param>
+    /// <returns>The requested port, or 0 to let the OS pick a free one when none or an invalid one was given.</returns>
     public static int ConfiguredPort(string[] args)
     {
         var fromEnvironment = Environment.GetEnvironmentVariable(PortEnvironmentVariable);
@@ -20,11 +33,22 @@ public static class HostLauncher
         return int.TryParse(text, out var port) && port is >= 0 and <= 65535 ? port : 0;
     }
 
+    /// <summary>
+    /// Decide whether to open the browser after startup.
+    /// </summary>
+    /// <param name="args">The command line arguments; <c>--no-browser</c> turns it off.</param>
+    /// <returns>False when <c>--no-browser</c> or <see cref="NoBrowserEnvironmentVariable"/> is set.</returns>
     public static bool ShouldOpenBrowser(string[] args)
     {
         return !args.Contains("--no-browser") && string.IsNullOrEmpty(Environment.GetEnvironmentVariable(NoBrowserEnvironmentVariable));
     }
 
+    /// <summary>
+    /// Start the app, print the one-time launch link, optionally open the browser, and wait for shutdown.
+    /// </summary>
+    /// <param name="app">The built application.</param>
+    /// <param name="args">The command line arguments.</param>
+    /// <returns>A task that completes when the app shuts down.</returns>
     public static async Task RunAsync(WebApplication app, string[] args)
     {
         await app.StartAsync();
@@ -45,6 +69,11 @@ public static class HostLauncher
         await app.WaitForShutdownAsync();
     }
 
+    /// <summary>
+    /// Make Kestrel listen on the loopback interface only.
+    /// </summary>
+    /// <param name="builder">The application builder.</param>
+    /// <param name="port">The port to listen on, or 0 for a free one.</param>
     public static void ConfigureKestrel(WebApplicationBuilder builder, int port)
     {
         builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, port));

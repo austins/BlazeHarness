@@ -5,10 +5,20 @@ namespace BlazeHarness.Web.Hosting;
 /// loopback <c>Host</c>, a same-origin <c>Origin</c> when one is sent, and the session cookie. The Host check
 /// stops DNS rebinding, the Origin check stops other web pages, and the cookie stops other local users.
 /// </summary>
+/// <param name="next">The next step in the request pipeline.</param>
+/// <param name="credentials">The per-launch secrets that decide who may connect.</param>
 public sealed class LocalAccessMiddleware(RequestDelegate next, LaunchCredentials credentials)
 {
+    /// <summary>
+    /// The path that trades the launch token for a session cookie.
+    /// </summary>
     public const string LaunchPath = "/launch";
 
+    /// <summary>
+    /// Allow or reject a request.
+    /// </summary>
+    /// <param name="context">The current request.</param>
+    /// <returns>A task that completes when the request was rejected, redirected, or passed on.</returns>
     public async Task InvokeAsync(HttpContext context)
     {
         var port = context.Connection.LocalPort;

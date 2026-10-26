@@ -21,6 +21,15 @@ public sealed partial class JsonFileStore<T> : IDisposable
     private T _current;
     private string? _lastWrittenJson;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonFileStore{T}"/> class and loads the file.
+    /// </summary>
+    /// <remarks>
+    /// A missing or invalid file yields a default <typeparamref name="T"/>; the invalid file is left untouched until the next update.
+    /// </remarks>
+    /// <param name="path">The full path of the JSON file.</param>
+    /// <param name="logger">The logger for read failures.</param>
+    /// <param name="watch">Whether to watch the file and raise <see cref="ExternalChange"/> on outside edits.</param>
     public JsonFileStore(string path, ILogger logger, bool watch = true)
     {
         _path = path;
@@ -43,11 +52,28 @@ public sealed partial class JsonFileStore<T> : IDisposable
         }
     }
 
-    /// <summary>Raised after an external edit (not our own writes) changed the value.</summary>
+    /// <summary>
+    /// Raised after an external edit (not our own writes) changed the value.
+    /// </summary>
+    /// <remarks>
+    /// It is raised on a thread-pool thread; UI code must marshal to its own context.
+    /// </remarks>
     public event EventHandler<ValueEventArgs<T>>? ExternalChange;
 
+    /// <summary>
+    /// Gets the latest value. Treat it as immutable and change it through <see cref="UpdateAsync"/>.
+    /// </summary>
     public T Current => Volatile.Read(ref _current);
 
+    /// <summary>
+    /// Apply a change and write it to disk atomically.
+    /// </summary>
+    /// <remarks>
+    /// Updates are serialized, so concurrent callers each see the result of the previous one.
+    /// </remarks>
+    /// <param name="mutate">Returns the new value from the current one. It should not mutate its argument.</param>
+    /// <param name="cancellationToken">A token to cancel the wait for the lock or the write.</param>
+    /// <returns>A task that completes once the new value is on disk and visible through <see cref="Current"/>.</returns>
     public async Task UpdateAsync(Func<T, T> mutate, CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken);
@@ -70,6 +96,7 @@ public sealed partial class JsonFileStore<T> : IDisposable
         }
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         _watcher?.Dispose();
@@ -149,7 +176,15 @@ public sealed partial class JsonFileStore<T> : IDisposable
     private partial void LogInvalidExternalEdit(Exception ex, string file);
 }
 
+/// <summary>
+/// Event data carrying a value.
+/// </summary>
+/// <typeparam name="T">The value type.</typeparam>
+/// <param name="value">The value.</param>
 public sealed class ValueEventArgs<T>(T value) : EventArgs
 {
+    /// <summary>
+    /// Gets the value.
+    /// </summary>
     public T Value { get; } = value;
 }

@@ -1,23 +1,37 @@
 namespace BlazeHarness.Core.Secrets;
 
-/// <summary>macOS Keychain through the <c>security</c> CLI. Commands go over stdin (<c>security -i</c>), not arguments.</summary>
+/// <summary>
+/// macOS Keychain through the <c>security</c> CLI.
+/// </summary>
+/// <remarks>
+/// Commands go over stdin (<c>security -i</c>), not arguments, so values never appear in the process list.
+/// </remarks>
+/// <param name="serviceName">The service name the secrets are filed under.</param>
 public sealed class MacKeychainStore(string serviceName = "blazeharness") : ISecretStore
 {
     private const string Tool = "/usr/bin/security";
 
-    public void Dispose()
-    {
-    }
-
+    /// <inheritdoc />
     public string Name => "macOS Keychain";
 
+    /// <inheritdoc />
     public bool IsSecure => true;
 
+    /// <summary>
+    /// Check whether the Keychain CLI is present.
+    /// </summary>
+    /// <returns>True on macOS when <c>/usr/bin/security</c> exists.</returns>
     public static bool IsAvailable()
     {
         return OperatingSystem.IsMacOS() && File.Exists(Tool);
     }
 
+    /// <inheritdoc />
+    public void Dispose()
+    {
+    }
+
+    /// <inheritdoc />
     public async Task<string?> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         var result = await ProcessRunner.RunAsync(
@@ -28,6 +42,7 @@ public sealed class MacKeychainStore(string serviceName = "blazeharness") : ISec
         return result.ExitCode == 0 ? result.StdOut.TrimEnd('\n') : null;
     }
 
+    /// <inheritdoc />
     public async Task SetAsync(string key, string value, CancellationToken cancellationToken = default)
     {
         var command = $"add-generic-password -U -s {Quote(serviceName)} -a {Quote(key)} -w {Quote(value)}\n";
@@ -38,6 +53,7 @@ public sealed class MacKeychainStore(string serviceName = "blazeharness") : ISec
         }
     }
 
+    /// <inheritdoc />
     public Task DeleteAsync(string key, CancellationToken cancellationToken = default)
     {
         return ProcessRunner.RunAsync(

@@ -1,6 +1,6 @@
 using BlazeHarness.Core.Agent;
 
-namespace BlazeHarness.Core.Tests.Unit;
+namespace BlazeHarness.Core.Tests.Unit.Agent;
 
 public sealed class SystemPromptTests
 {

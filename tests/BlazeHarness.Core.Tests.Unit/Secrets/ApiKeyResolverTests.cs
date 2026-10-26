@@ -1,7 +1,7 @@
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Secrets;
 
-namespace BlazeHarness.Core.Tests.Unit;
+namespace BlazeHarness.Core.Tests.Unit.Secrets;
 
 public sealed class ApiKeyResolverTests
 {

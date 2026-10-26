@@ -2,7 +2,7 @@ using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Providers;
 using System.Text.Json;
 
-namespace BlazeHarness.Core.Tests.Unit;
+namespace BlazeHarness.Core.Tests.Unit.Providers;
 
 public sealed class AppConfigSerializationTests
 {

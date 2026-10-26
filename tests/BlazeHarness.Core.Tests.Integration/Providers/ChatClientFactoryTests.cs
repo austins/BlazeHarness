@@ -3,7 +3,7 @@ using Microsoft.Extensions.AI;
 using System.Net;
 using System.Text.Json;
 
-namespace BlazeHarness.Core.Tests.Integration;
+namespace BlazeHarness.Core.Tests.Integration.Providers;
 
 public sealed class ChatClientFactoryTests
 {

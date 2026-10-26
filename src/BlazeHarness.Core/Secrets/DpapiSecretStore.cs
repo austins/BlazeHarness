@@ -6,21 +6,28 @@ using System.Text.Json;
 
 namespace BlazeHarness.Core.Secrets;
 
-/// <summary>Windows: values encrypted with DPAPI for the current user and kept in a file.</summary>
+/// <summary>
+/// Windows: values encrypted with DPAPI for the current user and kept in a file.
+/// </summary>
+/// <param name="path">The full path of the file holding the encrypted values.</param>
 [SupportedOSPlatform("windows")]
 public sealed class DpapiSecretStore(string path) : ISecretStore
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
 
+    /// <inheritdoc />
+    public string Name => "Windows DPAPI";
+
+    /// <inheritdoc />
+    public bool IsSecure => true;
+
+    /// <inheritdoc />
     public void Dispose()
     {
         _lock.Dispose();
     }
 
-    public string Name => "Windows DPAPI";
-
-    public bool IsSecure => true;
-
+    /// <inheritdoc />
     public async Task<string?> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken);
@@ -41,6 +48,7 @@ public sealed class DpapiSecretStore(string path) : ISecretStore
         }
     }
 
+    /// <inheritdoc />
     public async Task SetAsync(string key, string value, CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken);
@@ -57,6 +65,7 @@ public sealed class DpapiSecretStore(string path) : ISecretStore
         }
     }
 
+    /// <inheritdoc />
     public async Task DeleteAsync(string key, CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken);

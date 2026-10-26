@@ -7,21 +7,28 @@ namespace BlazeHarness.Core.Secrets;
 
 /// <summary>
 /// Plaintext JSON file readable only by the current user (mode 0600, or an owner-only ACL on Windows).
-/// A fallback for machines without a keyring; the UI flags it as insecure.
 /// </summary>
+/// <remarks>
+/// A fallback for machines without a keyring; the UI flags it as insecure.
+/// </remarks>
+/// <param name="path">The full path of the secrets file.</param>
 public sealed class FileSecretStore(string path) : ISecretStore
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
 
+    /// <inheritdoc />
+    public string Name => "Plaintext file (owner-only)";
+
+    /// <inheritdoc />
+    public bool IsSecure => false;
+
+    /// <inheritdoc />
     public void Dispose()
     {
         _lock.Dispose();
     }
 
-    public string Name => "Plaintext file (owner-only)";
-
-    public bool IsSecure => false;
-
+    /// <inheritdoc />
     public async Task<string?> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken);
@@ -36,6 +43,7 @@ public sealed class FileSecretStore(string path) : ISecretStore
         }
     }
 
+    /// <inheritdoc />
     public async Task SetAsync(string key, string value, CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken);
@@ -51,6 +59,7 @@ public sealed class FileSecretStore(string path) : ISecretStore
         }
     }
 
+    /// <inheritdoc />
     public async Task DeleteAsync(string key, CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken);

@@ -7,12 +7,24 @@ using System.Text;
 
 namespace BlazeHarness.Core.Providers;
 
-/// <summary>Builds <see cref="IChatClient"/> instances and per-request <see cref="ChatOptions"/> for an OpenAI-compatible endpoint.</summary>
+/// <summary>
+/// Builds <see cref="IChatClient"/> instances and per-request <see cref="ChatOptions"/> for an OpenAI-compatible endpoint.
+/// </summary>
 public static class ChatClientFactory
 {
     private const int MaxRetries = 4;
 
-    /// <summary>Creates a client. <c>apiKey</c> may be null for keyless local servers; the caller owns <c>httpClient</c>.</summary>
+    /// <summary>
+    /// Create a streaming chat client for a provider.
+    /// </summary>
+    /// <remarks>
+    /// Transient failures (429, 5xx, network errors) are retried with backoff. The provider's extra headers are added to every request.
+    /// </remarks>
+    /// <param name="provider">The provider to talk to.</param>
+    /// <param name="modelId">The model identifier to request.</param>
+    /// <param name="apiKey">The API key, or null for keyless local servers.</param>
+    /// <param name="httpClient">The HTTP client used for transport. The caller owns it and must keep it alive as long as the client.</param>
+    /// <returns>A client that streams chat completions from the provider.</returns>
     public static IChatClient Create(ProviderConfig provider, string modelId, string? apiKey, HttpClient httpClient)
     {
         var options = new OpenAIClientOptions
@@ -31,6 +43,18 @@ public static class ChatClientFactory
         return new ChatClient(modelId, credential, options).AsIChatClient();
     }
 
+    /// <summary>
+    /// Build the options for one request.
+    /// </summary>
+    /// <remarks>
+    /// Values every server understands go on <see cref="ChatOptions"/>; everything else (non-standard sampling fields,
+    /// the thinking value, <c>max_tokens</c>, and removing <c>stream_options</c>) is patched into the raw request body.
+    /// </remarks>
+    /// <param name="provider">The provider, which decides the wire format.</param>
+    /// <param name="model">The model, which supplies defaults and limits.</param>
+    /// <param name="level">The selected thinking level, or null to send no thinking setting.</param>
+    /// <param name="sessionOverride">Sampling values the user set for this session, which win over the model's.</param>
+    /// <returns>The options to pass to the chat client.</returns>
     public static ChatOptions BuildOptions(
         ProviderConfig provider,
         ModelConfig model,

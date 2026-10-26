@@ -2,9 +2,21 @@ using BlazeHarness.Core.Providers;
 
 namespace BlazeHarness.Core.Secrets;
 
+/// <summary>
+/// Chooses the secret store backend for the current OS.
+/// </summary>
 public static class SecretStoreFactory
 {
-    /// <summary>The OS secret store when one works here, otherwise the owner-only file fallback.</summary>
+    /// <summary>
+    /// Create the best secret store available on this machine.
+    /// </summary>
+    /// <remarks>
+    /// Windows uses DPAPI, macOS the Keychain, and Linux the Secret Service (libsecret) when it responds.
+    /// Otherwise it falls back to an owner-only file, which reports <see cref="ISecretStore.IsSecure"/> as false.
+    /// </remarks>
+    /// <param name="paths">The app paths, for the file-backed stores.</param>
+    /// <param name="cancellationToken">A token to cancel probing for the OS store.</param>
+    /// <returns>The store. The caller owns it and must dispose it.</returns>
     public static async Task<ISecretStore> CreateAsync(AppPaths paths, CancellationToken cancellationToken = default)
     {
         if (OperatingSystem.IsWindows())
@@ -25,6 +37,11 @@ public static class SecretStoreFactory
         return new FileSecretStore(paths.SecretsFile);
     }
 
+    /// <summary>
+    /// Get the secret store key that holds a provider's API key.
+    /// </summary>
+    /// <param name="provider">The provider.</param>
+    /// <returns>The key name, derived from the provider id.</returns>
     public static string KeyFor(ProviderConfig provider)
     {
         return "provider:" + provider.Id;
