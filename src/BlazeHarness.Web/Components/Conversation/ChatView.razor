@@ -2,6 +2,7 @@
 @inject ProviderService Providers
 @inject SessionService Sessions
 @inject NavigationManager Navigation
+@inject TimeProvider Time
 @inject IJSRuntime JS
 
 @if (_missing)
@@ -78,7 +79,7 @@ else
     /// </summary>
     public ChatView()
     {
-        _throttle = new RenderThrottle(() => InvokeAsync(Refresh), TimeSpan.FromMilliseconds(50));
+        _throttle = new RenderThrottle(() => InvokeAsync(Refresh), TimeSpan.FromMilliseconds(50), Time);
     }
 
     protected override async Task OnParametersSetAsync()

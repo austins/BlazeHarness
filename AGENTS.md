@@ -24,7 +24,8 @@
 ## Conventions
 
 - Log IDs and counts only, never message or file contents.
-- Namespaces under `BlazeHarness.Core`: `Agent`, `Providers`, `Tools`, `Sessions`, `Compaction`, `Sandbox`, `Mcp`, `Skills`.
+- Anything that reads the time takes a `TimeProvider` (registered once in `Program.cs`, never `DateTime.Now` or `TimeProvider.System` inline), so tests can use `FakeTimeProvider`.
+- Namespaces under `BlazeHarness.Core`: `Agent`, `Providers`, `Folders`, `Tools`, `Sessions`, `Compaction`, `Sandbox`, `Mcp`, `Skills`.
 - Every public type and member needs XML docs (CS1591 is an error in `src/`): a `<summary>`, plus `<remarks>`, `<param>`,
   `<returns>` and `<exception>` where they add something. Use `<inheritdoc />` on interface implementations, and `<param>`
   on the type for positional records. Properties start with "Gets" or "Gets or sets". Method summaries use the imperative.
