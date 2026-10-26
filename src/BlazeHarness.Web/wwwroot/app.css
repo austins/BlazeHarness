@@ -154,6 +154,37 @@ code, pre, kbd { font-family: var(--font-mono); font-size: 0.9em; }
 .chat-item > .input { width: 100%; }
 .chat-link:hover { background: var(--bg-hover); }
 .chat-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.sidebar-heading-action { margin-inline-start: auto; }
+.folder-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.folder-head { display: flex; align-items: center; gap: var(--space-1); }
+.folder-toggle {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-2); border: 0; border-radius: var(--radius-sm); background: none;
+    color: var(--fg); font: inherit; font-size: var(--text-sm); font-weight: 600; text-align: start; cursor: pointer;
+}
+.folder-toggle:hover { background: var(--bg-hover); }
+.folder-toggle .icon { width: 0.9rem; height: 0.9rem; flex: none; }
+.folder-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-warning { display: inline-flex; color: var(--danger, #c0392b); }
+.folder-chats { padding-inline-start: var(--space-3); }
+.chat-context {
+    display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4);
+    border-bottom: 1px solid var(--border); font-size: var(--text-sm); color: var(--fg-muted); min-width: 0;
+}
+.chat-context .icon { width: 1rem; height: 1rem; flex: none; }
+.chat-context-name { font-weight: 600; color: var(--fg); white-space: nowrap; }
+.chat-context-path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: start; font-size: var(--text-xs); }
+.chat-context-warning { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--danger, #c0392b); white-space: nowrap; }
+.folder-path-row .input { flex: 1; }
+.folder-browser { display: flex; flex-direction: column; gap: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--space-2); }
+.folder-browser-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.folder-entries { list-style: none; margin: 0; padding: 0; max-height: 16rem; overflow-y: auto; display: flex; flex-direction: column; }
+.folder-entry {
+    display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-1) var(--space-2);
+    border: 0; border-radius: var(--radius-sm); background: none; color: var(--fg); font: inherit; font-size: var(--text-sm); text-align: start; cursor: pointer;
+}
+.folder-entry:hover { background: var(--bg-hover); }
+.folder-entry .icon { width: 1rem; height: 1rem; flex: none; }
 
 .workspace { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .topbar {

@@ -2,65 +2,98 @@
 @inject IJSRuntime JS
 @inject SessionService Sessions
 @inject NavigationManager Navigation
-@inject ToastService Toasts
+@inject FolderRegistry Folders
 
 <nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="Main">
     <div class="sidebar-brand"><span class="logo" aria-hidden="true">🔥</span> BlazeHarness</div>
 
     <NavLink class="btn btn-primary" href="" Match="NavLinkMatch.All"><Icon Name="plus" /> New chat</NavLink>
 
+    @{
+        var all = Sessions.Store.List(Filter);
+        var folders = Folders.List();
+        var chats = all.Where(s => !folders.Any(f => IsIn(s, f))).ToList();
+        var filtering = !string.IsNullOrWhiteSpace(Filter);
+    }
+
+    @if (Sessions.Store.List().Count > 0)
+    {
+        <input type="search" class="input input-sm sidebar-search" placeholder="Search chats"
+               aria-label="Search chat titles" @bind="Filter" @bind:event="oninput" />
+    }
+
     <section class="sidebar-section" aria-labelledby="chats-heading">
         <div class="sidebar-heading"><Icon Name="chat" /><span id="chats-heading">Chats</span></div>
-        @if (Sessions.Store.List().Count > 0)
-        {
-            <input type="search" class="input input-sm sidebar-search" placeholder="Search chats"
-                   aria-label="Search chat titles" @bind="Filter" @bind:event="oninput" />
-        }
-
-        @{
-            var chats = Sessions.Store.List(Filter);
-        }
         @if (chats.Count == 0)
         {
-            <p class="sidebar-empty">@(string.IsNullOrWhiteSpace(Filter) ? "No chats yet." : "No chats match.")</p>
+            <p class="sidebar-empty">@(filtering ? "No chats match." : "No chats yet.")</p>
         }
         else
         {
-            <ul class="chat-list">
-                @foreach (var chat in chats)
+            <ChatList Chats="chats" />
+        }
+    </section>
+
+    <section class="sidebar-section" aria-labelledby="folders-heading">
+        <div class="sidebar-heading">
+            <Icon Name="folder" /><span id="folders-heading">Folders</span>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon sidebar-heading-action" title="Open folder"
+                    aria-label="Open folder" @onclick="() => _picking = true"><Icon Name="plus" /></button>
+        </div>
+        @if (folders.Count == 0)
+        {
+            <p class="sidebar-empty">Open a project folder to start chats in it.</p>
+        }
+        else
+        {
+            <ul class="folder-list">
+                @foreach (var folder in folders)
                 {
-                    <li @key="chat.Id" class="chat-item">
-                        @if (_renaming == chat.Id)
-                        {
-                            <input class="input input-sm" @ref="_renameInput" aria-label="Chat name" maxlength="200"
-                                   @bind="_renameText" @bind:event="oninput"
-                                   @onkeydown="OnRenameKey" @onblur="CommitRenameAsync" />
-                        }
-                        else
-                        {
-                            <NavLink class="chat-link" href="@("chat/" + chat.Id)">
-                                <span class="chat-title">@(string.IsNullOrWhiteSpace(chat.Title) ? "Untitled chat" : chat.Title)</span>
-                                @if (Sessions.IsRunning(chat.Id))
+                    var folderChats = all.Where(s => IsIn(s, folder)).ToList();
+                    if (filtering && folderChats.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    var available = FolderRegistry.IsAvailable(folder);
+                    var expanded = filtering || !_collapsed.Contains(folder.Path);
+                    <li @key="folder.Path" class="folder-item">
+                        <div class="folder-head">
+                            <button type="button" class="folder-toggle" aria-expanded="@expanded.ToString().ToLowerInvariant()"
+                                    title="@folder.Path" @onclick="() => ToggleFolder(folder)">
+                                <Icon Name="@(expanded ? "chevron-down" : "chevron-right")" />
+                                <span class="folder-name">@folder.Name</span>
+                                @if (!available)
                                 {
-                                    <span class="chat-busy" role="status" title="Replying" aria-label="Replying"><Icon Name="spinner" Spin="true" /></span>
+                                    <span class="folder-warning" title="Folder not found" role="img" aria-label="Folder not found"><Icon Name="alert" /></span>
                                 }
-                            </NavLink>
-                            <div class="chat-actions">
-                                <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@("Rename " + DisplayTitle(chat))"
-                                        title="Rename" @onclick="() => StartRename(chat)"><Icon Name="pencil" /></button>
-                                <button type="button" class="btn btn-ghost btn-sm btn-icon btn-danger" aria-label="@("Delete " + DisplayTitle(chat))"
-                                        title="Delete" @onclick="() => _deleting = chat"><Icon Name="trash" /></button>
-                            </div>
+                            </button>
+                            @if (available)
+                            {
+                                <a class="btn btn-ghost btn-sm btn-icon" href="@NewChatHref(folder)" title="New chat in this folder"
+                                   aria-label="@("New chat in " + folder.Name)"><Icon Name="plus" /></a>
+                            }
+                        </div>
+                        @if (!available)
+                        {
+                            <p class="sidebar-empty">This folder can't be found. It may have been moved or deleted.</p>
+                        }
+
+                        @if (expanded)
+                        {
+                            if (folderChats.Count > 0)
+                            {
+                                <div class="folder-chats"><ChatList Chats="folderChats" /></div>
+                            }
+                            else if (available)
+                            {
+                                <p class="sidebar-empty folder-chats">No chats yet.</p>
+                            }
                         }
                     </li>
                 }
             </ul>
         }
-    </section>
-
-    <section class="sidebar-section" aria-labelledby="folders-heading">
-        <div class="sidebar-heading"><Icon Name="folder" /><span id="folders-heading">Folders</span></div>
-        <p class="sidebar-empty">Opened folders and their sessions will appear here.</p>
     </section>
 
     <div class="sidebar-spacer"></div>
@@ -75,23 +108,12 @@
     </div>
 </nav>
 
-<Dialog Title="Delete this chat?" Open="_deleting is not null" OnClose="() => _deleting = null">
-    <ChildContent>
-        <p>This can't be undone. <strong>@(_deleting is null ? string.Empty : DisplayTitle(_deleting))</strong> and everything stored for it is removed. Files in your project folder are not touched.</p>
-    </ChildContent>
-    <Footer>
-        <button type="button" class="btn" @onclick="() => _deleting = null">Keep</button>
-        <button type="button" class="btn btn-primary" @onclick="DeleteAsync">Delete</button>
-    </Footer>
-</Dialog>
+<OpenFolderDialog Open="_picking" OnClose="() => _picking = false" OnOpened="OnFolderOpened" />
 
 @code {
+    private readonly HashSet<string> _collapsed = new(FolderPaths.Comparer);
     private bool _dark;
-    private string? _renaming;
-    private string _renameText = string.Empty;
-    private bool _focusRename;
-    private SessionInfo? _deleting;
-    private ElementReference _renameInput;
+    private bool _picking;
 
     private string Filter { get; set; } = string.Empty;
 
@@ -102,12 +124,14 @@
     {
         Sessions.Store.Changed += OnSessionsChanged;
         Sessions.ActivityChanged += OnSessionsChanged;
+        Folders.Changed += OnSessionsChanged;
     }
 
     public void Dispose()
     {
         Sessions.Store.Changed -= OnSessionsChanged;
         Sessions.ActivityChanged -= OnSessionsChanged;
+        Folders.Changed -= OnSessionsChanged;
     }
 
     private void OnSessionsChanged(object? sender, EventArgs e)
@@ -117,12 +141,6 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_focusRename)
-        {
-            _focusRename = false;
-            await JS.InvokeVoidAsync("bhUi.focusSelect", _renameInput);
-        }
-
         if (firstRender)
         {
             _dark = await JS.InvokeAsync<bool>("bhTheme.isDark");
@@ -130,87 +148,34 @@
         }
     }
 
+    private static bool IsIn(SessionInfo session, FolderInfo folder)
+    {
+        return session.FolderPath is { } path && FolderPaths.Comparer.Equals(path, folder.Path);
+    }
+
+    private static string NewChatHref(FolderInfo folder)
+    {
+        return "?folder=" + Uri.EscapeDataString(folder.Path);
+    }
+
+    private void ToggleFolder(FolderInfo folder)
+    {
+        if (!_collapsed.Remove(folder.Path))
+        {
+            _collapsed.Add(folder.Path);
+        }
+    }
+
+    private void OnFolderOpened(FolderInfo folder)
+    {
+        _picking = false;
+        _collapsed.Remove(folder.Path);
+        Navigation.NavigateTo(NewChatHref(folder));
+    }
+
     private async Task ToggleThemeAsync()
     {
         _dark = !_dark;
         await JS.InvokeVoidAsync("bhTheme.set", _dark ? "dark" : "light");
-    }
-
-    private static string DisplayTitle(SessionInfo chat)
-    {
-        return string.IsNullOrWhiteSpace(chat.Title) ? "Untitled chat" : chat.Title;
-    }
-
-    private void StartRename(SessionInfo chat)
-    {
-        _renaming = chat.Id;
-        _renameText = chat.Title;
-        _focusRename = true;
-    }
-
-    private async Task OnRenameKey(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await CommitRenameAsync();
-        }
-        else if (e.Key == "Escape")
-        {
-            _renaming = null;
-        }
-    }
-
-    private async Task CommitRenameAsync()
-    {
-        var id = _renaming;
-        if (id is null)
-        {
-            return;
-        }
-
-        _renaming = null;
-        var title = _renameText.Trim();
-        if (title.Length == 0 || title == Sessions.Store.Find(id)?.Title)
-        {
-            return;
-        }
-
-        try
-        {
-            await Sessions.Store.RenameAsync(id, title);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            Toasts.Show("The chat could not be renamed because its file could not be written.", ToastKind.Error);
-        }
-    }
-
-    private async Task DeleteAsync()
-    {
-        var chat = _deleting;
-        _deleting = null;
-        if (chat is null)
-        {
-            return;
-        }
-
-        try
-        {
-            if (!await Sessions.DeleteAsync(chat.Id))
-            {
-                Toasts.Show("This chat is still replying. Stop it first, then delete it.", ToastKind.Error);
-                return;
-            }
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            Toasts.Show("The chat could not be deleted because its files could not be removed.", ToastKind.Error);
-            return;
-        }
-
-        if (Navigation.ToBaseRelativePath(Navigation.Uri).Equals("chat/" + chat.Id, StringComparison.Ordinal))
-        {
-            Navigation.NavigateTo(string.Empty);
-        }
     }
 }

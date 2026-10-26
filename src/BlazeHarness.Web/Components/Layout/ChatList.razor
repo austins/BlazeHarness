@@ -1,0 +1,145 @@
+@inject IJSRuntime JS
+@inject SessionService Sessions
+@inject NavigationManager Navigation
+@inject ToastService Toasts
+
+<ul class="chat-list">
+    @foreach (var chat in Chats)
+    {
+        <li @key="chat.Id" class="chat-item">
+            @if (_renaming == chat.Id)
+            {
+                <input class="input input-sm" @ref="_renameInput" aria-label="Chat name" maxlength="200"
+                       @bind="_renameText" @bind:event="oninput"
+                       @onkeydown="OnRenameKey" @onblur="CommitRenameAsync" />
+            }
+            else
+            {
+                <NavLink class="chat-link" href="@("chat/" + chat.Id)">
+                    <span class="chat-title">@DisplayTitle(chat)</span>
+                    @if (Sessions.IsRunning(chat.Id))
+                    {
+                        <span class="chat-busy" role="status" title="Replying" aria-label="Replying"><Icon Name="spinner" Spin="true" /></span>
+                    }
+                </NavLink>
+                <div class="chat-actions">
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@("Rename " + DisplayTitle(chat))"
+                            title="Rename" @onclick="() => StartRename(chat)"><Icon Name="pencil" /></button>
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon btn-danger" aria-label="@("Delete " + DisplayTitle(chat))"
+                            title="Delete" @onclick="() => _deleting = chat"><Icon Name="trash" /></button>
+                </div>
+            }
+        </li>
+    }
+</ul>
+
+<Dialog Title="Delete this chat?" Open="_deleting is not null" OnClose="() => _deleting = null">
+    <ChildContent>
+        <p>This can't be undone. <strong>@(_deleting is null ? string.Empty : DisplayTitle(_deleting))</strong> and everything stored for it is removed. Files in your project folder are not touched.</p>
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn" @onclick="() => _deleting = null">Keep</button>
+        <button type="button" class="btn btn-primary" @onclick="DeleteAsync">Delete</button>
+    </Footer>
+</Dialog>
+
+@code {
+    private string? _renaming;
+    private string _renameText = string.Empty;
+    private bool _focusRename;
+    private SessionInfo? _deleting;
+    private ElementReference _renameInput;
+
+    /// <summary>
+    /// Gets or sets the chats to list, in display order.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<SessionInfo> Chats { get; set; } = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusRename)
+        {
+            _focusRename = false;
+            await JS.InvokeVoidAsync("bhUi.focusSelect", _renameInput);
+        }
+    }
+
+    private static string DisplayTitle(SessionInfo chat)
+    {
+        return string.IsNullOrWhiteSpace(chat.Title) ? "Untitled chat" : chat.Title;
+    }
+
+    private void StartRename(SessionInfo chat)
+    {
+        _renaming = chat.Id;
+        _renameText = chat.Title;
+        _focusRename = true;
+    }
+
+    private async Task OnRenameKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await CommitRenameAsync();
+        }
+        else if (e.Key == "Escape")
+        {
+            _renaming = null;
+        }
+    }
+
+    private async Task CommitRenameAsync()
+    {
+        var id = _renaming;
+        if (id is null)
+        {
+            return;
+        }
+
+        _renaming = null;
+        var title = _renameText.Trim();
+        if (title.Length == 0 || title == Sessions.Store.Find(id)?.Title)
+        {
+            return;
+        }
+
+        try
+        {
+            await Sessions.Store.RenameAsync(id, title);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Toasts.Show("The chat could not be renamed because its file could not be written.", ToastKind.Error);
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        var chat = _deleting;
+        _deleting = null;
+        if (chat is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!await Sessions.DeleteAsync(chat.Id))
+            {
+                Toasts.Show("This chat is still replying. Stop it first, then delete it.", ToastKind.Error);
+                return;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Toasts.Show("The chat could not be deleted because its files could not be removed.", ToastKind.Error);
+            return;
+        }
+
+        if (Navigation.ToBaseRelativePath(Navigation.Uri).Equals("chat/" + chat.Id, StringComparison.Ordinal))
+        {
+            Navigation.NavigateTo(string.Empty);
+        }
+    }
+}

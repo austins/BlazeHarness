@@ -1,0 +1,177 @@
+@using BlazeHarness.Core
+@inject FolderRegistry Folders
+@inject AppPaths Paths
+
+<Dialog Title="Open a folder" Open="Open" OnClose="CloseAsync" Wide="true">
+    <ChildContent>
+        <p class="hint">Choose a project folder on this computer. Chats you start in it use it as their working folder.</p>
+        <div class="field">
+            <label for="folder-path">Folder path</label>
+            <div class="row folder-path-row">
+                <input id="folder-path" class="input mono" @bind="_path" @bind:event="oninput" @onkeydown="OnPathKey"
+                       spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Type or paste a path, such as ~/code/my-app" />
+                <button type="button" class="btn" @onclick="GoAsync">Go</button>
+            </div>
+        </div>
+
+        @if (_error is not null)
+        {
+            <div class="alert alert-error" role="alert">@_error</div>
+        }
+
+        <div class="row" role="group" aria-label="Places">
+            @foreach (var place in _places)
+            {
+                <button type="button" class="btn btn-sm" @onclick="() => BrowseAsync(place.Path)">
+                    <Icon Name="@(place.Name == "Home" ? "home" : "folder")" /> @place.Name
+                </button>
+            }
+        </div>
+
+        <div class="folder-browser">
+            <div class="folder-browser-bar">
+                <button type="button" class="btn btn-sm" disabled="@(_listing?.ParentPath is null)" @onclick="UpAsync">
+                    <Icon Name="arrow-up" /> Up
+                </button>
+                <label class="check">
+                    <input type="checkbox" checked="@_hidden" @onchange="OnHiddenChangedAsync" />
+                    Show hidden folders
+                </label>
+            </div>
+            @if (_listing is { Error: FolderError.None } listing)
+            {
+                @if (listing.Folders.Count == 0)
+                {
+                    <p class="sidebar-empty">There are no folders inside this one. You can still open it.</p>
+                }
+                else
+                {
+                    <ul class="folder-entries" aria-label="@("Folders in " + listing.Path)">
+                        @foreach (var entry in listing.Folders)
+                        {
+                            <li @key="entry.Path">
+                                <button type="button" class="folder-entry" @onclick="() => BrowseAsync(entry.Path)">
+                                    <Icon Name="folder" /> <span>@entry.Name</span>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
+            }
+        </div>
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn" @onclick="CloseAsync">Cancel</button>
+        <button type="button" class="btn btn-primary" disabled="@(string.IsNullOrWhiteSpace(_path))" @onclick="OpenAsync">Open this folder</button>
+    </Footer>
+</Dialog>
+
+@code {
+    private IReadOnlyList<FolderEntry> _places = [];
+    private FolderListing? _listing;
+    private string _path = string.Empty;
+    private string? _error;
+    private bool _hidden;
+    private bool _wasOpen;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the dialog is shown.
+    /// </summary>
+    [Parameter]
+    public bool Open { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for when the dialog is dismissed.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for when a folder was opened.
+    /// </summary>
+    [Parameter]
+    public EventCallback<FolderInfo> OnOpened { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Open && !_wasOpen)
+        {
+            _places = FolderBrowser.Places(Paths.UserHome);
+            _error = null;
+            _hidden = false;
+            Show(FolderBrowser.List(null, Paths.UserHome, _hidden));
+        }
+
+        _wasOpen = Open;
+    }
+
+    private static string Describe(FolderError error) => error switch
+    {
+        FolderError.Empty => "Enter a folder path.",
+        FolderError.NotAbsolute => "Enter a full path, such as /home/me/my-app or C:\\Projects\\my-app. A path starting with ~ means your home folder.",
+        FolderError.NotFound => "That folder doesn't exist.",
+        FolderError.NotAFolder => "That is a file, not a folder.",
+        FolderError.AccessDenied => "BlazeHarness isn't allowed to read that folder.",
+        _ => string.Empty,
+    };
+
+    private void Show(FolderListing listing)
+    {
+        _listing = listing;
+        _error = null;
+        if (listing.Path is not null)
+        {
+            _path = listing.Path;
+        }
+    }
+
+    private Task BrowseAsync(string path)
+    {
+        var listing = FolderBrowser.List(path, Paths.UserHome, _hidden);
+        if (listing.Error == FolderError.None)
+        {
+            Show(listing);
+        }
+        else
+        {
+            _error = Describe(listing.Error);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task GoAsync() => BrowseAsync(_path);
+
+    private Task UpAsync() => _listing?.ParentPath is { } parent ? BrowseAsync(parent) : Task.CompletedTask;
+
+    private async Task OnHiddenChangedAsync(ChangeEventArgs e)
+    {
+        _hidden = e.Value is true;
+        if (_listing?.Path is { } path)
+        {
+            await BrowseAsync(path);
+        }
+    }
+
+    private async Task OnPathKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await GoAsync();
+        }
+    }
+
+    private async Task OpenAsync()
+    {
+        var result = await Folders.OpenAsync(_path);
+        if (result.Folder is null)
+        {
+            _error = Describe(result.Error);
+            return;
+        }
+
+        await OnOpened.InvokeAsync(result.Folder);
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+}

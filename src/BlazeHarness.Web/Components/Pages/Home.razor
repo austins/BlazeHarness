@@ -16,7 +16,7 @@
 }
 else
 {
-    <ChatView SessionId="@(string.IsNullOrEmpty(Id) ? null : Id)" />
+    <ChatView SessionId="@(string.IsNullOrEmpty(Id) ? null : Id)" FolderPath="@Folder" />
 }
 
 @code {
@@ -25,4 +25,10 @@ else
     /// </summary>
     [Parameter]
     public string? Id { get; set; }
+
+    /// <summary>
+    /// Gets or sets the path of the opened folder a new chat should start in, from the <c>folder</c> query value.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "folder")]
+    public string? Folder { get; set; }
 }
