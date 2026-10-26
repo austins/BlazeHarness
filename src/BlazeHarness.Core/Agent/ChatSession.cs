@@ -132,7 +132,7 @@ public sealed class ChatSession : IDisposable
         try
         {
             using var client = await _clientFactory(target, run.Token);
-            var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level, null);
+            var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level, target.SessionOverride);
             await foreach (var e in ChatRunner.RunAsync(client, _history, options, run.Token))
             {
                 Apply(entry, e);

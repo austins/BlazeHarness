@@ -19,6 +19,9 @@ internal sealed class ScriptedChatClient : IChatClient
     /// <summary>Gets the messages of each request, as they were when the request was made.</summary>
     public List<IReadOnlyList<ChatMessage>> Requests { get; } = [];
 
+    /// <summary>Gets the options of each request.</summary>
+    public List<ChatOptions?> Options { get; } = [];
+
     public ScriptedChatClient Enqueue(
         IReadOnlyList<ChatResponseUpdate> updates,
         Exception? failure = null,
@@ -41,6 +44,7 @@ internal sealed class ScriptedChatClient : IChatClient
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         Requests.Add([.. messages]);
+        Options.Add(options);
         var script = _scripts.Count > 0 ? _scripts.Dequeue() : new Script([], null, null);
 
         foreach (var update in script.Updates)

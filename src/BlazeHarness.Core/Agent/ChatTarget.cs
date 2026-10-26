@@ -12,6 +12,11 @@ namespace BlazeHarness.Core.Agent;
 public sealed record ChatTarget(ProviderConfig Provider, ModelConfig Model, ThinkingLevel? Level)
 {
     /// <summary>
+    /// Gets sampling values the user set for this session, which win over the model's and the level's.
+    /// </summary>
+    public SamplingParams? SessionOverride { get; init; }
+
+    /// <summary>
     /// Gets a short label for the target, such as "DeepSeek · deepseek-chat · high".
     /// </summary>
     public string Label

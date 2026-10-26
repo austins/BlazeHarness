@@ -70,4 +70,19 @@ public sealed class SamplingEditModelTests
         // Assert
         result!.Extra!["grammar"].ValueKind.Should().Be(JsonValueKind.String);
     }
+
+    [Fact]
+    public void Count_CountsOnlyValuesThatAreSet()
+    {
+        // Arrange
+        var sut = new SamplingEditModel();
+        sut.Set("temperature", 0.5);
+        sut.Set("topP", 0.9);
+
+        // Act
+        sut.Set("topP", null);
+
+        // Assert
+        sut.Count.Should().Be(1);
+    }
 }
