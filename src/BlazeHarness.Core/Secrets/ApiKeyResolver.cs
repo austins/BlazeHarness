@@ -33,6 +33,16 @@ public sealed partial class ApiKeyResolver(ISecretStore store, Func<string, stri
         return await store.GetAsync(SecretStoreFactory.KeyFor(provider), cancellationToken);
     }
 
+    /// <summary>
+    /// Check whether a key reference has the <c>${ENV_VAR}</c> form.
+    /// </summary>
+    /// <param name="reference">The reference to check.</param>
+    /// <returns>True when it names an environment variable.</returns>
+    public static bool IsEnvironmentReference(string reference)
+    {
+        return EnvReference().IsMatch(reference);
+    }
+
     [GeneratedRegex(@"^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$")]
     private static partial Regex EnvReference();
 }
