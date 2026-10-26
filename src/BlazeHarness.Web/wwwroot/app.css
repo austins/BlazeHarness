@@ -135,6 +135,11 @@ code, pre, kbd { font-family: var(--font-mono); font-size: 0.9em; }
     border-radius: var(--radius-sm); color: var(--fg); text-decoration: none; font-size: var(--text-sm);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.chat-item { position: relative; display: flex; align-items: center; }
+.chat-item .chat-link { flex: 1; min-width: 0; }
+.chat-actions { display: none; position: absolute; inset-inline-end: 2px; background: var(--bg-hover); border-radius: var(--radius-sm); }
+.chat-item:hover .chat-actions, .chat-item:focus-within .chat-actions { display: flex; }
+.chat-item > .input { width: 100%; }
 .chat-link:hover { background: var(--bg-hover); }
 .chat-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 
