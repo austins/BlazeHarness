@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Permissions;
 using System.Text.Json.Serialization;
 
 namespace BlazeHarness.Core.Sessions;
@@ -20,6 +21,7 @@ namespace BlazeHarness.Core.Sessions;
 [JsonDerivedType(typeof(ToolCallEvent), "toolCall")]
 [JsonDerivedType(typeof(ToolResultEvent), "toolResult")]
 [JsonDerivedType(typeof(RewindEvent), "rewind")]
+[JsonDerivedType(typeof(PermissionsChangedEvent), "permissionsChanged")]
 public abstract record SessionEvent(DateTimeOffset At);
 
 /// <summary>
@@ -87,3 +89,11 @@ public sealed record ToolResultEvent(DateTimeOffset At, Guid EntryId, string Cal
 /// <param name="At">When the rewind happened.</param>
 /// <param name="ToEntryId">The last message to keep, or <see cref="Guid.Empty"/> to keep none.</param>
 public sealed record RewindEvent(DateTimeOffset At, Guid ToEntryId) : SessionEvent(At);
+
+/// <summary>
+/// The user changed the session's access level or approvals. It is recorded for the history and does not appear in the conversation.
+/// </summary>
+/// <param name="At">When the settings changed.</param>
+/// <param name="Access">The access level from then on.</param>
+/// <param name="Approvals">The approval mode from then on.</param>
+public sealed record PermissionsChangedEvent(DateTimeOffset At, AccessLevel Access, ApprovalMode Approvals) : SessionEvent(At);

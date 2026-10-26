@@ -406,6 +406,26 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         return _approvals.TryGetValue(callId, out var waiting) && waiting.TrySetResult(choice);
     }
 
+    /// <summary>
+    /// Change the access level and approvals the session runs with, and record the change in its log.
+    /// </summary>
+    /// <remarks>
+    /// A call that is already running keeps what it was allowed; the next call is checked against the new settings.
+    /// </remarks>
+    /// <param name="settings">The new settings.</param>
+    /// <returns>A task that completes once the change is saved.</returns>
+    public async Task SetPermissionsAsync(PermissionSettings settings)
+    {
+        if (Permissions.Settings == settings)
+        {
+            return;
+        }
+
+        Permissions.Settings = settings;
+        await SaveAsync([new PermissionsChangedEvent(_time.GetUtcNow(), settings.Access, settings.Approvals)]);
+        RaiseChanged();
+    }
+
     /// <inheritdoc />
     Task<ApprovalChoice> IToolApprover.RequestAsync(ApprovalRequest request, CancellationToken cancellationToken)
     {

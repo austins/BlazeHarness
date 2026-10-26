@@ -1,4 +1,6 @@
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
+using System.Text.Json.Serialization;
 
 namespace BlazeHarness.Core.Sessions;
 
@@ -66,4 +68,20 @@ public sealed record SessionInfo
     /// Gets the thinking level the session last used, or null for the server default.
     /// </summary>
     public ThinkingLevel? Level { get; init; }
+
+    /// <summary>
+    /// Gets the access level the user chose for the session, or null for the default.
+    /// </summary>
+    public AccessLevel? Access { get; init; }
+
+    /// <summary>
+    /// Gets the approval mode the user chose for the session, or null for the default.
+    /// </summary>
+    public ApprovalMode? Approvals { get; init; }
+
+    /// <summary>
+    /// Gets the permission settings the session runs with.
+    /// </summary>
+    [JsonIgnore]
+    public PermissionSettings Permissions => new(Access ?? PermissionSettings.Default.Access, Approvals ?? PermissionSettings.Default.Approvals);
 }

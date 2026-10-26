@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -113,6 +114,7 @@ public sealed partial class SessionService : IDisposable
             var session = NewSession(id);
 #pragma warning restore CA2000
             session.Restore(await _store.GetLog(id).ReadAsync().ConfigureAwait(false));
+            session.Permissions.Settings = _store.Find(id)?.Permissions ?? PermissionSettings.Default;
             await ApplyFolderAsync(id, session).ConfigureAwait(false);
             _live[id] = session;
             return session;
@@ -121,6 +123,29 @@ public sealed partial class SessionService : IDisposable
         {
             _opening.Release();
         }
+    }
+
+    /// <summary>
+    /// Change a session's access level and approvals, which the session remembers and logs.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="settings">The new settings.</param>
+    /// <returns>A task that completes once the change is saved; it does nothing when the session is unknown.</returns>
+    public async Task SetPermissionsAsync(string id, PermissionSettings settings)
+    {
+        if (await OpenAsync(id).ConfigureAwait(false) is not { } session)
+        {
+            return;
+        }
+
+        await session.SetPermissionsAsync(settings).ConfigureAwait(false);
+        await _store.UpdateAsync(
+            id,
+            s => s with
+            {
+                Access = settings.Access == PermissionSettings.Default.Access ? null : settings.Access,
+                Approvals = settings.Approvals == PermissionSettings.Default.Approvals ? null : settings.Approvals,
+            }).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -425,6 +450,7 @@ public sealed partial class SessionService : IDisposable
         {
             Attachments = new SessionAttachments(_store.AttachmentsDirectory(id)),
         };
+        session.Permissions.Sensitive = SensitivePaths.Default(_store.Paths, id);
         var wasRunning = false;
         session.Changed += (_, _) =>
         {

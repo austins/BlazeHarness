@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
 using BlazeHarness.Core.Tests.Unit.Agent;
@@ -18,7 +19,7 @@ public sealed class SessionServiceTests : IDisposable
 
     public SessionServiceTests()
     {
-        _paths = new AppPaths(_home, _home);
+        _paths = new AppPaths(Path.Combine(_home, "app"), _home);
     }
 
     public void Dispose()
@@ -88,6 +89,64 @@ public sealed class SessionServiceTests : IDisposable
         // Assert
         session.Should().NotBeNull();
         session.Entries.Select(e => (e.Role, e.Text)).Should().Equal((ChatRole.User, "hi"), (ChatRole.Assistant, "Hello"));
+    }
+
+    [Fact]
+    public async Task SetPermissionsAsync_ChangedSettings_AreSavedLoggedAndRestored()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient();
+        var first = Create(client);
+        var info = await first.CreateAsync(cancellationToken: ct);
+        var settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AutoApprove);
+
+        // Act
+        await first.SetPermissionsAsync(info.Id, settings);
+        var second = Create(client);
+        var session = await second.OpenAsync(info.Id);
+
+        // Assert
+        first.Store.Find(info.Id)!.Permissions.Should().Be(settings);
+        session!.Permissions.Settings.Should().Be(settings);
+        (await first.Store.GetLog(info.Id).ReadAsync(ct)).Should().ContainSingle()
+            .Which.Should().BeOfType<PermissionsChangedEvent>().Which.Access.Should().Be(AccessLevel.ReadOnly);
+    }
+
+    [Fact]
+    public async Task SetPermissionsAsync_BackToDefaults_ClearsTheSavedChoice()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient();
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        await sut.SetPermissionsAsync(info.Id, new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk));
+
+        // Act
+        await sut.SetPermissionsAsync(info.Id, PermissionSettings.Default);
+
+        // Assert
+        var saved = sut.Store.Find(info.Id)!;
+        saved.Access.Should().BeNull();
+        saved.Approvals.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task OpenAsync_NewSession_ProtectsTheAppFolderExceptItsOwn()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient();
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+
+        // Act
+        var session = await sut.OpenAsync(info.Id);
+
+        // Assert
+        session!.Permissions.Sensitive.IsProtected(_paths.ConfigFile).Should().BeTrue();
+        session.Permissions.Sensitive.IsProtected(Path.Combine(_paths.SessionDirectory(info.Id), "outputs", "a.txt")).Should().BeFalse();
     }
 
     [Fact]

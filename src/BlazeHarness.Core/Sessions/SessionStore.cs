@@ -84,6 +84,11 @@ public sealed partial class SessionStore : IDisposable
     }
 
     /// <summary>
+    /// Gets the app's folders.
+    /// </summary>
+    public AppPaths Paths => _paths;
+
+    /// <summary>
     /// Get the folder a session keeps its attached files in.
     /// </summary>
     /// <param name="id">The session id.</param>

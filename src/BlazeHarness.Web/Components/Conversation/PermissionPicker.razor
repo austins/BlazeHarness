@@ -1,0 +1,96 @@
+@using BlazeHarness.Core.Permissions
+
+<select class="select" @key="@("access" + _version)" aria-label="Access level" title="What the model's tools may touch" value="@Settings.Access" @onchange="OnAccessChanged">
+    <option value="@AccessLevel.ReadOnly">Read only</option>
+    <option value="@AccessLevel.WriteInFolder">Write in folder</option>
+    <option value="@AccessLevel.Unrestricted">Unrestricted</option>
+</select>
+<select class="select" @key="@("approvals" + _version)" aria-label="Approvals" title="When you are asked before a tool runs" value="@Settings.Approvals" @onchange="OnApprovalsChanged">
+    <option value="@ApprovalMode.AskFirst">Ask first</option>
+    <option value="@ApprovalMode.AutoApprove">Auto-approve</option>
+    <option value="@ApprovalMode.NeverAsk">Never ask</option>
+</select>
+@if (Settings.IsRisky)
+{
+    <span class="badge badge-warning" role="status" title="Some safeguards are off for this chat"><Icon Name="alert" /> @(Settings.Access == AccessLevel.Unrestricted ? "Unrestricted" : "Never asks")</span>
+}
+
+<Dialog Title="Turn off a safeguard?" Open="_pending is not null" OnClose="Cancel">
+    <ChildContent>
+        @if (TurnsOnAccess(_pending))
+        {
+            <p>Unrestricted: tools and commands can read and change anything your user account can, with no sandbox.</p>
+        }
+
+        @if (TurnsOnApprovals(_pending))
+        {
+            <p>Never ask: tool calls run without asking you first. Text the model reads from files or web pages could trick it into running harmful commands.</p>
+        }
+
+        <p class="hint">This only applies to this chat. Protected folders such as your SSH keys stay blocked.</p>
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn" @onclick="Cancel">Cancel</button>
+        <button type="button" class="btn btn-danger" @onclick="ConfirmAsync">Turn on</button>
+    </Footer>
+</Dialog>
+
+@code {
+    private PermissionSettings? _pending;
+    private int _version;
+
+    /// <summary>
+    /// Gets or sets the settings to show.
+    /// </summary>
+    [Parameter]
+    public PermissionSettings Settings { get; set; } = PermissionSettings.Default;
+
+    /// <summary>
+    /// Gets or sets the callback for the user choosing settings, after confirming any that switch off a safeguard.
+    /// </summary>
+    [Parameter]
+    public EventCallback<PermissionSettings> OnChange { get; set; }
+
+    private static bool IsRiskyLevel(AccessLevel level) => level == AccessLevel.Unrestricted;
+
+    private bool TurnsOnAccess(PermissionSettings? chosen) => chosen is { } c && IsRiskyLevel(c.Access) && !IsRiskyLevel(Settings.Access);
+
+    private bool TurnsOnApprovals(PermissionSettings? chosen) => chosen is { Approvals: ApprovalMode.NeverAsk } && Settings.Approvals != ApprovalMode.NeverAsk;
+
+    private Task OnAccessChanged(ChangeEventArgs e)
+    {
+        return Choose(Settings with { Access = Enum.Parse<AccessLevel>((string)e.Value!) });
+    }
+
+    private Task OnApprovalsChanged(ChangeEventArgs e)
+    {
+        return Choose(Settings with { Approvals = Enum.Parse<ApprovalMode>((string)e.Value!) });
+    }
+
+    private async Task Choose(PermissionSettings chosen)
+    {
+        if (TurnsOnAccess(chosen) || TurnsOnApprovals(chosen))
+        {
+            _pending = chosen;
+            return;
+        }
+
+        await OnChange.InvokeAsync(chosen);
+    }
+
+    private void Cancel()
+    {
+        _pending = null;
+        _version++;
+    }
+
+    private async Task ConfirmAsync()
+    {
+        var chosen = _pending;
+        _pending = null;
+        if (chosen is { } settings)
+        {
+            await OnChange.InvokeAsync(settings);
+        }
+    }
+}
