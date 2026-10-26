@@ -1,3 +1,4 @@
+@using BlazeHarness.Core.Permissions
 @implements IDisposable
 @inject ProviderService Providers
 @inject SessionService Sessions
@@ -333,9 +334,9 @@ else
         await JS.InvokeVoidAsync("bhChat.follow", _root);
     }
 
-    private void Decide((string CallId, bool Allow) answer)
+    private void Decide((string CallId, ApprovalChoice Choice) answer)
     {
-        _session?.Approve(answer.CallId, answer.Allow);
+        _session?.Approve(answer.CallId, answer.Choice);
     }
 
     private void Stop()

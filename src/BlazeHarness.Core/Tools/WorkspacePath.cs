@@ -18,17 +18,45 @@ public static class WorkspacePath
     /// <param name="input">The path as the model wrote it: relative to the root, or absolute but inside it. Blank means the root.</param>
     /// <param name="fullPath">The real path to use, when the result is true.</param>
     /// <param name="error">A message for the model, when the result is false.</param>
-    /// <returns>True when the path is inside the root.</returns>
-    public static bool TryResolve(string root, string? input, out string fullPath, out string error)
+    /// <param name="allowOutside">True when the call was approved to use a path outside the root.</param>
+    /// <returns>True when the path is inside the root, or <paramref name="allowOutside"/> is set.</returns>
+    public static bool TryResolve(string root, string? input, out string fullPath, out string error, bool allowOutside = false)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(root);
+        if (!TryLocate(root, input, out fullPath))
+        {
+            error = $"The path '{input}' is not valid.";
+            return false;
+        }
+
+        error = string.Empty;
+        if (!allowOutside && !IsInside(root, fullPath))
+        {
+            error = $"The path '{input}' is outside the working folder '{root}'. Only paths inside it can be used.";
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Find the real path a tool call names, wherever it is.
+    /// </summary>
+    /// <remarks>
+    /// Links are followed, so the result is what the call would really touch. Use it to decide whether a call may run, not to open the file.
+    /// </remarks>
+    /// <param name="root">The root folder that relative paths resolve against.</param>
+    /// <param name="input">The path as the model wrote it. Blank means the root.</param>
+    /// <param name="fullPath">The real path, when the result is true.</param>
+    /// <returns>False when the path is not valid or its links loop.</returns>
+    public static bool TryLocate(string root, string? input, out string fullPath)
     {
         ArgumentException.ThrowIfNullOrEmpty(root);
         fullPath = root;
-        error = string.Empty;
 
         var text = string.IsNullOrWhiteSpace(input) ? "." : input.Trim();
         if (text.Contains('\0', StringComparison.Ordinal) || (OperatingSystem.IsWindows() && HasStreamOrDevicePrefix(text)))
         {
-            error = $"The path '{input}' is not valid.";
             return false;
         }
 
@@ -39,14 +67,11 @@ public static class WorkspacePath
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
         {
-            error = $"The path '{input}' is not valid.";
             return false;
         }
 
-        var real = RealPath(combined, 0);
-        if (real is null || !IsInside(root, real))
+        if (RealPath(combined, 0) is not { } real)
         {
-            error = $"The path '{input}' is outside the working folder '{root}'. Only paths inside it can be used.";
             return false;
         }
 

@@ -4,6 +4,7 @@
     <Project Path="src/BlazeHarness.Web/BlazeHarness.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <File Path="tests\Directory.Build.props" />
     <Project Path="tests/BlazeHarness.Core.Tests.Integration/BlazeHarness.Core.Tests.Integration.csproj" />
     <Project Path="tests/BlazeHarness.Core.Tests.Unit/BlazeHarness.Core.Tests.Unit.csproj" />
     <Project Path="tests/BlazeHarness.Web.Tests.Unit/BlazeHarness.Web.Tests.Unit.csproj" />

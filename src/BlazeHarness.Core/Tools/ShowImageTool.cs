@@ -36,6 +36,9 @@ public sealed class ShowImageTool : ITool
     public bool IsReadOnly => true;
 
     /// <inheritdoc />
+    public IReadOnlyList<string> PathArguments { get; } = ["path"];
+
+    /// <inheritdoc />
     public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(30);
 
     /// <inheritdoc />

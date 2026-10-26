@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 
@@ -78,7 +79,8 @@ public sealed class ChatRunnerToolTests
         // Assert
         approver.Asked.Should().Equal("write");
         events.OfType<ToolCallFinished>().Select(e => e.CallId).Should().Equal("c1", "c2", "c3");
-        events.Should().ContainInOrder(new ToolAwaitingApproval("c2"), new ToolCallRunning("c2"));
+        events.OfType<ToolAwaitingApproval>().Should().ContainSingle().Which.CallId.Should().Be("c2");
+        events.Should().ContainInOrder(events.OfType<ToolAwaitingApproval>().Single(), new ToolCallRunning("c2"));
         history[2].Contents.OfType<FunctionResultContent>().Select(r => r.CallId).Should().Equal("c1", "c2", "c3");
     }
 
@@ -217,6 +219,97 @@ public sealed class ChatRunnerToolTests
     }
 
     [Fact]
+    public async Task RunAsync_WriteWhenReadOnly_DeniesWithoutAsking()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        var approver = new FakeApprover(allow: true);
+        var permissions = new PermissionEngine { Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst) };
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await Collect(client, history, Tools(write), approver, TestContext.Current.CancellationToken, permissions: permissions);
+
+        // Assert
+        write.Started.Should().Be(0);
+        approver.Asked.Should().BeEmpty();
+        events.OfType<ToolCallFinished>().Single().Status.Should().Be(ToolCallStatus.Denied);
+        history[2].Contents.OfType<FunctionResultContent>().Single().Result!.ToString().Should().Contain("Read only");
+    }
+
+    [Fact]
+    public async Task RunAsync_WriteWhenAutoApprove_RunsWithoutAsking()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        var approver = new FakeApprover(allow: false);
+        var permissions = new PermissionEngine { Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.AutoApprove) };
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        await Collect(client, NewHistory(), Tools(write), approver, TestContext.Current.CancellationToken, permissions: permissions);
+
+        // Assert
+        write.Started.Should().Be(1);
+        approver.Asked.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RunAsync_AllowedForTheSession_AsksOnlyOnce()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        var approver = new FakeApprover(_ => Task.FromResult(ApprovalChoice.AllowForSession));
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
+            .Enqueue([ScriptedChatClient.Call("c2", "write")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        await Collect(client, NewHistory(), Tools(write), approver, TestContext.Current.CancellationToken);
+
+        // Assert
+        write.Started.Should().Be(2);
+        approver.Requests.Should().ContainSingle().Which.CanRemember.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task RunAsync_AllowedOnce_AsksAgainNextTime()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        var approver = new FakeApprover(allow: true);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
+            .Enqueue([ScriptedChatClient.Call("c2", "write")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        await Collect(client, NewHistory(), Tools(write), approver, TestContext.Current.CancellationToken);
+
+        // Assert
+        approver.Asked.Should().Equal("write", "write");
+    }
+
+    [Fact]
+    public async Task RunAsync_AskedWithAReason_TellsTheUser()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        var events = await Collect(client, NewHistory(), Tools(write), new FakeApprover(allow: true), TestContext.Current.CancellationToken);
+
+        // Assert
+        var awaiting = events.OfType<ToolAwaitingApproval>().Single();
+        awaiting.Reason.Should().NotBeEmpty();
+        awaiting.CanRemember.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task RunAsync_CancelledWhileAwaitingApproval_CancelsTheCall()
     {
         // Arrange
@@ -226,7 +319,7 @@ public sealed class ChatRunnerToolTests
         {
             await cts.CancelAsync();
             await Task.Delay(TimeSpan.FromSeconds(10), cts.Token);
-            return true;
+            return ApprovalChoice.AllowOnce;
         });
         using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")]);
         var history = NewHistory();
@@ -272,10 +365,11 @@ public sealed class ChatRunnerToolTests
         ToolSet tools,
         IToolApprover? approver,
         CancellationToken cancellationToken,
-        int maxRounds = ChatRunner.DefaultMaxRounds)
+        int maxRounds = ChatRunner.DefaultMaxRounds,
+        PermissionEngine? permissions = null)
     {
         var events = new List<AgentEvent>();
-        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), tools, approver, maxRounds, cancellationToken))
+        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), tools, approver, permissions, maxRounds, cancellationToken))
         {
             events.Add(e);
         }

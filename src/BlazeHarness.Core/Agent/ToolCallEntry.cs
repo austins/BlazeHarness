@@ -84,6 +84,16 @@ public sealed class ToolCallEntry
     public string Output { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets what the user is asked to allow while <see cref="Status"/> is <see cref="ToolCallStatus.AwaitingApproval"/>. It is not saved.
+    /// </summary>
+    public string ApprovalReason { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the user may allow the same kind of call for the rest of the session. It is not saved.
+    /// </summary>
+    public bool CanRemember { get; set; }
+
+    /// <summary>
     /// Gets a value indicating whether the call has ended, one way or another.
     /// </summary>
     public bool IsFinished => Status is ToolCallStatus.Succeeded or ToolCallStatus.Failed or ToolCallStatus.Denied or ToolCallStatus.Cancelled or ToolCallStatus.Interrupted;

@@ -1,5 +1,6 @@
 @using System.Globalization
 @using BlazeHarness.Core.Attachments
+@using BlazeHarness.Core.Permissions
 @using BlazeHarness.Web.Hosting
 @inject MarkdownRenderer Markdown
 
@@ -126,7 +127,7 @@
     /// Gets or sets the callback for the user allowing or denying a tool call, with the call id and the answer.
     /// </summary>
     [Parameter]
-    public EventCallback<(string CallId, bool Allow)> OnDecide { get; set; }
+    public EventCallback<(string CallId, ApprovalChoice Choice)> OnDecide { get; set; }
 
     private StreamingMarkdown? _streaming;
 

@@ -44,6 +44,9 @@ public sealed class SearchFilesTool : ITool
     public bool IsReadOnly => true;
 
     /// <inheritdoc />
+    public IReadOnlyList<string> PathArguments { get; } = ["path"];
+
+    /// <inheritdoc />
     public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(60);
 
     /// <inheritdoc />

@@ -46,7 +46,7 @@ public sealed partial class ChatSession
         {
             using var client = await _clientFactory(target, cancellation);
             var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level);
-            await foreach (var e in ChatRunner.RunAsync(client, working, options, Tools, this, cancellationToken: cancellation))
+            await foreach (var e in ChatRunner.RunAsync(client, working, options, Tools, this, Permissions, cancellationToken: cancellation))
             {
                 await ApplyAsync(reply, e);
                 RaiseChanged();
@@ -109,6 +109,12 @@ public sealed partial class ChatSession
                 await SaveAsync([new ToolCallEvent(_time.GetUtcNow(), entry.Id, requested.CallId, requested.Name, requested.ArgumentsJson, requested.Summary)]);
                 break;
             case ToolAwaitingApproval awaiting:
+                if (entry.ToolCalls.FirstOrDefault(c => c.CallId == awaiting.CallId) is { } waiting)
+                {
+                    waiting.ApprovalReason = awaiting.Reason;
+                    waiting.CanRemember = awaiting.CanRemember;
+                }
+
                 SetStatus(entry, awaiting.CallId, ToolCallStatus.AwaitingApproval);
                 break;
             case ToolCallRunning running:

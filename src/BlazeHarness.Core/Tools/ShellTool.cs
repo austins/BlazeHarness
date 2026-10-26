@@ -51,6 +51,9 @@ public sealed class ShellTool : ITool
     public bool IsReadOnly => false;
 
     /// <inheritdoc />
+    public bool RunsCommands => true;
+
+    /// <inheritdoc />
     public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(MaxTimeoutSeconds + 30);
 
     /// <inheritdoc />

@@ -14,10 +14,30 @@ public sealed class ToolContext
         Root = WorkspacePath.CanonicalRoot(folder);
     }
 
+    private ToolContext(string root, bool allowsOutside)
+    {
+        Root = root;
+        AllowsOutside = allowsOutside;
+    }
+
     /// <summary>
     /// Gets the real path of the working folder, which file tools stay inside and relative paths resolve against.
     /// </summary>
     public string Root { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether paths outside the working folder may be used, because the call was approved or the access level allows it.
+    /// </summary>
+    public bool AllowsOutside { get; }
+
+    /// <summary>
+    /// Get a copy of this context that accepts paths outside the working folder.
+    /// </summary>
+    /// <remarks>
+    /// Only for a call that has already passed the permission check.
+    /// </remarks>
+    /// <returns>A context with the same root that accepts any path.</returns>
+    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true);
 
     /// <summary>
     /// Resolve a path from a call to a real path inside the working folder.
@@ -28,7 +48,7 @@ public sealed class ToolContext
     /// <returns>True when the path is allowed.</returns>
     public bool TryResolve(string? input, out string fullPath, out string error)
     {
-        return WorkspacePath.TryResolve(Root, input, out fullPath, out error);
+        return WorkspacePath.TryResolve(Root, input, out fullPath, out error, AllowsOutside);
     }
 
     /// <summary>

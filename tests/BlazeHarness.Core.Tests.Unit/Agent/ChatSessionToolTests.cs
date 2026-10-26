@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sessions;
 using BlazeHarness.Core.Tests.Unit.Sessions;
 using BlazeHarness.Core.Tools;
@@ -48,7 +49,7 @@ public sealed class ChatSessionToolTests
         write.Started.Should().Be(0);
 
         // Act
-        var answered = sut.Approve("c1", allow: true);
+        var answered = sut.Approve("c1", ApprovalChoice.AllowOnce);
         await turn;
 
         // Assert
@@ -69,7 +70,7 @@ public sealed class ChatSessionToolTests
         await WaitForStatus(sut, ToolCallStatus.AwaitingApproval);
 
         // Act
-        sut.Approve("c1", allow: false);
+        sut.Approve("c1", ApprovalChoice.Deny);
         await turn;
 
         // Assert
@@ -95,7 +96,7 @@ public sealed class ChatSessionToolTests
         sut.Entries[1].ToolCalls.Single().Status.Should().Be(ToolCallStatus.Cancelled);
         sut.Entries[1].Status.Should().Be(EntryStatus.Cancelled);
         sut.History[^1].Role.Should().Be(ChatRole.Tool);
-        sut.Approve("c1", allow: true).Should().BeFalse();
+        sut.Approve("c1", ApprovalChoice.AllowOnce).Should().BeFalse();
     }
 
     [Fact]
@@ -106,7 +107,7 @@ public sealed class ChatSessionToolTests
         using var sut = Create(client, new FakeTool("read", isReadOnly: true));
 
         // Act
-        var answered = sut.Approve("nope", allow: true);
+        var answered = sut.Approve("nope", ApprovalChoice.AllowOnce);
 
         // Assert
         answered.Should().BeFalse();

@@ -38,6 +38,9 @@ public sealed class EditFileTool : ITool
     public bool IsReadOnly => false;
 
     /// <inheritdoc />
+    public IReadOnlyList<string> PathArguments { get; } = ["path"];
+
+    /// <inheritdoc />
     public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(30);
 
     /// <inheritdoc />

@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sessions;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
@@ -39,7 +40,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     private readonly ILogger _logger;
     private readonly List<ChatEntry> _entries = [];
     private readonly List<ChatMessage> _history = [];
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _approvals = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<ApprovalChoice>> _approvals = new(StringComparer.Ordinal);
     private IReadOnlyList<ChatEntry> _snapshot = [];
     private ProjectContext? _project;
     private ToolSet? _tools;
@@ -130,6 +131,11 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         get => Volatile.Read(ref _basePrompt);
         set => Volatile.Write(ref _basePrompt, value);
     }
+
+    /// <summary>
+    /// Gets the permission check for this session's tool calls, with the session's settings and approvals it remembers.
+    /// </summary>
+    public PermissionEngine Permissions { get; } = new();
 
     /// <summary>
     /// Gets or sets the tools the model may call, or null for none.
@@ -392,18 +398,18 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     /// Answer a tool call that waits for approval.
     /// </summary>
     /// <param name="callId">The id of the call, from <see cref="ToolCallEntry.CallId"/>.</param>
-    /// <param name="allow">True to let the call run, false to deny it.</param>
+    /// <param name="choice">Whether the call may run, and whether that holds for the rest of the session.</param>
     /// <returns>True when a call was waiting for the answer; false when it had already been answered or stopped.</returns>
-    public bool Approve(string callId, bool allow)
+    public bool Approve(string callId, ApprovalChoice choice)
     {
         ArgumentNullException.ThrowIfNull(callId);
-        return _approvals.TryGetValue(callId, out var waiting) && waiting.TrySetResult(allow);
+        return _approvals.TryGetValue(callId, out var waiting) && waiting.TrySetResult(choice);
     }
 
     /// <inheritdoc />
-    Task<bool> IToolApprover.RequestAsync(string callId, string toolName, string argumentsJson, CancellationToken cancellationToken)
+    Task<ApprovalChoice> IToolApprover.RequestAsync(ApprovalRequest request, CancellationToken cancellationToken)
     {
-        return WaitForApprovalAsync(callId, cancellationToken);
+        return WaitForApprovalAsync(request.CallId, cancellationToken);
     }
 
     /// <summary>
@@ -494,9 +500,9 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         }
     }
 
-    private async Task<bool> WaitForApprovalAsync(string callId, CancellationToken cancellationToken)
+    private async Task<ApprovalChoice> WaitForApprovalAsync(string callId, CancellationToken cancellationToken)
     {
-        var waiting = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var waiting = new TaskCompletionSource<ApprovalChoice>(TaskCreationOptions.RunContinuationsAsynchronously);
         _approvals[callId] = waiting;
         using var registration = cancellationToken.Register(() => waiting.TrySetCanceled(cancellationToken));
         try

@@ -111,9 +111,10 @@ public sealed class ToolSet
     /// <param name="tool">The tool to run.</param>
     /// <param name="argumentsJson">The call arguments as JSON text.</param>
     /// <param name="cancellationToken">A token that stops the call.</param>
+    /// <param name="context">The context to run in when the call was approved to leave the working folder, or null for <see cref="Context"/>.</param>
     /// <returns>The result to send back to the model.</returns>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
-    public async Task<ToolResult> ExecuteAsync(ITool tool, string argumentsJson, CancellationToken cancellationToken)
+    public async Task<ToolResult> ExecuteAsync(ITool tool, string argumentsJson, CancellationToken cancellationToken, ToolContext? context = null)
     {
         ArgumentNullException.ThrowIfNull(tool);
 
@@ -121,7 +122,7 @@ public sealed class ToolSet
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
-            var result = await tool.ExecuteAsync(ToolArguments.Parse(argumentsJson), Context, linked.Token);
+            var result = await tool.ExecuteAsync(ToolArguments.Parse(argumentsJson), context ?? Context, linked.Token);
             return result with { Output = Limit(result.Output) };
         }
         catch (ToolArgumentException ex)

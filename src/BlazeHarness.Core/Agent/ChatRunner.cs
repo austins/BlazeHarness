@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
@@ -28,15 +29,16 @@ public static class ChatRunner
     /// because providers reject a call without one. The stream always ends with a <see cref="Done"/>.
     /// </para>
     /// <para>
-    /// Consecutive read-only calls of one response run at the same time. Any other call asks <paramref name="approver"/> first and runs alone.
-    /// Without an approver such a call is denied.
+    /// Each call is checked by <paramref name="permissions"/> first. Consecutive read-only calls of one response that need no approval run at the same time.
+    /// A call that needs approval asks <paramref name="approver"/> first and runs alone; without an approver it is denied.
     /// </para>
     /// </remarks>
     /// <param name="client">The chat client to call.</param>
     /// <param name="history">The conversation so far, ending with the user's message.</param>
     /// <param name="options">The request options, including sampling and thinking fields. The tool definitions are added to it.</param>
     /// <param name="tools">The tools the model may call, or null for a reply without tools.</param>
-    /// <param name="approver">Asks the user before a tool that is not read-only runs.</param>
+    /// <param name="approver">Asks the user before a call that needs approval runs.</param>
+    /// <param name="permissions">Decides which calls run, ask or are refused. Null means the default settings.</param>
     /// <param name="maxRounds">The most times to call the model.</param>
     /// <param name="cancellationToken">A token that stops the run.</param>
     /// <returns>The events of the run.</returns>
@@ -46,6 +48,7 @@ public static class ChatRunner
         ChatOptions options,
         ToolSet? tools = null,
         IToolApprover? approver = null,
+        PermissionEngine? permissions = null,
         int maxRounds = DefaultMaxRounds,
         CancellationToken cancellationToken = default)
     {
@@ -53,7 +56,7 @@ public static class ChatRunner
         ArgumentNullException.ThrowIfNull(history);
         ArgumentOutOfRangeException.ThrowIfLessThan(maxRounds, 1);
 
-        return RunCoreAsync(client, history, options, tools, approver, maxRounds, cancellationToken);
+        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), maxRounds, cancellationToken);
     }
 
     private static async IAsyncEnumerable<AgentEvent> RunCoreAsync(
@@ -62,6 +65,7 @@ public static class ChatRunner
         ChatOptions options,
         ToolSet? tools,
         IToolApprover? approver,
+        PermissionEngine permissions,
         int maxRounds,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -171,7 +175,7 @@ public static class ChatRunner
             }
 
             var outcome = new RoundOutcome();
-            await foreach (var e in ExecuteCallsAsync(calls, tools, approver, history, outcome, cancellationToken))
+            await foreach (var e in ExecuteCallsAsync(calls, tools, approver, permissions, history, outcome, cancellationToken))
             {
                 yield return e;
             }
@@ -191,6 +195,7 @@ public static class ChatRunner
         List<FunctionCallContent> calls,
         ToolSet? tools,
         IToolApprover? approver,
+        PermissionEngine permissions,
         IList<ChatMessage> history,
         RoundOutcome outcome,
         [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -219,20 +224,33 @@ public static class ChatRunner
                     continue;
                 }
 
-                if (p.Tool!.IsReadOnly)
+                var decision = permissions.Evaluate(p.Tool!, p.Json, tools!.Context);
+                if (decision.Verdict == PermissionVerdict.Deny)
                 {
-                    var end = index;
-                    while (end < planned.Count && planned[end] is { CanRun: true, Tool.IsReadOnly: true })
+                    results[index] = ToolResult.Error(decision.Reason);
+                    statuses[index] = ToolCallStatus.Denied;
+                    yield return Finished(p, results[index]!, statuses[index]);
+                    index++;
+                    continue;
+                }
+
+                if (p.Tool!.IsReadOnly && decision.Verdict == PermissionVerdict.Allow)
+                {
+                    var contexts = new List<ToolContext> { ContextFor(tools, decision) };
+                    while (index + contexts.Count < planned.Count
+                        && planned[index + contexts.Count] is { CanRun: true, Tool.IsReadOnly: true } next
+                        && permissions.Evaluate(next.Tool, next.Json, tools.Context) is { Verdict: PermissionVerdict.Allow } nextDecision)
                     {
-                        end++;
+                        contexts.Add(ContextFor(tools, nextDecision));
                     }
 
+                    var end = index + contexts.Count;
                     for (var i = index; i < end; i++)
                     {
                         yield return new ToolCallRunning(planned[i].Call.CallId);
                     }
 
-                    var batch = planned.GetRange(index, end - index).ConvertAll(x => RunAsync(tools!, x, cancellationToken));
+                    var batch = Enumerable.Range(index, contexts.Count).Select(i => RunAsync(tools, planned[i], contexts[i - index], cancellationToken)).ToList();
                     ToolResult[]? done = null;
                     try
                     {
@@ -254,14 +272,20 @@ public static class ChatRunner
                     continue;
                 }
 
-                var allowed = false;
-                if (approver is not null)
+                var allowed = decision.Verdict == PermissionVerdict.Allow;
+                if (!allowed && approver is not null)
                 {
-                    var decision = approver.RequestAsync(p.Call.CallId, p.Call.Name, p.Json, cancellationToken);
-                    yield return new ToolAwaitingApproval(p.Call.CallId);
+                    var request = new ApprovalRequest(p.Call.CallId, p.Call.Name, p.Json, decision.Reason, decision.GrantKey is not null);
+                    var answer = approver.RequestAsync(request, cancellationToken);
+                    yield return new ToolAwaitingApproval(p.Call.CallId, decision.Reason, request.CanRemember);
                     try
                     {
-                        allowed = await decision;
+                        var choice = await answer;
+                        allowed = choice != ApprovalChoice.Deny;
+                        if (choice == ApprovalChoice.AllowForSession && decision.GrantKey is { } key)
+                        {
+                            permissions.Remember(key);
+                        }
                     }
                     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                     {
@@ -284,7 +308,7 @@ public static class ChatRunner
                 yield return new ToolCallRunning(p.Call.CallId);
                 try
                 {
-                    results[index] = await RunAsync(tools!, p, cancellationToken);
+                    results[index] = await RunAsync(tools, p, ContextFor(tools, decision), cancellationToken);
                     statuses[index] = results[index]!.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -327,11 +351,16 @@ public static class ChatRunner
         return new ToolCallFinished(call.Call.CallId, call.Call.Name, result.Output, status);
     }
 
-    private static async Task<ToolResult> RunAsync(ToolSet tools, PlannedCall call, CancellationToken cancellationToken)
+    private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision)
+    {
+        return decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context;
+    }
+
+    private static async Task<ToolResult> RunAsync(ToolSet tools, PlannedCall call, ToolContext context, CancellationToken cancellationToken)
     {
         try
         {
-            return await tools.ExecuteAsync(call.Tool!, call.Json, cancellationToken);
+            return await tools.ExecuteAsync(call.Tool!, call.Json, cancellationToken, context);
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or OutOfMemoryException))
         {

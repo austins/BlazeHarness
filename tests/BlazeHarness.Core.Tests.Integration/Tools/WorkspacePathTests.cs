@@ -1,3 +1,5 @@
+using BlazeHarness.Core.Tools;
+
 namespace BlazeHarness.Core.Tests.Integration.Tools;
 
 public sealed class WorkspacePathTests : IDisposable
@@ -153,6 +155,43 @@ public sealed class WorkspacePathTests : IDisposable
 
         // Act
         var ok = _workspace.Context.TryResolve("dangling", out _, out _);
+
+        // Assert
+        ok.Should().BeFalse();
+    }
+
+    [Fact]
+    public void TryResolve_OutsidePathWhenAllowed_ResolvesIt()
+    {
+        // Arrange
+        var outside = Path.GetTempPath();
+
+        // Act
+        var refused = _workspace.Context.TryResolve(outside, out _, out _);
+        var allowed = _workspace.Context.WithOutsideAllowed().TryResolve(outside, out var full, out _);
+
+        // Assert
+        refused.Should().BeFalse();
+        allowed.Should().BeTrue();
+        full.TrimEnd(Path.DirectorySeparatorChar).Should().Be(WorkspacePath.CanonicalRoot(outside));
+    }
+
+    [Fact]
+    public void TryLocate_PathOutsideTheRoot_ReturnsItsRealPath()
+    {
+        // Act
+        var ok = WorkspacePath.TryLocate(_workspace.Root, "../elsewhere/a.txt", out var full);
+
+        // Assert
+        ok.Should().BeTrue();
+        full.Should().Be(Path.Combine(Path.GetDirectoryName(_workspace.Root)!, "elsewhere", "a.txt"));
+    }
+
+    [Fact]
+    public void TryLocate_InvalidPath_ReturnsFalse()
+    {
+        // Act
+        var ok = WorkspacePath.TryLocate(_workspace.Root, "a\0b", out _);
 
         // Assert
         ok.Should().BeFalse();

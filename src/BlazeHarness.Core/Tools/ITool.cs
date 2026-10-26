@@ -31,6 +31,16 @@ public interface ITool
     bool IsReadOnly { get; }
 
     /// <summary>
+    /// Gets the names of the arguments that hold a file or folder path, which the permission check looks at before a call runs.
+    /// </summary>
+    IReadOnlyList<string> PathArguments => [];
+
+    /// <summary>
+    /// Gets a value indicating whether the tool runs commands, which can do anything its process can.
+    /// </summary>
+    bool RunsCommands => false;
+
+    /// <summary>
     /// Gets how long one call may run before it is stopped.
     /// </summary>
     TimeSpan Timeout { get; }
