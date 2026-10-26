@@ -99,10 +99,89 @@ window.bhChat = {
         }
     },
     // Enter sends, Shift+Enter adds a line; the box grows with its text.
-    initComposer: (input) => {
+    pick: (button) => {
+        const picker = button.closest("form")?.querySelector("input[type=file]");
+        if (picker) {
+            picker.click();
+        }
+    },
+
+    clearPicker: (picker) => {
+        if (picker) {
+            picker.value = "";
+        }
+    },
+
+    // Hand files to the composer's hidden file input, which reports them to the component.
+    addFiles: (form, files) => {
+        const picker = form.querySelector("input[type=file]");
+        if (!picker || files.length === 0) {
+            return;
+        }
+
+        const transfer = new DataTransfer();
+        for (const file of files) {
+            transfer.items.add(file);
+        }
+
+        picker.files = transfer.files;
+        picker.dispatchEvent(new Event("change", { bubbles: true }));
+    },
+
+    initComposer: (input, form) => {
         if (!input) {
             return;
         }
+
+        const longPaste = { characters: 5000, lines: 100 };
+        let pastes = 0;
+        input.addEventListener("paste", (e) => {
+            const data = e.clipboardData;
+            if (!data) {
+                return;
+            }
+
+            if (data.files.length > 0) {
+                e.preventDefault();
+                window.bhChat.addFiles(form, [...data.files]);
+                return;
+            }
+
+            const text = data.getData("text/plain");
+            if (text.length > longPaste.characters || text.split("\n").length > longPaste.lines) {
+                e.preventDefault();
+                pastes += 1;
+                window.bhChat.addFiles(form, [new File([text], `pasted-text-${pastes}.txt`, { type: "text/plain" })]);
+            }
+        });
+
+        let depth = 0;
+        const hasFiles = (e) => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+        form.addEventListener("dragenter", (e) => {
+            if (hasFiles(e)) {
+                depth += 1;
+                form.dataset.dragging = "true";
+            }
+        });
+        form.addEventListener("dragover", (e) => {
+            if (hasFiles(e)) {
+                e.preventDefault();
+            }
+        });
+        form.addEventListener("dragleave", () => {
+            depth = Math.max(0, depth - 1);
+            if (depth === 0) {
+                delete form.dataset.dragging;
+            }
+        });
+        form.addEventListener("drop", (e) => {
+            if (hasFiles(e)) {
+                e.preventDefault();
+                depth = 0;
+                delete form.dataset.dragging;
+                window.bhChat.addFiles(form, [...e.dataTransfer.files]);
+            }
+        });
 
         input.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {

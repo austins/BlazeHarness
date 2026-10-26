@@ -1,5 +1,6 @@
 @inject ProviderService Providers
 @inject IJSRuntime JS
+@using BlazeHarness.Core.Attachments
 
 @if (_models.Count == 0)
 {
@@ -11,7 +12,7 @@
 else
 {
     <div class="composer">
-    <form class="composer-form" @onsubmit="SubmitAsync" novalidate>
+    <form class="composer-form" @onsubmit="SubmitAsync" novalidate @ref="_form">
         @if (Editing is not null)
         {
             <div class="composer-editing" role="status">
@@ -19,9 +20,32 @@ else
                 <button type="button" class="btn btn-ghost btn-sm" @onclick="CancelEditAsync">Cancel</button>
             </div>
         }
+        @if (_files.Count > 0)
+        {
+            <ul class="composer-files" aria-label="Attached files">
+                @foreach (var file in _files)
+                {
+                    <li @key="file.Id" class="chip">
+                        <Icon Name="@(file.IsImage ? "image" : "file")" />
+                        <span class="chip-name" title="@file.Name">@file.Name</span>
+                        <span class="chip-size">@FileSize.Format(file.Content.Length)</span>
+                        <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@($"Remove {file.Name}")" @onclick="() => Remove(file)"><Icon Name="close" /></button>
+                    </li>
+                }
+            </ul>
+            @if (!ModelSeesImages && _files.Any(f => f.IsImage))
+            {
+                <div class="hint" role="status">The selected model can't view images, so they will be left out of what it sees.</div>
+            }
+        }
         <textarea class="input composer-input" rows="1" @ref="_input" @bind="_text" @bind:event="oninput"
                   placeholder="Message the model" aria-label="Message"></textarea>
         <div class="composer-bar">
+            @if (Editing is null)
+            {
+                <InputFile @ref="_picker" OnChange="AddFilesAsync" multiple tabindex="-1" class="visually-hidden" aria-hidden="true" />
+                <button type="button" class="btn btn-ghost btn-icon" aria-label="Attach files" title="Attach files" onclick="bhChat.pick(this)"><Icon Name="paperclip" /></button>
+            }
             <select class="select" aria-label="Model" value="@_selected" @onchange="OnModelChanged">
                 @foreach (var group in _models.GroupBy(m => m.Provider.Id))
                 {
@@ -74,6 +98,9 @@ else
     private string _text = string.Empty;
     private string _selected = string.Empty;
     private string _level = string.Empty;
+    private readonly List<PendingFile> _files = [];
+    private ElementReference _form;
+    private InputFile? _picker;
     private string? _note;
     private bool _resize;
     private bool _applied;
@@ -118,10 +145,10 @@ else
     public EventCallback OnCancelEdit { get; set; }
 
     /// <summary>
-    /// Gets or sets the callback for a message to send with its chosen target.
+    /// Gets or sets the function that sends a message with its files and chosen target. It returns an error to show when the message was not sent, or null.
     /// </summary>
     [Parameter]
-    public EventCallback<(string Text, ChatTarget Target)> OnSend { get; set; }
+    public Func<ComposerMessage, Task<string?>>? OnSend { get; set; }
 
     /// <summary>
     /// Gets or sets the callback to retry the last reply with the chosen target.
@@ -145,6 +172,11 @@ else
         if (Editing?.Id != _loadedEdit)
         {
             _text = Editing?.Text ?? string.Empty;
+            if (Editing is not null)
+            {
+                _files.Clear();
+            }
+
             _loadedEdit = Editing?.Id;
             _resize = true;
         }
@@ -173,7 +205,7 @@ else
 
         if (firstRender)
         {
-            await JS.InvokeVoidAsync("bhChat.initComposer", _input);
+            await JS.InvokeVoidAsync("bhChat.initComposer", _input, _form);
         }
 
         if (_resize)
@@ -246,17 +278,61 @@ else
     private async Task SubmitAsync()
     {
         var target = CurrentTarget();
-        if (target is null || Running || string.IsNullOrWhiteSpace(_text))
+        if (target is null || Running || OnSend is null || (string.IsNullOrWhiteSpace(_text) && _files.Count == 0))
         {
             return;
         }
 
         var text = _text;
+        var files = _files.ToArray();
         _creating = SessionId is null;
         _text = string.Empty;
+        _files.Clear();
+        _note = null;
         _resize = true;
-        await OnSend.InvokeAsync((text, target));
+        var error = await OnSend(new ComposerMessage(text, files, target));
+        if (error is not null)
+        {
+            _creating = false;
+            _text = text;
+            _files.AddRange(files);
+            _note = error;
+            _resize = true;
+        }
     }
+
+    private async Task AddFilesAsync(InputFileChangeEventArgs e)
+    {
+        _note = null;
+        foreach (var browserFile in e.GetMultipleFiles(int.MaxValue))
+        {
+            if (_files.Count >= SessionAttachments.MaxFilesPerMessage)
+            {
+                _note = $"A message can carry at most {SessionAttachments.MaxFilesPerMessage} files.";
+                break;
+            }
+
+            if (browserFile.Size > SessionAttachments.MaxFileBytes)
+            {
+                _note = $"'{browserFile.Name}' is larger than {FileSize.Format(SessionAttachments.MaxFileBytes)}.";
+                continue;
+            }
+
+            _files.Add(await PendingFile.ReadAsync(browserFile));
+        }
+
+        if (_picker is not null)
+        {
+            await JS.InvokeVoidAsync("bhChat.clearPicker", _picker.Element);
+        }
+    }
+
+    private void Remove(PendingFile file)
+    {
+        _files.Remove(file);
+    }
+
+    private bool ModelSeesImages => _models.Find(m => m.Key == _selected) is { } choice && AttachmentPolicy.AcceptsImages(choice.Model);
 
     private async Task CancelEditAsync()
     {

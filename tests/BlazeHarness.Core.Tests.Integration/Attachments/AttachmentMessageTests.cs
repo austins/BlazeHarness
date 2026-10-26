@@ -85,7 +85,7 @@ public sealed class AttachmentMessageTests : IDisposable
         var message = AttachmentMessage.Build("what is this?", [new SentAttachment(info, AttachmentDelivery.Image)], _store);
 
         // Assert
-        message.Text.Should().Contain("[Attached image: pic.png]");
+        message.Text.Should().Contain($"[Attached image: pic.png, id {info.Id}]");
         var image = message.Contents.OfType<DataContent>().Should().ContainSingle().Subject;
         image.MediaType.Should().Be("image/png");
         image.Data.ToArray().Should().Equal(PngBytes);
@@ -122,20 +122,6 @@ public sealed class AttachmentMessageTests : IDisposable
         messages[0].Text.Should().Be("sys");
         messages[1].Contents.OfType<DataContent>().Should().BeEmpty();
         messages[1].Text.Should().Contain("look").And.Contain("this model can't view images");
-    }
-
-    [Theory]
-    [InlineData(500L, "500 bytes")]
-    [InlineData(2048L, "2 KB")]
-    [InlineData(1536L, "1.5 KB")]
-    [InlineData(3L * 1024 * 1024, "3 MB")]
-    public void FormatSize_Bytes_ReadsNaturally(long bytes, string expected)
-    {
-        // Act
-        var text = AttachmentMessage.FormatSize(bytes);
-
-        // Assert
-        text.Should().Be(expected);
     }
 
     private Task<AttachmentInfo> SaveAsync(string name, string content) => SaveAsync(name, System.Text.Encoding.UTF8.GetBytes(content));

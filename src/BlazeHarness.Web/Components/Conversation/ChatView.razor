@@ -5,6 +5,7 @@
 @inject NavigationManager Navigation
 @inject TimeProvider Time
 @inject IJSRuntime JS
+@using BlazeHarness.Core.Attachments
 
 @if (_missing)
 {
@@ -79,7 +80,7 @@ else
                         previousLabel = entry.Label;
                     }
 
-                    <MessageView @key="entry.Id" Entry="entry" ShowLabel="showLabel" CanEdit="!(_session?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" />
+                    <MessageView @key="entry.Id" Entry="entry" SessionId="@_openId" ShowLabel="showLabel" CanEdit="!(_session?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" />
                 }
             </div>
         </div>
@@ -249,20 +250,44 @@ else
         _throttle.Request();
     }
 
-    private async Task SendAsync((string Text, ChatTarget Target) message)
+    private async Task<string?> SendAsync(ComposerMessage message)
     {
         await FollowAsync();
         var id = _openId;
+        SessionInfo? created = null;
         if (id is null)
         {
             var folder = Folders.Find(FolderPath)?.Path;
-            var created = await Sessions.CreateAsync(folder);
+            created = await Sessions.CreateAsync(folder);
             if (folder is not null)
             {
                 await Folders.TouchAsync(folder);
             }
 
             id = created.Id;
+        }
+
+        List<AttachmentInfo> files = [];
+        try
+        {
+            foreach (var file in message.Files)
+            {
+                await using var content = new MemoryStream(file.Content.ToArray());
+                files.Add((await Sessions.SaveAttachmentAsync(id, file.Name, content))!);
+            }
+        }
+        catch (AttachmentException ex)
+        {
+            if (created is not null)
+            {
+                await Sessions.DeleteAsync(id);
+            }
+
+            return ex.Message;
+        }
+
+        if (created is not null)
+        {
             var session = await Sessions.OpenAsync(id);
             Detach();
             Attach(session!);
@@ -278,8 +303,10 @@ else
         }
         else
         {
-            await Sessions.SendAsync(id, message.Text, message.Target);
+            await Sessions.SendAsync(id, message.Text, files, message.Target);
         }
+
+        return null;
     }
 
     private void StartEdit(ChatEntry entry)

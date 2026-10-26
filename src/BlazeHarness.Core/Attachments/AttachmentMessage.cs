@@ -35,7 +35,7 @@ internal static class AttachmentMessage
             switch (attachment.Delivery)
             {
                 case AttachmentDelivery.Image:
-                    parts.Add($"[Attached image: {info.Name}]");
+                    parts.Add($"[Attached image: {info.Name}, id {info.Id}]");
                     images.Add(new DataContent(File.ReadAllBytes(file.Path), info.MediaType));
                     break;
                 case AttachmentDelivery.Inline:
@@ -46,7 +46,7 @@ internal static class AttachmentMessage
                 default:
                     parts.Add(string.Create(
                         CultureInfo.InvariantCulture,
-                        $"[Attached file: {info.Name}, id {info.Id}, {FormatSize(info.Size)}, {info.Lines} lines. It is too large to include here. Read it with the read_attachment tool.]"));
+                        $"[Attached file: {info.Name}, id {info.Id}, {FileSize.Format(info.Size)}, {info.Lines} lines. It is too large to include here. Read it with the read_attachment tool.]"));
                     break;
             }
         }
@@ -65,16 +65,6 @@ internal static class AttachmentMessage
                     [.. messages[i].Contents.Select(c => IsImage(c) ? new TextContent("[Image omitted: this model can't view images.]") : c)]);
             }
         }
-    }
-
-    internal static string FormatSize(long bytes)
-    {
-        return bytes switch
-        {
-            < 1024 => string.Create(CultureInfo.InvariantCulture, $"{bytes} bytes"),
-            < 1024 * 1024 => string.Create(CultureInfo.InvariantCulture, $"{bytes / 1024.0:0.#} KB"),
-            _ => string.Create(CultureInfo.InvariantCulture, $"{bytes / (1024.0 * 1024.0):0.#} MB"),
-        };
     }
 
     private static bool IsImage(AIContent content) => content is DataContent { MediaType: var type } && type.StartsWith("image/", StringComparison.Ordinal);

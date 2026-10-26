@@ -1,4 +1,6 @@
 @using System.Globalization
+@using BlazeHarness.Core.Attachments
+@using BlazeHarness.Web.Hosting
 @inject MarkdownRenderer Markdown
 
 <article class="msg" data-role="@(Entry.Role == ChatRole.User ? "user" : "assistant")" data-status="@Entry.Status.ToString().ToLowerInvariant()" data-editing="@(Editing ? "true" : null)">
@@ -13,6 +15,24 @@
             <summary>Thinking</summary>
             <div class="msg-body">@Entry.Reasoning</div>
         </details>
+    }
+
+    @if (Entry.Attachments.Count > 0)
+    {
+        <div class="msg-files">
+            @foreach (var file in Entry.Attachments.Select(a => a.File))
+            {
+                var address = AttachmentEndpoints.AddressOf(SessionId ?? string.Empty, file.Id);
+                @if (file.IsImage)
+                {
+                    <a href="@address" target="_blank" rel="noopener"><img class="msg-image" src="@address" alt="@file.Name" loading="lazy" /></a>
+                }
+                else
+                {
+                    <a class="chip" href="@address" target="_blank" rel="noopener" title="@file.Name"><Icon Name="file" /><span class="chip-name">@file.Name</span><span class="chip-size">@FileSize.Format(file.Size)</span></a>
+                }
+            }
+        </div>
     }
 
     @if (Entry.Text.Length > 0)
@@ -71,6 +91,12 @@
     /// </summary>
     [Parameter, EditorRequired]
     public ChatEntry Entry { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets the id of the chat the message belongs to, which its attached files are served from.
+    /// </summary>
+    [Parameter]
+    public string? SessionId { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether to show which model wrote the message.
