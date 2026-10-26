@@ -1,0 +1,82 @@
+@using System.Globalization
+@using BlazeHarness.Core.Providers
+
+<div class="param" data-set="@(Value is not null ? "true" : "false")">
+    <div class="param-head">
+        <label class="check">
+            <input type="checkbox" checked="@(Value is not null)" @onchange="OnToggle" />
+            <span>@Range.Label</span>
+        </label>
+        <span class="hint">@Range.Hint</span>
+    </div>
+
+    @if (Value is { } value)
+    {
+        <div class="param-body">
+            <input type="range" class="slider" min="@Format(Range.Min)" max="@Format(Range.SliderMax)" step="@Format(Range.Step)"
+                   value="@Format(Math.Clamp(value, Range.Min, Range.SliderMax))" @oninput="OnInput"
+                   aria-label="@Range.Label slider" />
+            <input type="number" class="input num" min="@Format(Range.Min)" max="@(Range.Max < int.MaxValue ? Format(Range.Max) : null)"
+                   step="@Format(Range.Step)" value="@Format(value)" @onchange="OnInput" aria-label="@Range.Label" />
+            <button type="button" class="btn btn-ghost btn-sm" @onclick="Reset"
+                    title="@(Inherited is null ? "Use the server default" : "Inherit the default value")">Reset</button>
+        </div>
+        @if (double.IsNaN(value) || value < Range.Min || value > Range.Max)
+        {
+            <span class="alert alert-error" role="alert">@Range.Label must be between @Format(Range.Min) and @Format(Range.Max).</span>
+        }
+    }
+    else
+    {
+        <span class="muted param-unset">@UnsetText()</span>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public SamplingRange Range { get; set; } = null!;
+
+    [Parameter]
+    public double? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<double?> ValueChanged { get; set; }
+
+    [Parameter]
+    public double? Inherited { get; set; }
+
+    private static string Format(double value) => value.ToString(CultureInfo.InvariantCulture);
+
+    private Task OnToggle(ChangeEventArgs e)
+    {
+        return e.Value is true ? ValueChanged.InvokeAsync(StartValue()) : ValueChanged.InvokeAsync(null);
+    }
+
+    private Task OnInput(ChangeEventArgs e)
+    {
+        if (!double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+        {
+            return Task.CompletedTask;
+        }
+
+        return ValueChanged.InvokeAsync(Range.IsInteger ? Math.Round(parsed) : parsed);
+    }
+
+    private string UnsetText()
+    {
+        return Inherited is { } inherited ? $"Inherited: {Format(inherited)}" : "Unset: the server default applies";
+    }
+
+    private Task Reset() => ValueChanged.InvokeAsync(null);
+
+    private double StartValue()
+    {
+        var start = Inherited ?? Range.Key switch
+        {
+            "temperature" or "topP" or "repetitionPenalty" => 1,
+            "topK" => 40,
+            _ => 0,
+        };
+        return Math.Clamp(start, Range.Min, Range.SliderMax);
+    }
+}

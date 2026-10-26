@@ -1,0 +1,246 @@
+@using System.Text.Json
+@using BlazeHarness.Core.Providers
+@using BlazeHarness.Web.Settings
+
+<Dialog Title="@($"Tune {Model?.Id}")" Open="Open" OnClose="OnClose" Wide="true">
+    <ChildContent>
+        @if (Model is not null && Provider is not null)
+        {
+            <p class="hint">Everything here is optional. Anything you leave unset is not sent, so the server's own default applies. Changes are saved with the provider.</p>
+
+            <section class="stack" aria-labelledby="tune-presets">
+                <h3 id="tune-presets">Presets and import</h3>
+                <div class="input-group">
+                    <select class="select" aria-label="Preset" @bind="_presetId">
+                        <option value="">Choose a preset…</option>
+                        @foreach (var preset in ThinkingPreset.All)
+                        {
+                            <option value="@preset.Id">@preset.Name</option>
+                        }
+                    </select>
+                    <button type="button" class="btn" disabled="@(_presetId.Length == 0)" @onclick="ApplyPreset">Apply</button>
+                </div>
+                @if (ThinkingPreset.Find(_presetId) is { } chosen)
+                {
+                    <span class="hint">@chosen.Description Applying replaces this model's sampling and thinking setup.</span>
+                }
+                <details>
+                    <summary>Import from JSON</summary>
+                    <div class="stack details-body">
+                        <label class="sr-only" for="tune-import">JSON to import</label>
+                        <textarea id="tune-import" class="input mono" rows="6" spellcheck="false" @bind="_importText" @bind:event="oninput"
+                                  placeholder='{"temperature": 0.6, "top_p": 0.95, "top_k": 20}'></textarea>
+                        <span class="hint">Paste a bare object of sampling values, or an object with samplingParams, samplingParamsByThinkingLevel and thinkingLevels.</span>
+                        @if (_importErrors.Count > 0)
+                        {
+                            <div class="alert alert-error" role="alert">
+                                @foreach (var error in _importErrors)
+                                {
+                                    <div>@error</div>
+                                }
+                            </div>
+                        }
+                        <div><button type="button" class="btn" disabled="@string.IsNullOrWhiteSpace(_importText)" @onclick="Import">Import</button></div>
+                    </div>
+                </details>
+            </section>
+
+            <section class="stack" aria-labelledby="tune-levels">
+                <h3 id="tune-levels">Thinking levels</h3>
+                @if (!Model.Reasoning)
+                {
+                    <p class="muted">This model is not marked as a thinking model, so no levels are offered.</p>
+                    <div><button type="button" class="btn" @onclick="() => Model.Reasoning = true">Mark as a thinking model</button></div>
+                }
+                else
+                {
+                    <p class="hint">
+                        Tick the levels the model supports and enter the value the server expects, such as low, none or true.
+                        An empty value sends nothing for that level. Changing the level mid-chat can make the server re-read the whole conversation.
+                    </p>
+                    <div class="field">
+                        <label for="tune-send">Send the level as</label>
+                        <div class="input-group">
+                            <select id="tune-send" class="select" value="@SendChoice" @onchange="OnSendChanged">
+                                <option value="inherit">The provider's setting (@Describe(Provider.ThinkingMode))</option>
+                                <option value="@nameof(ThinkingSendMode.ReasoningEffort)">@Describe(ThinkingSendMode.ReasoningEffort)</option>
+                                <option value="@nameof(ThinkingSendMode.ReasoningObject)">@Describe(ThinkingSendMode.ReasoningObject)</option>
+                                <option value="@nameof(ThinkingSendMode.BodyField)">@Describe(ThinkingSendMode.BodyField)</option>
+                            </select>
+                            @if (Model.OverrideSend && Model.SendMode == ThinkingSendMode.BodyField)
+                            {
+                                <input class="input mono field-path" aria-label="Body field path" placeholder="chat_template_kwargs.enable_thinking" @bind="Model.SendField" />
+                            }
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr><th scope="col">Supported</th><th scope="col">Level</th><th scope="col">Value sent</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var level in Enum.GetValues<ThinkingLevel>())
+                                {
+                                    var edit = Model.Levels[level];
+                                    <tr>
+                                        <td><input type="checkbox" aria-label="Supports @LevelName(level)" @bind="edit.Supported" /></td>
+                                        <td>@LevelName(level)</td>
+                                        <td><input class="input mono" aria-label="Value for @LevelName(level)" disabled="@(!edit.Supported)" @bind="edit.Value" /></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+
+            <section class="stack" aria-labelledby="tune-sampling">
+                <h3 id="tune-sampling">Sampling</h3>
+                <div class="tabs" role="tablist" aria-label="Settings to edit">
+                    <button type="button" role="tab" class="tab" aria-selected="@(ActiveTab is null ? "true" : "false")" @onclick="() => _tab = null">Default</button>
+                    @if (Model.Reasoning)
+                    {
+                        @foreach (var level in Model.SupportedLevels)
+                        {
+                            <button type="button" role="tab" class="tab" aria-selected="@(ActiveTab == level ? "true" : "false")" @onclick="() => _tab = level">@LevelName(level)</button>
+                        }
+                    }
+                </div>
+                @{
+                    var current = Current;
+                }
+                <p class="hint">
+                    @if (ActiveTab is null)
+                    {
+                        <text>Defaults for every request to this model.</text>
+                    }
+                    else
+                    {
+                        <text>These values apply on top of the defaults while the <strong>@LevelName(ActiveTab.Value)</strong> level is selected. Tick a value to override it.</text>
+                    }
+                </p>
+                <div class="params">
+                    @foreach (var range in SamplingRange.All)
+                    {
+                        var key = range.Key;
+                        <ParamRow Range="range" Value="current.Get(key)" ValueChanged="v => current.Set(key, v)"
+                                  Inherited="@(ActiveTab is null ? null : Model.Sampling.Get(key))" />
+                    }
+                </div>
+
+                <div class="stack">
+                    <div class="row row-spread">
+                        <span class="label">Custom fields</span>
+                        <button type="button" class="btn btn-sm" @onclick="() => current.Extra.Add(new ExtraParamRow())">＋ Add field</button>
+                    </div>
+                    @foreach (var row in current.Extra)
+                    {
+                        <div class="input-group" @key="row">
+                            <input class="input mono" aria-label="Field name" placeholder="mirostat" @bind="row.Name" />
+                            <input class="input mono" aria-label="Field value as JSON" placeholder="2" @bind="row.Json" />
+                            <button type="button" class="btn btn-ghost btn-danger btn-sm" aria-label="Remove field @row.Name" @onclick="() => current.Extra.Remove(row)">Remove</button>
+                        </div>
+                    }
+                    @if (current.Extra.Count == 0)
+                    {
+                        <span class="hint">For server-specific request fields. A dotted name such as chat_template_kwargs.x sets a nested field.</span>
+                    }
+                </div>
+            </section>
+
+            <section class="stack" aria-labelledby="tune-preview">
+                <h3 id="tune-preview">What will be sent</h3>
+                <span class="hint">
+                    @(ActiveTab is null ? "With no thinking level selected." : $"With the {LevelName(ActiveTab.Value)} level selected.")
+                    These fields are added to the request body.
+                </span>
+                <pre class="preview" tabindex="0">@Preview()</pre>
+            </section>
+        }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn btn-primary" @onclick="OnClose">Done</button>
+    </Footer>
+</Dialog>
+
+@code {
+    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
+
+    private string _presetId = string.Empty;
+    private string _importText = string.Empty;
+    private List<string> _importErrors = [];
+    private ThinkingLevel? _tab;
+
+    [Parameter]
+    public ProviderEditModel? Provider { get; set; }
+
+    [Parameter]
+    public ModelEditModel? Model { get; set; }
+
+    [Parameter]
+    public bool Open { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private ThinkingLevel? ActiveTab => _tab is { } level && Model is { Reasoning: true } && Model.Levels[level].Supported ? level : null;
+
+    private SamplingEditModel Current => ActiveTab is { } level ? Model!.Levels[level].Overrides : Model!.Sampling;
+
+    private string SendChoice => Model is { OverrideSend: true } ? Model.SendMode.ToString() : "inherit";
+
+    private static string LevelName(ThinkingLevel level) => JsonNamingPolicy.CamelCase.ConvertName(level.ToString());
+
+    private static string Describe(ThinkingSendMode mode) => mode switch
+    {
+        ThinkingSendMode.ReasoningEffort => "reasoning_effort",
+        ThinkingSendMode.ReasoningObject => "reasoning object",
+        _ => "custom body field",
+    };
+
+    private void OnSendChanged(ChangeEventArgs e)
+    {
+        var choice = e.Value?.ToString();
+        if (Model is null || choice is null)
+        {
+            return;
+        }
+
+        if (Enum.TryParse<ThinkingSendMode>(choice, out var mode))
+        {
+            Model.OverrideSend = true;
+            Model.SendMode = mode;
+        }
+        else
+        {
+            Model.OverrideSend = false;
+        }
+    }
+
+    private void ApplyPreset()
+    {
+        if (Model is not null && ThinkingPreset.Find(_presetId) is { } preset)
+        {
+            Model.Apply(preset);
+            _tab = null;
+            _presetId = string.Empty;
+        }
+    }
+
+    private void Import()
+    {
+        var result = SamplingImport.Parse(_importText);
+        _importErrors = [.. result.Errors];
+        if (Model is not null && result.Errors.Count == 0)
+        {
+            Model.Apply(result);
+            _importText = string.Empty;
+        }
+    }
+
+    private string Preview()
+    {
+        var json = ResolvedRequestParams.Resolve(Provider!.ToConfig(), Model!.ToConfig(), ActiveTab, null).ToRequestJson();
+        return json.Count == 0 ? "{}  (nothing added; the server defaults apply)" : json.ToJsonString(Indented);
+    }
+}

@@ -246,6 +246,7 @@ dialog.dialog {
     padding: 0; border: 1px solid var(--border); border-radius: var(--radius-lg);
     background: var(--bg-raised); color: var(--fg); box-shadow: var(--shadow-lg);
 }
+dialog.dialog.dialog-wide { width: min(56rem, calc(100vw - 2rem)); }
 dialog.dialog::backdrop { background: rgb(0 0 0 / 45%); }
 dialog.dialog[open] { display: flex; flex-direction: column; animation: pop var(--duration) var(--ease); }
 .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-block-end: 1px solid var(--border); }
@@ -296,3 +297,19 @@ dialog.dialog[open] { display: flex; flex-direction: column; animation: pop var(
     padding: var(--space-2) var(--space-4); background: var(--warning-soft); color: var(--fg);
 }
 #blazor-error-ui .dismiss { cursor: pointer; position: absolute; inset-inline-end: var(--space-3); inset-block-start: var(--space-2); }
+
+/* Sampling and thinking editor ---------------------------------------------------- */
+.params { display: flex; flex-direction: column; }
+.param { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) 0; border-block-end: 1px solid var(--border); }
+.param-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-3); }
+.param-body { display: flex; align-items: center; gap: var(--space-3); }
+.param-body .slider { flex: 1; min-width: 6rem; accent-color: var(--accent); }
+.param-body .num { width: 6.5rem; flex: none; }
+.param[data-set="false"] .param-unset { font-size: var(--text-sm); }
+.preview {
+    margin: 0; padding: var(--space-3); overflow: auto; max-height: 14rem;
+    background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.details-body { padding-block-start: var(--space-2); }
+details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600; }
+.field-path { flex: 1 1 20rem; min-width: 18rem; }

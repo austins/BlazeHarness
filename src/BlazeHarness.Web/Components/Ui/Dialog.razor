@@ -2,7 +2,7 @@
 
 @if (Open)
 {
-    <dialog class="dialog" @ref="_dialog" aria-labelledby="@_titleId" @oncancel="Close" @oncancel:preventDefault>
+    <dialog class="dialog@(Wide ? " dialog-wide" : "")" @ref="_dialog" aria-labelledby="@_titleId" @oncancel="Close" @oncancel:preventDefault>
         <div class="dialog-header">
             <h2 id="@_titleId">@Title</h2>
             <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Close" @onclick="Close">✕</button>
@@ -25,6 +25,9 @@
 
     [Parameter]
     public bool Open { get; set; }
+
+    [Parameter]
+    public bool Wide { get; set; }
 
     [Parameter]
     public EventCallback OnClose { get; set; }

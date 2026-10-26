@@ -130,7 +130,7 @@
                             <div class="table-wrap">
                                 <table class="table">
                                     <thead>
-                                        <tr><th>Model id</th><th>Name</th><th>Context</th><th>Max output</th><th>Reasoning</th><th>Images</th><th><span class="sr-only">Actions</span></th></tr>
+                                        <tr><th>Model id</th><th>Name</th><th>Context</th><th>Max output</th><th>Thinking</th><th>Images</th><th><span class="sr-only">Actions</span></th></tr>
                                     </thead>
                                     <tbody>
                                         @for (var i = 0; i < _edit.Models.Count; i++)
@@ -142,10 +142,11 @@
                                                 <td><input class="input" aria-label="Display name" @bind="model.DisplayName" placeholder="@model.Id" /></td>
                                                 <td><input class="input num" type="number" min="1" aria-label="Context window" aria-invalid="@Invalid($"models[{index}].contextWindow")" @bind="model.ContextWindow" /></td>
                                                 <td><input class="input num" type="number" min="1" aria-label="Max output tokens" aria-invalid="@Invalid($"models[{index}].maxOutputTokens")" @bind="model.MaxOutputTokens" /></td>
-                                                <td><input type="checkbox" aria-label="Reasoning model" @bind="model.Reasoning" /></td>
+                                                <td><input type="checkbox" aria-label="Thinking model" @bind="model.Reasoning" /></td>
                                                 <td><input type="checkbox" aria-label="Accepts images" @bind="model.Image" /></td>
                                                 <td>
                                                     <div class="row">
+                                                        <button type="button" class="btn btn-sm" aria-label="Tune @model.Id" @onclick="() => _tuning = model">Tune</button>
                                                         @if (IsDefault(model))
                                                         {
                                                             <span class="badge badge-accent">default</span>
@@ -237,6 +238,8 @@
     </div>
 </div>
 
+<ModelTuning Provider="_edit" Model="_tuning" Open="_tuning is not null" OnClose="() => _tuning = null" />
+
 <Dialog Title="Remove provider?" Open="_confirmDelete" OnClose="() => _confirmDelete = false">
     <ChildContent>
         <p>This removes <strong>@_edit?.DisplayName</strong> and its stored API key. Existing chats that used it will need another provider.</p>
@@ -261,6 +264,7 @@
     private ProviderEditModel? _edit;
     private IReadOnlyList<ValidationIssue> _issues = [];
     private ConnectionTestResult? _test;
+    private ModelEditModel? _tuning;
     private bool _hasStoredKey;
     private bool _testing;
     private bool _saving;
