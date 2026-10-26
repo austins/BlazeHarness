@@ -13,7 +13,7 @@ public sealed class ChatSessionTests
     {
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hel"), ScriptedChatClient.Text("lo")]);
-        var sut = CreateSession(client);
+        using var sut = CreateSession(client);
 
         // Act
         await sut.SendAsync("hi", Fast);
@@ -32,7 +32,7 @@ public sealed class ChatSessionTests
     {
         // Arrange
         using var client = new ScriptedChatClient();
-        var sut = CreateSession(client);
+        using var sut = CreateSession(client);
 
         // Act
         await sut.SendAsync("   ", Fast);
@@ -46,7 +46,7 @@ public sealed class ChatSessionTests
     public async Task SendAsync_ClientFactoryThrows_MarksReplyFailed()
     {
         // Arrange
-        var sut = new ChatSession((_, _) => throw new InvalidOperationException("no key"));
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException("no key"));
 
         // Act
         await sut.SendAsync("hi", Fast);
@@ -63,7 +63,7 @@ public sealed class ChatSessionTests
     {
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("so far")]);
-        var session = CreateSession(client);
+        using var session = CreateSession(client);
         session.Changed += (_, _) =>
         {
             if (session.Entries is [_, { Text: "so far" }])
@@ -88,7 +88,7 @@ public sealed class ChatSessionTests
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("par")], new InvalidOperationException("boom"))
             .Enqueue([ScriptedChatClient.Text("full answer")]);
         var targets = new List<string>();
-        var sut = CreateSession(client, t => targets.Add(t.Model.Id));
+        using var sut = CreateSession(client, t => targets.Add(t.Model.Id));
         await sut.SendAsync("hi", Fast);
 
         // Act
@@ -108,7 +108,7 @@ public sealed class ChatSessionTests
     {
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
-        var sut = CreateSession(client);
+        using var sut = CreateSession(client);
         await sut.SendAsync("hi", Fast);
 
         // Act
@@ -125,7 +125,7 @@ public sealed class ChatSessionTests
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")])
             .Enqueue([ScriptedChatClient.Text("two")]);
-        var sut = CreateSession(client);
+        using var sut = CreateSession(client);
 
         // Act
         await sut.SendAsync("a", Fast);

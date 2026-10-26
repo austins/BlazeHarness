@@ -1,4 +1,5 @@
 using BlazeHarness.Core;
+using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Secrets;
@@ -19,8 +20,15 @@ builder.Services.AddSingleton(sp => new JsonFileStore<AppConfig>(
     sp.GetRequiredService<ILogger<JsonFileStore<AppConfig>>>()));
 builder.Services.AddSingleton<ProviderService>();
 builder.Services.AddScoped<ToastService>();
+builder.Services.AddScoped<ChatClientSource>();
+builder.Services.AddScoped(sp =>
+{
+    var source = sp.GetRequiredService<ChatClientSource>();
+    return new ChatSession(source.CreateAsync);
+});
 builder.Services.AddSingleton<LaunchCredentials>();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient(ChatClientSource.HttpClientName, client => client.Timeout = Timeout.InfiniteTimeSpan);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()

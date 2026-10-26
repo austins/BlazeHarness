@@ -3,20 +3,17 @@
 
 <PageTitle>BlazeHarness</PageTitle>
 
-<div class="page">
-    @if (Service.Config.Providers.Count == 0)
-    {
+@if (Service.Config.Providers.Count == 0)
+{
+    <div class="page">
         <div class="card empty">
             <h1>Welcome to BlazeHarness</h1>
             <p>Connect an OpenAI-compatible endpoint to start chatting. A hosted API or a local server such as llama.cpp both work.</p>
             <a class="btn btn-primary" href="settings/providers">Set up a provider</a>
         </div>
-    }
-    else
-    {
-        <div class="card empty">
-            <h1>Ready to chat</h1>
-            <p>Chat is coming next.</p>
-        </div>
-    }
-</div>
+    </div>
+}
+else
+{
+    <ChatView />
+}

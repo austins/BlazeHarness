@@ -1,0 +1,52 @@
+<article class="msg" data-role="@(Entry.Role == ChatRole.User ? "user" : "assistant")" data-status="@Entry.Status.ToString().ToLowerInvariant()">
+    @if (ShowLabel && !string.IsNullOrEmpty(Entry.Label))
+    {
+        <div class="msg-label">@Entry.Label</div>
+    }
+
+    @if (Entry.Reasoning.Length > 0)
+    {
+        <details class="msg-thinking" open="@(Entry.Status == EntryStatus.Streaming && Entry.Text.Length == 0)">
+            <summary>Thinking</summary>
+            <div class="msg-body">@Entry.Reasoning</div>
+        </details>
+    }
+
+    @if (Entry.Text.Length > 0)
+    {
+        <div class="msg-body">@Entry.Text</div>
+    }
+    else if (Entry.Status == EntryStatus.Streaming && Entry.Reasoning.Length == 0)
+    {
+        <div class="msg-wait" role="status">Waiting for the model…</div>
+    }
+
+    @if (Entry.Status == EntryStatus.Cancelled)
+    {
+        <div class="hint">Stopped.</div>
+    }
+
+    @if (Entry.Error is not null)
+    {
+        <div class="alert alert-error" role="alert">@Entry.Error</div>
+    }
+
+    @if (Entry.Usage is { } usage)
+    {
+        <div class="hint mono">@usage.PromptTokens in · @usage.CompletionTokens out</div>
+    }
+</article>
+
+@code {
+    /// <summary>
+    /// Gets or sets the message to show.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public ChatEntry Entry { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to show which model wrote the message.
+    /// </summary>
+    [Parameter]
+    public bool ShowLabel { get; set; }
+}

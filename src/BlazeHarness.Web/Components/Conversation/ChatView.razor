@@ -1,0 +1,96 @@
+@implements IDisposable
+@inject ProviderService Providers
+@inject ChatSession Session
+@inject IJSRuntime JS
+
+<section class="chat" data-pinned="true" @ref="_root" aria-label="Conversation">
+    <div class="chat-scroll" @ref="_scroll" tabindex="-1">
+        <div class="chat-thread" role="log" aria-live="off">
+            @if (Session.Entries.Count == 0)
+            {
+                <div class="chat-empty">
+                    <h1>What can I help with?</h1>
+                    <p class="muted">Pick a model below and send a message. Press Enter to send and Shift+Enter for a new line.</p>
+                </div>
+            }
+
+            @{
+                string? previousLabel = null;
+            }
+            @foreach (var entry in Session.Entries)
+            {
+                var showLabel = entry.Role == ChatRole.Assistant && entry.Label != previousLabel;
+                if (entry.Role == ChatRole.Assistant)
+                {
+                    previousLabel = entry.Label;
+                }
+
+                <MessageView @key="entry.Id" Entry="entry" ShowLabel="showLabel" />
+            }
+        </div>
+    </div>
+
+    <button type="button" class="btn btn-sm chat-jump" onclick="bhChat.toBottom(this)">Jump to latest</button>
+
+    <Composer Running="Session.IsRunning" CanRetry="Session.CanRetry" OnSend="SendAsync" OnRetry="RetryAsync" OnStop="Stop" />
+</section>
+
+@code {
+    private readonly RenderThrottle _throttle;
+    private ElementReference _root;
+    private ElementReference _scroll;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ChatView"/> class.
+    /// </summary>
+    public ChatView()
+    {
+        _throttle = new RenderThrottle(() => InvokeAsync(StateHasChanged), TimeSpan.FromMilliseconds(50));
+    }
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += OnChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("bhChat.watch", _root, _scroll);
+        }
+    }
+
+    public void Dispose()
+    {
+        Session.Changed -= OnChanged;
+        _throttle.Dispose();
+    }
+
+    private void OnChanged(object? sender, EventArgs e)
+    {
+        _throttle.Request();
+    }
+
+    private async Task SendAsync((string Text, ChatTarget Target) message)
+    {
+        await FollowAsync();
+        await Session.SendAsync(message.Text, message.Target);
+    }
+
+    private async Task RetryAsync(ChatTarget target)
+    {
+        await FollowAsync();
+        await Session.RetryAsync(target);
+    }
+
+    private async Task FollowAsync()
+    {
+        await JS.InvokeVoidAsync("bhChat.follow", _root);
+    }
+
+    private void Stop()
+    {
+        Session.Stop();
+    }
+}

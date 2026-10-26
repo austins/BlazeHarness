@@ -16,7 +16,7 @@ namespace BlazeHarness.Core.Agent;
 /// is raised on that context, and the UI throttles its own rendering.
 /// </para>
 /// </remarks>
-public sealed class ChatSession
+public sealed class ChatSession : IDisposable
 {
     private readonly Func<ChatTarget, CancellationToken, Task<IChatClient>> _clientFactory;
     private readonly List<ChatEntry> _entries = [];
@@ -97,6 +97,14 @@ public sealed class ChatSession
         _entries.RemoveAt(_entries.Count - 1);
         _history.RemoveRange(failed.HistoryIndex, _history.Count - failed.HistoryIndex);
         await ReplyAsync(target);
+    }
+
+    /// <summary>
+    /// Stop any reply that is being produced, so nothing keeps running after the session is gone.
+    /// </summary>
+    public void Dispose()
+    {
+        Stop();
     }
 
     /// <summary>

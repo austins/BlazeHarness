@@ -14,6 +14,9 @@ public static class ChatClientFactory
 {
     private const int MaxRetries = 4;
 
+    // Local models can take minutes to start answering a long prompt.
+    private static readonly TimeSpan NetworkTimeout = TimeSpan.FromMinutes(10);
+
     /// <summary>
     /// Create a streaming chat client for a provider.
     /// </summary>
@@ -32,6 +35,7 @@ public static class ChatClientFactory
             Endpoint = new Uri(provider.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute),
             Transport = new HttpClientPipelineTransport(httpClient),
             RetryPolicy = new ClientRetryPolicy(MaxRetries),
+            NetworkTimeout = NetworkTimeout,
         };
 
         if (provider.Headers is { Count: > 0 })
