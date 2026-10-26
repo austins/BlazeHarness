@@ -225,6 +225,51 @@ public sealed class ChatSessionPersistenceTests
     }
 
     [Fact]
+    public async Task EditAsync_SavesARewindThenTheNewMessage()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")])
+            .Enqueue([ScriptedChatClient.Text("two")])
+            .Enqueue([ScriptedChatClient.Text("again")]);
+        using var sut = Create(client);
+        await sut.SendAsync("a", TestTargets.Create());
+        await sut.SendAsync("b", TestTargets.Create());
+        var keep = sut.Entries[1].Id;
+
+        // Act
+        await sut.EditAsync(sut.Entries[2].Id, "b2", TestTargets.Create());
+
+        // Assert
+        _log.Events.OfType<RewindEvent>().Single().ToEntryId.Should().Be(keep);
+        _log.Events.Select(e => e.GetType()).TakeLast(5).Should().Equal(
+            typeof(RewindEvent),
+            typeof(UserMessageEvent),
+            typeof(AssistantStartEvent),
+            typeof(AssistantDeltaEvent),
+            typeof(AssistantEndEvent));
+        _log.Events.OfType<UserMessageEvent>().Last().Text.Should().Be("b2");
+    }
+
+    [Fact]
+    public async Task Restore_AfterEditingTheFirstMessage_ShowsOnlyTheNewConversation()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")])
+            .Enqueue([ScriptedChatClient.Text("fresh")]);
+        using var edited = Create(client);
+        await edited.SendAsync("a", TestTargets.Create());
+        await edited.EditAsync(edited.Entries[0].Id, "a2", TestTargets.Create());
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+
+        // Act
+        sut.Restore(await _log.ReadAsync(TestContext.Current.CancellationToken));
+
+        // Assert
+        sut.Entries.Select(e => e.Text).Should().Equal("a2", "fresh");
+        sut.History.Select(m => m.Text).Should().Equal("a2", "fresh");
+    }
+
+    [Fact]
     public void Restore_Rewind_DropsLaterMessagesFromTheConversation()
     {
         // Arrange

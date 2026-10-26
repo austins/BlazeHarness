@@ -224,6 +224,68 @@ public sealed class SessionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task EditAsync_FirstMessage_UpdatesAPlaceholderTitleAndSurvivesARestart()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")]).Enqueue([ScriptedChatClient.Text("two")]);
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        await sut.SendAsync(info.Id, "first draft", Target("p1", "fast"));
+        var entryId = (await sut.OpenAsync(info.Id))!.Entries[0].Id;
+
+        // Act
+        await sut.EditAsync(info.Id, entryId, "better question", Target("p1", "fast"));
+
+        // Assert
+        sut.Store.Find(info.Id)!.Title.Should().Be("better question");
+        var reopened = await Create(client).OpenAsync(info.Id);
+        reopened!.Entries.Select(e => e.Text).Should().Equal("better question", "two");
+    }
+
+    [Fact]
+    public async Task EditAsync_LaterMessage_KeepsTheTitle()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")])
+            .Enqueue([ScriptedChatClient.Text("two")])
+            .Enqueue([ScriptedChatClient.Text("three")]);
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        await sut.SendAsync(info.Id, "topic", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "follow up", Target("p1", "fast"));
+        var entryId = (await sut.OpenAsync(info.Id))!.Entries[2].Id;
+
+        // Act
+        await sut.EditAsync(info.Id, entryId, "other follow up", Target("p1", "fast"));
+
+        // Assert
+        sut.Store.Find(info.Id)!.Title.Should().Be("topic");
+    }
+
+    [Fact]
+    public async Task EditAsync_WhileRunning_DoesNothing()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new GatedChatClient();
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await client.Started.WaitAsync(ct);
+        var session = (await sut.OpenAsync(info.Id))!;
+
+        // Act
+        await sut.EditAsync(info.Id, session.Entries[0].Id, "changed", Target("p1", "fast"));
+        client.Release();
+        await turn;
+
+        // Assert
+        session.Entries[0].Text.Should().Be("hi");
+    }
+
+    [Fact]
     public async Task DeleteAsync_WhenIdle_RemovesTheSessionFromDisk()
     {
         // Arrange

@@ -12,6 +12,13 @@ else
 {
     <div class="composer">
     <form class="composer-form" @onsubmit="SubmitAsync" novalidate>
+        @if (Editing is not null)
+        {
+            <div class="composer-editing" role="status">
+                <span>Editing a message. Sending replaces it and every reply after it.</span>
+                <button type="button" class="btn btn-ghost btn-sm" @onclick="CancelEditAsync">Cancel</button>
+            </div>
+        }
         <textarea class="input composer-input" rows="1" @ref="_input" @bind="_text" @bind:event="oninput"
                   placeholder="Message the model" aria-label="Message"></textarea>
         <div class="composer-bar">
@@ -37,7 +44,7 @@ else
                 </select>
             }
             <span class="composer-spacer"></span>
-            @if (CanRetry)
+            @if (CanRetry && Editing is null)
             {
                 <button type="button" class="btn" @onclick="RetryAsync"><Icon Name="retry" /> Retry</button>
             }
@@ -72,6 +79,7 @@ else
     private bool _applied;
     private bool _creating;
     private string? _appliedFor;
+    private Guid? _loadedEdit;
 
     /// <summary>
     /// Gets or sets the id of the open chat, or null for a new one.
@@ -98,6 +106,18 @@ else
     public bool CanRetry { get; set; }
 
     /// <summary>
+    /// Gets or sets the message being edited, whose text fills the box until it is sent or the edit is cancelled, or null.
+    /// </summary>
+    [Parameter]
+    public ChatEntry? Editing { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user cancelling the edit.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnCancelEdit { get; set; }
+
+    /// <summary>
     /// Gets or sets the callback for a message to send with its chosen target.
     /// </summary>
     [Parameter]
@@ -122,6 +142,13 @@ else
 
     protected override void OnParametersSet()
     {
+        if (Editing?.Id != _loadedEdit)
+        {
+            _text = Editing?.Text ?? string.Empty;
+            _loadedEdit = Editing?.Id;
+            _resize = true;
+        }
+
         if (_applied && SessionId == _appliedFor)
         {
             return;
@@ -229,6 +256,11 @@ else
         _text = string.Empty;
         _resize = true;
         await OnSend.InvokeAsync((text, target));
+    }
+
+    private async Task CancelEditAsync()
+    {
+        await OnCancelEdit.InvokeAsync();
     }
 
     private async Task RetryAsync()

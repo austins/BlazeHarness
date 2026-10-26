@@ -142,6 +142,31 @@ public sealed partial class SessionService : IDisposable
     }
 
     /// <summary>
+    /// Replace one of the user's messages in a session and stream a new reply, remembering the target it was sent with.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="entryId">The id of the message to replace.</param>
+    /// <param name="text">The new message text.</param>
+    /// <param name="target">The provider, model and level to use.</param>
+    /// <returns>A task that completes when the reply has ended; it does nothing when the session is unknown, busy, the message can't be edited or the text is blank.</returns>
+    public async Task EditAsync(string id, Guid entryId, string text, ChatTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        if (await OpenAsync(id).ConfigureAwait(false) is not { IsRunning: false } session
+            || string.IsNullOrWhiteSpace(text)
+            || !session.CanEdit(entryId))
+        {
+            return;
+        }
+
+        var first = session.Entries is [{ } head, ..] && head.Id == entryId;
+        await RememberAsync(id, target, first ? text : null, replacePlaceholder: first).ConfigureAwait(false);
+        await RefreshProjectAsync(id, session).ConfigureAwait(false);
+        await session.EditAsync(entryId, text, target).ConfigureAwait(false);
+        StartTitle(id, session, target);
+    }
+
+    /// <summary>
     /// Retry the last reply of a session, and remember the target it was retried with.
     /// </summary>
     /// <param name="id">The session id.</param>
@@ -324,7 +349,7 @@ public sealed partial class SessionService : IDisposable
         return session;
     }
 
-    private Task RememberAsync(string id, ChatTarget target, string? firstText)
+    private Task RememberAsync(string id, ChatTarget target, string? firstText, bool replacePlaceholder = false)
     {
         return _store.UpdateAsync(
             id,
@@ -333,7 +358,7 @@ public sealed partial class SessionService : IDisposable
                 ProviderId = target.Provider.Id,
                 ModelId = target.Model.Id,
                 Level = target.Level,
-                Title = s.Title.Length == 0 && firstText is not null ? Placeholder(firstText) : s.Title,
+                Title = firstText is not null && (s.Title.Length == 0 || (replacePlaceholder && s.TitleSource == TitleSource.Placeholder)) ? Placeholder(firstText) : s.Title,
             },
             touch: true);
     }

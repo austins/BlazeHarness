@@ -152,8 +152,8 @@ public sealed partial class ChatSession : IDisposable
                         target.At = end.At;
                         break;
                     case RewindEvent rewind:
-                        var keep = _entries.FindIndex(x => x.Id == rewind.ToEntryId);
-                        if (keep >= 0)
+                        var keep = rewind.ToEntryId == Guid.Empty ? -1 : _entries.FindIndex(x => x.Id == rewind.ToEntryId);
+                        if (keep >= 0 || rewind.ToEntryId == Guid.Empty)
                         {
                             _entries.RemoveRange(keep + 1, _entries.Count - keep - 1);
                         }
@@ -238,6 +238,62 @@ public sealed partial class ChatSession : IDisposable
                 return true;
             },
             () => [new RewindEvent(_time.GetUtcNow(), keep)]);
+    }
+
+    /// <summary>
+    /// Get whether a message can be edited and sent again.
+    /// </summary>
+    /// <param name="entryId">The id of the message.</param>
+    /// <returns>True when the message is one of the user's and no reply is running.</returns>
+    public bool CanEdit(Guid entryId)
+    {
+        lock (_gate)
+        {
+            return _stop is null && _entries.Find(e => e.Id == entryId) is { Role.Value: "user" };
+        }
+    }
+
+    /// <summary>
+    /// Replace one of the user's messages and stream a new reply to it.
+    /// </summary>
+    /// <remarks>
+    /// The old message and everything after it is dropped from the conversation, so the model never sees it.
+    /// The log keeps it behind a rewind marker.
+    /// </remarks>
+    /// <param name="entryId">The id of the message to replace.</param>
+    /// <param name="text">The new message text.</param>
+    /// <param name="target">The provider, model and level to use for the new reply.</param>
+    /// <returns>A task that completes when the reply has ended; it does nothing when the message can't be edited, a reply is running or the text is empty.</returns>
+    public Task EditAsync(Guid entryId, string text, ChatTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return Task.CompletedTask;
+        }
+
+        var sentAt = _time.GetUtcNow();
+        var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt };
+        var keep = Guid.Empty;
+        return TurnAsync(
+            target,
+            () =>
+            {
+                var index = _entries.FindIndex(e => e.Id == entryId && e.Role == ChatRole.User);
+                if (index < 0)
+                {
+                    return false;
+                }
+
+                keep = index == 0 ? Guid.Empty : _entries[index - 1].Id;
+                var historyIndex = _entries.Take(index).Count(e => e.Role == ChatRole.User || e.Text.Length > 0);
+                _entries.RemoveRange(index, _entries.Count - index);
+                _history.RemoveRange(historyIndex, _history.Count - historyIndex);
+                _entries.Add(user);
+                _history.Add(new ChatMessage(ChatRole.User, text));
+                return true;
+            },
+            () => [new RewindEvent(sentAt, keep), new UserMessageEvent(sentAt, user.Id, text)]);
     }
 
     /// <summary>

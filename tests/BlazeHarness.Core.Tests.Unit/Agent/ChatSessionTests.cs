@@ -153,6 +153,102 @@ public sealed class ChatSessionTests
     }
 
     [Fact]
+    public async Task EditAsync_MiddleMessage_DropsItAndEverythingAfterAndAsksAgain()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")])
+            .Enqueue([ScriptedChatClient.Text("two")])
+            .Enqueue([ScriptedChatClient.Text("three")])
+            .Enqueue([ScriptedChatClient.Text("new two")]);
+        using var sut = CreateSession(client);
+        await sut.SendAsync("a", Fast);
+        await sut.SendAsync("b", Fast);
+        await sut.SendAsync("c", Fast);
+        var second = sut.Entries[2].Id;
+
+        // Act
+        await sut.EditAsync(second, "b2", Target("p2", "smart", null));
+
+        // Assert
+        sut.Entries.Select(e => e.Text).Should().Equal("a", "one", "b2", "new two");
+        sut.History.Select(m => m.Text).Should().Equal("a", "one", "b2", "new two");
+        client.Requests[3].Select(m => m.Text).Should().Equal("a", "one", "b2");
+        sut.Entries[3].Label.Should().Be("P2 · smart");
+    }
+
+    [Fact]
+    public async Task EditAsync_FirstMessage_RestartsTheConversation()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")])
+            .Enqueue([ScriptedChatClient.Text("two")])
+            .Enqueue([ScriptedChatClient.Text("fresh")]);
+        using var sut = CreateSession(client);
+        await sut.SendAsync("a", Fast);
+        await sut.SendAsync("b", Fast);
+
+        // Act
+        await sut.EditAsync(sut.Entries[0].Id, "a2", Fast);
+
+        // Assert
+        sut.Entries.Select(e => e.Text).Should().Equal("a2", "fresh");
+        client.Requests[2].Select(m => m.Text).Should().Equal("a2");
+    }
+
+    [Fact]
+    public async Task EditAsync_AfterAFailedReplyWithNoText_KeepsHistoryAligned()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([], new InvalidOperationException("boom"))
+            .Enqueue([ScriptedChatClient.Text("one")])
+            .Enqueue([ScriptedChatClient.Text("fixed")]);
+        using var sut = CreateSession(client);
+        await sut.SendAsync("a", Fast);
+        await sut.SendAsync("b", Fast);
+
+        // Act
+        await sut.EditAsync(sut.Entries[2].Id, "b2", Fast);
+
+        // Assert
+        sut.History.Select(m => m.Text).Should().Equal("a", "b2", "fixed");
+    }
+
+    [Fact]
+    public async Task EditAsync_AssistantMessageOrUnknownId_DoesNothing()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")]);
+        using var sut = CreateSession(client);
+        await sut.SendAsync("a", Fast);
+
+        // Act
+        await sut.EditAsync(sut.Entries[1].Id, "x", Fast);
+        await sut.EditAsync(Guid.NewGuid(), "x", Fast);
+
+        // Assert
+        sut.Entries.Select(e => e.Text).Should().Equal("a", "one");
+        client.Requests.Should().ContainSingle();
+        sut.CanEdit(sut.Entries[0].Id).Should().BeTrue();
+        sut.CanEdit(sut.Entries[1].Id).Should().BeFalse();
+        sut.CanEdit(Guid.NewGuid()).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task EditAsync_BlankText_DoesNothing()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")]);
+        using var sut = CreateSession(client);
+        await sut.SendAsync("a", Fast);
+
+        // Act
+        await sut.EditAsync(sut.Entries[0].Id, "  ", Fast);
+
+        // Assert
+        sut.Entries.Select(e => e.Text).Should().Equal("a", "one");
+    }
+
+    [Fact]
     public async Task SendAsync_ModelChangedBetweenMessages_KeepsHistoryAndLabelsEachReply()
     {
         // Arrange

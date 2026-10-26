@@ -79,7 +79,7 @@ else
                         previousLabel = entry.Label;
                     }
 
-                    <MessageView @key="entry.Id" Entry="entry" ShowLabel="showLabel" />
+                    <MessageView @key="entry.Id" Entry="entry" ShowLabel="showLabel" CanEdit="!(_session?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" />
                 }
             </div>
         </div>
@@ -88,7 +88,7 @@ else
 
         @if (!_loading)
         {
-            <Composer SessionId="@SessionId" Remembered="_info" Running="_session?.IsRunning ?? false" CanRetry="_session?.CanRetry ?? false" OnSend="SendAsync" OnRetry="RetryAsync" OnStop="Stop" />
+            <Composer SessionId="@SessionId" Remembered="_info" Running="_session?.IsRunning ?? false" CanRetry="_session?.CanRetry ?? false" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnStop="Stop" />
         }
 
         <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
@@ -120,6 +120,7 @@ else
     public string? FolderPath { get; set; }
 
     private SessionInfo? _moving;
+    private ChatEntry? _editing;
     private ProjectContext? _newProject;
     private string? _newProjectFolder;
 
@@ -151,6 +152,7 @@ else
         }
 
         Detach();
+        _editing = null;
         _openId = SessionId;
         _missing = false;
         _info = null;
@@ -229,6 +231,11 @@ else
     private void Refresh()
     {
         _entries = _session?.Entries ?? [];
+        if (_editing is not null && !_entries.Any(e => e.Id == _editing.Id))
+        {
+            _editing = null;
+        }
+
         if (_openId is not null)
         {
             _info = Sessions.Store.Find(_openId);
@@ -264,7 +271,25 @@ else
             Navigation.NavigateTo("chat/" + id);
         }
 
-        await Sessions.SendAsync(id, message.Text, message.Target);
+        if (_editing is { } editing)
+        {
+            _editing = null;
+            await Sessions.EditAsync(id, editing.Id, message.Text, message.Target);
+        }
+        else
+        {
+            await Sessions.SendAsync(id, message.Text, message.Target);
+        }
+    }
+
+    private void StartEdit(ChatEntry entry)
+    {
+        _editing = entry;
+    }
+
+    private void CancelEdit()
+    {
+        _editing = null;
     }
 
     private async Task RetryAsync(ChatTarget target)

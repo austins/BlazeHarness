@@ -1,7 +1,7 @@
 @using System.Globalization
 @inject MarkdownRenderer Markdown
 
-<article class="msg" data-role="@(Entry.Role == ChatRole.User ? "user" : "assistant")" data-status="@Entry.Status.ToString().ToLowerInvariant()">
+<article class="msg" data-role="@(Entry.Role == ChatRole.User ? "user" : "assistant")" data-status="@Entry.Status.ToString().ToLowerInvariant()" data-editing="@(Editing ? "true" : null)">
     @if (ShowLabel && !string.IsNullOrEmpty(Entry.Label))
     {
         <div class="msg-label">@Entry.Label</div>
@@ -47,6 +47,11 @@
     }
 
     <footer class="msg-meta">
+        @if (CanEdit && Entry.Role == ChatRole.User)
+        {
+            <button type="button" class="btn btn-ghost btn-sm btn-icon msg-edit" aria-label="Edit and resend this message" title="Edit and resend" @onclick="() => OnEdit.InvokeAsync(Entry)"><Icon Name="pencil" /></button>
+        }
+
         <time class="msg-time" datetime="@Entry.At.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)"></time>
         @if (Entry.Usage is { } usage)
         {
@@ -67,6 +72,24 @@
     /// </summary>
     [Parameter]
     public bool ShowLabel { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a user message offers editing, which is only while no reply is running.
+    /// </summary>
+    [Parameter]
+    public bool CanEdit { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this message is the one being edited in the composer.
+    /// </summary>
+    [Parameter]
+    public bool Editing { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user choosing to edit this message.
+    /// </summary>
+    [Parameter]
+    public EventCallback<ChatEntry> OnEdit { get; set; }
 
     private StreamingMarkdown? _streaming;
 

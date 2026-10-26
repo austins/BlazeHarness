@@ -399,6 +399,11 @@ details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600
 .msg-meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); font-size: var(--text-xs); color: var(--fg-muted); }
 .msg[data-role="user"] > .msg-meta { justify-content: flex-end; }
 .msg-time:empty { display: none; }
+.msg-edit { opacity: 0; padding: var(--space-1); }
+.msg:hover .msg-edit, .msg:focus-within .msg-edit, .msg[data-editing] .msg-edit { opacity: 1; }
+.msg[data-editing] { outline: 2px solid var(--accent); }
+@media (hover: none) { .msg-edit { opacity: 1; } }
+.composer-editing { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm); color: var(--fg-muted); }
 .msg-wait { color: var(--fg-muted); font-size: var(--text-sm); }
 .msg[data-status="streaming"] > .msg-body:last-of-type:not(.md)::after, .msg[data-status="streaming"] > .md:last-of-type > :last-child::after { content: "▍"; color: var(--fg-muted); }
 .msg-thinking { color: var(--fg-muted); font-size: var(--text-sm); border-inline-start: 2px solid var(--border); padding-inline-start: var(--space-3); }
