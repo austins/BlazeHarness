@@ -9,13 +9,16 @@ namespace BlazeHarness.Core.Tools;
 /// </summary>
 public sealed class WriteFileTool : ITool
 {
+    private const int SampleBytes = 8192;
+
     /// <inheritdoc />
     public string Name => "write_file";
 
     /// <inheritdoc />
     public string Description =>
         "Create a file inside the working folder, or replace an existing file completely. Missing folders are created. " +
-        "To change part of an existing file, use edit_file instead.";
+        "To change part of an existing file, use edit_file instead. " +
+        "A file that uses CRLF line endings keeps them when the new content uses plain line feeds.";
 
     /// <inheritdoc />
     public string InputSchema => """
@@ -57,7 +60,10 @@ public sealed class WriteFileTool : ITool
 
         var existed = File.Exists(full);
         var keepBom = existed && StartsWithUtf8Bom(full);
-        var bytes = new UTF8Encoding(keepBom).GetBytes(content);
+        var text = existed && !content.Contains('\r', StringComparison.Ordinal) && UsesCrlf(full)
+            ? content.Replace("\n", "\r\n", StringComparison.Ordinal)
+            : content;
+        var bytes = new UTF8Encoding(keepBom).GetBytes(text);
         if (keepBom)
         {
             bytes = [.. Encoding.UTF8.GetPreamble(), .. bytes];
@@ -68,6 +74,15 @@ public sealed class WriteFileTool : ITool
         return Task.FromResult(ToolResult.Ok(string.Create(
             CultureInfo.InvariantCulture,
             $"{(existed ? "Replaced" : "Created")} {context.Relative(full)} ({lines} lines, {bytes.Length} bytes).")));
+    }
+
+    private static bool UsesCrlf(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        var buffer = new byte[SampleBytes];
+        var read = stream.Read(buffer);
+        var first = buffer.AsSpan(0, read).IndexOf((byte)'\n');
+        return first > 0 && buffer[first - 1] == '\r';
     }
 
     private static bool StartsWithUtf8Bom(string path)

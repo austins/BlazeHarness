@@ -36,6 +36,42 @@ public sealed class WriteFileToolTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_ExistingCrlfFileAndLfContent_KeepsCrlf()
+    {
+        // Arrange
+        _workspace.Write("win.txt", "one\r\ntwo\r\n");
+
+        // Act
+        await RunAsync(new { path = "win.txt", content = "a\nb\nc\n" });
+
+        // Assert
+        _workspace.Read("win.txt").Should().Be("a\r\nb\r\nc\r\n");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ExistingLfFileAndCrlfContent_WritesTheContentAsGiven()
+    {
+        // Arrange
+        _workspace.Write("unix.txt", "one\ntwo\n");
+
+        // Act
+        await RunAsync(new { path = "unix.txt", content = "a\r\nb\r\n" });
+
+        // Assert
+        _workspace.Read("unix.txt").Should().Be("a\r\nb\r\n");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_NewFile_UsesTheLineEndingsGiven()
+    {
+        // Act
+        await RunAsync(new { path = "new.txt", content = "a\nb\n" });
+
+        // Assert
+        _workspace.Read("new.txt").Should().Be("a\nb\n");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ExistingFileWithBom_KeepsTheBom()
     {
         // Arrange

@@ -95,7 +95,7 @@ public static class WorkspacePath
     public static string Relative(string root, string fullPath)
     {
         var relative = Path.GetRelativePath(root, fullPath);
-        return relative == "." ? "." : relative.Replace('\\', '/');
+        return relative == "." || Path.DirectorySeparatorChar == '/' ? relative : relative.Replace(Path.DirectorySeparatorChar, '/');
     }
 
     private static bool HasStreamOrDevicePrefix(string text)
