@@ -80,7 +80,21 @@
                             }
                         </div>
 
-                        @if (_test is { Success: true, ModelIds.Count: > 0 })
+                    </div>
+
+                    <div class="card stack">
+                        <div class="card-header">
+                            <h2>Models</h2>
+                            <span class="row">
+                                <button type="button" class="btn btn-sm" aria-busy="@Flag(_testing)" disabled="@_testing" @onclick="TestAsync">Fetch from server</button>
+                                <button type="button" class="btn btn-sm" @onclick="AddModel">＋ Add model</button>
+                            </span>
+                        </div>
+                        @if (_test is { Success: false })
+                        {
+                            <span class="alert alert-error" role="status">@_test.Message</span>
+                        }
+                        else if (_test is { Success: true })
                         {
                             var available = _test.ModelIds.Where(id => _edit.Models.All(m => m.Id != id)).ToList();
                             if (available.Count > 0)
@@ -101,17 +115,14 @@
                                     </div>
                                 </div>
                             }
+                            else
+                            {
+                                <p class="muted">Every model the server lists has been added.</p>
+                            }
                         }
-                    </div>
-
-                    <div class="card stack">
-                        <div class="card-header">
-                            <h2>Models</h2>
-                            <button type="button" class="btn btn-sm" @onclick="AddModel">＋ Add model</button>
-                        </div>
                         @if (_edit.Models.Count == 0)
                         {
-                            <p class="muted">No models yet. Test the connection to list them, or add one by hand.</p>
+                            <p class="muted">No models yet. Fetch them from the server, or add one by hand.</p>
                         }
                         else
                         {
