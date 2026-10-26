@@ -1,0 +1,24 @@
+[*.cs]
+# CA1707: Identifiers should not contain underscores
+dotnet_diagnostic.CA1707.severity = none
+
+# AsyncFixer01: Unnecessary async/await usage
+dotnet_diagnostic.AsyncFixer01.severity = none
+
+# AsyncFixer06: Discarded Task<T> result when converted to Task
+dotnet_diagnostic.AsyncFixer06.severity = none
+
+# VSTHRD200: Use "Async" suffix for async methods
+dotnet_diagnostic.VSTHRD200.severity = none
+
+# CA2201: Do not raise reserved exception types
+dotnet_diagnostic.CA2201.severity = none
+
+# CA1822: Mark members as static
+dotnet_diagnostic.CA1822.severity = none
+
+# IDISP004: Don't ignore created IDisposable
+dotnet_diagnostic.IDISP004.severity = none
+
+# VSTHRD002: Synchronously waiting on tasks
+dotnet_diagnostic.VSTHRD002.severity = none

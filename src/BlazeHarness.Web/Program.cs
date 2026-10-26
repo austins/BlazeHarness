@@ -1,0 +1,43 @@
+using BlazeHarness.Core;
+using BlazeHarness.Core.Config;
+using BlazeHarness.Core.Providers;
+using BlazeHarness.Core.Secrets;
+using BlazeHarness.Web.Components;
+using BlazeHarness.Web.Hosting;
+
+var builder = WebApplication.CreateBuilder(args);
+
+HostLauncher.ConfigureKestrel(builder, HostLauncher.ConfiguredPort(args));
+
+var paths = AppPaths.FromEnvironment();
+builder.Services.AddSingleton(paths);
+builder.Services.AddSingleton(await SecretStoreFactory.CreateAsync(paths));
+builder.Services.AddSingleton<ApiKeyResolver>();
+builder.Services.AddSingleton(sp => new JsonFileStore<AppConfig>(
+    paths.ConfigFile,
+    sp.GetRequiredService<ILogger<JsonFileStore<AppConfig>>>()));
+builder.Services.AddSingleton<LaunchCredentials>();
+builder.Services.AddHttpClient();
+
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents()
+    .AddHubOptions(options => options.MaximumReceiveMessageSize = 4 * 1024 * 1024);
+
+await using var app = builder.Build();
+
+app.UseMiddleware<LocalAccessMiddleware>();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+}
+
+app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+
+app.UseAntiforgery();
+
+app.MapStaticAssets();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
+
+await HostLauncher.RunAsync(app, args);
