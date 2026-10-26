@@ -67,7 +67,7 @@
                             </div>
                             <div class="field">
                                 <label for="p-key">API key <span class="muted">(optional)</span></label>
-                                <SecretInput Id="p-key" @bind-Value="_edit.NewApiKey" HasStoredKey="_hasStoredKey" Placeholder="Optional for local servers" />
+                                <SecretInput Id="p-key" @bind-Value="_edit.NewApiKey" HasStoredKey="_hasStoredKey" OnRemoveStored="ClearKeyAsync" Placeholder="Optional for local servers" />
                                 <span class="hint">Optional. Local servers usually need none. A key is stored in the secret store and never shown again; leave blank to keep the current one.</span>
                             </div>
                         </div>
@@ -423,6 +423,17 @@
         finally
         {
             _saving = false;
+        }
+    }
+
+    private async Task ClearKeyAsync()
+    {
+        if (_edit is { IsNew: false })
+        {
+            await Service.ClearKeyAsync(_edit.Id);
+            _edit.NewApiKey = string.Empty;
+            await RefreshKeyAsync();
+            Toasts.Show("Stored key removed.", ToastKind.Success);
         }
     }
 

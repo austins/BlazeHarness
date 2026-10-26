@@ -147,6 +147,18 @@ public sealed class ProviderService
     }
 
     /// <summary>
+    /// Delete the stored API key of a provider, so requests are sent without one.
+    /// </summary>
+    /// <param name="providerId">The id of the provider.</param>
+    /// <param name="cancellationToken">A token to cancel the deletion.</param>
+    /// <returns>A task that completes once the key is deleted.</returns>
+    public async Task ClearKeyAsync(string providerId, CancellationToken cancellationToken = default)
+    {
+        await _secrets.DeleteAsync("provider:" + providerId, cancellationToken);
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
     /// Remove a provider and its stored key.
     /// </summary>
     /// <remarks>

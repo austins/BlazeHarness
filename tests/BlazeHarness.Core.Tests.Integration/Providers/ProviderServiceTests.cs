@@ -101,6 +101,22 @@ public sealed class ProviderServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ClearKeyAsync_DeletesOnlyThatProvidersKey_AndKeepsProvider()
+    {
+        // Arrange
+        await _sut.SaveAsync(Provider("a", "m1"), "ka", TestContext.Current.CancellationToken);
+        await _sut.SaveAsync(Provider("b", "m2"), "kb", TestContext.Current.CancellationToken);
+
+        // Act
+        await _sut.ClearKeyAsync("a", TestContext.Current.CancellationToken);
+
+        // Assert
+        (await _secrets.GetAsync("provider:a", TestContext.Current.CancellationToken)).Should().BeNull();
+        (await _secrets.GetAsync("provider:b", TestContext.Current.CancellationToken)).Should().Be("kb");
+        _sut.Config.Providers.Select(p => p.Id).Should().Equal("a", "b");
+    }
+
+    [Fact]
     public async Task RemoveAsync_DeletesKey_AndMovesDefaultToRemainingProvider()
     {
         // Arrange
