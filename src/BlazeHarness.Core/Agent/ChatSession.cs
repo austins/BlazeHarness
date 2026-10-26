@@ -1,10 +1,11 @@
 using BlazeHarness.Core.Folders;
-using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Text;
+using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace BlazeHarness.Core.Agent;
 
@@ -26,7 +27,7 @@ namespace BlazeHarness.Core.Agent;
 /// With a <see cref="SessionLog"/>, every message is saved as it arrives, in batches rather than per token.
 /// </para>
 /// </remarks>
-public sealed partial class ChatSession : IDisposable
+public sealed partial class ChatSession : IDisposable, IToolApprover
 {
     private static readonly TimeSpan FlushInterval = TimeSpan.FromMilliseconds(250);
 
@@ -37,8 +38,10 @@ public sealed partial class ChatSession : IDisposable
     private readonly ILogger _logger;
     private readonly List<ChatEntry> _entries = [];
     private readonly List<ChatMessage> _history = [];
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _approvals = new(StringComparer.Ordinal);
     private IReadOnlyList<ChatEntry> _snapshot = [];
     private ProjectContext? _project;
+    private ToolSet? _tools;
     private Action? _stop;
 
     /// <summary>
@@ -102,6 +105,18 @@ public sealed partial class ChatSession : IDisposable
     }
 
     /// <summary>
+    /// Gets or sets the tools the model may call, or null for none.
+    /// </summary>
+    /// <remarks>
+    /// A reply reads this once when it starts, so changing it never alters a reply that is running.
+    /// </remarks>
+    public ToolSet? Tools
+    {
+        get => Volatile.Read(ref _tools);
+        set => Volatile.Write(ref _tools, value);
+    }
+
+    /// <summary>
     /// Gets a value indicating whether a reply is being produced.
     /// </summary>
     public bool IsRunning => Volatile.Read(ref _stop) is not null;
@@ -115,7 +130,8 @@ public sealed partial class ChatSession : IDisposable
     /// Rebuild the conversation from a saved log.
     /// </summary>
     /// <remarks>
-    /// A reply with no end event was cut off, so it is shown as <see cref="EntryStatus.Interrupted"/> with the text that was saved.
+    /// A reply with no end event was cut off, so it is shown as <see cref="EntryStatus.Interrupted"/> with the text that was saved,
+    /// and so is a reply whose tool calls had not all finished. Those calls are shown as <see cref="ToolCallStatus.Interrupted"/>.
     /// Rewound messages are dropped, as they were when the log was written.
     /// </remarks>
     /// <param name="events">The events read from the log, in order.</param>
@@ -151,6 +167,13 @@ public sealed partial class ChatSession : IDisposable
                         target.Usage = end.Usage;
                         target.At = end.At;
                         break;
+                    case ToolCallEvent call when Find(call.EntryId) is { } target:
+                        target.AddToolCall(new ToolCallEntry(call.CallId, call.Name, call.ArgumentsJson, call.Summary));
+                        break;
+                    case ToolResultEvent result when Find(result.EntryId)?.ToolCalls.FirstOrDefault(c => c.CallId == result.CallId) is { } finished:
+                        finished.Status = result.Status;
+                        finished.Output = result.Output;
+                        break;
                     case RewindEvent rewind:
                         var keep = rewind.ToEntryId == Guid.Empty ? -1 : _entries.FindIndex(x => x.Id == rewind.ToEntryId);
                         if (keep >= 0 || rewind.ToEntryId == Guid.Empty)
@@ -164,17 +187,25 @@ public sealed partial class ChatSession : IDisposable
                 }
             }
 
-            foreach (var entry in _entries)
+            for (var i = 0; i < _entries.Count; i++)
             {
-                if (entry.Role == ChatRole.Assistant)
+                var entry = _entries[i];
+                var dangling = false;
+                foreach (var call in entry.ToolCalls.Where(c => !c.IsFinished))
                 {
-                    entry.HistoryIndex = _history.Count;
+                    call.Status = ToolCallStatus.Interrupted;
+                    call.Output = ToolCallEntry.Unfinished(ToolCallStatus.Interrupted);
+                    dangling = true;
                 }
 
-                if (entry.Text.Length > 0 || entry.Role == ChatRole.User)
+                // The model still has to answer the results of the last reply's calls, so that reply was cut off too.
+                if (entry.Status == EntryStatus.Done && (dangling || (i == _entries.Count - 1 && entry.ToolCalls.Count > 0)))
                 {
-                    _history.Add(new ChatMessage(entry.Role, entry.Text));
+                    entry.Status = EntryStatus.Interrupted;
                 }
+
+                entry.HistoryIndex = _history.Count;
+                AppendHistory(_history, entry);
             }
 
             Publish();
@@ -203,6 +234,7 @@ public sealed partial class ChatSession : IDisposable
             target,
             () =>
             {
+                user.HistoryIndex = _history.Count;
                 _entries.Add(user);
                 _history.Add(new ChatMessage(ChatRole.User, text));
                 return true;
@@ -211,10 +243,11 @@ public sealed partial class ChatSession : IDisposable
     }
 
     /// <summary>
-    /// Request a new reply to the last user message after the last reply failed, was stopped or was interrupted.
+    /// Request a new reply after the last reply failed, was stopped or was interrupted.
     /// </summary>
     /// <remarks>
-    /// The failed reply, including any partial text, is dropped from the history, so the model never sees it.
+    /// A reply with no tool calls is dropped from the history, including any partial text, so the model never sees it.
+    /// A reply that made tool calls stays, since the calls may have changed things, and the model continues from their results.
     /// </remarks>
     /// <param name="target">The provider, model and level to use, which may differ from the failed attempt.</param>
     /// <returns>A task that completes when the reply has ended; it does nothing when the last reply can't be retried.</returns>
@@ -222,22 +255,26 @@ public sealed partial class ChatSession : IDisposable
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        var keep = Guid.Empty;
+        List<SessionEvent> rewind = [];
         return TurnAsync(
             target,
             () =>
             {
-                if (_entries is not [.., { Id: var kept }, { Role: ChatRole role, Status: EntryStatus.Failed or EntryStatus.Cancelled or EntryStatus.Interrupted } failed] || role != ChatRole.Assistant)
+                if (_entries is not [.., { Role: var role, Status: EntryStatus.Failed or EntryStatus.Cancelled or EntryStatus.Interrupted } failed] || role != ChatRole.Assistant)
                 {
                     return false;
                 }
 
-                keep = kept;
-                _entries.RemoveAt(_entries.Count - 1);
-                _history.RemoveRange(failed.HistoryIndex, _history.Count - failed.HistoryIndex);
+                if (failed.ToolCalls.Count == 0)
+                {
+                    _entries.RemoveAt(_entries.Count - 1);
+                    _history.RemoveRange(failed.HistoryIndex, _history.Count - failed.HistoryIndex);
+                    rewind.Add(new RewindEvent(_time.GetUtcNow(), _entries is [.., { Id: var kept }] ? kept : Guid.Empty));
+                }
+
                 return true;
             },
-            () => [new RewindEvent(_time.GetUtcNow(), keep)]);
+            () => rewind);
     }
 
     /// <summary>
@@ -286,14 +323,33 @@ public sealed partial class ChatSession : IDisposable
                 }
 
                 keep = index == 0 ? Guid.Empty : _entries[index - 1].Id;
-                var historyIndex = _entries.Take(index).Count(e => e.Role == ChatRole.User || e.Text.Length > 0);
+                var historyIndex = _entries[index].HistoryIndex;
                 _entries.RemoveRange(index, _entries.Count - index);
                 _history.RemoveRange(historyIndex, _history.Count - historyIndex);
+                user.HistoryIndex = _history.Count;
                 _entries.Add(user);
                 _history.Add(new ChatMessage(ChatRole.User, text));
                 return true;
             },
             () => [new RewindEvent(sentAt, keep), new UserMessageEvent(sentAt, user.Id, text)]);
+    }
+
+    /// <summary>
+    /// Answer a tool call that waits for approval.
+    /// </summary>
+    /// <param name="callId">The id of the call, from <see cref="ToolCallEntry.CallId"/>.</param>
+    /// <param name="allow">True to let the call run, false to deny it.</param>
+    /// <returns>True when a call was waiting for the answer; false when it had already been answered or stopped.</returns>
+    public bool Approve(string callId, bool allow)
+    {
+        ArgumentNullException.ThrowIfNull(callId);
+        return _approvals.TryGetValue(callId, out var waiting) && waiting.TrySetResult(allow);
+    }
+
+    /// <inheritdoc />
+    Task<bool> IToolApprover.RequestAsync(string callId, string toolName, string argumentsJson, CancellationToken cancellationToken)
+    {
+        return WaitForApprovalAsync(callId, cancellationToken);
     }
 
     /// <summary>
@@ -345,145 +401,63 @@ public sealed partial class ChatSession : IDisposable
         }
     }
 
-    private ChatEntry? Find(Guid id) => _entries.Find(e => e.Id == id);
-
-    private void Publish() => Volatile.Write(ref _snapshot, _entries.ToArray());
-
-    private async Task ReplyAsync(ChatTarget target, IReadOnlyList<SessionEvent> leading, CancellationToken cancellation)
+    private static void AppendHistory(List<ChatMessage> history, ChatEntry entry)
     {
-        var startedAt = _time.GetUtcNow();
-        var entry = new ChatEntry(ChatRole.Assistant)
+        if (entry.Role != ChatRole.Assistant)
         {
-            Status = EntryStatus.Streaming,
-            Label = target.Label,
-            At = startedAt,
-        };
-        lock (_gate)
-        {
-            entry.HistoryIndex = _history.Count;
-            _entries.Add(entry);
-            Publish();
+            history.Add(new ChatMessage(entry.Role, entry.Text));
+            return;
         }
 
-        await SaveAsync([.. leading, new AssistantStartEvent(startedAt, entry.Id, entry.Label)]);
-        RaiseChanged();
-
-        var pendingText = new StringBuilder();
-        var pendingReasoning = new StringBuilder();
-        var lastSave = _time.GetTimestamp();
-        List<ChatMessage> working = [.. History];
-        var before = working.Count;
-        if (Project?.ToPrompt() is { } instructions)
+        List<AIContent> contents = [];
+        if (entry.Text.Length > 0)
         {
-            working.Insert(0, new ChatMessage(ChatRole.System, instructions));
-            before++;
+            contents.Add(new TextContent(entry.Text));
         }
 
-        try
-        {
-            using var client = await _clientFactory(target, cancellation);
-            var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level);
-            await foreach (var e in ChatRunner.RunAsync(client, working, options, cancellation))
-            {
-                Apply(entry, e, pendingText, pendingReasoning);
-                if ((pendingText.Length > 0 || pendingReasoning.Length > 0) && _time.GetElapsedTime(lastSave) >= FlushInterval)
-                {
-                    await SaveAsync([TakeDelta(entry, pendingText, pendingReasoning)]);
-                    lastSave = _time.GetTimestamp();
-                }
-
-                RaiseChanged();
-            }
-        }
-        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
-        {
-            entry.Status = EntryStatus.Cancelled;
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            entry.Status = EntryStatus.Failed;
-            entry.Error = ex.Message;
-        }
-        finally
-        {
-            if (entry.Status == EntryStatus.Streaming)
-            {
-                entry.Status = EntryStatus.Done;
-            }
-
-            lock (_gate)
-            {
-                _history.AddRange(working.Skip(before));
-            }
-
-            List<SessionEvent> closing = [];
-            if (pendingText.Length > 0 || pendingReasoning.Length > 0)
-            {
-                closing.Add(TakeDelta(entry, pendingText, pendingReasoning));
-            }
-
-            var endedAt = _time.GetUtcNow();
-            entry.At = endedAt;
-            closing.Add(new AssistantEndEvent(endedAt, entry.Id, entry.Status, entry.Error, entry.Usage));
-            await SaveAsync(closing);
-        }
-    }
-
-    private static void Apply(ChatEntry entry, AgentEvent e, StringBuilder pendingText, StringBuilder pendingReasoning)
-    {
-        switch (e)
-        {
-            case TextDelta text:
-                entry.AppendText(text.Text);
-                pendingText.Append(text.Text);
-                break;
-            case ReasoningDelta thinking:
-                entry.AppendReasoning(thinking.Text);
-                pendingReasoning.Append(thinking.Text);
-                break;
-            case UsageReported usage:
-                entry.Usage = usage;
-                break;
-            case AgentError error:
-                entry.Error = error.Message;
-                break;
-            case Done done:
-                entry.Status = done.Reason switch
-                {
-                    StopReason.Cancelled => EntryStatus.Cancelled,
-                    StopReason.Error => EntryStatus.Failed,
-                    _ => EntryStatus.Done,
-                };
-                break;
-            default:
-                break;
-        }
-    }
-
-    private AssistantDeltaEvent TakeDelta(ChatEntry entry, StringBuilder text, StringBuilder reasoning)
-    {
-        var delta = new AssistantDeltaEvent(_time.GetUtcNow(), entry.Id, text.ToString(), reasoning.ToString());
-        text.Clear();
-        reasoning.Clear();
-        return delta;
-    }
-
-    private async Task SaveAsync(IReadOnlyCollection<SessionEvent> events)
-    {
-        if (_log is null)
+        contents.AddRange(entry.ToolCalls.Select(c => new FunctionCallContent(c.CallId, c.Name, ParseArguments(c.ArgumentsJson))));
+        if (contents.Count == 0)
         {
             return;
         }
 
-        try
+        history.Add(new ChatMessage(ChatRole.Assistant, contents));
+        if (entry.ToolCalls.Count > 0)
         {
-            await _log.AppendAsync(events);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            LogSaveFailed(ex);
+            history.Add(new ChatMessage(ChatRole.Tool, [.. entry.ToolCalls.Select(c => new FunctionResultContent(c.CallId, ToolCallEntry.ForModel(c.Status, c.Output)))]));
         }
     }
+
+    private static Dictionary<string, object?>? ParseArguments(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, object?>>(json, AIJsonUtilities.DefaultOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<bool> WaitForApprovalAsync(string callId, CancellationToken cancellationToken)
+    {
+        var waiting = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _approvals[callId] = waiting;
+        using var registration = cancellationToken.Register(() => waiting.TrySetCanceled(cancellationToken));
+        try
+        {
+            return await waiting.Task;
+        }
+        finally
+        {
+            _approvals.TryRemove(callId, out _);
+        }
+    }
+
+    private ChatEntry? Find(Guid id) => _entries.Find(e => e.Id == id);
+
+    private void Publish() => Volatile.Write(ref _snapshot, _entries.ToArray());
 
     private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
 

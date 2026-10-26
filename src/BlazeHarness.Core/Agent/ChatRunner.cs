@@ -1,111 +1,367 @@
+using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 
 namespace BlazeHarness.Core.Agent;
 
 /// <summary>
-/// Runs one assistant turn against a chat client and reports it as a stream of <see cref="AgentEvent"/> values.
+/// Runs an assistant turn against a chat client, calling tools the model asks for, and reports it as a stream of <see cref="AgentEvent"/> values.
 /// </summary>
-/// <remarks>
-/// This is the tool-less turn. The tool loop of a later phase wraps the same event stream.
-/// </remarks>
 public static class ChatRunner
 {
     /// <summary>
-    /// Stream the assistant's reply to the conversation so far.
+    /// The default most times the model is called in one run, so a model stuck in a loop can't run forever.
+    /// </summary>
+    public const int DefaultMaxRounds = 50;
+
+    private static readonly JsonSerializerOptions CompactJson = new(AIJsonUtilities.DefaultOptions) { WriteIndented = false };
+
+    /// <summary>
+    /// Stream the assistant's reply to the conversation so far, running tool calls until the model answers without one.
     /// </summary>
     /// <remarks>
-    /// The reply is appended to <paramref name="history"/> when the run ends, including a partial reply
-    /// after a cancellation or an error, so the next turn sees what the user saw. The stream always ends with a <see cref="Done"/>.
+    /// <para>
+    /// The messages of the run are appended to <paramref name="history"/>, including a partial reply after a cancellation or an error,
+    /// so the next turn sees what the user saw. Every tool call gets a result in the history, even one that never ran,
+    /// because providers reject a call without one. The stream always ends with a <see cref="Done"/>.
+    /// </para>
+    /// <para>
+    /// Consecutive read-only calls of one response run at the same time. Any other call asks <paramref name="approver"/> first and runs alone.
+    /// Without an approver such a call is denied.
+    /// </para>
     /// </remarks>
     /// <param name="client">The chat client to call.</param>
     /// <param name="history">The conversation so far, ending with the user's message.</param>
-    /// <param name="options">The request options, including sampling and thinking fields.</param>
+    /// <param name="options">The request options, including sampling and thinking fields. The tool definitions are added to it.</param>
+    /// <param name="tools">The tools the model may call, or null for a reply without tools.</param>
+    /// <param name="approver">Asks the user before a tool that is not read-only runs.</param>
+    /// <param name="maxRounds">The most times to call the model.</param>
     /// <param name="cancellationToken">A token that stops the run.</param>
     /// <returns>The events of the run.</returns>
     public static IAsyncEnumerable<AgentEvent> RunAsync(
         IChatClient client,
         IList<ChatMessage> history,
         ChatOptions options,
+        ToolSet? tools = null,
+        IToolApprover? approver = null,
+        int maxRounds = DefaultMaxRounds,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(history);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxRounds, 1);
 
-        return RunCoreAsync(client, history, options, cancellationToken);
+        return RunCoreAsync(client, history, options, tools, approver, maxRounds, cancellationToken);
     }
 
     private static async IAsyncEnumerable<AgentEvent> RunCoreAsync(
         IChatClient client,
         IList<ChatMessage> history,
         ChatOptions options,
+        ToolSet? tools,
+        IToolApprover? approver,
+        int maxRounds,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var reply = new StringBuilder();
-        var reason = StopReason.Completed;
-        string? error = null;
-
-        var stream = client.GetStreamingResponseAsync(history, options, cancellationToken);
-        await using var enumerator = stream.GetAsyncEnumerator(cancellationToken);
-
-        while (true)
+        if (tools is { Declarations.Count: > 0 })
         {
-            ChatResponseUpdate update;
-            try
+            options.Tools = [.. tools.Declarations];
+        }
+
+        for (var round = 0; round < maxRounds; round++)
+        {
+            if (round > 0)
             {
-                if (!await enumerator.MoveNextAsync())
+                yield return new NewResponse();
+            }
+
+            var reply = new StringBuilder();
+            var calls = new List<FunctionCallContent>();
+            var reason = StopReason.Completed;
+            string? error = null;
+
+            var stream = client.GetStreamingResponseAsync(history, options, cancellationToken);
+            await using var enumerator = stream.GetAsyncEnumerator(cancellationToken);
+
+            while (true)
+            {
+                ChatResponseUpdate update;
+                try
                 {
+                    if (!await enumerator.MoveNextAsync())
+                    {
+                        break;
+                    }
+
+                    update = enumerator.Current;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    reason = StopReason.Cancelled;
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    reason = StopReason.Error;
+                    error = ex.Message;
                     break;
                 }
 
-                update = enumerator.Current;
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                reason = StopReason.Cancelled;
-                break;
-            }
-            catch (Exception ex)
-            {
-                reason = StopReason.Error;
-                error = ex.Message;
-                break;
+                foreach (var content in update.Contents)
+                {
+                    switch (content)
+                    {
+                        case TextReasoningContent { Text.Length: > 0 } thinking:
+                            yield return new ReasoningDelta(thinking.Text);
+                            break;
+                        case TextContent { Text.Length: > 0 } text:
+                            reply.Append(text.Text);
+                            yield return new TextDelta(text.Text);
+                            break;
+                        case FunctionCallContent call:
+                            calls.Add(call);
+                            break;
+                        case UsageContent usage:
+                            yield return new UsageReported(
+                                usage.Details.InputTokenCount ?? 0,
+                                usage.Details.OutputTokenCount ?? 0,
+                                usage.Details.CachedInputTokenCount ?? 0);
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
 
-            foreach (var content in update.Contents)
+            if (reason != StopReason.Completed)
             {
-                switch (content)
+                // Calls that arrived before a failure are dropped, since nothing would answer them.
+                if (reply.Length > 0)
                 {
-                    case TextReasoningContent { Text.Length: > 0 } thinking:
-                        yield return new ReasoningDelta(thinking.Text);
+                    history.Add(new ChatMessage(ChatRole.Assistant, reply.ToString()));
+                }
+
+                if (error is not null)
+                {
+                    yield return new AgentError(error);
+                }
+
+                yield return new Done(reason);
+                yield break;
+            }
+
+            List<AIContent> contents = [];
+            if (reply.Length > 0)
+            {
+                contents.Add(new TextContent(reply.ToString()));
+            }
+
+            contents.AddRange(calls);
+            if (contents.Count > 0)
+            {
+                history.Add(new ChatMessage(ChatRole.Assistant, contents));
+            }
+
+            if (calls.Count == 0)
+            {
+                yield return new Done(StopReason.Completed);
+                yield break;
+            }
+
+            var outcome = new RoundOutcome();
+            await foreach (var e in ExecuteCallsAsync(calls, tools, approver, history, outcome, cancellationToken))
+            {
+                yield return e;
+            }
+
+            if (outcome.Cancelled)
+            {
+                yield return new Done(StopReason.Cancelled);
+                yield break;
+            }
+        }
+
+        yield return new AgentError($"The run stopped after {maxRounds} model calls without finishing.");
+        yield return new Done(StopReason.MaxIterations);
+    }
+
+    private static async IAsyncEnumerable<AgentEvent> ExecuteCallsAsync(
+        List<FunctionCallContent> calls,
+        ToolSet? tools,
+        IToolApprover? approver,
+        IList<ChatMessage> history,
+        RoundOutcome outcome,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var planned = calls.ConvertAll(c => new PlannedCall(c, tools?.Find(c.Name), ArgumentsJson(c)));
+        var results = new ToolResult?[planned.Count];
+        var statuses = new ToolCallStatus[planned.Count];
+
+        try
+        {
+            foreach (var p in planned)
+            {
+                yield return new ToolCallRequested(p.Call.CallId, p.Call.Name, p.Json, p.Tool is null ? string.Empty : ToolSet.Summarize(p.Tool, p.Json));
+            }
+
+            var index = 0;
+            while (index < planned.Count && !outcome.Cancelled)
+            {
+                var p = planned[index];
+                if (!p.CanRun)
+                {
+                    results[index] = ToolResult.Error(p.Problem(tools));
+                    statuses[index] = ToolCallStatus.Failed;
+                    yield return Finished(p, results[index]!, statuses[index]);
+                    index++;
+                    continue;
+                }
+
+                if (p.Tool!.IsReadOnly)
+                {
+                    var end = index;
+                    while (end < planned.Count && planned[end] is { CanRun: true, Tool.IsReadOnly: true })
+                    {
+                        end++;
+                    }
+
+                    for (var i = index; i < end; i++)
+                    {
+                        yield return new ToolCallRunning(planned[i].Call.CallId);
+                    }
+
+                    var batch = planned.GetRange(index, end - index).ConvertAll(x => RunAsync(tools!, x, cancellationToken));
+                    ToolResult[]? done = null;
+                    try
+                    {
+                        done = await Task.WhenAll(batch);
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        outcome.Cancelled = true;
+                    }
+
+                    for (var i = index; i < end && done is not null; i++)
+                    {
+                        results[i] = done[i - index];
+                        statuses[i] = results[i]!.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
+                        yield return Finished(planned[i], results[i]!, statuses[i]);
+                    }
+
+                    index = end;
+                    continue;
+                }
+
+                var allowed = false;
+                if (approver is not null)
+                {
+                    var decision = approver.RequestAsync(p.Call.CallId, p.Call.Name, p.Json, cancellationToken);
+                    yield return new ToolAwaitingApproval(p.Call.CallId);
+                    try
+                    {
+                        allowed = await decision;
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        outcome.Cancelled = true;
                         break;
-                    case TextContent { Text.Length: > 0 } text:
-                        reply.Append(text.Text);
-                        yield return new TextDelta(text.Text);
-                        break;
-                    case UsageContent usage:
-                        yield return new UsageReported(
-                            usage.Details.InputTokenCount ?? 0,
-                            usage.Details.OutputTokenCount ?? 0,
-                            usage.Details.CachedInputTokenCount ?? 0);
-                        break;
-                    default:
-                        break;
+                    }
+                }
+
+                if (!allowed)
+                {
+                    results[index] = ToolResult.Error(approver is null
+                        ? "This call was not run because there is no way to ask the user for approval."
+                        : "The user denied this call. Do not retry it; say what you could not do and suggest an alternative.");
+                    statuses[index] = ToolCallStatus.Denied;
+                    yield return Finished(p, results[index]!, statuses[index]);
+                    index++;
+                    continue;
+                }
+
+                yield return new ToolCallRunning(p.Call.CallId);
+                try
+                {
+                    results[index] = await RunAsync(tools!, p, cancellationToken);
+                    statuses[index] = results[index]!.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    outcome.Cancelled = true;
+                    break;
+                }
+
+                yield return Finished(p, results[index]!, statuses[index]);
+                index++;
+            }
+
+            for (var i = 0; i < planned.Count; i++)
+            {
+                if (results[i] is null)
+                {
+                    statuses[i] = ToolCallStatus.Cancelled;
+                    results[i] = ToolResult.Error(ToolCallEntry.Unfinished(ToolCallStatus.Cancelled));
+                    yield return Finished(planned[i], results[i]!, statuses[i]);
                 }
             }
         }
-
-        if (reply.Length > 0)
+        finally
         {
-            history.Add(new ChatMessage(ChatRole.Assistant, reply.ToString()));
-        }
+            List<AIContent> answers = [];
+            for (var i = 0; i < planned.Count; i++)
+            {
+                var text = results[i] is { } result
+                    ? ToolCallEntry.ForModel(statuses[i], result.Output)
+                    : ToolCallEntry.Unfinished(ToolCallStatus.Cancelled);
+                answers.Add(new FunctionResultContent(planned[i].Call.CallId, text));
+            }
 
-        if (error is not null)
+            history.Add(new ChatMessage(ChatRole.Tool, answers));
+        }
+    }
+
+    private static ToolCallFinished Finished(PlannedCall call, ToolResult result, ToolCallStatus status)
+    {
+        return new ToolCallFinished(call.Call.CallId, call.Call.Name, result.Output, status);
+    }
+
+    private static async Task<ToolResult> RunAsync(ToolSet tools, PlannedCall call, CancellationToken cancellationToken)
+    {
+        try
         {
-            yield return new AgentError(error);
+            return await tools.ExecuteAsync(call.Tool!, call.Json, cancellationToken);
         }
+        catch (Exception ex) when (ex is not (OperationCanceledException or OutOfMemoryException))
+        {
+            return ToolResult.Error($"The tool failed unexpectedly: {ex.Message}");
+        }
+    }
 
-        yield return new Done(reason);
+    private static string ArgumentsJson(FunctionCallContent call)
+    {
+        return call.Arguments is null ? "{}" : JsonSerializer.Serialize(call.Arguments, CompactJson);
+    }
+
+    private sealed class RoundOutcome
+    {
+        public bool Cancelled { get; set; }
+    }
+
+    private sealed record PlannedCall(FunctionCallContent Call, ITool? Tool, string Json)
+    {
+        public bool CanRun => Tool is not null && Call.Exception is null;
+
+        public string Problem(ToolSet? tools)
+        {
+            if (Tool is null)
+            {
+                var names = tools is null ? "none" : string.Join(", ", tools.Tools.Select(t => t.Name));
+                return $"There is no tool named '{Call.Name}'. The available tools are: {names}.";
+            }
+
+            return "The arguments are not valid JSON. Send a JSON object.";
+        }
     }
 }

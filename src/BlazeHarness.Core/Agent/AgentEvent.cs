@@ -21,21 +21,39 @@ public sealed record TextDelta(string Text) : AgentEvent;
 public sealed record ReasoningDelta(string Text) : AgentEvent;
 
 /// <summary>
-/// The model requested a tool call and it is about to run.
+/// A new assistant message begins because the model is being called again with the results of its tool calls.
+/// </summary>
+public sealed record NewResponse : AgentEvent;
+
+/// <summary>
+/// The model requested a tool call. Its response is complete, and the call has not started.
 /// </summary>
 /// <param name="CallId">The provider's identifier for the call, used to pair it with its result.</param>
 /// <param name="Name">The name of the tool being called.</param>
 /// <param name="ArgumentsJson">The call arguments as a JSON object string.</param>
-public sealed record ToolCallStarted(string CallId, string Name, string ArgumentsJson) : AgentEvent;
+/// <param name="Summary">A few words describing the call, or an empty string.</param>
+public sealed record ToolCallRequested(string CallId, string Name, string ArgumentsJson, string Summary) : AgentEvent;
 
 /// <summary>
-/// A tool call completed, successfully or not.
+/// A tool call waits for the user to allow or deny it.
 /// </summary>
-/// <param name="CallId">The identifier of the call that finished, matching <see cref="ToolCallStarted.CallId"/>.</param>
+/// <param name="CallId">The identifier of the call, matching <see cref="ToolCallRequested.CallId"/>.</param>
+public sealed record ToolAwaitingApproval(string CallId) : AgentEvent;
+
+/// <summary>
+/// A tool call started running.
+/// </summary>
+/// <param name="CallId">The identifier of the call, matching <see cref="ToolCallRequested.CallId"/>.</param>
+public sealed record ToolCallRunning(string CallId) : AgentEvent;
+
+/// <summary>
+/// A tool call ended, whether it succeeded, failed, was denied or was cancelled.
+/// </summary>
+/// <param name="CallId">The identifier of the call, matching <see cref="ToolCallRequested.CallId"/>.</param>
 /// <param name="Name">The name of the tool that was called.</param>
-/// <param name="Output">The text sent back to the model as the tool result.</param>
-/// <param name="IsError">Whether the call failed, was denied, or was blocked.</param>
-public sealed record ToolCallFinished(string CallId, string Name, string Output, bool IsError) : AgentEvent;
+/// <param name="Output">The text of the result, or the reason the call did not run.</param>
+/// <param name="Status">How the call ended.</param>
+public sealed record ToolCallFinished(string CallId, string Name, string Output, ToolCallStatus Status) : AgentEvent;
 
 /// <summary>
 /// Token counts as reported by the endpoint.
@@ -65,7 +83,7 @@ public enum StopReason
     /// <summary>The run failed; an <see cref="AgentError"/> precedes this event.</summary>
     Error,
 
-    /// <summary>The run reached its limit on model round trips.</summary>
+    /// <summary>The run reached its limit on model calls; an <see cref="AgentError"/> precedes this event.</summary>
     MaxIterations,
 }
 

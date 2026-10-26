@@ -1,0 +1,285 @@
+using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Tools;
+using Microsoft.Extensions.AI;
+
+namespace BlazeHarness.Core.Tests.Unit.Agent;
+
+public sealed class ChatRunnerToolTests
+{
+    [Fact]
+    public async Task RunAsync_ReadOnlyCall_RunsItAndAnswersInSecondRound()
+    {
+        // Arrange
+        var read = new FakeTool("read", isReadOnly: true);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read", """{"a":1}""")])
+            .Enqueue([ScriptedChatClient.Text("All done")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await Collect(client, history, Tools(read), approver: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        events.Should().Equal(
+            new ToolCallRequested("c1", "read", """{"a":1}""", "fake read"),
+            new ToolCallRunning("c1"),
+            new ToolCallFinished("c1", "read", "read done", ToolCallStatus.Succeeded),
+            new NewResponse(),
+            new TextDelta("All done"),
+            new Done(StopReason.Completed));
+        history.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.Tool, ChatRole.Assistant);
+        history[1].Contents.OfType<FunctionCallContent>().Should().ContainSingle().Which.CallId.Should().Be("c1");
+        history[2].Contents.OfType<FunctionResultContent>().Should().ContainSingle().Which.Result.Should().Be("read done");
+        client.Options[0]!.Tools.Should().ContainSingle().Which.Name.Should().Be("read");
+    }
+
+    [Fact]
+    public async Task RunAsync_TwoReadOnlyCalls_RunThemAtTheSameTime()
+    {
+        // Arrange
+        var bothStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = 0;
+        var read = new FakeTool("read", isReadOnly: true, async (_, ct) =>
+        {
+            if (Interlocked.Increment(ref started) == 2)
+            {
+                bothStarted.SetResult();
+            }
+
+            await bothStarted.Task.WaitAsync(TimeSpan.FromSeconds(10), ct);
+            return ToolResult.Ok("ok");
+        });
+        using var client = new ScriptedChatClient(
+                [ScriptedChatClient.Call("c1", "read"), ScriptedChatClient.Call("c2", "read")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        var events = await Collect(client, NewHistory(), Tools(read), approver: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        read.MaxConcurrent.Should().Be(2);
+        events.OfType<ToolCallFinished>().Select(e => e.Status).Should().Equal(ToolCallStatus.Succeeded, ToolCallStatus.Succeeded);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReadThenWriteThenRead_AsksOnlyForTheWriteAndKeepsOrder()
+    {
+        // Arrange
+        var read = new FakeTool("read", isReadOnly: true);
+        var write = new FakeTool("write", isReadOnly: false);
+        var approver = new FakeApprover(allow: true);
+        using var client = new ScriptedChatClient(
+                [ScriptedChatClient.Call("c1", "read"), ScriptedChatClient.Call("c2", "write"), ScriptedChatClient.Call("c3", "read")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await Collect(client, history, Tools(read, write), approver, TestContext.Current.CancellationToken);
+
+        // Assert
+        approver.Asked.Should().Equal("write");
+        events.OfType<ToolCallFinished>().Select(e => e.CallId).Should().Equal("c1", "c2", "c3");
+        events.Should().ContainInOrder(new ToolAwaitingApproval("c2"), new ToolCallRunning("c2"));
+        history[2].Contents.OfType<FunctionResultContent>().Select(r => r.CallId).Should().Equal("c1", "c2", "c3");
+    }
+
+    [Fact]
+    public async Task RunAsync_ApprovalDenied_DoesNotRunAndTellsTheModel()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
+            .Enqueue([ScriptedChatClient.Text("ok, skipping")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await Collect(client, history, Tools(write), new FakeApprover(allow: false), TestContext.Current.CancellationToken);
+
+        // Assert
+        write.Started.Should().Be(0);
+        events.OfType<ToolCallFinished>().Should().ContainSingle().Which.Status.Should().Be(ToolCallStatus.Denied);
+        history[2].Contents.OfType<FunctionResultContent>().Single().Result!.ToString().Should().Contain("denied");
+    }
+
+    [Fact]
+    public async Task RunAsync_NoApprover_DeniesCallThatIsNotReadOnly()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        var events = await Collect(client, NewHistory(), Tools(write), approver: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        write.Started.Should().Be(0);
+        events.OfType<ToolCallFinished>().Single().Status.Should().Be(ToolCallStatus.Denied);
+        events.OfType<ToolAwaitingApproval>().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RunAsync_UnknownTool_FailsTheCallAndListsTheTools()
+    {
+        // Arrange
+        var read = new FakeTool("read", isReadOnly: true);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "nope")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await Collect(client, history, Tools(read), approver: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        var finished = events.OfType<ToolCallFinished>().Single();
+        finished.Status.Should().Be(ToolCallStatus.Failed);
+        finished.Output.Should().Contain("nope").And.Contain("read");
+        history[2].Contents.OfType<FunctionResultContent>().Single().Result!.ToString().Should().StartWith("Error: ");
+    }
+
+    [Fact]
+    public async Task RunAsync_ToolReturnsError_MarksTheCallFailed()
+    {
+        // Arrange
+        var read = new FakeTool("read", isReadOnly: true, (_, _) => Task.FromResult(ToolResult.Error("no such file")));
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        var events = await Collect(client, NewHistory(), Tools(read), approver: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        events.OfType<ToolCallFinished>().Single().Should().Be(new ToolCallFinished("c1", "read", "no such file", ToolCallStatus.Failed));
+    }
+
+    [Fact]
+    public async Task RunAsync_ToolThrows_MarksTheCallFailedAndContinues()
+    {
+        // Arrange
+        var read = new FakeTool("read", isReadOnly: true, (_, _) => throw new InvalidOperationException("kaput"));
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        var events = await Collect(client, NewHistory(), Tools(read), approver: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        events.OfType<ToolCallFinished>().Single().Output.Should().Contain("kaput");
+        events[^1].Should().Be(new Done(StopReason.Completed));
+    }
+
+    [Fact]
+    public async Task RunAsync_ModelNeverStopsCalling_EndsWithMaxIterations()
+    {
+        // Arrange
+        var read = new FakeTool("read", isReadOnly: true);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read")])
+            .Enqueue([ScriptedChatClient.Call("c2", "read")])
+            .Enqueue([ScriptedChatClient.Call("c3", "read")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await Collect(client, history, Tools(read), approver: null, TestContext.Current.CancellationToken, maxRounds: 2);
+
+        // Assert
+        events[^1].Should().Be(new Done(StopReason.MaxIterations));
+        events.OfType<AgentError>().Should().ContainSingle();
+        client.Requests.Should().HaveCount(2);
+        history[^1].Role.Should().Be(ChatRole.Tool);
+    }
+
+    [Fact]
+    public async Task RunAsync_CancelledWhileToolRuns_AnswersEveryCallInHistory()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var read = new FakeTool("read", isReadOnly: true);
+        var write = new FakeTool("write", isReadOnly: false, async (_, ct) =>
+        {
+            await cts.CancelAsync();
+            await Task.Delay(TimeSpan.FromSeconds(10), ct);
+            return ToolResult.Ok("never");
+        });
+        using var client = new ScriptedChatClient(
+            [ScriptedChatClient.Call("c1", "read"), ScriptedChatClient.Call("c2", "write"), ScriptedChatClient.Call("c3", "read")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await Collect(client, history, Tools(read, write), new FakeApprover(allow: true), cts.Token);
+
+        // Assert
+        events.OfType<ToolCallFinished>().Select(e => (e.CallId, e.Status)).Should().Equal(
+            ("c1", ToolCallStatus.Succeeded),
+            ("c2", ToolCallStatus.Cancelled),
+            ("c3", ToolCallStatus.Cancelled));
+        events[^1].Should().Be(new Done(StopReason.Cancelled));
+        history[^1].Contents.OfType<FunctionResultContent>().Select(r => r.CallId).Should().Equal("c1", "c2", "c3");
+        client.Requests.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task RunAsync_CancelledWhileAwaitingApproval_CancelsTheCall()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var write = new FakeTool("write", isReadOnly: false);
+        var approver = new FakeApprover(async _ =>
+        {
+            await cts.CancelAsync();
+            await Task.Delay(TimeSpan.FromSeconds(10), cts.Token);
+            return true;
+        });
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await Collect(client, history, Tools(write), approver, cts.Token);
+
+        // Assert
+        write.Started.Should().Be(0);
+        events.OfType<ToolCallFinished>().Single().Status.Should().Be(ToolCallStatus.Cancelled);
+        events[^1].Should().Be(new Done(StopReason.Cancelled));
+        history[^1].Role.Should().Be(ChatRole.Tool);
+    }
+
+    [Fact]
+    public async Task RunAsync_ModelFailsAfterCalls_DropsTheCalls()
+    {
+        // Arrange
+        var read = new FakeTool("read", isReadOnly: true);
+        using var client = new ScriptedChatClient(
+            [ScriptedChatClient.Text("part"), ScriptedChatClient.Call("c1", "read")],
+            new InvalidOperationException("boom"));
+        var history = NewHistory();
+
+        // Act
+        var events = await Collect(client, history, Tools(read), approver: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        events.Should().NotContain(e => e is ToolCallRequested);
+        events[^1].Should().Be(new Done(StopReason.Error));
+        history.Should().HaveCount(2);
+        history[1].Contents.OfType<FunctionCallContent>().Should().BeEmpty();
+        history[1].Text.Should().Be("part");
+    }
+
+    private static List<ChatMessage> NewHistory() => [new(ChatRole.User, "hi")];
+
+    private static ToolSet Tools(params ITool[] tools) => new(tools, new ToolContext(Path.GetTempPath()));
+
+    private static async Task<List<AgentEvent>> Collect(
+        IChatClient client,
+        IList<ChatMessage> history,
+        ToolSet tools,
+        IToolApprover? approver,
+        CancellationToken cancellationToken,
+        int maxRounds = ChatRunner.DefaultMaxRounds)
+    {
+        var events = new List<AgentEvent>();
+        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), tools, approver, maxRounds, cancellationToken))
+        {
+            events.Add(e);
+        }
+
+        return events;
+    }
+}

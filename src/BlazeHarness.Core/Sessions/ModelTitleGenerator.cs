@@ -48,7 +48,7 @@ public sealed class ModelTitleGenerator : ITitleGenerator
 
         using var client = await _clientFactory(target, cancellationToken).ConfigureAwait(false);
         var title = new StringBuilder();
-        await foreach (var e in ChatRunner.RunAsync(client, messages, options, cancellationToken).ConfigureAwait(false))
+        await foreach (var e in ChatRunner.RunAsync(client, messages, options, cancellationToken: cancellationToken).ConfigureAwait(false))
         {
             switch (e)
             {

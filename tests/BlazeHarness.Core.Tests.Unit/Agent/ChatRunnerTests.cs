@@ -84,7 +84,7 @@ public sealed class ChatRunnerTests
     private static async Task<List<AgentEvent>> Collect(IChatClient client, IList<ChatMessage> history, CancellationToken cancellationToken)
     {
         var events = new List<AgentEvent>();
-        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), cancellationToken))
+        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), cancellationToken: cancellationToken))
         {
             events.Add(e);
         }

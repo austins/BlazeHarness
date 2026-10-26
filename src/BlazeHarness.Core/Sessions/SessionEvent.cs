@@ -16,6 +16,8 @@ namespace BlazeHarness.Core.Sessions;
 [JsonDerivedType(typeof(AssistantStartEvent), "assistantStart")]
 [JsonDerivedType(typeof(AssistantDeltaEvent), "assistantDelta")]
 [JsonDerivedType(typeof(AssistantEndEvent), "assistantEnd")]
+[JsonDerivedType(typeof(ToolCallEvent), "toolCall")]
+[JsonDerivedType(typeof(ToolResultEvent), "toolResult")]
 [JsonDerivedType(typeof(RewindEvent), "rewind")]
 public abstract record SessionEvent(DateTimeOffset At);
 
@@ -46,6 +48,7 @@ public sealed record AssistantDeltaEvent(DateTimeOffset At, Guid EntryId, string
 
 /// <summary>
 /// A reply ended. A reply with no end event was interrupted, for example by the app stopping.
+/// A later end event for the same reply replaces the status, as when the user stops the tool calls of a reply that had already finished streaming.
 /// </summary>
 /// <param name="At">When the reply ended.</param>
 /// <param name="EntryId">The id of the reply that ended.</param>
@@ -53,6 +56,27 @@ public sealed record AssistantDeltaEvent(DateTimeOffset At, Guid EntryId, string
 /// <param name="Error">The error message when it failed.</param>
 /// <param name="Usage">The token usage the server reported.</param>
 public sealed record AssistantEndEvent(DateTimeOffset At, Guid EntryId, EntryStatus Status, string? Error, UsageReported? Usage) : SessionEvent(At);
+
+/// <summary>
+/// The model asked for a tool call in a reply.
+/// </summary>
+/// <param name="At">When the call was requested.</param>
+/// <param name="EntryId">The id of the reply that made the call.</param>
+/// <param name="CallId">The provider's identifier for the call.</param>
+/// <param name="Name">The name of the tool.</param>
+/// <param name="ArgumentsJson">The call arguments as a JSON object string.</param>
+/// <param name="Summary">A few words describing the call, or an empty string.</param>
+public sealed record ToolCallEvent(DateTimeOffset At, Guid EntryId, string CallId, string Name, string ArgumentsJson, string Summary) : SessionEvent(At);
+
+/// <summary>
+/// A tool call ended. A call with no result event was interrupted, for example by the app stopping.
+/// </summary>
+/// <param name="At">When the call ended.</param>
+/// <param name="EntryId">The id of the reply that made the call.</param>
+/// <param name="CallId">The provider's identifier for the call.</param>
+/// <param name="Status">How the call ended.</param>
+/// <param name="Output">The text of the result, or the reason the call did not run.</param>
+public sealed record ToolResultEvent(DateTimeOffset At, Guid EntryId, string CallId, ToolCallStatus Status, string Output) : SessionEvent(At);
 
 /// <summary>
 /// Messages after one message were dropped, as when a reply is retried. They stay in the file but not in the conversation.

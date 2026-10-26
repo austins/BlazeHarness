@@ -38,6 +38,7 @@ public sealed class ChatEntry
     private string? _textCache;
     private string? _reasoningCache;
     private long _atTicks;
+    private IReadOnlyList<ToolCallEntry> _toolCalls = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ChatEntry"/> class.
@@ -91,6 +92,11 @@ public sealed class ChatEntry
     }
 
     /// <summary>
+    /// Gets the tool calls the model made in this reply, as a snapshot that stays valid while calls are added.
+    /// </summary>
+    public IReadOnlyList<ToolCallEntry> ToolCalls => Volatile.Read(ref _toolCalls);
+
+    /// <summary>
     /// Gets or sets when the message was sent, or for a reply when it began, and when it finished once it has.
     /// </summary>
     public DateTimeOffset At
@@ -120,9 +126,22 @@ public sealed class ChatEntry
     public UsageReported? Usage { get; set; }
 
     /// <summary>
-    /// Gets or sets the length of the model-facing history before this reply, so a retry can drop the reply.
+    /// Gets or sets the length of the model-facing history before this message, so a retry or an edit can drop it.
     /// </summary>
     public int HistoryIndex { get; set; }
+
+    /// <summary>
+    /// Add a tool call the model made in this reply.
+    /// </summary>
+    /// <param name="call">The call to add.</param>
+    public void AddToolCall(ToolCallEntry call)
+    {
+        ArgumentNullException.ThrowIfNull(call);
+        lock (_gate)
+        {
+            _toolCalls = [.. _toolCalls, call];
+        }
+    }
 
     /// <summary>
     /// Append streamed reply text.

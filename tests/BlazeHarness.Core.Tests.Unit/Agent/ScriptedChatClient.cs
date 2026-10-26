@@ -33,6 +33,12 @@ internal sealed class ScriptedChatClient : IChatClient
 
     public static ChatResponseUpdate Text(string text) => new(ChatRole.Assistant, [new TextContent(text)]);
 
+    public static ChatResponseUpdate Call(string callId, string name, string argumentsJson = "{}")
+    {
+        var arguments = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object?>>(argumentsJson);
+        return new ChatResponseUpdate(ChatRole.Assistant, [new FunctionCallContent(callId, name, arguments)]);
+    }
+
     public Task<ChatResponse> GetResponseAsync(
         IEnumerable<ChatMessage> messages,
         ChatOptions? options = null,
