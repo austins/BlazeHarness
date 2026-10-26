@@ -1,0 +1,103 @@
+@page "/settings/appearance"
+@inject IJSRuntime JS
+
+<PageTitle>Appearance · BlazeHarness</PageTitle>
+
+<div class="page">
+    <header class="page-header">
+        <h1>Appearance</h1>
+        <p class="muted">Text sizes are kept in this browser and apply right away. Browser zoom still works on top of them.</p>
+    </header>
+
+    <section class="card stack" aria-labelledby="text-size-heading">
+        <h2 id="text-size-heading">Text size</h2>
+
+        <fieldset class="size-group">
+            <legend class="label">Interface size</legend>
+            <p class="hint">The sidebar, buttons, dialogs and settings.</p>
+            <div class="size-options">
+                @foreach (var step in Steps)
+                {
+                    <label class="size-option">
+                        <input type="radio" name="ui-size" value="@step.Key" checked="@(_ui == step.Key)" @onchange="() => SetAsync(UiKind, step.Key)" />
+                        <span>@step.Label</span>
+                        <span class="muted">@step.Percent</span>
+                    </label>
+                }
+            </div>
+        </fieldset>
+
+        <fieldset class="size-group">
+            <legend class="label">Chat text size</legend>
+            <p class="hint">Messages and the message box, on top of the interface size. Code follows at a slightly smaller size.</p>
+            <div class="size-options">
+                @foreach (var step in Steps)
+                {
+                    <label class="size-option">
+                        <input type="radio" name="chat-size" value="@step.Key" checked="@(_chat == step.Key)" @onchange="() => SetAsync(ChatKind, step.Key)" />
+                        <span>@step.Label</span>
+                        <span class="muted">@step.Percent</span>
+                    </label>
+                }
+            </div>
+        </fieldset>
+
+        <div class="size-preview" aria-label="Preview of the chat text">
+            <div class="chat-thread">
+                <article class="msg" data-role="user">
+                    <div class="msg-body">How do I reverse a string in C#?</div>
+                </article>
+                <article class="msg" data-role="assistant">
+                    <div class="msg-body md">
+                        <p>You can use <code>Array.Reverse</code> on the characters:</p>
+                        <pre><code>var chars = text.ToCharArray();
+Array.Reverse(chars);
+var reversed = new string(chars);</code></pre>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private const string UiKind = "ui";
+    private const string ChatKind = "chat";
+
+    private sealed record Step(string Key, string Label, string Percent);
+
+    private static readonly Step[] Steps =
+    [
+        new("small", "Small", "87.5%"),
+        new("default", "Default", "100%"),
+        new("large", "Large", "115%"),
+        new("xlarge", "Extra large", "130%"),
+    ];
+
+    private string _ui = "default";
+    private string _chat = "default";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ui = await JS.InvokeAsync<string>("bhSize.get", UiKind);
+            _chat = await JS.InvokeAsync<string>("bhSize.get", ChatKind);
+            StateHasChanged();
+        }
+    }
+
+    private async Task SetAsync(string kind, string step)
+    {
+        if (kind == UiKind)
+        {
+            _ui = step;
+        }
+        else
+        {
+            _chat = step;
+        }
+
+        await JS.InvokeVoidAsync("bhSize.set", kind, step);
+    }
+}

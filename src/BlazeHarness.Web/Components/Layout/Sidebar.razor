@@ -109,7 +109,10 @@
     <div class="sidebar-spacer"></div>
 
     <div class="sidebar-footer">
-        <NavLink class="nav-link" href="settings/providers"><Icon Name="settings" /> Providers</NavLink>
+        <div class="sidebar-links">
+            <NavLink class="nav-link" href="settings/providers"><Icon Name="settings" /> Providers</NavLink>
+            <NavLink class="nav-link" href="settings/appearance"><Icon Name="text-size" /> Appearance</NavLink>
+        </div>
         <button type="button" class="btn btn-ghost btn-icon" @onclick="ToggleThemeAsync"
                 title="@(_dark ? "Switch to light theme" : "Switch to dark theme")"
                 aria-label="@(_dark ? "Switch to light theme" : "Switch to dark theme")">
