@@ -1,0 +1,52 @@
+@inject IJSRuntime JS
+
+@if (Open)
+{
+    <dialog class="dialog" @ref="_dialog" aria-labelledby="@_titleId" @oncancel="Close" @oncancel:preventDefault>
+        <div class="dialog-header">
+            <h2 id="@_titleId">@Title</h2>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Close" @onclick="Close">✕</button>
+        </div>
+        <div class="dialog-body">@ChildContent</div>
+        @if (Footer is not null)
+        {
+            <div class="dialog-footer">@Footer</div>
+        }
+    </dialog>
+}
+
+@code {
+    private readonly string _titleId = "dlg-" + Guid.NewGuid().ToString("N");
+    private ElementReference _dialog;
+    private bool _shown;
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Open { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? Footer { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Open && !_shown)
+        {
+            _shown = true;
+            await JS.InvokeVoidAsync("bhUi.showModal", _dialog);
+        }
+        else if (!Open)
+        {
+            _shown = false;
+        }
+    }
+
+    private Task Close() => OnClose.InvokeAsync();
+}

@@ -1,0 +1,47 @@
+@using BlazeHarness.Core.Config
+@implements IDisposable
+@inject ToastService Toasts
+
+<div class="toasts" role="region" aria-label="Notifications" aria-live="polite">
+    @foreach (var toast in _toasts)
+    {
+        <div class="toast toast-@toast.Kind.ToString().ToLowerInvariant()" role="@(toast.Kind == ToastKind.Error ? "alert" : "status")" @key="toast.Id">
+            <span class="msg">@toast.Message</span>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Dismiss" @onclick="() => Dismiss(toast.Id)">✕</button>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly List<Toast> _toasts = [];
+
+    protected override void OnInitialized()
+    {
+        Toasts.Shown += OnShown;
+    }
+
+    public void Dispose()
+    {
+        Toasts.Shown -= OnShown;
+    }
+
+    private void OnShown(object? sender, ValueEventArgs<Toast> e)
+    {
+        var toast = e.Value;
+        _ = InvokeAsync(async () =>
+        {
+            _toasts.Add(toast);
+            StateHasChanged();
+            await Task.Delay(toast.Kind == ToastKind.Error ? 9000 : 4000);
+            Dismiss(toast.Id);
+        });
+    }
+
+    private void Dismiss(Guid id)
+    {
+        if (_toasts.RemoveAll(t => t.Id == id) > 0)
+        {
+            StateHasChanged();
+        }
+    }
+}

@@ -46,6 +46,21 @@ public sealed class ProviderServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SaveAsync_NewProviderWithoutKey_SavesWithoutStoringKey()
+    {
+        // Arrange
+        var provider = Provider("local", "m1");
+
+        // Act
+        var issues = await _sut.SaveAsync(provider, null, TestContext.Current.CancellationToken);
+
+        // Assert
+        issues.Should().BeEmpty();
+        _sut.Config.Providers.Should().ContainSingle(p => p.Id == "local");
+        (await _sut.HasKeyAsync(provider, TestContext.Current.CancellationToken)).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task SaveAsync_ExistingProviderWithoutNewKey_KeepsStoredKey()
     {
         // Arrange

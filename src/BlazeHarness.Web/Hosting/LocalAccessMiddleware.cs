@@ -2,7 +2,7 @@ namespace BlazeHarness.Web.Hosting;
 
 /// <summary>
 /// Gate in front of everything, including the <c>/_blazor</c> SignalR connection. A request must have an exact
-/// loopback <c>Host</c>, a same-origin <c>Origin</c> when one is sent, and the session cookie. The Host check
+/// loopback <c>Host</c>, a same-origin <c>Origin</c> when one is sent (always for SignalR connections), and the session cookie. The Host check
 /// stops DNS rebinding, the Origin check stops other web pages, and the cookie stops other local users.
 /// </summary>
 /// <param name="next">The next step in the request pipeline.</param>
@@ -31,7 +31,8 @@ public sealed class LocalAccessMiddleware(RequestDelegate next, LaunchCredential
         }
 
         var origin = context.Request.Headers.Origin.ToString();
-        var isSignalR = context.Request.Path.StartsWithSegments("/_blazor", StringComparison.OrdinalIgnoreCase);
+        var isSignalRConnection = context.Request.Path.StartsWithSegments("/_blazor", StringComparison.OrdinalIgnoreCase)
+            && (!HttpMethods.IsGet(context.Request.Method) || context.WebSockets.IsWebSocketRequest);
         if (origin.Length > 0)
         {
             if (!allowedHosts.Any(h => string.Equals(origin, "http://" + h, StringComparison.OrdinalIgnoreCase)))
@@ -40,7 +41,7 @@ public sealed class LocalAccessMiddleware(RequestDelegate next, LaunchCredential
                 return;
             }
         }
-        else if (isSignalR)
+        else if (isSignalRConnection)
         {
             await RejectAsync(context, StatusCodes.Status403Forbidden, "Missing Origin header.");
             return;

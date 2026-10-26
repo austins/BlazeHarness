@@ -1,0 +1,52 @@
+@inject IJSRuntime JS
+
+<nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="Main">
+    <div class="sidebar-brand"><span class="logo" aria-hidden="true">🔥</span> BlazeHarness</div>
+
+    <NavLink class="btn btn-primary" href="" Match="NavLinkMatch.All">New chat</NavLink>
+
+    <section class="sidebar-section" aria-labelledby="folders-heading">
+        <div class="sidebar-heading"><span id="folders-heading">Folders</span></div>
+        <p class="sidebar-empty">Opened folders and their sessions will appear here.</p>
+    </section>
+
+    <section class="sidebar-section" aria-labelledby="chats-heading">
+        <div class="sidebar-heading"><span id="chats-heading">Chats</span></div>
+        <p class="sidebar-empty">No chats yet.</p>
+    </section>
+
+    <div class="sidebar-spacer"></div>
+
+    <NavLink class="nav-link" href="settings/providers">⚙ Providers</NavLink>
+
+    <div class="field">
+        <label class="sr-only" for="theme">Theme</label>
+        <select id="theme" class="select" value="@_theme" @onchange="OnThemeChanged">
+            <option value="system">Theme: system</option>
+            <option value="light">Theme: light</option>
+            <option value="dark">Theme: dark</option>
+        </select>
+    </div>
+</nav>
+
+@code {
+    private string _theme = "system";
+
+    [Parameter]
+    public bool Collapsed { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _theme = await JS.InvokeAsync<string>("bhTheme.get");
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnThemeChanged(ChangeEventArgs e)
+    {
+        _theme = e.Value?.ToString() ?? "system";
+        await JS.InvokeVoidAsync("bhTheme.set", _theme);
+    }
+}

@@ -1,11 +1,62 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
 
-<main>
-    @Body
-</main>
+<div class="app">
+    <Sidebar Collapsed="_collapsed" />
+    @if (!_collapsed)
+    {
+        <button type="button" class="sidebar-backdrop" aria-label="Close sidebar" tabindex="-1" @onclick="() => _collapsed = true"></button>
+    }
+
+    <div class="workspace">
+        <header class="topbar">
+            <button type="button" class="btn btn-ghost btn-icon" aria-label="@(_collapsed ? "Show sidebar" : "Hide sidebar")" aria-expanded="@(_collapsed ? "false" : "true")" @onclick="() => _collapsed = !_collapsed">☰</button>
+            <span class="title">BlazeHarness</span>
+        </header>
+        <main class="content">
+            @Body
+        </main>
+    </div>
+</div>
+
+<ToastHost />
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private bool _collapsed;
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && await JS.InvokeAsync<bool>("bhUi.isNarrow"))
+        {
+            _collapsed = true;
+            StateHasChanged();
+        }
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (!_collapsed && await JS.InvokeAsync<bool>("bhUi.isNarrow"))
+        {
+            _collapsed = true;
+            StateHasChanged();
+        }
+    }
+}

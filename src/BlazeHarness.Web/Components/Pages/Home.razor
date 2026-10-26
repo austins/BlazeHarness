@@ -1,6 +1,22 @@
 @page "/"
+@inject ProviderService Service
 
 <PageTitle>BlazeHarness</PageTitle>
 
-<h1>BlazeHarness</h1>
-<p>Local chat and coding harness.</p>
+<div class="page">
+    @if (Service.Config.Providers.Count == 0)
+    {
+        <div class="card empty">
+            <h1>Welcome to BlazeHarness</h1>
+            <p>Connect an OpenAI-compatible endpoint to start chatting. A hosted API or a local server such as llama.cpp both work.</p>
+            <a class="btn btn-primary" href="settings/providers">Set up a provider</a>
+        </div>
+    }
+    else
+    {
+        <div class="card empty">
+            <h1>Ready to chat</h1>
+            <p>Chat is coming next.</p>
+        </div>
+    }
+</div>

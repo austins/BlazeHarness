@@ -7,11 +7,26 @@ namespace BlazeHarness.Core.Providers;
 /// <summary>
 /// Reads and changes the configured providers, keeping their API keys in the secret store rather than in <c>config.json</c>.
 /// </summary>
-/// <param name="config">The store behind <c>config.json</c>.</param>
-/// <param name="secrets">Where API keys are kept.</param>
-/// <param name="keys">Resolves a provider's key, including environment variable references.</param>
-public sealed class ProviderService(JsonFileStore<AppConfig> config, ISecretStore secrets, ApiKeyResolver keys)
+public sealed class ProviderService
 {
+    private readonly JsonFileStore<AppConfig> _config;
+    private readonly ISecretStore _secrets;
+    private readonly ApiKeyResolver _keys;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ProviderService"/> class.
+    /// </summary>
+    /// <param name="config">The store behind <c>config.json</c>.</param>
+    /// <param name="secrets">Where API keys are kept.</param>
+    /// <param name="keys">Resolves a provider's key, including environment variable references.</param>
+    public ProviderService(JsonFileStore<AppConfig> config, ISecretStore secrets, ApiKeyResolver keys)
+    {
+        _config = config;
+        _secrets = secrets;
+        _keys = keys;
+        config.ExternalChange += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
+    }
+
     /// <summary>
     /// Raised after the configuration changed, whether through this service or an outside edit of the file.
     /// </summary>
@@ -20,12 +35,12 @@ public sealed class ProviderService(JsonFileStore<AppConfig> config, ISecretStor
     /// <summary>
     /// Gets the current configuration.
     /// </summary>
-    public AppConfig Config => config.Current;
+    public AppConfig Config => _config.Current;
 
     /// <summary>
     /// Gets the secret store, so the UI can say whether keys are held securely.
     /// </summary>
-    public ISecretStore Secrets => secrets;
+    public ISecretStore Secrets => _secrets;
 
     /// <summary>
     /// Build a provider id from a display name, avoiding ids that are already taken.
@@ -55,7 +70,7 @@ public sealed class ProviderService(JsonFileStore<AppConfig> config, ISecretStor
 
         var id = baseId;
         var n = 2;
-        while (config.Current.Providers.Any(p => p.Id == id))
+        while (_config.Current.Providers.Any(p => p.Id == id))
         {
             id = $"{baseId}-{n++}";
         }
@@ -71,7 +86,7 @@ public sealed class ProviderService(JsonFileStore<AppConfig> config, ISecretStor
     /// <returns>The key, or null when none is configured.</returns>
     public Task<string?> ResolveKeyAsync(ProviderConfig provider, CancellationToken cancellationToken = default)
     {
-        return keys.ResolveAsync(provider, cancellationToken);
+        return _keys.ResolveAsync(provider, cancellationToken);
     }
 
     /// <summary>
@@ -82,7 +97,7 @@ public sealed class ProviderService(JsonFileStore<AppConfig> config, ISecretStor
     /// <returns>True when a key is stored, or the referenced environment variable is set.</returns>
     public async Task<bool> HasKeyAsync(ProviderConfig provider, CancellationToken cancellationToken = default)
     {
-        return !string.IsNullOrEmpty(await keys.ResolveAsync(provider, cancellationToken));
+        return !string.IsNullOrEmpty(await _keys.ResolveAsync(provider, cancellationToken));
     }
 
     /// <summary>
@@ -105,10 +120,10 @@ public sealed class ProviderService(JsonFileStore<AppConfig> config, ISecretStor
 
         if (!string.IsNullOrEmpty(newApiKey))
         {
-            await secrets.SetAsync(SecretStoreFactory.KeyFor(provider), newApiKey, cancellationToken);
+            await _secrets.SetAsync(SecretStoreFactory.KeyFor(provider), newApiKey, cancellationToken);
         }
 
-        await config.UpdateAsync(
+        await _config.UpdateAsync(
             current =>
             {
                 var providers = current.Providers.ToList();
@@ -142,8 +157,8 @@ public sealed class ProviderService(JsonFileStore<AppConfig> config, ISecretStor
     /// <returns>A task that completes once the provider is removed.</returns>
     public async Task RemoveAsync(string providerId, CancellationToken cancellationToken = default)
     {
-        await secrets.DeleteAsync("provider:" + providerId, cancellationToken);
-        await config.UpdateAsync(
+        await _secrets.DeleteAsync("provider:" + providerId, cancellationToken);
+        await _config.UpdateAsync(
             current =>
             {
                 var providers = current.Providers.Where(p => p.Id != providerId).ToList();
@@ -170,13 +185,13 @@ public sealed class ProviderService(JsonFileStore<AppConfig> config, ISecretStor
     /// <returns>True when saved; false when the provider or model does not exist.</returns>
     public async Task<bool> SetDefaultAsync(string providerId, string modelId, CancellationToken cancellationToken = default)
     {
-        var provider = config.Current.Providers.FirstOrDefault(p => p.Id == providerId);
+        var provider = _config.Current.Providers.FirstOrDefault(p => p.Id == providerId);
         if (provider is null || provider.Models.All(m => m.Id != modelId))
         {
             return false;
         }
 
-        await config.UpdateAsync(current => current with { DefaultProviderId = providerId, DefaultModelId = modelId }, cancellationToken);
+        await _config.UpdateAsync(current => current with { DefaultProviderId = providerId, DefaultModelId = modelId }, cancellationToken);
         Changed?.Invoke(this, EventArgs.Empty);
         return true;
     }

@@ -86,16 +86,29 @@ public sealed class LocalAccessMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_SignalRWithoutOrigin_Returns403()
+    public async Task InvokeAsync_SignalRNegotiateWithoutOrigin_Returns403()
     {
         // Arrange
-        var context = CreateContext("127.0.0.1:5555", cookie: _credentials.SessionSecret, path: "/_blazor");
+        var context = CreateContext("127.0.0.1:5555", cookie: _credentials.SessionSecret, path: "/_blazor/negotiate", method: "POST");
 
         // Act
         await _sut.InvokeAsync(context);
 
         // Assert
         context.Response.StatusCode.Should().Be(403);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_BlazorInitializersGetWithoutOrigin_CallsNext()
+    {
+        // Arrange
+        var context = CreateContext("127.0.0.1:5555", cookie: _credentials.SessionSecret, path: "/_blazor/initializers");
+
+        // Act
+        await _sut.InvokeAsync(context);
+
+        // Assert
+        _nextCalled.Should().BeTrue();
     }
 
     [Theory]
@@ -164,11 +177,12 @@ public sealed class LocalAccessMiddlewareTests
         string? cookie = null,
         string? origin = null,
         string path = "/",
-        string query = "")
+        string query = "",
+        string method = "GET")
     {
         var context = new DefaultHttpContext();
         context.Connection.LocalPort = Port;
-        context.Request.Method = "GET";
+        context.Request.Method = method;
         context.Request.Host = new HostString(host);
         context.Request.Path = path;
         context.Request.QueryString = new QueryString(query);

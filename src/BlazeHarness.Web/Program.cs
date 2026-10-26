@@ -4,6 +4,7 @@ using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Secrets;
 using BlazeHarness.Web.Components;
 using BlazeHarness.Web.Hosting;
+using BlazeHarness.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,8 @@ builder.Services.AddSingleton<ApiKeyResolver>();
 builder.Services.AddSingleton(sp => new JsonFileStore<AppConfig>(
     paths.ConfigFile,
     sp.GetRequiredService<ILogger<JsonFileStore<AppConfig>>>()));
+builder.Services.AddSingleton<ProviderService>();
+builder.Services.AddScoped<ToastService>();
 builder.Services.AddSingleton<LaunchCredentials>();
 builder.Services.AddHttpClient();
 

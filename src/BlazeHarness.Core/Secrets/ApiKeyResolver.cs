@@ -43,6 +43,19 @@ public sealed partial class ApiKeyResolver(ISecretStore store, Func<string, stri
         return EnvReference().IsMatch(reference);
     }
 
+    /// <summary>
+    /// Extract the variable name from a <c>${ENV_VAR}</c> key reference.
+    /// </summary>
+    /// <param name="reference">The reference to read.</param>
+    /// <param name="name">The variable name when the reference has the expected form.</param>
+    /// <returns>True when the reference names an environment variable.</returns>
+    public static bool TryGetEnvironmentName(string reference, out string name)
+    {
+        var match = EnvReference().Match(reference);
+        name = match.Success ? match.Groups[1].Value : string.Empty;
+        return match.Success;
+    }
+
     [GeneratedRegex(@"^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$")]
     private static partial Regex EnvReference();
 }
