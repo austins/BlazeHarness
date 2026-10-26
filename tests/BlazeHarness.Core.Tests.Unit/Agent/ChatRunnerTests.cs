@@ -1,6 +1,5 @@
 using BlazeHarness.Core.Agent;
 using Microsoft.Extensions.AI;
-using System.Runtime.CompilerServices;
 
 namespace BlazeHarness.Core.Tests.Unit.Agent;
 
@@ -91,46 +90,5 @@ public sealed class ChatRunnerTests
         }
 
         return events;
-    }
-
-    private sealed class ScriptedChatClient(
-        IReadOnlyList<ChatResponseUpdate> updates,
-        Exception? failure = null,
-        CancellationTokenSource? cancelAfterwards = null) : IChatClient
-    {
-        public Task<ChatResponse> GetResponseAsync(
-            IEnumerable<ChatMessage> messages,
-            ChatOptions? options = null,
-            CancellationToken cancellationToken = default) => throw new NotSupportedException();
-
-        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
-            IEnumerable<ChatMessage> messages,
-            ChatOptions? options = null,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
-            foreach (var update in updates)
-            {
-                yield return update;
-            }
-
-            if (cancelAfterwards is not null)
-            {
-                await cancelAfterwards.CancelAsync();
-                cancellationToken.ThrowIfCancellationRequested();
-            }
-
-            if (failure is not null)
-            {
-                throw failure;
-            }
-
-            await Task.CompletedTask;
-        }
-
-        public object? GetService(Type serviceType, object? serviceKey = null) => null;
-
-        public void Dispose()
-        {
-        }
     }
 }
