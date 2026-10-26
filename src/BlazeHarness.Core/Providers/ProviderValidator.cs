@@ -9,17 +9,6 @@ namespace BlazeHarness.Core.Providers;
 /// </summary>
 public static class ProviderValidator
 {
-    private static readonly (string Name, double Min, double Max, Func<SamplingParams, double?> Get)[] Ranges =
-    [
-        ("temperature", 0, 2, s => s.Temperature),
-        ("topP", 0, 1, s => s.TopP),
-        ("topK", 0, int.MaxValue, s => s.TopK),
-        ("minP", 0, 1, s => s.MinP),
-        ("presencePenalty", -2, 2, s => s.PresencePenalty),
-        ("frequencyPenalty", -2, 2, s => s.FrequencyPenalty),
-        ("repetitionPenalty", 0.01, 2, s => s.RepetitionPenalty),
-    ];
-
     /// <summary>
     /// Validate a provider and its models.
     /// </summary>
@@ -107,13 +96,13 @@ public static class ProviderValidator
             return;
         }
 
-        foreach (var (name, min, max, get) in Ranges)
+        foreach (var range in SamplingRange.All)
         {
-            if (get(sampling) is { } value && (double.IsNaN(value) || value < min || value > max))
+            if (range.Get(sampling) is { } value && (double.IsNaN(value) || value < range.Min || value > range.Max))
             {
                 issues.Add(new ValidationIssue(
-                    $"{path}.{name}",
-                    string.Create(CultureInfo.InvariantCulture, $"{name} must be between {min} and {max}.")));
+                    $"{path}.{range.Key}",
+                    string.Create(CultureInfo.InvariantCulture, $"{range.Key} must be between {range.Min} and {range.Max}.")));
             }
         }
     }

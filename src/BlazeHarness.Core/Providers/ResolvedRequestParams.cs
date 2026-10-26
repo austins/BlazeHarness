@@ -83,6 +83,41 @@ public sealed record ResolvedRequestParams(SamplingParams Sampling, JsonObject B
         return new ResolvedRequestParams(sampling, body);
     }
 
+    /// <summary>
+    /// Build the request fields these parameters add, for showing to the user.
+    /// </summary>
+    /// <returns>The standard sampling fields followed by the body fields, using the names that go on the wire.</returns>
+    public JsonObject ToRequestJson()
+    {
+        var json = new JsonObject();
+        if (Sampling.Temperature is { } temperature)
+        {
+            json["temperature"] = temperature;
+        }
+
+        if (Sampling.TopP is { } topP)
+        {
+            json["top_p"] = topP;
+        }
+
+        if (Sampling.PresencePenalty is { } presence)
+        {
+            json["presence_penalty"] = presence;
+        }
+
+        if (Sampling.FrequencyPenalty is { } frequency)
+        {
+            json["frequency_penalty"] = frequency;
+        }
+
+        foreach (var (key, value) in BodyFields)
+        {
+            json[key] = value?.DeepClone();
+        }
+
+        return json;
+    }
+
     private static JsonNode? ParseLiteral(string value)
     {
         if (bool.TryParse(value, out var b))
