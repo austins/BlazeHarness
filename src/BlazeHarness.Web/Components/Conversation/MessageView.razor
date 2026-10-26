@@ -1,3 +1,5 @@
+@inject MarkdownRenderer Markdown
+
 <article class="msg" data-role="@(Entry.Role == ChatRole.User ? "user" : "assistant")" data-status="@Entry.Status.ToString().ToLowerInvariant()">
     @if (ShowLabel && !string.IsNullOrEmpty(Entry.Label))
     {
@@ -14,7 +16,14 @@
 
     @if (Entry.Text.Length > 0)
     {
-        <div class="msg-body">@Entry.Text</div>
+        @if (Entry.Role == ChatRole.Assistant)
+        {
+            <div class="msg-body md">@((MarkupString)AssistantHtml())</div>
+        }
+        else
+        {
+            <div class="msg-body">@Entry.Text</div>
+        }
     }
     else if (Entry.Status == EntryStatus.Streaming && Entry.Reasoning.Length == 0)
     {
@@ -49,4 +58,17 @@
     /// </summary>
     [Parameter]
     public bool ShowLabel { get; set; }
+
+    private StreamingMarkdown? _streaming;
+
+    private string AssistantHtml()
+    {
+        if (Entry.Status != EntryStatus.Streaming)
+        {
+            return Markdown.ToCachedHtml(Entry.Text);
+        }
+
+        _streaming ??= new StreamingMarkdown(Markdown);
+        return _streaming.Render(Entry.Text);
+    }
 }

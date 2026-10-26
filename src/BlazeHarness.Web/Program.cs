@@ -19,6 +19,7 @@ builder.Services.AddSingleton(sp => new JsonFileStore<AppConfig>(
     paths.ConfigFile,
     sp.GetRequiredService<ILogger<JsonFileStore<AppConfig>>>()));
 builder.Services.AddSingleton<ProviderService>();
+builder.Services.AddSingleton<MarkdownRenderer>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<ChatClientSource>();
 builder.Services.AddScoped(sp =>

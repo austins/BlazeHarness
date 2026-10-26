@@ -2,6 +2,9 @@
   <ItemGroup>
     <ProjectReference Include="..\BlazeHarness.Core\BlazeHarness.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Markdig" Version="1.5.0" />
+  </ItemGroup>
   <PropertyGroup>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>

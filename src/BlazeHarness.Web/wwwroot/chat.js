@@ -35,6 +35,24 @@ window.bhChat = {
             root.bhToBottom();
         }
     },
+    // Copy buttons on code blocks are rendered with the message, so one listener covers them all.
+    initCopy: () => {
+        document.addEventListener("click", async (e) => {
+            const button = e.target instanceof Element ? e.target.closest("[data-copy]") : null;
+            const code = button && button.closest(".code");
+            if (!code) {
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(code.querySelector("pre").innerText);
+                button.textContent = "Copied";
+                setTimeout(() => { button.textContent = "Copy"; }, 1500);
+            } catch {
+                button.textContent = "Copy failed";
+            }
+        });
+    },
     resize: (input) => {
         if (input) {
             input.style.height = "auto";
@@ -61,3 +79,5 @@ window.bhChat = {
         input.focus();
     },
 };
+
+window.bhChat.initCopy();
