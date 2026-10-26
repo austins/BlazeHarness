@@ -26,6 +26,16 @@ public sealed class SystemPromptTests
     }
 
     [Fact]
+    public void Build_NoShell_LeavesOutTheShellLine()
+    {
+        // Act
+        var prompt = SystemPrompt.Build("Linux", shell: null, "/work");
+
+        // Assert
+        prompt.Should().NotContain("shell tool").And.Contain("/work");
+    }
+
+    [Fact]
     public void Build_Default_HasNoVolatileContent()
     {
         // Act

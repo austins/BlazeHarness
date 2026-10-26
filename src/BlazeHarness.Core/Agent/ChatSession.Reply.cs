@@ -28,9 +28,10 @@ public sealed partial class ChatSession
 
         List<ChatMessage> working = [.. History];
         var before = working.Count;
-        if (Project?.ToPrompt() is { } instructions)
+        var prompt = string.Join(Environment.NewLine, new[] { BasePrompt, Project?.ToPrompt() }.Where(p => !string.IsNullOrWhiteSpace(p)));
+        if (prompt.Length > 0)
         {
-            working.Insert(0, new ChatMessage(ChatRole.System, instructions));
+            working.Insert(0, new ChatMessage(ChatRole.System, prompt));
             before++;
         }
 

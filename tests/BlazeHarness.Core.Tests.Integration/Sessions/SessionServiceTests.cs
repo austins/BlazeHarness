@@ -445,6 +445,47 @@ public sealed class SessionServiceTests : IDisposable
         await titles.DidNotReceiveWithAnyArgs().GenerateAsync(default!, default!, default!, ct);
     }
 
+    [Fact]
+    public async Task SendAsync_SessionInAFolder_LetsTheModelReadFilesThere()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var folder = Path.Combine(_home, "work");
+        Directory.CreateDirectory(folder);
+        await File.WriteAllTextAsync(Path.Combine(folder, "notes.txt"), "secret plans", ct);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read_file", """{"path":"notes.txt"}""")])
+            .Enqueue([ScriptedChatClient.Text("It says secret plans.")]);
+        var sut = Create(client);
+        var info = await sut.CreateAsync(folder, ct);
+
+        // Act
+        await sut.SendAsync(info.Id, "read notes", Target("p1", "fast"));
+
+        // Assert
+        var session = (await sut.OpenAsync(info.Id))!;
+        session.Entries[1].ToolCalls.Single().Output.Should().Contain("secret plans");
+        client.Options[0]!.Tools.Should().Contain(t => t.Name == "write_file");
+        client.Requests[0][0].Role.Should().Be(ChatRole.System);
+        client.Requests[0][0].Text.Should().Contain("BlazeHarness");
+    }
+
+    [Fact]
+    public async Task SendAsync_SessionWithoutAFolder_OffersNoTools()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hello")]);
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+
+        // Act
+        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+
+        // Assert
+        client.Options[0]!.Tools.Should().BeNullOrEmpty();
+        client.Requests[0][0].Role.Should().Be(ChatRole.User);
+    }
+
     private static ChatTarget Target(string provider, string model)
     {
         var modelConfig = new ModelConfig { Id = model, ContextWindow = 8000, MaxOutputTokens = 1000 };

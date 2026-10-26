@@ -1,9 +1,11 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace BlazeHarness.Core.Sessions;
 
@@ -77,7 +79,7 @@ public sealed partial class SessionService : IDisposable
         var info = await _store.CreateAsync(folderPath, cancellationToken).ConfigureAwait(false);
         var session = NewSession(info.Id);
         _live[info.Id] = session;
-        await RefreshProjectAsync(info.Id, session).ConfigureAwait(false);
+        await ApplyFolderAsync(info.Id, session).ConfigureAwait(false);
         return info;
     }
 
@@ -110,7 +112,7 @@ public sealed partial class SessionService : IDisposable
             var session = NewSession(id);
 #pragma warning restore CA2000
             session.Restore(await _store.GetLog(id).ReadAsync().ConfigureAwait(false));
-            await RefreshProjectAsync(id, session).ConfigureAwait(false);
+            await ApplyFolderAsync(id, session).ConfigureAwait(false);
             _live[id] = session;
             return session;
         }
@@ -136,7 +138,7 @@ public sealed partial class SessionService : IDisposable
         }
 
         await RememberAsync(id, target, text).ConfigureAwait(false);
-        await RefreshProjectAsync(id, session).ConfigureAwait(false);
+        await ApplyFolderAsync(id, session).ConfigureAwait(false);
         await session.SendAsync(text, target).ConfigureAwait(false);
         StartTitle(id, session, target);
     }
@@ -161,7 +163,7 @@ public sealed partial class SessionService : IDisposable
 
         var first = session.Entries is [{ } head, ..] && head.Id == entryId;
         await RememberAsync(id, target, first ? text : null, replacePlaceholder: first).ConfigureAwait(false);
-        await RefreshProjectAsync(id, session).ConfigureAwait(false);
+        await ApplyFolderAsync(id, session).ConfigureAwait(false);
         await session.EditAsync(entryId, text, target).ConfigureAwait(false);
         StartTitle(id, session, target);
     }
@@ -181,7 +183,7 @@ public sealed partial class SessionService : IDisposable
         }
 
         await RememberAsync(id, target, null).ConfigureAwait(false);
-        await RefreshProjectAsync(id, session).ConfigureAwait(false);
+        await ApplyFolderAsync(id, session).ConfigureAwait(false);
         await session.RetryAsync(target).ConfigureAwait(false);
         StartTitle(id, session, target);
     }
@@ -264,7 +266,7 @@ public sealed partial class SessionService : IDisposable
     {
         foreach (var (id, session) in _live.ToArray())
         {
-            await RefreshProjectAsync(id, session).ConfigureAwait(false);
+            await ApplyFolderAsync(id, session).ConfigureAwait(false);
         }
     }
 
@@ -278,13 +280,42 @@ public sealed partial class SessionService : IDisposable
         return _titling.TryGetValue(id, out var task) ? task : Task.CompletedTask;
     }
 
-    private async Task RefreshProjectAsync(string id, ChatSession session)
+    private async Task ApplyFolderAsync(string id, ChatSession session)
     {
-        var loaded = await LoadProjectAsync(_store.Find(id)?.FolderPath).ConfigureAwait(false);
+        var folderPath = _store.Find(id)?.FolderPath;
+        var loaded = await LoadProjectAsync(folderPath).ConfigureAwait(false);
         var current = session.Project;
         if (loaded is null ? current is not null : !loaded.SameAs(current))
         {
             session.Project = loaded;
+        }
+
+        ApplyTools(session, folderPath);
+    }
+
+    private void ApplyTools(ChatSession session, string? folderPath)
+    {
+        if (folderPath is null || !Directory.Exists(folderPath))
+        {
+            session.Tools = null;
+            session.BasePrompt = null;
+            return;
+        }
+
+        try
+        {
+            var tools = BuiltInTools.Create(folderPath);
+            if (session.Tools?.Context.Root != tools.Context.Root)
+            {
+                session.Tools = tools;
+                session.BasePrompt = SystemPrompt.Build(RuntimeInformation.OSDescription, shell: null, tools.Context.Root);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            LogToolsUnavailable(ex, folderPath);
+            session.Tools = null;
+            session.BasePrompt = null;
         }
     }
 
@@ -365,6 +396,9 @@ public sealed partial class SessionService : IDisposable
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not write a title for a session; it keeps its placeholder title.")]
     private partial void LogTitleFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not set up tools for the folder {Folder}; the session has none.")]
+    private partial void LogToolsUnavailable(Exception ex, string folder);
 
     private static string Placeholder(string text)
     {

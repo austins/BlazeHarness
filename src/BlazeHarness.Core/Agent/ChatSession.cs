@@ -42,6 +42,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     private IReadOnlyList<ChatEntry> _snapshot = [];
     private ProjectContext? _project;
     private ToolSet? _tools;
+    private string? _basePrompt;
     private Action? _stop;
 
     /// <summary>
@@ -102,6 +103,18 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
             Volatile.Write(ref _project, value);
             RaiseChanged();
         }
+    }
+
+    /// <summary>
+    /// Gets or sets the base system prompt that comes before the project instructions, or null for none.
+    /// </summary>
+    /// <remarks>
+    /// A reply reads this once when it starts, so changing it never alters a reply that is running.
+    /// </remarks>
+    public string? BasePrompt
+    {
+        get => Volatile.Read(ref _basePrompt);
+        set => Volatile.Write(ref _basePrompt, value);
     }
 
     /// <summary>
