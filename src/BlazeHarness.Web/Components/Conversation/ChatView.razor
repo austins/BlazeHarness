@@ -79,7 +79,7 @@ else
                         previousLabel = entry.Label;
                     }
 
-                    <MessageView @key="entry.Id" Entry="entry" ShowLabel="showLabel" CanEdit="!(_session?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" />
+                    <MessageView @key="entry.Id" Entry="entry" ShowLabel="showLabel" CanEdit="!(_session?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" />
                 }
             </div>
         </div>
@@ -304,6 +304,11 @@ else
     private async Task FollowAsync()
     {
         await JS.InvokeVoidAsync("bhChat.follow", _root);
+    }
+
+    private void Decide((string CallId, bool Allow) answer)
+    {
+        _session?.Approve(answer.CallId, answer.Allow);
     }
 
     private void Stop()

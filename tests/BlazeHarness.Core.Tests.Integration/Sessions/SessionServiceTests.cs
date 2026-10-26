@@ -359,6 +359,29 @@ public sealed class SessionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SendAsync_AfterAToolChainWhoseFirstResponseHasNoText_TitlesFromTheFirstTextReply()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var folder = Path.Combine(_home, "work");
+        Directory.CreateDirectory(folder);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "list_files")])
+            .Enqueue([ScriptedChatClient.Text("The folder is empty.")]);
+        var titles = Substitute.For<ITitleGenerator>();
+        titles.GenerateAsync(Arg.Any<ChatTarget>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns("Empty folder");
+        var sut = Create(client, titles);
+        var info = await sut.CreateAsync(folder, ct);
+
+        // Act
+        await sut.SendAsync(info.Id, "what is here?", Target("p1", "fast"));
+        await sut.PendingTitleAsync(info.Id);
+
+        // Assert
+        sut.Store.Find(info.Id)!.Title.Should().Be("Empty folder");
+        await titles.Received(1).GenerateAsync(Arg.Any<ChatTarget>(), "what is here?", "The folder is empty.", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task SendAsync_AfterAGeneratedTitle_DoesNotAskAgain()
     {
         // Arrange

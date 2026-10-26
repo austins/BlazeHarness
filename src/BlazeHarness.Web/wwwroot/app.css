@@ -413,6 +413,24 @@ details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600
 .msg[data-status="streaming"] > .msg-body:last-of-type:not(.md)::after, .msg[data-status="streaming"] > .md:last-of-type > :last-child::after { content: "▍"; color: var(--fg-muted); }
 .msg-thinking { color: var(--fg-muted); font-size: var(--text-sm); border-inline-start: 2px solid var(--border); padding-inline-start: var(--space-3); }
 
+.tool { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-subtle); font-size: var(--text-sm); min-width: 0; }
+.tool[data-status="awaitingapproval"] { border-color: var(--accent); }
+.tool[data-status="failed"], .tool[data-status="denied"] { border-color: var(--danger); }
+.tool-head { display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-2) var(--space-3); background: transparent; border: 0; color: inherit; font: inherit; text-align: start; cursor: pointer; border-radius: var(--radius); }
+.tool-head:hover { background: var(--bg-hover); }
+.tool-name { font-weight: 600; flex: none; }
+.tool-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-muted); }
+.tool-status { margin-inline-start: auto; flex: none; display: inline-flex; align-items: center; gap: var(--space-1); color: var(--fg-muted); }
+.tool[data-status="succeeded"] .tool-status { color: var(--success); }
+.tool[data-status="failed"] .tool-status, .tool[data-status="denied"] .tool-status { color: var(--danger); }
+.tool[data-status="awaitingapproval"] .tool-status { color: var(--accent); font-weight: 600; }
+.tool-approval { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-block-start: 1px solid var(--border); }
+.tool-approval > span { flex: 1; font-weight: 600; }
+.tool-body { padding: var(--space-2) var(--space-3) var(--space-3); border-block-start: 1px solid var(--border); display: flex; flex-direction: column; gap: var(--space-2); }
+.tool-arg { display: flex; flex-direction: column; gap: var(--space-1); align-items: flex-start; }
+.tool-arg-name { font-size: var(--text-xs); color: var(--fg-muted); text-transform: none; font-family: var(--font-mono); }
+.tool-pre { margin: 0; width: 100%; max-height: 16rem; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: var(--text-xs); white-space: pre-wrap; overflow-wrap: anywhere; }
+
 .composer { max-width: 52rem; width: 100%; margin-inline: auto; padding: var(--space-2) var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
 .composer-input { resize: none; max-height: 15rem; min-height: 2.75rem; }
 .composer-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }

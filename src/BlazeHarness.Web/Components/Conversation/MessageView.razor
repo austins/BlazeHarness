@@ -31,6 +31,11 @@
         <div class="msg-wait" role="status">Waiting for the model…</div>
     }
 
+    @foreach (var call in Entry.ToolCalls)
+    {
+        <ToolCallView @key="call.CallId" Call="call" OnDecide="OnDecide" />
+    }
+
     @if (Entry.Status == EntryStatus.Cancelled)
     {
         <div class="hint">Stopped.</div>
@@ -90,6 +95,12 @@
     /// </summary>
     [Parameter]
     public EventCallback<ChatEntry> OnEdit { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user allowing or denying a tool call, with the call id and the answer.
+    /// </summary>
+    [Parameter]
+    public EventCallback<(string CallId, bool Allow)> OnDecide { get; set; }
 
     private StreamingMarkdown? _streaming;
 

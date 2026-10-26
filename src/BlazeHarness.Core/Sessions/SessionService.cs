@@ -321,9 +321,11 @@ public sealed partial class SessionService : IDisposable
 
     private void StartTitle(string id, ChatSession session, ChatTarget target)
     {
+        var entries = session.Entries;
         if (_titles is null
             || _store.Find(id) is not { TitleSource: TitleSource.Placeholder }
-            || session.Entries is not [{ Role.Value: "user" } first, { Role.Value: "assistant", Status: EntryStatus.Done, Text.Length: > 0 } reply, ..])
+            || entries is not [{ Role.Value: "user" } first, .., { Role.Value: "assistant", Status: EntryStatus.Done }]
+            || entries.FirstOrDefault(e => e.Role == ChatRole.Assistant && e.Text.Length > 0) is not { } reply)
         {
             return;
         }
