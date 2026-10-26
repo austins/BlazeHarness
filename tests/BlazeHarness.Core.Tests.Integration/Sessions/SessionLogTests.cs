@@ -105,4 +105,81 @@ public sealed class SessionLogTests : IDisposable
         // Assert
         read.Should().HaveCount(40);
     }
+
+    [Fact]
+    public async Task AppendAsync_LongToolResult_KeepsOnlyAPreviewInTheLog()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var output = new string('x', SessionLog.OutputFileThreshold + 1);
+
+        // Act
+        await _sut.AppendAsync([new ToolResultEvent(DateTimeOffset.UnixEpoch, Guid.NewGuid(), "c1", ToolCallStatus.Succeeded, output)], ct);
+
+        // Assert
+        (await File.ReadAllTextAsync(_path, ct)).Length.Should().BeLessThan(2_000);
+        var saved = Directory.GetFiles(Path.Combine(_dir, SessionLog.OutputsFolder)).Should().ContainSingle().Subject;
+        (await File.ReadAllTextAsync(saved, ct)).Should().Be(output);
+    }
+
+    [Fact]
+    public async Task ReadAsync_LongToolResult_ReturnsTheWholeText()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var output = string.Concat(Enumerable.Range(0, 3_000).Select(i => $"line {i}\n"));
+        await _sut.AppendAsync([new ToolResultEvent(DateTimeOffset.UnixEpoch, Guid.NewGuid(), "c1", ToolCallStatus.Failed, output)], ct);
+
+        // Act
+        var read = await _sut.ReadAsync(ct);
+
+        // Assert
+        var result = read.Should().ContainSingle().Which.Should().BeOfType<ToolResultEvent>().Subject;
+        result.Output.Should().Be(output);
+        result.Status.Should().Be(ToolCallStatus.Failed);
+    }
+
+    [Fact]
+    public async Task AppendAsync_ShortToolResult_StaysInTheLog()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+
+        // Act
+        await _sut.AppendAsync([new ToolResultEvent(DateTimeOffset.UnixEpoch, Guid.NewGuid(), "c1", ToolCallStatus.Succeeded, new string('x', SessionLog.OutputFileThreshold))], ct);
+
+        // Assert
+        Directory.Exists(Path.Combine(_dir, SessionLog.OutputsFolder)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ReadAsync_SavedOutputMissing_ReturnsThePreviewWithANote()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        await _sut.AppendAsync([new ToolResultEvent(DateTimeOffset.UnixEpoch, Guid.NewGuid(), "c1", ToolCallStatus.Succeeded, new string('x', SessionLog.OutputFileThreshold + 1))], ct);
+        Directory.Delete(Path.Combine(_dir, SessionLog.OutputsFolder), recursive: true);
+
+        // Act
+        var read = await _sut.ReadAsync(ct);
+
+        // Assert
+        read.Should().ContainSingle().Which.Should().BeOfType<ToolResultEvent>().Which.Output.Should().EndWith("could not be read.]");
+    }
+
+    [Fact]
+    public async Task ReadAsync_OutputFileNamePointsOutsideTheFolder_IsNotRead()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        Directory.CreateDirectory(_dir);
+        await File.WriteAllTextAsync(Path.Combine(_dir, "secret.txt"), "secret", ct);
+        await _sut.AppendAsync([new ToolResultEvent(DateTimeOffset.UnixEpoch, Guid.NewGuid(), "c1", ToolCallStatus.Succeeded, "preview", "../secret.txt")], ct);
+
+        // Act
+        var read = await _sut.ReadAsync(ct);
+
+        // Assert
+        read.Should().ContainSingle().Which.Should().BeOfType<ToolResultEvent>().Which.Output.Should().Be("preview");
+    }
 }
