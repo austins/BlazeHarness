@@ -23,6 +23,7 @@ public sealed partial class SessionStore : IDisposable
 {
     private const string MetadataFile = "session.json";
     private const string LogFile = "messages.jsonl";
+    private const string AttachmentsFolder = "attachments";
     private const string TrashPrefix = ".trash-";
 
     private readonly AppPaths _paths;
@@ -81,6 +82,13 @@ public sealed partial class SessionStore : IDisposable
     {
         return _index.GetValueOrDefault(id);
     }
+
+    /// <summary>
+    /// Get the folder a session keeps its attached files in.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <returns>The folder path, which may not exist yet.</returns>
+    public string AttachmentsDirectory(string id) => Path.Combine(_paths.SessionDirectory(id), AttachmentsFolder);
 
     /// <summary>
     /// Get the message log of a session.

@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
 using Microsoft.Extensions.AI;
@@ -33,6 +34,11 @@ public sealed partial class ChatSession
         {
             working.Insert(0, new ChatMessage(ChatRole.System, prompt));
             before++;
+        }
+
+        if (!AttachmentPolicy.AcceptsImages(target.Model))
+        {
+            AttachmentMessage.OmitImages(working);
         }
 
         var reply = new Reply(entry, target, working, before, _time.GetTimestamp());

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
@@ -129,18 +130,57 @@ public sealed partial class SessionService : IDisposable
     /// <param name="text">The message text.</param>
     /// <param name="target">The provider, model and level to use.</param>
     /// <returns>A task that completes when the reply has ended; it does nothing when the session is unknown, busy, or the text is blank.</returns>
-    public async Task SendAsync(string id, string text, ChatTarget target)
+    public Task SendAsync(string id, string text, ChatTarget target) => SendAsync(id, text, [], target);
+
+    /// <summary>
+    /// Send a message with attached files in a session, and remember the target it was sent with.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="text">The message text, which may be blank when files are attached.</param>
+    /// <param name="files">The files, already saved with <see cref="SaveAttachmentAsync"/>.</param>
+    /// <param name="target">The provider, model and level to use.</param>
+    /// <returns>A task that completes when the reply has ended; it does nothing when the session is unknown, busy, or there is neither text nor a file.</returns>
+    public async Task SendAsync(string id, string text, IReadOnlyList<AttachmentInfo> files, ChatTarget target)
     {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(target);
-        if (await OpenAsync(id).ConfigureAwait(false) is not { IsRunning: false } session || string.IsNullOrWhiteSpace(text))
+        if (await OpenAsync(id).ConfigureAwait(false) is not { IsRunning: false } session || (string.IsNullOrWhiteSpace(text) && files.Count == 0))
         {
             return;
         }
 
-        await RememberAsync(id, target, text).ConfigureAwait(false);
+        await RememberAsync(id, target, string.IsNullOrWhiteSpace(text) ? string.Join(", ", files.Select(f => f.Name)) : text).ConfigureAwait(false);
         await ApplyFolderAsync(id, session).ConfigureAwait(false);
-        await session.SendAsync(text, target).ConfigureAwait(false);
+        await session.SendAsync(text, files, target).ConfigureAwait(false);
         StartTitle(id, session, target);
+    }
+
+    /// <summary>
+    /// Save a file the user attached to a session.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="fileName">The name the client gave the file.</param>
+    /// <param name="content">The file content.</param>
+    /// <param name="cancellationToken">A token that stops the upload.</param>
+    /// <returns>The saved file, or null when the session is unknown.</returns>
+    /// <exception cref="AttachmentException">The file is empty, too large, or neither an image nor text.</exception>
+    public async Task<AttachmentInfo?> SaveAttachmentAsync(string id, string fileName, Stream content, CancellationToken cancellationToken = default)
+    {
+        return _store.Find(id) is null
+            ? null
+            : await new SessionAttachments(_store.AttachmentsDirectory(id)).SaveAsync(fileName, content, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Find a file attached in a session.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="attachmentId">The attachment id.</param>
+    /// <returns>The file, or null when the session or the attachment is unknown.</returns>
+    public AttachmentFile? FindAttachment(string id, string attachmentId)
+    {
+        return _store.Find(id) is null ? null : new SessionAttachments(_store.AttachmentsDirectory(id)).Find(attachmentId);
     }
 
     /// <summary>
@@ -297,7 +337,7 @@ public sealed partial class SessionService : IDisposable
     {
         if (folderPath is null || !Directory.Exists(folderPath))
         {
-            session.Tools = null;
+            session.Tools = session.Attachments is { } files ? BuiltInTools.ForAttachments(files) : null;
             session.BasePrompt = null;
             return;
         }
@@ -305,7 +345,7 @@ public sealed partial class SessionService : IDisposable
         try
         {
             var shell = ShellInfo.DetectCurrent();
-            var tools = BuiltInTools.Create(folderPath, shell);
+            var tools = BuiltInTools.Create(folderPath, shell, session.Attachments);
             if (session.Tools?.Context.Root != tools.Context.Root)
             {
                 session.Tools = tools;
@@ -315,7 +355,7 @@ public sealed partial class SessionService : IDisposable
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
             LogToolsUnavailable(ex, folderPath);
-            session.Tools = null;
+            session.Tools = session.Attachments is { } files ? BuiltInTools.ForAttachments(files) : null;
             session.BasePrompt = null;
         }
     }
@@ -341,7 +381,7 @@ public sealed partial class SessionService : IDisposable
         {
             try
             {
-                if (await _titles.GenerateAsync(target, first.Text, reply.Text, _shutdown.Token).ConfigureAwait(false) is { } title)
+                if (await _titles.GenerateAsync(target, first.Text.Length > 0 ? first.Text : string.Join(", ", first.Attachments.Select(a => a.File.Name)), reply.Text, _shutdown.Token).ConfigureAwait(false) is { } title)
                 {
                     await _store.UpdateAsync(
                         id,
@@ -363,7 +403,10 @@ public sealed partial class SessionService : IDisposable
 
     private ChatSession NewSession(string id)
     {
-        var session = new ChatSession(_clientFactory, _store.GetLog(id), _time, _loggers.CreateLogger<ChatSession>());
+        var session = new ChatSession(_clientFactory, _store.GetLog(id), _time, _loggers.CreateLogger<ChatSession>())
+        {
+            Attachments = new SessionAttachments(_store.AttachmentsDirectory(id)),
+        };
         var wasRunning = false;
         session.Changed += (_, _) =>
         {

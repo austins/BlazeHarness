@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Attachments;
 using Microsoft.Extensions.AI;
 using System.Text;
 
@@ -104,6 +105,11 @@ public sealed class ChatEntry
         get => new(Volatile.Read(ref _atTicks), TimeSpan.Zero);
         set => Volatile.Write(ref _atTicks, value.UtcTicks);
     }
+
+    /// <summary>
+    /// Gets or sets the files attached to a user message, and how each reached the model.
+    /// </summary>
+    public IReadOnlyList<SentAttachment> Attachments { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the state of the message.

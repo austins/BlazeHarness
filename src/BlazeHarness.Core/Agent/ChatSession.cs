@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Sessions;
 using BlazeHarness.Core.Tools;
@@ -42,6 +43,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     private IReadOnlyList<ChatEntry> _snapshot = [];
     private ProjectContext? _project;
     private ToolSet? _tools;
+    private SessionAttachments? _attachments;
     private string? _basePrompt;
     private Action? _stop;
 
@@ -106,6 +108,18 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     }
 
     /// <summary>
+    /// Gets or sets where the session's attached files are kept, or null when it can't take attachments.
+    /// </summary>
+    /// <remarks>
+    /// Set it before <see cref="Restore"/>, because rebuilding the history reads the attached files.
+    /// </remarks>
+    public SessionAttachments? Attachments
+    {
+        get => Volatile.Read(ref _attachments);
+        set => Volatile.Write(ref _attachments, value);
+    }
+
+    /// <summary>
     /// Gets or sets the base system prompt that comes before the project instructions, or null for none.
     /// </summary>
     /// <remarks>
@@ -165,7 +179,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
                 switch (e)
                 {
                     case UserMessageEvent user:
-                        _entries.Add(new ChatEntry(ChatRole.User, user.Text, user.EntryId) { Status = EntryStatus.Done, At = user.At });
+                        _entries.Add(new ChatEntry(ChatRole.User, user.Text, user.EntryId) { Status = EntryStatus.Done, At = user.At, Attachments = user.Attachments ?? [] });
                         break;
                     case AssistantStartEvent start:
                         _entries.Add(new ChatEntry(ChatRole.Assistant, id: start.EntryId) { Status = EntryStatus.Interrupted, Label = start.Label, At = start.At });
@@ -218,7 +232,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
                 }
 
                 entry.HistoryIndex = _history.Count;
-                AppendHistory(_history, entry);
+                AppendHistory(_history, entry, Attachments);
             }
 
             Publish();
@@ -233,26 +247,52 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     /// <param name="text">The message text.</param>
     /// <param name="target">The provider, model and level to use for this message.</param>
     /// <returns>A task that completes when the reply has ended; it does nothing when a reply is running or the text is empty.</returns>
-    public Task SendAsync(string text, ChatTarget target)
+    public Task SendAsync(string text, ChatTarget target) => SendAsync(text, [], target);
+
+    /// <summary>
+    /// Send a user message with attached files and stream the reply.
+    /// </summary>
+    /// <remarks>
+    /// How each file reaches the model is decided here from the target model, and is kept with the message.
+    /// </remarks>
+    /// <param name="text">The message text, which may be empty when files are attached.</param>
+    /// <param name="files">The files, already saved with <see cref="Attachments"/>.</param>
+    /// <param name="target">The provider, model and level to use for this message.</param>
+    /// <returns>A task that completes when the reply has ended; it does nothing when a reply is running or there is neither text nor a file.</returns>
+    /// <exception cref="ArgumentException">There are more than <see cref="SessionAttachments.MaxFilesPerMessage"/> files, or a file was not saved with this session.</exception>
+    public Task SendAsync(string text, IReadOnlyList<AttachmentInfo> files, ChatTarget target)
     {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(target);
-        if (string.IsNullOrWhiteSpace(text))
+        if (files.Count > SessionAttachments.MaxFilesPerMessage)
+        {
+            throw new ArgumentException($"A message can have at most {SessionAttachments.MaxFilesPerMessage} files.", nameof(files));
+        }
+
+        if (files.Any(f => Attachments?.Find(f.Id) is null))
+        {
+            throw new ArgumentException("A file was not saved with this session.", nameof(files));
+        }
+
+        if (string.IsNullOrWhiteSpace(text) && files.Count == 0)
         {
             return Task.CompletedTask;
         }
 
         var sentAt = _time.GetUtcNow();
-        var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt };
+        var sent = AttachmentPolicy.Plan(files, target.Model);
+        var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt, Attachments = sent };
         return TurnAsync(
             target,
             () =>
             {
                 user.HistoryIndex = _history.Count;
                 _entries.Add(user);
-                _history.Add(new ChatMessage(ChatRole.User, text));
+                _history.Add(AttachmentMessage.Build(text, sent, Attachments));
                 return true;
             },
-            () => [new UserMessageEvent(sentAt, user.Id, text)]);
+            () => [new UserMessageEvent(sentAt, user.Id, text, sent)]);
     }
 
     /// <summary>
@@ -337,14 +377,15 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
 
                 keep = index == 0 ? Guid.Empty : _entries[index - 1].Id;
                 var historyIndex = _entries[index].HistoryIndex;
+                user.Attachments = _entries[index].Attachments;
                 _entries.RemoveRange(index, _entries.Count - index);
                 _history.RemoveRange(historyIndex, _history.Count - historyIndex);
                 user.HistoryIndex = _history.Count;
                 _entries.Add(user);
-                _history.Add(new ChatMessage(ChatRole.User, text));
+                _history.Add(AttachmentMessage.Build(text, user.Attachments, Attachments));
                 return true;
             },
-            () => [new RewindEvent(sentAt, keep), new UserMessageEvent(sentAt, user.Id, text)]);
+            () => [new RewindEvent(sentAt, keep), new UserMessageEvent(sentAt, user.Id, text, user.Attachments)]);
     }
 
     /// <summary>
@@ -414,11 +455,11 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         }
     }
 
-    private static void AppendHistory(List<ChatMessage> history, ChatEntry entry)
+    private static void AppendHistory(List<ChatMessage> history, ChatEntry entry, SessionAttachments? attachments)
     {
         if (entry.Role != ChatRole.Assistant)
         {
-            history.Add(new ChatMessage(entry.Role, entry.Text));
+            history.Add(AttachmentMessage.Build(entry.Text, entry.Attachments, attachments));
             return;
         }
 

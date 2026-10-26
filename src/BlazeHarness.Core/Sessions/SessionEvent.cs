@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Attachments;
 using System.Text.Json.Serialization;
 
 namespace BlazeHarness.Core.Sessions;
@@ -27,7 +28,8 @@ public abstract record SessionEvent(DateTimeOffset At);
 /// <param name="At">When the message was sent.</param>
 /// <param name="EntryId">The id of the message.</param>
 /// <param name="Text">The message text.</param>
-public sealed record UserMessageEvent(DateTimeOffset At, Guid EntryId, string Text) : SessionEvent(At);
+/// <param name="Attachments">The attached files, or null when there are none.</param>
+public sealed record UserMessageEvent(DateTimeOffset At, Guid EntryId, string Text, IReadOnlyList<SentAttachment>? Attachments = null) : SessionEvent(At);
 
 /// <summary>
 /// The model began a reply.

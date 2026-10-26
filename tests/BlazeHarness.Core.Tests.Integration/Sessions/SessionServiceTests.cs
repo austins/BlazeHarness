@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
 using BlazeHarness.Core.Tests.Unit.Agent;
@@ -493,7 +494,7 @@ public sealed class SessionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SendAsync_SessionWithoutAFolder_OffersNoTools()
+    public async Task SendAsync_SessionWithoutAFolder_OffersOnlyTheAttachmentTool()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
@@ -505,8 +506,62 @@ public sealed class SessionServiceTests : IDisposable
         await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
 
         // Assert
-        client.Options[0]!.Tools.Should().BeNullOrEmpty();
+        client.Options[0]!.Tools.Should().ContainSingle().Which.Name.Should().Be("read_attachment");
         client.Requests[0][0].Role.Should().Be(ChatRole.User);
+    }
+
+    [Fact]
+    public async Task SendAsync_WithAnAttachedFile_PutsTheFileInTheMessageAndServesItAfterwards()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Got it")]);
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        await using var content = new MemoryStream("some notes"u8.ToArray());
+        var file = await sut.SaveAttachmentAsync(info.Id, "notes.txt", content, ct);
+
+        // Act
+        await sut.SendAsync(info.Id, "summarize", [file!], Target("p1", "fast"));
+
+        // Assert
+        client.Requests[0][0].Text.Should().Contain("summarize").And.Contain("some notes");
+        sut.FindAttachment(info.Id, file!.Id).Should().Match<AttachmentFile>(f => f.Name == "notes.txt");
+        sut.Store.Find(info.Id)!.Title.Should().Be("summarize");
+    }
+
+    [Fact]
+    public async Task SendAsync_AttachedFileWithoutText_TitlesTheSessionWithTheFileName()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Got it")]);
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        await using var content = new MemoryStream("some notes"u8.ToArray());
+        var file = await sut.SaveAttachmentAsync(info.Id, "notes.txt", content, ct);
+
+        // Act
+        await sut.SendAsync(info.Id, string.Empty, [file!], Target("p1", "fast"));
+
+        // Assert
+        sut.Store.Find(info.Id)!.Title.Should().Be("notes.txt");
+    }
+
+    [Fact]
+    public async Task SaveAttachmentAsync_UnknownSession_ReturnsNull()
+    {
+        // Arrange
+        await using var content = new MemoryStream("x"u8.ToArray());
+        using var client = new ScriptedChatClient([]);
+        var sut = Create(client);
+
+        // Act
+        var file = await sut.SaveAttachmentAsync("nope", "a.txt", content, TestContext.Current.CancellationToken);
+
+        // Assert
+        file.Should().BeNull();
+        sut.FindAttachment("nope", "0123abcd").Should().BeNull();
     }
 
     private static ChatTarget Target(string provider, string model)

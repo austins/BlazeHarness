@@ -71,7 +71,7 @@ public sealed class ReadFileTool : ITool
             : ReadLines(context.Relative(full), full, offset, limit, cancellationToken));
     }
 
-    private static ToolResult ReadLines(string display, string full, int offset, int limit, CancellationToken cancellationToken)
+    internal static ToolResult ReadLines(string display, string full, int offset, int limit, CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(full, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         var shown = new StringBuilder();
