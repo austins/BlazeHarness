@@ -64,6 +64,42 @@ public sealed class AttachmentEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task ServeFolderImage_ImageInTheSessionFolder_IsServedAndOtherFilesAreNot()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var folder = Path.Combine(_home, "work");
+        Directory.CreateDirectory(folder);
+        await File.WriteAllBytesAsync(Path.Combine(folder, "a.png"), [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1], ct);
+        await File.WriteAllTextAsync(Path.Combine(folder, "secret.txt"), "secret", ct);
+        var info = await _service.CreateAsync(folder, ct);
+        var context = new DefaultHttpContext();
+
+        // Act
+        var image = AttachmentEndpoints.ServeFolderImage(info.Id, "a.png", _service, context);
+        var text = AttachmentEndpoints.ServeFolderImage(info.Id, "secret.txt", _service, new DefaultHttpContext());
+        var escaped = AttachmentEndpoints.ServeFolderImage(info.Id, "../a.png", _service, new DefaultHttpContext());
+        var none = AttachmentEndpoints.ServeFolderImage(info.Id, null, _service, new DefaultHttpContext());
+
+        // Assert
+        image.Should().BeOfType<PhysicalFileHttpResult>().Which.ContentType.Should().Be("image/png");
+        context.Response.Headers.XContentTypeOptions.ToString().Should().Be("nosniff");
+        text.Should().BeOfType<NotFound>();
+        escaped.Should().BeOfType<NotFound>();
+        none.Should().BeOfType<NotFound>();
+    }
+
+    [Fact]
+    public void FileAddressOf_PathWithSpecialCharacters_IsEscaped()
+    {
+        // Act
+        var address = AttachmentEndpoints.FileAddressOf("s1", "my dir/a&b.png");
+
+        // Assert
+        address.Should().Be("api/sessions/s1/files?path=my%20dir%2Fa%26b.png");
+    }
+
+    [Fact]
     public void AddressOf_IdsWithSpecialCharacters_AreEscaped()
     {
         // Act

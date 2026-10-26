@@ -9,7 +9,8 @@ namespace BlazeHarness.Web.Services;
 /// different until the message is finished and parsed whole.
 /// </remarks>
 /// <param name="renderer">The renderer that converts the pieces.</param>
-public sealed class StreamingMarkdown(MarkdownRenderer renderer)
+/// <param name="sessionId">The chat the text belongs to, which images that point into its folder are served from, or null for none.</param>
+public sealed class StreamingMarkdown(MarkdownRenderer renderer, string? sessionId = null)
 {
     private string _settledHtml = string.Empty;
     private int _settled;
@@ -35,11 +36,11 @@ public sealed class StreamingMarkdown(MarkdownRenderer renderer)
         var boundary = AdvanceScan(text);
         if (boundary > _settled)
         {
-            _settledHtml += renderer.ToHtml(text[_settled..boundary]);
+            _settledHtml += renderer.ToHtml(text[_settled..boundary], sessionId);
             _settled = boundary;
         }
 
-        return _settledHtml + renderer.ToHtml(text[_settled..]);
+        return _settledHtml + renderer.ToHtml(text[_settled..], sessionId);
     }
 
     private int AdvanceScan(string text)

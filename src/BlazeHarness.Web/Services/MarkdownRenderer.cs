@@ -1,9 +1,11 @@
+using BlazeHarness.Web.Hosting;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace BlazeHarness.Web.Services;
 
@@ -14,7 +16,7 @@ namespace BlazeHarness.Web.Services;
 /// Model text is untrusted. Raw HTML is shown as text, only http, https and mailto links are kept, and images are never
 /// loaded from a URL, because a URL chosen by the model can leak data through its query string.
 /// </remarks>
-public sealed class MarkdownRenderer
+public sealed partial class MarkdownRenderer
 {
     private const int CacheCapacity = 256;
 
@@ -36,8 +38,9 @@ public sealed class MarkdownRenderer
     /// Convert markdown to HTML.
     /// </summary>
     /// <param name="markdown">The markdown text.</param>
+    /// <param name="sessionId">The chat the text belongs to. An image that points to a path inside its folder is shown through the chat's file endpoint. Without it, no image is shown.</param>
     /// <returns>Safe HTML.</returns>
-    public string ToHtml(string markdown)
+    public string ToHtml(string markdown, string? sessionId = null)
     {
         ArgumentNullException.ThrowIfNull(markdown);
         if (markdown.Length == 0)
@@ -51,7 +54,7 @@ public sealed class MarkdownRenderer
         renderer.ObjectRenderers.Replace<CodeBlockRenderer>(new CopyableCodeBlockRenderer());
 
         var document = Markdown.Parse(markdown, _pipeline);
-        Sanitize(document);
+        Sanitize(document, sessionId);
         renderer.Render(document);
         writer.Flush();
         return writer.ToString();
@@ -61,13 +64,15 @@ public sealed class MarkdownRenderer
     /// Convert the markdown of a finished message, remembering recent results so the same message is not parsed twice.
     /// </summary>
     /// <param name="markdown">The markdown text.</param>
+    /// <param name="sessionId">The chat the text belongs to. An image that points to a path inside its folder is shown through the chat's file endpoint. Without it, no image is shown.</param>
     /// <returns>Safe HTML.</returns>
-    public string ToCachedHtml(string markdown)
+    public string ToCachedHtml(string markdown, string? sessionId = null)
     {
         ArgumentNullException.ThrowIfNull(markdown);
+        var key = sessionId is null ? markdown : sessionId + '\0' + markdown;
         lock (_gate)
         {
-            if (_cache.TryGetValue(markdown, out var hit))
+            if (_cache.TryGetValue(key, out var hit))
             {
                 _recent.Remove(hit);
                 _recent.AddFirst(hit);
@@ -75,12 +80,12 @@ public sealed class MarkdownRenderer
             }
         }
 
-        var html = ToHtml(markdown);
+        var html = ToHtml(markdown, sessionId);
         lock (_gate)
         {
-            if (!_cache.ContainsKey(markdown))
+            if (!_cache.ContainsKey(key))
             {
-                _cache[markdown] = _recent.AddFirst(new KeyValuePair<string, string>(markdown, html));
+                _cache[key] = _recent.AddFirst(new KeyValuePair<string, string>(key, html));
                 if (_cache.Count > CacheCapacity && _recent.Last is { } oldest)
                 {
                     _cache.Remove(oldest.Value.Key);
@@ -92,12 +97,24 @@ public sealed class MarkdownRenderer
         return html;
     }
 
+    // A path rather than a URL: no scheme (a single letter before the colon is a Windows drive) and not protocol-relative.
+    private static bool IsFolderPath(string? url)
+    {
+        return !string.IsNullOrWhiteSpace(url)
+            && !url.StartsWith("//", StringComparison.Ordinal)
+            && !url.StartsWith(@"\\", StringComparison.Ordinal)
+            && !SchemePattern().IsMatch(url);
+    }
+
+    [GeneratedRegex("^[a-zA-Z][a-zA-Z0-9+.\\-]+:", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SchemePattern();
+
     private static bool IsAllowed(string? url)
     {
         return Uri.TryCreate(url, UriKind.Absolute, out var uri) && AllowedSchemes.Contains(uri.Scheme);
     }
 
-    private static void Sanitize(MarkdownDocument document)
+    private static void Sanitize(MarkdownDocument document, string? sessionId)
     {
         foreach (var autolink in document.Descendants<AutolinkInline>().ToList())
         {
@@ -117,6 +134,15 @@ public sealed class MarkdownRenderer
 
         foreach (var link in document.Descendants<LinkInline>().ToList())
         {
+            if (sessionId is not null && link.IsImage && IsFolderPath(link.Url))
+            {
+                link.Url = AttachmentEndpoints.FileAddressOf(sessionId, link.Url!);
+                var attributes = link.GetAttributes();
+                attributes.AddClass("msg-image");
+                attributes.AddProperty("loading", "lazy");
+                continue;
+            }
+
             if (!IsAllowed(link.Url))
             {
                 Unwrap(link);

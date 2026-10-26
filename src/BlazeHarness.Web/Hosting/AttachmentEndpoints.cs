@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Sessions;
 
 namespace BlazeHarness.Web.Hosting;
@@ -13,6 +14,11 @@ public static class AttachmentEndpoints
     public const string Route = "/api/sessions/{sessionId}/attachments/{attachmentId}";
 
     /// <summary>
+    /// The route of an image inside the working folder of a session.
+    /// </summary>
+    public const string FileRoute = "/api/sessions/{sessionId}/files";
+
+    /// <summary>
     /// Get the address of an attachment.
     /// </summary>
     /// <param name="sessionId">The session id.</param>
@@ -24,7 +30,18 @@ public static class AttachmentEndpoints
     }
 
     /// <summary>
-    /// Add the attachment endpoint.
+    /// Get the address of an image inside the working folder of a session.
+    /// </summary>
+    /// <param name="sessionId">The session id.</param>
+    /// <param name="path">The path as the model wrote it.</param>
+    /// <returns>The relative address the image is served at.</returns>
+    public static string FileAddressOf(string sessionId, string path)
+    {
+        return $"api/sessions/{Uri.EscapeDataString(sessionId)}/files?path={Uri.EscapeDataString(path)}";
+    }
+
+    /// <summary>
+    /// Add the attachment and folder image endpoints.
     /// </summary>
     /// <param name="app">The app to add the endpoint to.</param>
     /// <returns>The same app, to chain calls.</returns>
@@ -32,6 +49,7 @@ public static class AttachmentEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
         app.MapGet(Route, Serve);
+        app.MapGet(FileRoute, ServeFolderImage);
         return app;
     }
 
@@ -52,7 +70,31 @@ public static class AttachmentEndpoints
         ArgumentNullException.ThrowIfNull(sessions);
         ArgumentNullException.ThrowIfNull(context);
 
-        var file = sessions.FindAttachment(sessionId, attachmentId);
+        return Send(sessions.FindAttachment(sessionId, attachmentId), context);
+    }
+
+    /// <summary>
+    /// Serve an image from the working folder of a session.
+    /// </summary>
+    /// <remarks>
+    /// The path is checked against the folder again here, so the endpoint can't be used to read any other file.
+    /// Only PNG, JPEG, GIF, WebP, AVIF and SVG files up to the size cap are served.
+    /// </remarks>
+    /// <param name="sessionId">The session id.</param>
+    /// <param name="path">The path of the image, relative to the folder.</param>
+    /// <param name="sessions">The chat sessions.</param>
+    /// <param name="context">The current request.</param>
+    /// <returns>The image, or a not found response.</returns>
+    public static IResult ServeFolderImage(string sessionId, string? path, SessionService sessions, HttpContext context)
+    {
+        ArgumentNullException.ThrowIfNull(sessions);
+        ArgumentNullException.ThrowIfNull(context);
+
+        return Send(path is null ? null : sessions.FindFolderImage(sessionId, path), context);
+    }
+
+    private static IResult Send(AttachmentFile? file, HttpContext context)
+    {
         if (file is null)
         {
             return Results.NotFound();

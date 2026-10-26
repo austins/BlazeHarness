@@ -163,22 +163,7 @@ public sealed partial class SessionAttachments
         Span<byte> head = stackalloc byte[SniffBytes];
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         head = head[..stream.Read(head)];
-        if (head.StartsWith(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }))
-        {
-            return ("image/png", ".png");
-        }
-
-        if (head.StartsWith(new byte[] { 0xFF, 0xD8, 0xFF }))
-        {
-            return ("image/jpeg", ".jpg");
-        }
-
-        if (head.StartsWith("GIF87a"u8) || head.StartsWith("GIF89a"u8))
-        {
-            return ("image/gif", ".gif");
-        }
-
-        return head.Length >= SniffBytes && head.StartsWith("RIFF"u8) && head[8..].StartsWith("WEBP"u8) ? ("image/webp", ".webp") : null;
+        return ImageFiles.SniffRaster(head);
     }
 
     private static int CountLines(string path)

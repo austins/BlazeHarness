@@ -564,6 +564,32 @@ public sealed class SessionServiceTests : IDisposable
         sut.FindAttachment("nope", "0123abcd").Should().BeNull();
     }
 
+    [Fact]
+    public async Task FindFolderImage_ImageInsideTheSessionFolder_IsFoundAndAnythingElseIsNot()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var folder = Path.Combine(_home, "work");
+        Directory.CreateDirectory(folder);
+        await File.WriteAllBytesAsync(Path.Combine(folder, "a.png"), [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1], ct);
+        await File.WriteAllTextAsync(Path.Combine(folder, "a.txt"), "text", ct);
+        await File.WriteAllBytesAsync(Path.Combine(_home, "outside.png"), [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1], ct);
+        using var client = new ScriptedChatClient([]);
+        var sut = Create(client);
+        var info = await sut.CreateAsync(folder, ct);
+        var withoutFolder = await sut.CreateAsync(cancellationToken: ct);
+
+        // Act
+        var found = sut.FindFolderImage(info.Id, "a.png");
+
+        // Assert
+        found.Should().Match<AttachmentFile>(f => f.MediaType == "image/png");
+        sut.FindFolderImage(info.Id, "a.txt").Should().BeNull();
+        sut.FindFolderImage(info.Id, "../outside.png").Should().BeNull();
+        sut.FindFolderImage(withoutFolder.Id, "a.png").Should().BeNull();
+        sut.FindFolderImage("nope", "a.png").Should().BeNull();
+    }
+
     private static ChatTarget Target(string provider, string model)
     {
         var modelConfig = new ModelConfig { Id = model, ContextWindow = 8000, MaxOutputTokens = 1000 };

@@ -184,6 +184,24 @@ public sealed partial class SessionService : IDisposable
     }
 
     /// <summary>
+    /// Find an image inside the working folder of a session, so the chat can show it.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="path">The path as the model wrote it, relative to the folder or absolute.</param>
+    /// <returns>The image, or null when the session has no folder, the path leaves the folder, or the file is not a supported image within the size cap.</returns>
+    public AttachmentFile? FindFolderImage(string id, string path)
+    {
+        if (_store.Find(id)?.FolderPath is not { } folder || !Directory.Exists(folder))
+        {
+            return null;
+        }
+
+        return ShowImageTool.TryFind(new ToolContext(folder), path, out var fullPath, out var mediaType, out _)
+            ? new AttachmentFile(fullPath, Path.GetFileName(fullPath), mediaType)
+            : null;
+    }
+
+    /// <summary>
     /// Replace one of the user's messages in a session and stream a new reply, remembering the target it was sent with.
     /// </summary>
     /// <param name="id">The session id.</param>

@@ -53,7 +53,7 @@
 
     @foreach (var call in Entry.ToolCalls)
     {
-        <ToolCallView @key="call.CallId" Call="call" OnDecide="OnDecide" />
+        <ToolCallView @key="call.CallId" Call="call" SessionId="@SessionId" OnDecide="OnDecide" />
     }
 
     @if (Entry.Status == EntryStatus.Cancelled)
@@ -134,10 +134,10 @@
     {
         if (Entry.Status != EntryStatus.Streaming)
         {
-            return Markdown.ToCachedHtml(Entry.Text);
+            return Markdown.ToCachedHtml(Entry.Text, SessionId);
         }
 
-        _streaming ??= new StreamingMarkdown(Markdown);
+        _streaming ??= new StreamingMarkdown(Markdown, SessionId);
         return _streaming.Render(Entry.Text);
     }
 }

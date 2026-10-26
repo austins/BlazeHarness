@@ -81,6 +81,43 @@ public sealed class MarkdownRendererTests
         html.Should().Contain("<a ").And.Contain("a chart");
     }
 
+    [Theory]
+    [InlineData("out/chart.png", "api/sessions/s1/files?path=out%2Fchart.png")]
+    [InlineData("/home/me/proj/chart.png", "api/sessions/s1/files?path=%2Fhome%2Fme%2Fproj%2Fchart.png")]
+    [InlineData("C:/proj/chart.png", "api/sessions/s1/files?path=C%3A%2Fproj%2Fchart.png")]
+    public void ToHtml_ImagePathWithASession_PointsAtTheFolderEndpoint(string path, string expected)
+    {
+        // Act
+        var html = _sut.ToHtml($"![a chart]({path})", "s1");
+
+        // Assert
+        html.Should().Contain($"<img src=\"{expected}\"").And.Contain("alt=\"a chart\"").And.Contain("class=\"msg-image\"");
+    }
+
+    [Theory]
+    [InlineData("https://evil.example/a.png")]
+    [InlineData("//evil.example/a.png")]
+    [InlineData("data:image/png;base64,AAAA")]
+    [InlineData("file:///etc/passwd")]
+    public void ToHtml_ImageThatIsAUrlWithASession_IsNeverLoaded(string url)
+    {
+        // Act
+        var html = _sut.ToHtml($"![x]({url})", "s1");
+
+        // Assert
+        html.Should().NotContain("<img");
+    }
+
+    [Fact]
+    public void ToHtml_ImagePathWithoutASession_IsNeverLoaded()
+    {
+        // Act
+        var html = _sut.ToHtml("![x](out/chart.png)");
+
+        // Assert
+        html.Should().NotContain("<img");
+    }
+
     [Fact]
     public void ToHtml_ImageWithUnsafeUrl_ShowsOnlyAltText()
     {

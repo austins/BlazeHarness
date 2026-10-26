@@ -16,7 +16,7 @@ public static class BuiltInTools
     /// <returns>The tool set.</returns>
     public static ToolSet Create(string folder, ShellInfo? shell = null, SessionAttachments? attachments = null)
     {
-        List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool()];
+        List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool()];
         if (shell is not null)
         {
             tools.Add(new ShellTool(shell));

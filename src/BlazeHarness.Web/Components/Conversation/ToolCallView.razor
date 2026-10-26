@@ -1,5 +1,6 @@
 @using System.Globalization
 @using System.Text.Json
+@using BlazeHarness.Web.Hosting
 
 <div class="tool" data-status="@StatusKey" role="group" aria-label="@Label">
     <button type="button" class="tool-head" aria-expanded="@(Open ? "true" : "false")" aria-controls="@_bodyId" @onclick="Toggle">
@@ -44,6 +45,11 @@
         </div>
     }
 
+    @if (ImageAddress is { } address)
+    {
+        <a class="tool-image" href="@address" target="_blank" rel="noopener"><img class="msg-image" src="@address" alt="@Call.Summary" loading="lazy" /></a>
+    }
+
     @if (Open)
     {
         <div class="tool-body" id="@_bodyId">
@@ -85,10 +91,39 @@
     public ToolCallEntry Call { get; set; } = default!;
 
     /// <summary>
+    /// Gets or sets the id of the chat the call belongs to, which images the call shows are served from.
+    /// </summary>
+    [Parameter]
+    public string? SessionId { get; set; }
+
+    /// <summary>
     /// Gets or sets the callback for the user answering the approval prompt, with the call id and whether it may run.
     /// </summary>
     [Parameter]
     public EventCallback<(string CallId, bool Allow)> OnDecide { get; set; }
+
+    private string? ImageAddress
+    {
+        get
+        {
+            if (SessionId is null || Call is not { Name: "show_image", Status: ToolCallStatus.Succeeded })
+            {
+                return null;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(Call.ArgumentsJson);
+                return document.RootElement.TryGetProperty("path", out var path) && path.ValueKind == JsonValueKind.String
+                    ? AttachmentEndpoints.FileAddressOf(SessionId, path.GetString()!)
+                    : null;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+    }
 
     private bool Open => _expanded || Call.Status == ToolCallStatus.AwaitingApproval;
 
