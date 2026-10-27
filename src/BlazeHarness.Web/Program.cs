@@ -23,6 +23,7 @@ builder.Services.AddSingleton(sp => new JsonFileStore<AppConfig>(
     paths.ConfigFile,
     sp.GetRequiredService<ILogger<JsonFileStore<AppConfig>>>()));
 builder.Services.AddSingleton<ProviderService>();
+builder.Services.AddSingleton<PermissionDefaults>();
 builder.Services.AddSingleton<MarkdownRenderer>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddSingleton<ChatClientSource>();
@@ -34,7 +35,8 @@ builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<ILoggerFactory>(),
     sp.GetRequiredService<TimeProvider>(),
     new ModelTitleGenerator(sp.GetRequiredService<ChatClientSource>().CreateAsync),
-    sp.GetRequiredService<IShellSandbox>()));
+    sp.GetRequiredService<IShellSandbox>(),
+    sp.GetRequiredService<PermissionDefaults>()));
 builder.Services.AddSingleton(sp => new FolderRegistry(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<LaunchCredentials>();
 builder.Services.AddHttpClient();

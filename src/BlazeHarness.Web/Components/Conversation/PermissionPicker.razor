@@ -1,16 +1,23 @@
 @using BlazeHarness.Core.Permissions
 @using BlazeHarness.Core.Sandbox
 @inject IShellSandbox Sandbox
+@inject PermissionDefaults Defaults
 
 <select class="select" @key="@("access" + _version)" aria-label="Access level" title="What the model's tools may touch" value="@Settings.Access" @onchange="OnAccessChanged">
     <option value="@AccessLevel.ReadOnly">Read only</option>
     <option value="@AccessLevel.WriteInFolder">@(HasFolder ? "Write in folder" : "Write in session files")</option>
-    <option value="@AccessLevel.Unrestricted">Unrestricted</option>
+    @if (Defaults.AllowBypass || Settings.Access == AccessLevel.Unrestricted)
+    {
+        <option value="@AccessLevel.Unrestricted">Unrestricted</option>
+    }
 </select>
 <select class="select" @key="@("approvals" + _version)" aria-label="Approvals" title="When you are asked before a tool runs" value="@Settings.Approvals" @onchange="OnApprovalsChanged">
     <option value="@ApprovalMode.AskFirst">Ask first</option>
     <option value="@ApprovalMode.AutoApprove">Auto-approve</option>
-    <option value="@ApprovalMode.NeverAsk">Never ask</option>
+    @if (Defaults.AllowBypass || Settings.Approvals == ApprovalMode.NeverAsk)
+    {
+        <option value="@ApprovalMode.NeverAsk">Never ask</option>
+    }
 </select>
 @if (Settings.Access != AccessLevel.Unrestricted)
 {

@@ -1,0 +1,74 @@
+@page "/settings/permissions"
+@using BlazeHarness.Core.Permissions
+@inject PermissionDefaults Defaults
+
+<PageTitle>Permissions · BlazeHarness</PageTitle>
+
+<div class="page">
+    <header class="page-header">
+        <h1>Permissions</h1>
+        <p class="muted">What new chats start with. Each chat can still change its own settings, and changes here apply right away.</p>
+    </header>
+
+    <section class="card stack" aria-labelledby="start-heading">
+        <h2 id="start-heading">New chats start with</h2>
+        <div class="field">
+            <label for="default-access">Access level</label>
+            <select id="default-access" class="select" value="@_access" @onchange="OnAccessChangedAsync">
+                <option value="@AccessLevel.WriteInFolder">Write in folder</option>
+                <option value="@AccessLevel.ReadOnly">Read only</option>
+            </select>
+            <span class="hint">A chat without a folder always starts read only.</span>
+        </div>
+        <div class="field">
+            <label for="default-approvals">Approvals</label>
+            <select id="default-approvals" class="select" value="@_approvals" @onchange="OnApprovalsChangedAsync">
+                <option value="@ApprovalMode.AskFirst">Ask first</option>
+                <option value="@ApprovalMode.AutoApprove">Auto-approve</option>
+            </select>
+        </div>
+    </section>
+
+    <section class="card stack" aria-labelledby="bypass-heading">
+        <h2 id="bypass-heading">Risky options</h2>
+        <label class="check">
+            <input type="checkbox" checked="@_allowBypass" @onchange="OnBypassChangedAsync" />
+            <span>Let a chat turn on Unrestricted or Never ask</span>
+        </label>
+        <p class="hint">Turn this off to hide both options. A chat that already has one of them then behaves as if it did not. Protected folders such as your SSH keys stay blocked either way.</p>
+    </section>
+</div>
+
+@code {
+    private AccessLevel _access;
+    private ApprovalMode _approvals;
+    private bool _allowBypass;
+
+    protected override void OnInitialized()
+    {
+        var current = Defaults.Current;
+        _access = current.Access;
+        _approvals = current.Approvals;
+        _allowBypass = Defaults.AllowBypass;
+    }
+
+    private Task OnAccessChangedAsync(ChangeEventArgs e)
+    {
+        _access = Enum.Parse<AccessLevel>((string)e.Value!);
+        return SaveAsync();
+    }
+
+    private Task OnApprovalsChangedAsync(ChangeEventArgs e)
+    {
+        _approvals = Enum.Parse<ApprovalMode>((string)e.Value!);
+        return SaveAsync();
+    }
+
+    private Task OnBypassChangedAsync(ChangeEventArgs e)
+    {
+        _allowBypass = e.Value is true;
+        return SaveAsync();
+    }
+
+    private Task SaveAsync() => Defaults.SaveAsync(new PermissionSettings(_access, _approvals), _allowBypass);
+}

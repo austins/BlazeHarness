@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
@@ -573,6 +574,44 @@ public sealed class SessionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateAsync_WithGlobalDefaults_StartsWithThem()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([]);
+        var defaults = await NewDefaultsAsync(new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AutoApprove), allowBypass: true);
+        var sut = Create(client, defaults: defaults);
+
+        // Act
+        var info = await sut.CreateAsync(_home, ct);
+        var session = await sut.OpenAsync(info.Id);
+
+        // Assert
+        info.Permissions.Should().Be(new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AutoApprove));
+        session!.Permissions.Settings.Should().Be(info.Permissions);
+    }
+
+    [Fact]
+    public async Task OpenAsync_BypassTurnedOff_RunsARiskyChatAsTheSaferOptions()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([]);
+        var defaults = await NewDefaultsAsync(PermissionSettings.Default, allowBypass: true);
+        var sut = Create(client, defaults: defaults);
+        var info = await sut.CreateAsync(_home, ct);
+        await sut.SetPermissionsAsync(info.Id, new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk));
+        var session = await sut.OpenAsync(info.Id);
+
+        // Act
+        await defaults.SaveAsync(PermissionSettings.Default, allowBypass: false, ct);
+
+        // Assert
+        session!.Permissions.Settings.Should().Be(new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.AutoApprove));
+        sut.Store.Find(info.Id)!.Permissions.Should().Be(new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk));
+    }
+
+    [Fact]
     public async Task CreateAsync_WithoutAFolder_StartsReadOnly()
     {
         // Arrange
@@ -683,10 +722,19 @@ public sealed class SessionServiceTests : IDisposable
         return new ChatTarget(providerConfig, modelConfig, null);
     }
 
-    private SessionService Create(IChatClient client, ITitleGenerator? titles = null)
+    private async Task<PermissionDefaults> NewDefaultsAsync(PermissionSettings settings, bool allowBypass)
+    {
+        var config = new JsonFileStore<AppConfig>(Path.Combine(_home, "config.json"), new LoggerFake<SessionServiceTests>(), watch: false);
+        _disposables.Add(config);
+        var defaults = new PermissionDefaults(config);
+        await defaults.SaveAsync(settings, allowBypass, TestContext.Current.CancellationToken);
+        return defaults;
+    }
+
+    private SessionService Create(IChatClient client, ITitleGenerator? titles = null, PermissionDefaults? defaults = null)
     {
         var store = new SessionStore(_paths, NullLoggerFactory.Instance);
-        var service = new SessionService(store, (_, _) => Task.FromResult(client), NullLoggerFactory.Instance, titles: titles);
+        var service = new SessionService(store, (_, _) => Task.FromResult(client), NullLoggerFactory.Instance, titles: titles, defaults: defaults);
         _disposables.Add(service);
         _disposables.Add(store);
         return service;

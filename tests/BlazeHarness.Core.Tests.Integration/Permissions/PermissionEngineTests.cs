@@ -307,6 +307,34 @@ public sealed class PermissionEngineTests : IDisposable
     }
 
     [Fact]
+    public void Settings_BypassNotAllowed_ReadsAsTheSaferOptions()
+    {
+        // Arrange
+        _sut.Settings = new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk);
+        _sut.BypassAllowed = () => false;
+
+        // Act
+        var settings = _sut.Settings;
+
+        // Assert
+        settings.Should().Be(new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.AutoApprove));
+    }
+
+    [Fact]
+    public void Evaluate_UnrestrictedWhileBypassNotAllowed_StillGuardsPathsOutsideTheFolder()
+    {
+        // Arrange
+        _sut.Settings = new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk);
+        _sut.BypassAllowed = () => false;
+
+        // Act
+        var decision = Evaluate(new WriteFileTool(), new { path = Path.Combine(_elsewhere, "new.txt"), content = "x" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Deny);
+    }
+
+    [Fact]
     public void Evaluate_ShellAfterAnApprovedRead_CarriesTheApprovedFolder()
     {
         // Arrange

@@ -30,6 +30,7 @@ public sealed partial class SessionService : IDisposable
     private readonly TimeProvider _time;
     private readonly ITitleGenerator? _titles;
     private readonly IShellSandbox _sandbox;
+    private readonly PermissionDefaults? _defaults;
     private readonly ILogger _log;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
@@ -45,13 +46,15 @@ public sealed partial class SessionService : IDisposable
     /// <param name="time">The clock for timestamps; defaults to the system clock.</param>
     /// <param name="titles">Writes a title after the first exchange; without it a session keeps its placeholder title.</param>
     /// <param name="sandbox">Runs shell commands; without it commands only run in sessions with the Unrestricted access level.</param>
+    /// <param name="defaults">The global permission choices; without it new chats start with the built-in settings and the risky options stay available.</param>
     public SessionService(
         SessionStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
         ILoggerFactory loggers,
         TimeProvider? time = null,
         ITitleGenerator? titles = null,
-        IShellSandbox? sandbox = null)
+        IShellSandbox? sandbox = null,
+        PermissionDefaults? defaults = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
@@ -62,6 +65,7 @@ public sealed partial class SessionService : IDisposable
         _time = time ?? TimeProvider.System;
         _titles = titles;
         _sandbox = sandbox ?? new NoShellSandbox("No sandbox is set up.");
+        _defaults = defaults;
         _log = loggers.CreateLogger<SessionService>();
     }
 
@@ -84,9 +88,10 @@ public sealed partial class SessionService : IDisposable
     public async Task<SessionInfo> CreateAsync(string? folderPath = null, CancellationToken cancellationToken = default)
     {
         var info = await _store.CreateAsync(folderPath, cancellationToken).ConfigureAwait(false);
-        if (folderPath is null)
+        var start = StartingPermissions(folderPath is not null);
+        if (start != info.Permissions)
         {
-            info = await _store.UpdateAsync(info.Id, s => s with { Access = PermissionSettings.DefaultFor(hasFolder: false).Access }, cancellationToken: cancellationToken).ConfigureAwait(false) ?? info;
+            info = await _store.UpdateAsync(info.Id, s => StoreSettings(s, start), cancellationToken: cancellationToken).ConfigureAwait(false) ?? info;
         }
 
         var session = NewSession(info.Id);
@@ -150,13 +155,7 @@ public sealed partial class SessionService : IDisposable
         }
 
         await session.SetPermissionsAsync(settings).ConfigureAwait(false);
-        await _store.UpdateAsync(
-            id,
-            s => s with
-            {
-                Access = settings.Access == PermissionSettings.Default.Access ? null : settings.Access,
-                Approvals = settings.Approvals == PermissionSettings.Default.Approvals ? null : settings.Approvals,
-            }).ConfigureAwait(false);
+        await _store.UpdateAsync(id, s => StoreSettings(s, settings)).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -465,6 +464,20 @@ public sealed partial class SessionService : IDisposable
         });
     }
 
+    private static SessionInfo StoreSettings(SessionInfo info, PermissionSettings settings)
+    {
+        return info with
+        {
+            Access = settings.Access == PermissionSettings.Default.Access ? null : settings.Access,
+            Approvals = settings.Approvals == PermissionSettings.Default.Approvals ? null : settings.Approvals,
+        };
+    }
+
+    private PermissionSettings StartingPermissions(bool hasFolder)
+    {
+        return _defaults?.For(hasFolder) ?? (hasFolder ? PermissionSettings.Default : PermissionSettings.Default with { Access = AccessLevel.ReadOnly });
+    }
+
     private ChatSession NewSession(string id)
     {
         var session = new ChatSession(_clientFactory, _store.GetLog(id), _time, _loggers.CreateLogger<ChatSession>())
@@ -473,6 +486,11 @@ public sealed partial class SessionService : IDisposable
         };
         session.Permissions.Sensitive = SensitivePaths.Default(_store.Paths, id);
         session.Permissions.Sandbox = _sandbox.Status;
+        if (_defaults is { } defaults)
+        {
+            session.Permissions.BypassAllowed = () => defaults.AllowBypass;
+        }
+
         var wasRunning = false;
         session.Changed += (_, _) =>
         {

@@ -32,6 +32,15 @@ public sealed class PermissionEngine
     private PermissionSettings _settings = PermissionSettings.Default;
 
     /// <summary>
+    /// Gets or sets whether <see cref="AccessLevel.Unrestricted"/> and <see cref="ApprovalMode.NeverAsk"/> may be in effect.
+    /// </summary>
+    /// <remarks>
+    /// It is asked every time the settings are read. While it says no, a chat that has either option behaves as the next safer one
+    /// (<see cref="AccessLevel.WriteInFolder"/> and <see cref="ApprovalMode.AutoApprove"/>), whatever was saved.
+    /// </remarks>
+    public Func<bool> BypassAllowed { get; set; } = static () => true;
+
+    /// <summary>
     /// Gets or sets the access level and approval mode, which can change while the session runs.
     /// </summary>
     public PermissionSettings Settings
@@ -40,7 +49,11 @@ public sealed class PermissionEngine
         {
             lock (_gate)
             {
-                return _settings;
+                return BypassAllowed()
+                    ? _settings
+                    : new PermissionSettings(
+                        _settings.Access == AccessLevel.Unrestricted ? AccessLevel.WriteInFolder : _settings.Access,
+                        _settings.Approvals == ApprovalMode.NeverAsk ? ApprovalMode.AutoApprove : _settings.Approvals);
             }
         }
 

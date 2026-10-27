@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Permissions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -338,6 +339,22 @@ public sealed record AppConfig
     /// Gets an optional cheaper model for titles and compaction, as <c>providerId/modelId</c>.
     /// </summary>
     public string? SideTaskModel { get; init; }
+
+    /// <summary>
+    /// Gets the access level new chats start with.
+    /// </summary>
+    /// <remarks>
+    /// Only <see cref="AccessLevel.ReadOnly"/> and <see cref="AccessLevel.WriteInFolder"/> count; anything else is treated as the built-in default.
+    /// </remarks>
+    public AccessLevel DefaultAccess { get; init; } = AccessLevel.WriteInFolder;
+
+    /// <summary>
+    /// Gets the approval mode new chats start with.
+    /// </summary>
+    /// <remarks>
+    /// Only <see cref="ApprovalMode.AskFirst"/> and <see cref="ApprovalMode.AutoApprove"/> count; anything else is treated as the built-in default.
+    /// </remarks>
+    public ApprovalMode DefaultApprovals { get; init; } = ApprovalMode.AskFirst;
 
     /// <summary>
     /// Gets a value indicating whether the Unrestricted and Never-ask options are hidden.
