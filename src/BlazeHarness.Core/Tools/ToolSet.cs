@@ -15,19 +15,22 @@ public sealed class ToolSet
     public const int MaxOutputCharacters = 30_000;
 
     private readonly Dictionary<string, ITool> _byName;
+    private readonly TimeProvider _time;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ToolSet"/> class.
     /// </summary>
     /// <param name="tools">The tools to offer; names must be unique.</param>
     /// <param name="context">What the calls run against.</param>
+    /// <param name="time">Times each call's timeout; the system clock when null.</param>
     /// <exception cref="ArgumentException">Two tools share a name.</exception>
-    public ToolSet(IEnumerable<ITool> tools, ToolContext context)
+    public ToolSet(IEnumerable<ITool> tools, ToolContext context, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(context);
 
         Context = context;
+        _time = time ?? TimeProvider.System;
         Tools = [.. tools];
         if (Tools.GroupBy(t => t.Name, StringComparer.Ordinal).FirstOrDefault(g => g.Count() > 1) is { } duplicate)
         {
@@ -62,7 +65,7 @@ public sealed class ToolSet
     {
         ArgumentNullException.ThrowIfNull(extra);
         var added = extra.Where(tool => !_byName.ContainsKey(tool.Name)).DistinctBy(tool => tool.Name, StringComparer.Ordinal).ToList();
-        return added.Count == 0 ? this : new ToolSet([.. Tools, .. added], Context);
+        return added.Count == 0 ? this : new ToolSet([.. Tools, .. added], Context, _time);
     }
 
     /// <summary>
@@ -131,7 +134,7 @@ public sealed class ToolSet
     {
         ArgumentNullException.ThrowIfNull(tool);
 
-        using var timeout = new CancellationTokenSource(tool.Timeout);
+        using var timeout = new CancellationTokenSource(tool.Timeout, _time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {

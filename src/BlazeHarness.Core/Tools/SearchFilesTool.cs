@@ -14,7 +14,18 @@ public sealed class SearchFilesTool : ITool
     private const int MaxLineCharacters = 300;
     private const long MiB = 1024 * 1024;
     private const long MaxFileBytes = 2 * MiB;
-    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan DefaultRegexTimeout = TimeSpan.FromSeconds(2);
+
+    private readonly TimeSpan _regexTimeout;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SearchFilesTool"/> class.
+    /// </summary>
+    /// <param name="regexTimeout">How long one pattern may take to match a line; two seconds when null.</param>
+    public SearchFilesTool(TimeSpan? regexTimeout = null)
+    {
+        _regexTimeout = regexTimeout ?? DefaultRegexTimeout;
+    }
 
     /// <inheritdoc />
     public string Name => "search_files";
@@ -78,7 +89,7 @@ public sealed class SearchFilesTool : ITool
         Regex? files;
         try
         {
-            search = new Regex(arguments.OptionalBool("literal") ? Regex.Escape(pattern) : pattern, options, RegexTimeout);
+            search = new Regex(arguments.OptionalBool("literal") ? Regex.Escape(pattern) : pattern, options, _regexTimeout);
             files = string.IsNullOrEmpty(glob) ? null : Glob.ForTool(glob);
         }
         catch (ArgumentException ex)

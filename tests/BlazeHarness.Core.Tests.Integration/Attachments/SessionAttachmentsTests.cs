@@ -26,7 +26,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_TextFile_KeepsItAndCountsLines()
     {
         // Act
-        var info = await SaveAsync("notes.md", "one\ntwo\nthree\n");
+        var info = await _sut.SaveAsync("notes.md", "one\ntwo\nthree\n");
 
         // Assert
         info.Should().Match<AttachmentInfo>(i => i.Name == "notes.md" && i.MediaType == "text/plain" && i.Size == 14 && i.Lines == 3 && i.Id.Length == 8);
@@ -38,7 +38,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_PngNamedAsText_IsAnImageWithTheRightExtension()
     {
         // Act
-        var info = await SaveAsync("screenshot.txt", PngHeader);
+        var info = await _sut.SaveAsync("screenshot.txt", PngHeader);
 
         // Assert
         info.Should().Match<AttachmentInfo>(i => i.Name == "screenshot.png" && i.MediaType == "image/png" && i.Lines == 0 && i.IsImage);
@@ -51,7 +51,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_OtherImageFormats_AreRecognizedFromTheirContent(byte[] content, string mediaType, string name)
     {
         // Act
-        var info = await SaveAsync("a.bin", content);
+        var info = await _sut.SaveAsync("a.bin", content);
 
         // Assert
         (info.MediaType, info.Name).Should().Be((mediaType, name));
@@ -61,7 +61,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_LongNameOfATextFileNamedAsAnImage_StaysWithinTheNameLimit()
     {
         // Act
-        var info = await SaveAsync(new string('n', 200) + ".png", "just words");
+        var info = await _sut.SaveAsync(new string('n', 200) + ".png", "just words");
 
         // Assert
         info.Name.Should().HaveLength(80).And.EndWith(".txt");
@@ -71,7 +71,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_LongNameOfAnImageWithTheWrongExtension_StaysWithinTheNameLimit()
     {
         // Act
-        var info = await SaveAsync(new string('n', 200) + ".txt", PngHeader);
+        var info = await _sut.SaveAsync(new string('n', 200) + ".txt", PngHeader);
 
         // Assert
         info.Name.Should().HaveLength(80).And.EndWith(".png");
@@ -81,7 +81,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_TextNamedAsAnImage_GetsATextExtension()
     {
         // Act
-        var info = await SaveAsync("fake.png", "just words");
+        var info = await _sut.SaveAsync("fake.png", "just words");
 
         // Assert
         (info.MediaType, info.Name).Should().Be(("text/plain", "fake.png.txt"));
@@ -92,7 +92,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_BinaryFile_IsRejectedAndLeavesNothingBehind()
     {
         // Act
-        var act = () => SaveAsync("doc.pdf", [(byte)'%', (byte)'P', (byte)'D', (byte)'F', 0, 1, 2, 3, 4, 5, 6, 7]);
+        var act = () => _sut.SaveAsync("doc.pdf", [(byte)'%', (byte)'P', (byte)'D', (byte)'F', 0, 1, 2, 3, 4, 5, 6, 7]);
 
         // Assert
         (await act.Should().ThrowAsync<AttachmentException>()).WithMessage("*doc.pdf*Only images*");
@@ -103,7 +103,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_EmptyFile_IsRejected()
     {
         // Act
-        var act = () => SaveAsync("empty.txt", []);
+        var act = () => _sut.SaveAsync("empty.txt", []);
 
         // Assert
         (await act.Should().ThrowAsync<AttachmentException>()).WithMessage("*empty*");
@@ -113,7 +113,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_FileOverTheLimit_IsRejectedAndLeavesNothingBehind()
     {
         // Act
-        var act = () => SaveAsync("big.txt", new byte[SessionAttachments.MaxFileBytes + 1]);
+        var act = () => _sut.SaveAsync("big.txt", new byte[SessionAttachments.MaxFileBytes + 1]);
 
         // Assert
         (await act.Should().ThrowAsync<AttachmentException>()).WithMessage("*larger than 20 MB*");
@@ -130,7 +130,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_ClientSuppliedName_NeverBecomesAPath(string given, string expected)
     {
         // Act
-        var info = await SaveAsync(given, "text");
+        var info = await _sut.SaveAsync(given, "text");
 
         // Assert
         info.Name.Should().Be(expected);
@@ -141,7 +141,7 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task SaveAsync_VeryLongName_IsShortenedKeepingTheExtension()
     {
         // Act
-        var info = await SaveAsync(new string('a', 300) + ".txt", "text");
+        var info = await _sut.SaveAsync(new string('a', 300) + ".txt", "text");
 
         // Assert
         info.Name.Should().HaveLength(80).And.EndWith(".txt");
@@ -167,20 +167,12 @@ public sealed class SessionAttachmentsTests : IDisposable
     public async Task Find_WellFormedUnknownId_ReturnsNull()
     {
         // Arrange
-        await SaveAsync("a.txt", "x");
+        await _sut.SaveAsync("a.txt", "x");
 
         // Act
         var file = _sut.Find("0123abcd");
 
         // Assert
         file.Should().BeNull();
-    }
-
-    private Task<AttachmentInfo> SaveAsync(string name, string content) => SaveAsync(name, System.Text.Encoding.UTF8.GetBytes(content));
-
-    private async Task<AttachmentInfo> SaveAsync(string name, byte[] content)
-    {
-        await using var stream = new MemoryStream(content);
-        return await _sut.SaveAsync(name, stream, TestContext.Current.CancellationToken);
     }
 }

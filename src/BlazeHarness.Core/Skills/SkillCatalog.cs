@@ -26,7 +26,7 @@ public sealed partial class SkillCatalog : IDisposable
     private readonly Dictionary<string, (DateTimeOffset At, SkillScan Scan)> _projects = new(StringComparer.Ordinal);
     private readonly Lock _gate = new();
     private readonly Dictionary<string, FileSystemWatcher> _watchers = new(StringComparer.Ordinal);
-    private readonly Timer _debounce;
+    private readonly ITimer _debounce;
     private SkillScan[] _global = [];
     private bool _disposed;
 
@@ -52,7 +52,7 @@ public sealed partial class SkillCatalog : IDisposable
         _logger = logger;
         _watch = watch;
         _time = time ?? TimeProvider.System;
-        _debounce = new Timer(_ => Refresh());
+        _debounce = _time.CreateTimer(_ => Refresh(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
         Refresh();
     }
 

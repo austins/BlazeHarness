@@ -14,7 +14,7 @@ namespace BlazeHarness.Core.Mcp;
 /// </remarks>
 public sealed partial class McpManager : IAsyncDisposable
 {
-    private static readonly TimeSpan RetryAfterFailure = TimeSpan.FromSeconds(30);
+    internal static readonly TimeSpan RetryAfterFailure = TimeSpan.FromSeconds(30);
 
     private readonly McpConfigFile _config;
     private readonly IMcpConnector _connector;

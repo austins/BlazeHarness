@@ -18,7 +18,7 @@ public sealed partial class McpConfigFile : IDisposable
     private readonly ILogger _logger;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly FileSystemWatcher? _watcher;
-    private readonly Timer _debounce;
+    private readonly ITimer _debounce;
     private Snapshot _current;
 
     /// <summary>
@@ -27,14 +27,15 @@ public sealed partial class McpConfigFile : IDisposable
     /// <param name="path">The path of the file; it does not need to exist.</param>
     /// <param name="logger">The logger.</param>
     /// <param name="watch">Whether to watch the file for edits made outside the app.</param>
-    public McpConfigFile(string path, ILogger logger, bool watch = true)
+    /// <param name="time">Times the delay that merges bursts of file events; the system clock when null.</param>
+    public McpConfigFile(string path, ILogger logger, bool watch = true, TimeProvider? time = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(logger);
         _path = path;
         _logger = logger;
         _current = Snapshot.Of(ReadText() ?? string.Empty);
-        _debounce = new Timer(_ => OnExternalChange());
+        _debounce = (time ?? TimeProvider.System).CreateTimer(_ => OnExternalChange(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
         if (watch)
         {

@@ -1,7 +1,7 @@
 using BlazeHarness.Core.Logging;
 using Microsoft.Extensions.Time.Testing;
 
-namespace BlazeHarness.Core.Tests.Unit.Logging;
+namespace BlazeHarness.Core.Tests.Integration.Logging;
 
 public sealed class FileLoggerProviderTests : IDisposable
 {

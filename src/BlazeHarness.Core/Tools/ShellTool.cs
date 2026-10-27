@@ -18,6 +18,7 @@ public sealed class ShellTool : ITool
     private readonly ShellInfo _shell;
     private readonly IShellSandbox _sandbox;
     private readonly string _scratchDirectory;
+    private readonly TimeProvider _time;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ShellTool"/> class.
@@ -25,7 +26,8 @@ public sealed class ShellTool : ITool
     /// <param name="shell">The shell to run commands in.</param>
     /// <param name="sandbox">Starts the commands, inside a sandbox when the call's shell mode asks for one.</param>
     /// <param name="scratchDirectory">A folder confined commands may always write to, for their home and temporary files.</param>
-    public ShellTool(ShellInfo shell, IShellSandbox sandbox, string scratchDirectory)
+    /// <param name="time">Times the command's time limit and the wait for its output; the system clock when null.</param>
+    public ShellTool(ShellInfo shell, IShellSandbox sandbox, string scratchDirectory, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(shell);
         ArgumentNullException.ThrowIfNull(sandbox);
@@ -33,6 +35,7 @@ public sealed class ShellTool : ITool
         _shell = shell;
         _sandbox = sandbox;
         _scratchDirectory = scratchDirectory;
+        _time = time ?? TimeProvider.System;
     }
 
     /// <inheritdoc />
@@ -98,7 +101,7 @@ public sealed class ShellTool : ITool
         {
             var output = new ShellOutput();
             var readers = Task.WhenAll(PumpAsync(process.Output, output), PumpAsync(process.Error, output));
-            using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(seconds));
+            using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(seconds), _time);
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, limit.Token);
             int exitCode;
             try
@@ -108,7 +111,7 @@ public sealed class ShellTool : ITool
             catch (OperationCanceledException)
             {
                 process.Kill();
-                await FinishReadingAsync(readers).ConfigureAwait(false);
+                await FinishReadingAsync(readers, _time).ConfigureAwait(false);
                 if (cancellationToken.IsCancellationRequested)
                 {
                     throw;
@@ -119,7 +122,7 @@ public sealed class ShellTool : ITool
                     $"{output}\n[The command ran longer than {seconds} seconds and was stopped.]"));
             }
 
-            await FinishReadingAsync(readers).ConfigureAwait(false);
+            await FinishReadingAsync(readers, _time).ConfigureAwait(false);
             var text = string.Create(CultureInfo.InvariantCulture, $"{output}[exit code {exitCode}]");
             return exitCode == 0 ? ToolResult.Ok(text) : ToolResult.Error(text);
         }
@@ -144,11 +147,11 @@ public sealed class ShellTool : ITool
         }
     }
 
-    private static async Task FinishReadingAsync(Task readers)
+    private static async Task FinishReadingAsync(Task readers, TimeProvider time)
     {
         try
         {
-            await readers.WaitAsync(OutputGrace).ConfigureAwait(false);
+            await readers.WaitAsync(OutputGrace, time).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {

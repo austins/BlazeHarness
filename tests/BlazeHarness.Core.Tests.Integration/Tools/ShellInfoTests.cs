@@ -1,6 +1,6 @@
 using BlazeHarness.Core.Tools;
 
-namespace BlazeHarness.Core.Tests.Unit.Tools;
+namespace BlazeHarness.Core.Tests.Integration.Tools;
 
 public sealed class ShellInfoTests : IDisposable
 {

@@ -32,23 +32,7 @@ public static class ChatClientFactory
     /// <param name="httpClient">The HTTP client used for transport. The caller owns it and must keep it alive as long as the client.</param>
     /// <returns>A client that streams chat completions from the provider.</returns>
     public static IChatClient Create(ProviderConfig provider, string modelId, string? apiKey, HttpClient httpClient)
-    {
-        var options = new OpenAIClientOptions
-        {
-            Endpoint = new Uri(provider.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute),
-            Transport = new HttpClientPipelineTransport(httpClient),
-            RetryPolicy = new ClientRetryPolicy(MaxRetries),
-            NetworkTimeout = NetworkTimeout,
-        };
-
-        if (provider.Headers is { Count: > 0 })
-        {
-            options.AddPolicy(new HeadersPolicy(provider.Headers), PipelinePosition.PerCall);
-        }
-
-        var credential = new ApiKeyCredential(string.IsNullOrEmpty(apiKey) ? PlaceholderApiKey : apiKey);
-        return new ChatClient(modelId, credential, options).AsIChatClient();
-    }
+        => Create(provider, modelId, apiKey, httpClient, new ClientRetryPolicy(MaxRetries));
 
     /// <summary>
     /// Build the options for a short helper request, such as a title or a summary, that should not think.
@@ -113,6 +97,26 @@ public static class ChatClientFactory
                 return raw;
             },
         };
+    }
+
+    // Tests pass a policy without the backoff delay.
+    internal static IChatClient Create(ProviderConfig provider, string modelId, string? apiKey, HttpClient httpClient, ClientRetryPolicy retryPolicy)
+    {
+        var options = new OpenAIClientOptions
+        {
+            Endpoint = new Uri(provider.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute),
+            Transport = new HttpClientPipelineTransport(httpClient),
+            RetryPolicy = retryPolicy,
+            NetworkTimeout = NetworkTimeout,
+        };
+
+        if (provider.Headers is { Count: > 0 })
+        {
+            options.AddPolicy(new HeadersPolicy(provider.Headers), PipelinePosition.PerCall);
+        }
+
+        var credential = new ApiKeyCredential(string.IsNullOrEmpty(apiKey) ? PlaceholderApiKey : apiKey);
+        return new ChatClient(modelId, credential, options).AsIChatClient();
     }
 
     private sealed class HeadersPolicy(IReadOnlyDictionary<string, string> headers) : PipelinePolicy

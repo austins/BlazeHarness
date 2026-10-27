@@ -1,9 +1,9 @@
 using BlazeHarness.Core.Sessions;
 
-namespace BlazeHarness.Core.Tests.Unit.Sessions;
+namespace BlazeHarness.Tests.Shared.Sessions;
 
 /// <summary>A session log that keeps events in memory and can be told to fail.</summary>
-internal sealed class RecordingSessionLog : ISessionLog
+public sealed class RecordingSessionLog : ISessionLog
 {
     private readonly List<SessionEvent> _events = [];
     private readonly Lock _gate = new();

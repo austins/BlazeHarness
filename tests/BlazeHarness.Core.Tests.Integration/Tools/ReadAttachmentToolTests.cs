@@ -22,7 +22,7 @@ public sealed class ReadAttachmentToolTests : IDisposable
     public async Task ExecuteAsync_ById_ReadsTheFile()
     {
         // Arrange
-        var info = await SaveAsync("a.txt", "one\ntwo\nthree");
+        var info = await _attachments.SaveAsync("a.txt", "one\ntwo\nthree");
 
         // Act
         var result = await RunAsync(new { id = info.Id });
@@ -35,7 +35,7 @@ public sealed class ReadAttachmentToolTests : IDisposable
     public async Task ExecuteAsync_WithOffsetAndLimit_ReadsAPiece()
     {
         // Arrange
-        var info = await SaveAsync("a.txt", string.Join('\n', Enumerable.Range(1, 10).Select(i => "line" + i)));
+        var info = await _attachments.SaveAsync("a.txt", string.Join('\n', Enumerable.Range(1, 10).Select(i => "line" + i)));
 
         // Act
         var result = await RunAsync(new { id = info.Id, offset = 3, limit = 2 });
@@ -48,7 +48,7 @@ public sealed class ReadAttachmentToolTests : IDisposable
     public async Task ExecuteAsync_Image_IsAnError()
     {
         // Arrange
-        var info = await SaveAsync("pic.png", [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4]);
+        var info = await _attachments.SaveAsync("pic.png", [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4]);
 
         // Act
         var result = await RunAsync(new { id = info.Id });
@@ -74,7 +74,7 @@ public sealed class ReadAttachmentToolTests : IDisposable
     public async Task Summarize_KnownId_ShowsTheFileName()
     {
         // Arrange
-        var info = await SaveAsync("report.txt", "x");
+        var info = await _attachments.SaveAsync("report.txt", "x");
         using var document = JsonDocument.Parse($$"""{"id":"{{info.Id}}"}""");
 
         // Act
@@ -90,14 +90,6 @@ public sealed class ReadAttachmentToolTests : IDisposable
         // Assert
         _sut.IsReadOnly.Should().BeTrue();
         _sut.Name.Should().Be("read_attachment");
-    }
-
-    private async Task<AttachmentInfo> SaveAsync(string name, string content) => await SaveAsync(name, System.Text.Encoding.UTF8.GetBytes(content));
-
-    private async Task<AttachmentInfo> SaveAsync(string name, byte[] content)
-    {
-        await using var stream = new MemoryStream(content);
-        return await _attachments.SaveAsync(name, stream, TestContext.Current.CancellationToken);
     }
 
     private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), _workspace.Context, TestContext.Current.CancellationToken);

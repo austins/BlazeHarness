@@ -1,10 +1,10 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Providers;
 
-namespace BlazeHarness.Core.Tests.Unit.Agent;
+namespace BlazeHarness.Tests.Shared.Agent;
 
 /// <summary>Builds chat targets for tests.</summary>
-internal static class TestTargets
+public static class TestTargets
 {
     public static ChatTarget Create(string provider = "p1", string model = "fast", ThinkingLevel? level = null, InputTypes input = InputTypes.Text)
     {

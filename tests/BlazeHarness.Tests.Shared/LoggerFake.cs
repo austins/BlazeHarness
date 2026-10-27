@@ -1,18 +1,28 @@
 namespace BlazeHarness.Tests.Shared;
 
+/// <summary>A logger that keeps what it is given in memory. It is safe to log to from timers and background threads.</summary>
 public class LoggerFake : ILogger
 {
+    private readonly Lock _gate = new();
     private readonly List<LogEntry> _entries = [];
-    private readonly bool _logTrace;
     private readonly Type? _categoryName;
 
-    protected LoggerFake(bool logTrace = false, Type? categoryName = null)
+    protected LoggerFake(Type? categoryName = null)
     {
-        _logTrace = logTrace;
         _categoryName = categoryName;
     }
 
-    public IReadOnlyList<LogEntry> Entries => _entries.AsReadOnly();
+    /// <summary>Gets a copy of the entries logged so far.</summary>
+    public IReadOnlyList<LogEntry> Entries
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _entries];
+            }
+        }
+    }
 
     public void Log<TState>(
         LogLevel logLevel,
@@ -26,45 +36,18 @@ public class LoggerFake : ILogger
             return;
         }
 
-        var logEntry = new LogEntry
+        var logEntry = new LogEntry { LogLevel = logLevel, Exception = exception, Message = formatter(state, exception) };
+        lock (_gate)
         {
-            LogLevel = logLevel,
-            EventId = eventId,
-            State = state,
-            Exception = exception,
-            Message = formatter(state, exception)
-        };
-
-        _entries.Add(logEntry);
+            _entries.Add(logEntry);
+        }
 
         TestContext.Current.TestOutputHelper?.WriteLine(
-            $"[{nameof(LoggerFake)}] {logEntry.LogLevel} {_categoryName?.FullName}[{logEntry.EventId.Id}]: {logEntry.Message}");
+            $"[{nameof(LoggerFake)}] {logLevel} {_categoryName?.FullName}[{eventId.Id}]: {logEntry.Message}");
     }
 
-    public bool IsEnabled(LogLevel logLevel)
-    {
-        return logLevel != LogLevel.Trace || _logTrace;
-    }
+    public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.Trace;
 
     public IDisposable? BeginScope<TState>(TState state)
-        where TState : notnull
-    {
-        return null;
-    }
-}
-
-public sealed class LoggerFake<TCategoryName>(bool logTrace = false) : LoggerFake(logTrace, typeof(TCategoryName)),
-    ILogger<TCategoryName>;
-
-public sealed class LogEntry
-{
-    public required LogLevel LogLevel { get; init; }
-
-    public required EventId EventId { get; init; }
-
-    public required object? State { get; init; }
-
-    public required Exception? Exception { get; init; }
-
-    public required string Message { get; init; }
+        where TState : notnull => null;
 }

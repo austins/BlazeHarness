@@ -604,7 +604,7 @@ public sealed partial class SessionService : IDisposable
             }
 
             var shell = ShellInfo.DetectCurrent();
-            var tools = BuiltInTools.Create(root, shell, session.Attachments, _sandbox, _store.ShellDirectory(id));
+            var tools = BuiltInTools.Create(root, shell, session.Attachments, _sandbox, _store.ShellDirectory(id), _time);
             session.Tools = tools;
             session.BasePrompt = SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root);
         }
@@ -615,9 +615,9 @@ public sealed partial class SessionService : IDisposable
         }
     }
 
-    private static void UseAttachmentsOnly(ChatSession session)
+    private void UseAttachmentsOnly(ChatSession session)
     {
-        session.Tools = session.Attachments is { } files ? BuiltInTools.ForAttachments(files) : null;
+        session.Tools = session.Attachments is { } files ? BuiltInTools.ForAttachments(files, _time) : null;
         session.BasePrompt = null;
     }
 

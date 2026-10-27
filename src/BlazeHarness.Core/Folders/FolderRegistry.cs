@@ -37,7 +37,7 @@ public sealed class FolderRegistry : IDisposable
         ArgumentNullException.ThrowIfNull(loggers);
         _paths = paths;
         _time = time ?? TimeProvider.System;
-        _store = new JsonFileStore<FoldersDocument>(paths.FoldersFile, loggers.CreateLogger<JsonFileStore<FoldersDocument>>());
+        _store = new JsonFileStore<FoldersDocument>(paths.FoldersFile, loggers.CreateLogger<JsonFileStore<FoldersDocument>>(), time: _time);
         _store.ExternalChange += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
     }
 

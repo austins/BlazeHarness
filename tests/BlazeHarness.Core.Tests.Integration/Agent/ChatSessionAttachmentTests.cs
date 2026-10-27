@@ -2,10 +2,9 @@ using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
-using BlazeHarness.Core.Tests.Unit.Sessions;
 using Microsoft.Extensions.AI;
 
-namespace BlazeHarness.Core.Tests.Unit.Agent;
+namespace BlazeHarness.Core.Tests.Integration.Agent;
 
 public sealed class ChatSessionAttachmentTests : IDisposable
 {
@@ -34,7 +33,7 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
         using var sut = Create(client);
-        var file = await SaveAsync("a.txt", "hello file");
+        var file = await _attachments.SaveAsync("a.txt", "hello file");
 
         // Act
         await sut.SendAsync("read this", [file], TestTargets.Create());
@@ -53,7 +52,7 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
         using var sut = Create(client);
-        var file = await SaveAsync("a.txt", "x");
+        var file = await _attachments.SaveAsync("a.txt", "x");
 
         // Act
         await sut.SendAsync(string.Empty, [file], TestTargets.Create());
@@ -69,7 +68,7 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("a cat")]);
         using var sut = Create(client);
-        var file = await SaveAsync("cat.png", PngBytes);
+        var file = await _attachments.SaveAsync("cat.png", PngBytes);
 
         // Act
         await sut.SendAsync("what is it?", [file], TestTargets.Create(input: InputTypes.Text | InputTypes.Image));
@@ -84,7 +83,7 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("can't see")]);
         using var sut = Create(client);
-        var file = await SaveAsync("cat.png", PngBytes);
+        var file = await _attachments.SaveAsync("cat.png", PngBytes);
 
         // Act
         await sut.SendAsync("what is it?", [file], TestTargets.Create());
@@ -104,7 +103,7 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         {
             using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
             using var sut = Create(client);
-            var file = await SaveAsync("a.txt", "x");
+            var file = await _attachments.SaveAsync("a.txt", "x");
             await sut.SendAsync("x", [.. Enumerable.Repeat(file, SessionAttachments.MaxFilesPerMessage + 1)], TestTargets.Create());
         };
 
@@ -133,7 +132,7 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
         using var first = Create(client);
-        var file = await SaveAsync("a.txt", "hello file");
+        var file = await _attachments.SaveAsync("a.txt", "hello file");
         await first.SendAsync("read this", [file], TestTargets.Create());
         using var restored = Create(client);
 
@@ -151,7 +150,7 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")]).Enqueue([ScriptedChatClient.Text("two")]);
         using var sut = Create(client);
-        var file = await SaveAsync("a.txt", "hello file");
+        var file = await _attachments.SaveAsync("a.txt", "hello file");
         await sut.SendAsync("first", [file], TestTargets.Create());
 
         // Act
@@ -186,7 +185,7 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")]).Enqueue([ScriptedChatClient.Text("two")]);
         using var sut = Create(client);
-        var file = await SaveAsync("big.txt", new string('x', 20_000));
+        var file = await _attachments.SaveAsync("big.txt", new string('x', 20_000));
         await sut.SendAsync("first", [file], Target(1_000_000));
 
         // Act
@@ -204,7 +203,7 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
         using var sut = Create(client);
-        var file = await SaveAsync("a.txt", "x");
+        var file = await _attachments.SaveAsync("a.txt", "x");
         var path = _attachments.Find(file.Id)!.Path;
         File.Delete(path);
 #pragma warning disable IDISP013 // The process is only disposed after the awaits that wait for it.
@@ -244,13 +243,5 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         {
             Attachments = _attachments,
         };
-    }
-
-    private async Task<AttachmentInfo> SaveAsync(string name, string content) => await SaveAsync(name, System.Text.Encoding.UTF8.GetBytes(content));
-
-    private async Task<AttachmentInfo> SaveAsync(string name, byte[] content)
-    {
-        await using var stream = new MemoryStream(content);
-        return await _attachments.SaveAsync(name, stream, TestContext.Current.CancellationToken);
     }
 }

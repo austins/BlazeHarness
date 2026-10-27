@@ -16,15 +16,22 @@ public static class BuiltInTools
     /// <param name="attachments">The session's attached files for the <c>read_attachment</c> tool, or null to leave that tool out.</param>
     /// <param name="sandbox">Starts the shell commands. Required when <paramref name="shell"/> is set.</param>
     /// <param name="scratchDirectory">The folder confined shell commands may always write to. Required when <paramref name="shell"/> is set.</param>
+    /// <param name="time">Times the tools' timeouts; the system clock when null.</param>
     /// <returns>The tool set.</returns>
-    public static ToolSet Create(string folder, ShellInfo? shell = null, SessionAttachments? attachments = null, IShellSandbox? sandbox = null, string? scratchDirectory = null)
+    public static ToolSet Create(
+        string folder,
+        ShellInfo? shell = null,
+        SessionAttachments? attachments = null,
+        IShellSandbox? sandbox = null,
+        string? scratchDirectory = null,
+        TimeProvider? time = null)
     {
         List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool()];
         if (shell is not null)
         {
             ArgumentNullException.ThrowIfNull(sandbox);
             ArgumentException.ThrowIfNullOrWhiteSpace(scratchDirectory);
-            tools.Add(new ShellTool(shell, sandbox, scratchDirectory));
+            tools.Add(new ShellTool(shell, sandbox, scratchDirectory, time));
         }
 
         if (attachments is not null)
@@ -32,18 +39,19 @@ public static class BuiltInTools
             tools.Add(new ReadAttachmentTool(attachments));
         }
 
-        return new ToolSet(tools, new ToolContext(folder));
+        return new ToolSet(tools, new ToolContext(folder), time);
     }
 
     /// <summary>
     /// Create the tool set for a chat without a working folder, which can only read the files attached to it.
     /// </summary>
     /// <param name="attachments">The session's attached files.</param>
+    /// <param name="time">Times the tool's timeout; the system clock when null.</param>
     /// <returns>The tool set.</returns>
-    public static ToolSet ForAttachments(SessionAttachments attachments)
+    public static ToolSet ForAttachments(SessionAttachments attachments, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(attachments);
         Directory.CreateDirectory(attachments.Directory);
-        return new ToolSet([new ReadAttachmentTool(attachments)], new ToolContext(attachments.Directory));
+        return new ToolSet([new ReadAttachmentTool(attachments)], new ToolContext(attachments.Directory), time);
     }
 }

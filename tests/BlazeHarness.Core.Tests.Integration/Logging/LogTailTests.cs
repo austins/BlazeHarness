@@ -1,6 +1,6 @@
 using BlazeHarness.Core.Logging;
 
-namespace BlazeHarness.Core.Tests.Unit.Logging;
+namespace BlazeHarness.Core.Tests.Integration.Logging;
 
 public sealed class LogTailTests : IDisposable
 {

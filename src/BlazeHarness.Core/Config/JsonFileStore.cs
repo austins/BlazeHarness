@@ -17,7 +17,7 @@ public sealed partial class JsonFileStore<T> : IDisposable
     private readonly ILogger _logger;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly FileSystemWatcher? _watcher;
-    private readonly Timer _debounce;
+    private readonly ITimer _debounce;
     private T _current;
     private string? _lastWrittenJson;
 
@@ -30,12 +30,13 @@ public sealed partial class JsonFileStore<T> : IDisposable
     /// <param name="path">The full path of the JSON file.</param>
     /// <param name="logger">The logger for read failures.</param>
     /// <param name="watch">Whether to watch the file and raise <see cref="ExternalChange"/> on outside edits.</param>
-    public JsonFileStore(string path, ILogger logger, bool watch = true)
+    /// <param name="time">Times the delay that merges bursts of file events; the system clock when null.</param>
+    public JsonFileStore(string path, ILogger logger, bool watch = true, TimeProvider? time = null)
     {
         _path = path;
         _logger = logger;
         _current = ReadFromDisk() ?? new T();
-        _debounce = new Timer(_ => OnExternalChange());
+        _debounce = (time ?? TimeProvider.System).CreateTimer(_ => OnExternalChange(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
         if (watch)
         {

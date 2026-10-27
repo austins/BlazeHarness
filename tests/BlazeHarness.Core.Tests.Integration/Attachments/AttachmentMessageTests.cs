@@ -39,7 +39,7 @@ public sealed class AttachmentMessageTests : IDisposable
     public async Task Build_InlineText_AddsAFencedBlockNamingTheFile()
     {
         // Arrange
-        var info = await SaveAsync("a.cs", "int x;\n");
+        var info = await _store.SaveAsync("a.cs", "int x;\n");
 
         // Act
         var message = AttachmentMessage.Build("look", [new SentAttachment(info, AttachmentDelivery.Inline)], _store);
@@ -52,7 +52,7 @@ public sealed class AttachmentMessageTests : IDisposable
     public async Task Build_InlineTextWithBackticks_UsesALongerFence()
     {
         // Arrange
-        var info = await SaveAsync("doc.md", "```js\ncode\n```\n");
+        var info = await _store.SaveAsync("doc.md", "```js\ncode\n```\n");
 
         // Act
         var message = AttachmentMessage.Build(string.Empty, [new SentAttachment(info, AttachmentDelivery.Inline)], _store);
@@ -65,7 +65,7 @@ public sealed class AttachmentMessageTests : IDisposable
     public async Task Build_OnDemandText_NamesTheFileAndTheTool()
     {
         // Arrange
-        var info = await SaveAsync("big.log", string.Join('\n', Enumerable.Range(0, 300)));
+        var info = await _store.SaveAsync("big.log", string.Join('\n', Enumerable.Range(0, 300)));
 
         // Act
         var message = AttachmentMessage.Build("see", [new SentAttachment(info, AttachmentDelivery.OnDemand)], _store);
@@ -79,7 +79,7 @@ public sealed class AttachmentMessageTests : IDisposable
     public async Task Build_Image_AddsImageContentAndANote()
     {
         // Arrange
-        var info = await SaveAsync("pic.png", PngBytes);
+        var info = await _store.SaveAsync("pic.png", PngBytes);
 
         // Act
         var message = AttachmentMessage.Build("what is this?", [new SentAttachment(info, AttachmentDelivery.Image)], _store);
@@ -108,7 +108,7 @@ public sealed class AttachmentMessageTests : IDisposable
     public async Task OmitImages_ReplacesImageContentWithANoteAndKeepsTheRest()
     {
         // Arrange
-        var info = await SaveAsync("pic.png", PngBytes);
+        var info = await _store.SaveAsync("pic.png", PngBytes);
         List<ChatMessage> messages =
         [
             new(ChatRole.System, "sys"),
@@ -122,13 +122,5 @@ public sealed class AttachmentMessageTests : IDisposable
         messages[0].Text.Should().Be("sys");
         messages[1].Contents.OfType<DataContent>().Should().BeEmpty();
         messages[1].Text.Should().Contain("look").And.Contain("this model can't view images");
-    }
-
-    private Task<AttachmentInfo> SaveAsync(string name, string content) => SaveAsync(name, System.Text.Encoding.UTF8.GetBytes(content));
-
-    private async Task<AttachmentInfo> SaveAsync(string name, byte[] content)
-    {
-        await using var stream = new MemoryStream(content);
-        return await _store.SaveAsync(name, stream, TestContext.Current.CancellationToken);
     }
 }

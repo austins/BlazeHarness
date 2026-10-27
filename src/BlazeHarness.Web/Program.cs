@@ -30,7 +30,8 @@ builder.Services.AddSingleton(await SecretStoreFactory.CreateAsync(paths));
 builder.Services.AddSingleton<ApiKeyResolver>();
 builder.Services.AddSingleton(sp => new JsonFileStore<AppConfig>(
     paths.ConfigFile,
-    sp.GetRequiredService<ILogger<JsonFileStore<AppConfig>>>()));
+    sp.GetRequiredService<ILogger<JsonFileStore<AppConfig>>>(),
+    time: sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<ProviderService>();
 builder.Services.AddSingleton(sp => new PermissionDefaults(sp.GetRequiredService<JsonFileStore<AppConfig>>(), paths));
 builder.Services.AddSingleton<MarkdownRenderer>();
@@ -38,10 +39,10 @@ builder.Services.AddScoped<ToastService>();
 builder.Services.AddSingleton<ChatClientSource>();
 builder.Services.AddSingleton(sp => new SessionStore(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<IShellSandbox>(sp => new MxcShellSandbox(() => sp.GetRequiredService<PermissionDefaults>().Sensitive()));
-builder.Services.AddSingleton(sp => new McpConfigFile(paths.McpFile, sp.GetRequiredService<ILogger<McpConfigFile>>()));
+builder.Services.AddSingleton(sp => new McpConfigFile(paths.McpFile, sp.GetRequiredService<ILogger<McpConfigFile>>(), time: sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<IMcpConnector, SdkMcpConnector>();
 builder.Services.AddSingleton<McpManager>();
-builder.Services.AddSingleton(sp => new SkillCatalog(paths, sp.GetRequiredService<JsonFileStore<AppConfig>>(), sp.GetRequiredService<ILogger<SkillCatalog>>()));
+builder.Services.AddSingleton(sp => new SkillCatalog(paths, sp.GetRequiredService<JsonFileStore<AppConfig>>(), sp.GetRequiredService<ILogger<SkillCatalog>>(), time: sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<SessionStore>(),
     sp.GetRequiredService<ChatClientSource>().CreateAsync,

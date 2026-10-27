@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace BlazeHarness.Web.Tests.Unit.Hosting;
+namespace BlazeHarness.Web.Tests.Integration.Hosting;
 
 public sealed class AttachmentEndpointsTests : IDisposable
 {
