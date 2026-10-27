@@ -44,7 +44,9 @@ public sealed class McpSecretsTests
     [InlineData("https://x.test/mcp?a=1&api_key=abc", true)]
     [InlineData("https://x.test/mcp?token=${TOKEN}", false)]
     [InlineData("https://x.test/mcp?page=2", false)]
+#pragma warning disable CA1054 // InlineData requires string constants, including unexpanded ${TOKEN} templates.
     public void LiteralsIn_Url_IsFlaggedWhenItCarriesASecretInTheQuery(string url, bool flagged)
+#pragma warning restore CA1054
     {
         // Act
         var found = McpSecrets.LiteralsIn(Remote(url, new Dictionary<string, string>()));
@@ -57,7 +59,9 @@ public sealed class McpSecretsTests
     [InlineData("http://example.test/mcp", "header Authorization (sent over plain http)")]
     [InlineData("https://example.test/mcp", "header Authorization")]
     [InlineData("http://localhost:3000/mcp", "header Authorization")]
+#pragma warning disable CA1054 // InlineData requires string constants.
     public void LiteralsIn_SecretHeader_IsNotedWhenItGoesOverPlainHttpToAnotherMachine(string url, string expected)
+#pragma warning restore CA1054
     {
         // Arrange
         var server = Remote(url, new Dictionary<string, string> { ["Authorization"] = "Bearer abc" });

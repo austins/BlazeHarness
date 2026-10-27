@@ -5,7 +5,7 @@ namespace BlazeHarness.Core.Tests.Unit.Providers;
 
 public sealed class ProviderConnectionTesterTests
 {
-    private static readonly ProviderConfig Provider = new() { Id = "p", DisplayName = "P", BaseUrl = "http://host/v1/" };
+    private static readonly ProviderConfig Provider = new() { Id = "p", DisplayName = "P", BaseUrl = new Uri("http://host/v1/") };
 
     [Fact]
     public async Task TestAsync_ModelList_ReturnsSortedIds_AndSendsBearerKey()
@@ -143,7 +143,7 @@ public sealed class ProviderConnectionTesterTests
         using var client = new HttpClient(handler);
 
         // Act
-        var result = await ProviderConnectionTester.TestAsync(Provider with { BaseUrl = "nope" }, "k", client, TestContext.Current.CancellationToken);
+        var result = await ProviderConnectionTester.TestAsync(Provider with { BaseUrl = new Uri("nope", UriKind.Relative) }, "k", client, TestContext.Current.CancellationToken);
 
         // Assert
         result.Success.Should().BeFalse();

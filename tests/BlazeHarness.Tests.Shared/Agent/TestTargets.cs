@@ -13,7 +13,7 @@ public static class TestTargets
         {
             Id = provider,
             DisplayName = provider.ToUpperInvariant(),
-            BaseUrl = "http://localhost/v1",
+            BaseUrl = new Uri("http://localhost/v1"),
             Models = [modelConfig],
         };
         return new ChatTarget(providerConfig, modelConfig, level);

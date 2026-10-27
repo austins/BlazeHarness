@@ -9,7 +9,7 @@ public sealed class ProviderValidatorTests
     {
         Id = "p",
         DisplayName = "P",
-        BaseUrl = "https://api.example.com/v1",
+        BaseUrl = new Uri("https://api.example.com/v1"),
         Models = [new ModelConfig { Id = "m", ContextWindow = 8000, MaxOutputTokens = 1000 }],
     };
 
@@ -27,10 +27,12 @@ public sealed class ProviderValidatorTests
     [InlineData("")]
     [InlineData("not a url")]
     [InlineData("ftp://host/v1")]
+#pragma warning disable CA1054 // InlineData requires string constants, including deliberately malformed addresses.
     public void Validate_BadBaseUrl_ReportsIssue(string baseUrl)
+#pragma warning restore CA1054
     {
         // Act
-        var issues = ProviderValidator.Validate(Valid with { BaseUrl = baseUrl });
+        var issues = ProviderValidator.Validate(Valid with { BaseUrl = new Uri(baseUrl, UriKind.RelativeOrAbsolute) });
 
         // Assert
         issues.Should().ContainSingle(i => i.Path == "baseUrl");

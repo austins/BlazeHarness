@@ -13,7 +13,7 @@ public sealed class ProviderEditModelTests
         {
             Id = "ds",
             DisplayName = "DeepSeek",
-            BaseUrl = "https://api.deepseek.com/v1",
+            BaseUrl = new Uri("https://api.deepseek.com/v1"),
             ApiKeyRef = "${DEEPSEEK_API_KEY}",
             Headers = new Dictionary<string, string> { ["X-Org"] = "acme" },
             SendStreamUsage = false,
@@ -38,7 +38,7 @@ public sealed class ProviderEditModelTests
 
         // Assert
         result.Id.Should().Be("ds");
-        result.BaseUrl.Should().Be("https://api.deepseek.com/v1");
+        result.BaseUrl.Should().Be(new Uri("https://api.deepseek.com/v1"));
         result.ApiKeyRef.Should().Be("${DEEPSEEK_API_KEY}");
         result.Headers.Should().ContainSingle().Which.Should().Be(new KeyValuePair<string, string>("X-Org", "acme"));
         result.SendStreamUsage.Should().BeFalse();

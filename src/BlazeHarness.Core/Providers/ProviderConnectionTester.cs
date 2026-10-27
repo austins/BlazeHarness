@@ -31,7 +31,9 @@ public static class ProviderConnectionTester
         HttpClient httpClient,
         CancellationToken cancellationToken = default)
     {
-        if (!Uri.TryCreate(provider.BaseUrl.TrimEnd('/') + "/models", UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+        if (!provider.BaseUrl.IsAbsoluteUri
+            || provider.BaseUrl.Scheme is not ("http" or "https")
+            || !Uri.TryCreate(provider.BaseUrl.OriginalString.TrimEnd('/') + "/models", UriKind.Absolute, out var uri))
         {
             return Fail("The base URL is not a valid http or https address.");
         }

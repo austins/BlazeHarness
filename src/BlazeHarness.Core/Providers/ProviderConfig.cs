@@ -23,7 +23,7 @@ public sealed record ProviderConfig
     /// <summary>
     /// Gets the base URL of the API, e.g. <c>https://api.deepseek.com</c>.
     /// </summary>
-    public required string BaseUrl { get; init; }
+    public required Uri BaseUrl { get; init; }
 
     /// <summary>
     /// Gets extra HTTP headers sent with every request.

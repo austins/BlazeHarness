@@ -4,19 +4,6 @@ using System.Text.RegularExpressions;
 namespace BlazeHarness.Core.Skills;
 
 /// <summary>
-/// The skills found in one folder.
-/// </summary>
-/// <param name="Skills">The skills that could be read, in name order.</param>
-/// <param name="Problems">One message for each skill folder that was skipped, naming the folder and why.</param>
-public sealed record SkillScan(IReadOnlyList<SkillInfo> Skills, IReadOnlyList<string> Problems)
-{
-    /// <summary>
-    /// Gets a scan that found nothing.
-    /// </summary>
-    public static SkillScan Empty { get; } = new([], []);
-}
-
-/// <summary>
 /// Finds the skills in a folder, where each skill is a subfolder with a <c>SKILL.md</c> file.
 /// </summary>
 internal static partial class SkillScanner
@@ -192,4 +179,17 @@ internal static partial class SkillScanner
 
     [GeneratedRegex(@"^[a-z0-9]+(-[a-z0-9]+)*$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ValidName();
+}
+
+/// <summary>
+/// The skills found in one folder.
+/// </summary>
+/// <param name="Skills">The skills that could be read, in name order.</param>
+/// <param name="Problems">One message for each skill folder that was skipped, naming the folder and why.</param>
+public sealed record SkillScan(IReadOnlyList<SkillInfo> Skills, IReadOnlyList<string> Problems)
+{
+    /// <summary>
+    /// Gets a scan that found nothing.
+    /// </summary>
+    public static SkillScan Empty { get; } = new([], []);
 }

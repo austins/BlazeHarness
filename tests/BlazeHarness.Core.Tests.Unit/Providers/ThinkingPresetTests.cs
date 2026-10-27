@@ -24,7 +24,7 @@ public sealed class ThinkingPresetTests
             {
                 Id = "p",
                 DisplayName = "P",
-                BaseUrl = "http://localhost/v1",
+                BaseUrl = new Uri("http://localhost/v1"),
                 Models =
                 [
                     new ModelConfig
@@ -53,7 +53,7 @@ public sealed class ThinkingPresetTests
     {
         // Arrange
         var preset = ThinkingPreset.Find("qwen3")!;
-        var provider = new ProviderConfig { Id = "p", DisplayName = "P", BaseUrl = "http://localhost/v1" };
+        var provider = new ProviderConfig { Id = "p", DisplayName = "P", BaseUrl = new Uri("http://localhost/v1") };
         var model = new ModelConfig
         {
             Id = "qwen3-32b",

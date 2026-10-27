@@ -38,7 +38,7 @@ public sealed class AppConfigSerializationTests
         // Arrange
         var config = new AppConfig
         {
-            Providers = [new ProviderConfig { Id = "p", DisplayName = "P", BaseUrl = "http://x", ApiKeyRef = "${KEY}" }],
+            Providers = [new ProviderConfig { Id = "p", DisplayName = "P", BaseUrl = new Uri("http://x"), ApiKeyRef = "${KEY}" }],
         };
 
         // Act

@@ -99,7 +99,9 @@ public sealed class MarkdownRendererTests
     [InlineData("//evil.example/a.png")]
     [InlineData("data:image/png;base64,AAAA")]
     [InlineData("file:///etc/passwd")]
+#pragma warning disable CA1054 // InlineData requires string constants.
     public void ToHtml_ImageThatIsAUrlWithASession_IsNeverLoaded(string url)
+#pragma warning restore CA1054
     {
         // Act
         var html = _sut.ToHtml($"![x]({url})", "s1");

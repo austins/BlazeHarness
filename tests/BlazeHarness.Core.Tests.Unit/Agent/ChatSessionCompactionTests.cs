@@ -276,7 +276,7 @@ public sealed class ChatSessionCompactionTests
     private static ChatTarget SmallWindow()
     {
         var model = new ModelConfig { Id = "tiny", ContextWindow = 400 };
-        var provider = new ProviderConfig { Id = "p1", DisplayName = "P1", BaseUrl = "http://localhost/v1", Models = [model] };
+        var provider = new ProviderConfig { Id = "p1", DisplayName = "P1", BaseUrl = new Uri("http://localhost/v1"), Models = [model] };
         return new ChatTarget(provider, model, null);
     }
 

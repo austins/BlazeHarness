@@ -76,7 +76,7 @@ public sealed class ProviderServiceTests : IDisposable
     public async Task SaveAsync_InvalidProvider_ReturnsIssuesAndSavesNothing()
     {
         // Act
-        var issues = await _sut.SaveAsync(Provider("ds", "m1") with { BaseUrl = "nope" }, "sk-1", TestContext.Current.CancellationToken);
+        var issues = await _sut.SaveAsync(Provider("ds", "m1") with { BaseUrl = new Uri("nope", UriKind.Relative) }, "sk-1", TestContext.Current.CancellationToken);
 
         // Assert
         issues.Should().NotBeEmpty();
@@ -246,7 +246,7 @@ public sealed class ProviderServiceTests : IDisposable
         {
             Id = id,
             DisplayName = id,
-            BaseUrl = "https://api.example.com/v1",
+            BaseUrl = new Uri("https://api.example.com/v1"),
             Models = [.. models.Select(m => new ModelConfig { Id = m, ContextWindow = 8000, MaxOutputTokens = 1000 })],
         };
     }

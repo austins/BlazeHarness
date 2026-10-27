@@ -2,6 +2,8 @@
 
 A local web app for chatting and coding with any OpenAI-compatible LLM. It runs on Windows, macOS and Linux. The model can read, edit and search files and run shell commands, and you approve what it may do.
 
+⚠ This app is still in early development. It is not yet suitable for production use.
+
 ## Requirements
 
 * [.NET 10 SDK](https://dotnet.microsoft.com/download)

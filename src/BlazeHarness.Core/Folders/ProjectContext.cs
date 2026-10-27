@@ -4,14 +4,6 @@ using System.Text;
 namespace BlazeHarness.Core.Folders;
 
 /// <summary>
-/// One <c>AGENTS.md</c> file that was read for a session.
-/// </summary>
-/// <param name="Path">The full path of the file.</param>
-/// <param name="Content">The text that was read, which is empty when the size cap left no room for it.</param>
-/// <param name="Truncated">Whether the file is larger than what was kept.</param>
-public sealed record ProjectFile(string Path, string Content, bool Truncated);
-
-/// <summary>
 /// The project instructions that apply to a folder, from its <c>AGENTS.md</c> files.
 /// </summary>
 /// <param name="FolderPath">The folder the files were found for.</param>
@@ -203,3 +195,11 @@ internal static class ProjectContextLoader
         }
     }
 }
+
+/// <summary>
+/// One <c>AGENTS.md</c> file that was read for a session.
+/// </summary>
+/// <param name="Path">The full path of the file.</param>
+/// <param name="Content">The text that was read, which is empty when the size cap left no room for it.</param>
+/// <param name="Truncated">Whether the file is larger than what was kept.</param>
+public sealed record ProjectFile(string Path, string Content, bool Truncated);

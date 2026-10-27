@@ -8,7 +8,7 @@ public sealed class ResolvedRequestParamsTests
     {
         Id = "p",
         DisplayName = "P",
-        BaseUrl = "http://localhost/v1",
+        BaseUrl = new Uri("http://localhost/v1"),
     };
 
     [Fact]

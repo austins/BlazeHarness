@@ -26,8 +26,7 @@ public sealed class ChatClientSource(ProviderService providers, IHttpClientFacto
     {
         ArgumentNullException.ThrowIfNull(target);
         var key = await providers.ResolveKeyAsync(target.Provider, cancellationToken);
-        // The factory-managed handler is pooled, and disposing this wrapper client would not free anything useful.
-#pragma warning disable IDISP004
+#pragma warning disable IDISP004 // The factory-managed handler is pooled, and disposing this wrapper client would not free anything useful.
         return ChatClientFactory.Create(target.Provider, target.Model.Id, key, httpClients.CreateClient(HttpClientName));
 #pragma warning restore IDISP004
     }

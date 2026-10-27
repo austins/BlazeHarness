@@ -104,7 +104,7 @@ public static class ChatClientFactory
     {
         var options = new OpenAIClientOptions
         {
-            Endpoint = new Uri(provider.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute),
+            Endpoint = new Uri(provider.BaseUrl.OriginalString.TrimEnd('/') + "/", UriKind.Absolute),
             Transport = new HttpClientPipelineTransport(httpClient),
             RetryPolicy = retryPolicy,
             NetworkTimeout = NetworkTimeout,

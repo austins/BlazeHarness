@@ -5,7 +5,7 @@ namespace BlazeHarness.Core.Tests.Unit.Secrets;
 
 public sealed class ApiKeyResolverTests
 {
-    private static readonly ProviderConfig Provider = new() { Id = "p", DisplayName = "P", BaseUrl = "http://x/v1" };
+    private static readonly ProviderConfig Provider = new() { Id = "p", DisplayName = "P", BaseUrl = new Uri("http://x/v1") };
 
     private readonly ISecretStore _store = Substitute.For<ISecretStore>();
 

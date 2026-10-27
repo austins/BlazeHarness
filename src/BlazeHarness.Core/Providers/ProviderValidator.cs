@@ -30,7 +30,7 @@ internal static class ProviderValidator
             issues.Add(new ValidationIssue("displayName", "A name is required."));
         }
 
-        if (!Uri.TryCreate(provider.BaseUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+        if (!provider.BaseUrl.IsAbsoluteUri || provider.BaseUrl.Scheme is not ("http" or "https"))
         {
             issues.Add(new ValidationIssue("baseUrl", "The base URL must be an absolute http or https address, e.g. https://api.openai.com/v1."));
         }

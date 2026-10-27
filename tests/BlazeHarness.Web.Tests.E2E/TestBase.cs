@@ -96,6 +96,7 @@ public abstract class TestBase : IAsyncLifetime
     protected static ILocatorAssertions Expect(ILocator locator) => Assertions.Expect(locator);
 
     /// <summary>Sign in with the launch token, the way the printed link does, and wait for the Blazor circuit.</summary>
+    /// <param name="path">The page to open after signing in.</param>
     protected async Task LaunchAsync(string path = "/")
     {
         var token = Factory.Services.GetRequiredService<LaunchCredentials>().Token;

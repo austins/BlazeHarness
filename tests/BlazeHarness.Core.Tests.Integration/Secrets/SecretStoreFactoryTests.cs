@@ -37,7 +37,7 @@ public sealed class SecretStoreFactoryTests : IDisposable
     public void KeyFor_ProviderOrId_AreTheSame()
     {
         // Arrange
-        var provider = new ProviderConfig { Id = "openai", DisplayName = "OpenAI", BaseUrl = "http://localhost" };
+        var provider = new ProviderConfig { Id = "openai", DisplayName = "OpenAI", BaseUrl = new Uri("http://localhost") };
 
         // Act
         var fromProvider = SecretStoreFactory.KeyFor(provider);

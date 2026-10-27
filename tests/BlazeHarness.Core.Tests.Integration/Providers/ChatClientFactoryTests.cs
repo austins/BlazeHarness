@@ -131,7 +131,7 @@ public sealed class ChatClientFactoryTests
         response.Text.Should().Contain("Hello");
     }
 
-    private static (ProviderConfig Provider, ModelConfig Model) CreateProvider(string baseUrl)
+    private static (ProviderConfig Provider, ModelConfig Model) CreateProvider(Uri baseUrl)
     {
         var model = new ModelConfig
         {

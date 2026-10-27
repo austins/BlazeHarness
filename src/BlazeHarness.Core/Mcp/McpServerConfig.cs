@@ -19,7 +19,9 @@ public sealed record McpServerConfig(
     IReadOnlyList<string> Args,
     IReadOnlyDictionary<string, string> Env,
     string? Cwd,
+#pragma warning disable CA1054, CA1056 // Holds the raw mcp.json value, which may contain unexpanded ${VAR} placeholders.
     string? Url,
+#pragma warning restore CA1054, CA1056
     IReadOnlyDictionary<string, string> Headers,
     bool Disabled)
 {

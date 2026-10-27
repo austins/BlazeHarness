@@ -51,10 +51,10 @@ public sealed class FakeOpenAiServer : IDisposable
         _app.Start();
 
         var address = _app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
-        BaseUrl = $"{address}/v1";
+        BaseUrl = new Uri($"{address}/v1");
     }
 
-    public string BaseUrl { get; }
+    public Uri BaseUrl { get; }
 
     /// <summary>Gets a copy of the bodies of the requests received so far.</summary>
     public IReadOnlyList<string> RequestBodies

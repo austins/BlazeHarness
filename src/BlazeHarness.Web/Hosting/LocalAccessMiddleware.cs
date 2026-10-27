@@ -74,8 +74,7 @@ public sealed class LocalAccessMiddleware(RequestDelegate next, LaunchCredential
                 return;
             }
 
-            // Not Secure: the app is plain HTTP on loopback, where browsers differ on Secure-cookie handling.
-#pragma warning disable S2092
+#pragma warning disable S2092 // Not Secure: the app is plain HTTP on loopback, where browsers differ on Secure-cookie handling.
             context.Response.Cookies.Append(
                 LaunchCredentials.CookieName,
                 credentials.SessionSecret,

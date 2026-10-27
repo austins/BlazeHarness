@@ -153,7 +153,7 @@ public sealed class ModelTitleGeneratorTests
     private static ChatTarget Target(ModelConfig? model = null, ThinkingLevel? level = null)
     {
         model ??= new ModelConfig { Id = "m", ContextWindow = 8000, MaxOutputTokens = 1000 };
-        var provider = new ProviderConfig { Id = "p", DisplayName = "P", BaseUrl = "http://localhost/v1", LegacyMaxTokens = false, Models = [model] };
+        var provider = new ProviderConfig { Id = "p", DisplayName = "P", BaseUrl = new Uri("http://localhost/v1"), LegacyMaxTokens = false, Models = [model] };
         return new ChatTarget(provider, model, level);
     }
 }
