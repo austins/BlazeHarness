@@ -46,9 +46,9 @@ public sealed partial class JsonFileStore<T> : IDisposable
                 NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size,
                 EnableRaisingEvents = true,
             };
-            _watcher.Changed += (_, _) => _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
-            _watcher.Created += (_, _) => _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
-            _watcher.Renamed += (_, _) => _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
+            _watcher.Changed += (_, _) => Schedule();
+            _watcher.Created += (_, _) => Schedule();
+            _watcher.Renamed += (_, _) => Schedule();
         }
     }
 
@@ -100,6 +100,38 @@ public sealed partial class JsonFileStore<T> : IDisposable
         _lock.Dispose();
     }
 
+    /// <summary>
+    /// Read the file again after an edit made outside the app, and raise <see cref="ExternalChange"/> when it holds a new valid value.
+    /// </summary>
+    internal void OnExternalChange()
+    {
+        T? parsed;
+        try
+        {
+            parsed = Reload();
+        }
+        catch (ObjectDisposedException)
+        {
+            // A callback that was already queued when the store was disposed has nothing left to do, and must not fault a thread-pool thread.
+            return;
+        }
+
+        if (parsed is null)
+        {
+            return;
+        }
+
+        // Outside the lock, so a handler that calls UpdateAsync can't deadlock and one that throws can't kill the process.
+        try
+        {
+            ExternalChange?.Invoke(this, new ValueEventArgs<T>(parsed));
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            LogHandlerFailed(ex, Path.GetFileName(_path));
+        }
+    }
+
     private T? ReadFromDisk()
     {
         try
@@ -111,14 +143,26 @@ public sealed partial class JsonFileStore<T> : IDisposable
 
             return JsonSerializer.Deserialize<T>(File.ReadAllText(_path), JsonDefaults.Options);
         }
-        catch (Exception ex) when (ex is JsonException or IOException)
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
             LogReadFailed(ex, Path.GetFileName(_path));
             return null;
         }
     }
 
-    private void OnExternalChange()
+    private void Schedule()
+    {
+        try
+        {
+            _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
+        }
+        catch (ObjectDisposedException)
+        {
+            // A watcher event can still arrive just after disposal.
+        }
+    }
+
+    private T? Reload()
     {
         _lock.Wait();
         try
@@ -128,15 +172,16 @@ public sealed partial class JsonFileStore<T> : IDisposable
             {
                 text = File.Exists(_path) ? File.ReadAllText(_path) : null;
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
-                return;
+                // Often the writer still holds the file; try again shortly.
+                Schedule();
+                return null;
             }
 
             if (text is null || text == _lastWrittenJson)
             {
-                return;
+                return null;
             }
 
             T? parsed;
@@ -147,17 +192,17 @@ public sealed partial class JsonFileStore<T> : IDisposable
             catch (JsonException ex)
             {
                 LogInvalidExternalEdit(ex, Path.GetFileName(_path));
-                return;
+                return null;
             }
 
             if (parsed is null)
             {
-                return;
+                return null;
             }
 
             _lastWrittenJson = text;
             Volatile.Write(ref _current, parsed);
-            ExternalChange?.Invoke(this, new ValueEventArgs<T>(parsed));
+            return parsed;
         }
         finally
         {
@@ -167,6 +212,9 @@ public sealed partial class JsonFileStore<T> : IDisposable
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not read {File}; keeping the previous value.")]
     private partial void LogReadFailed(Exception ex, string file);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "A change handler for {File} threw.")]
+    private partial void LogHandlerFailed(Exception ex, string file);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "External edit of {File} is not valid JSON; ignoring it.")]
     private partial void LogInvalidExternalEdit(Exception ex, string file);

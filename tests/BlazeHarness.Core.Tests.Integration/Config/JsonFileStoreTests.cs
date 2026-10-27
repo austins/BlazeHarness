@@ -56,6 +56,57 @@ public sealed class JsonFileStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task OnExternalChange_HandlerThrows_IsLoggedAndDoesNotEscape()
+    {
+        // Arrange
+        var logger = new LoggerFake<JsonFileStoreTests>();
+        using var sut = new JsonFileStore<Doc>(Path.Combine(_dir, "handler.json"), logger, watch: false);
+        sut.ExternalChange += (_, _) => throw new InvalidOperationException("boom");
+        await File.WriteAllTextAsync(Path.Combine(_dir, "handler.json"), """{"count": 5}""", TestContext.Current.CancellationToken);
+
+        // Act
+        var act = sut.OnExternalChange;
+
+        // Assert
+        act.Should().NotThrow();
+        sut.Current.Count.Should().Be(5);
+        logger.Entries.Should().ContainSingle(e => e.LogLevel == LogLevel.Error);
+    }
+
+    [Fact]
+    public async Task OnExternalChange_HandlerUpdatesTheStore_DoesNotDeadlock()
+    {
+        // Arrange
+        using var sut = new JsonFileStore<Doc>(Path.Combine(_dir, "reenter.json"), new LoggerFake<JsonFileStoreTests>(), watch: false);
+#pragma warning disable VSTHRD002 // The event handler is synchronous.
+        sut.ExternalChange += (_, e) => sut.UpdateAsync(d => d with { Count = e.Value.Count + 1 }).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
+        await File.WriteAllTextAsync(Path.Combine(_dir, "reenter.json"), """{"count": 5}""", TestContext.Current.CancellationToken);
+
+        // Act
+        await Task.Run(sut.OnExternalChange, TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        // Assert
+        sut.Current.Count.Should().Be(6);
+    }
+
+    [Fact]
+    public void OnExternalChange_AfterDispose_DoesNotThrow()
+    {
+        // Arrange
+        var sut = new JsonFileStore<Doc>(Path.Combine(_dir, "gone.json"), new LoggerFake<JsonFileStoreTests>(), watch: false);
+#pragma warning disable IDISP016, IDISP017 // Raising the callback after disposal is the scenario.
+        sut.Dispose();
+
+        // Act
+        var act = sut.OnExternalChange;
+#pragma warning restore IDISP016, IDISP017
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact]
     public void Constructor_InvalidJson_FallsBackToDefault()
     {
         // Arrange

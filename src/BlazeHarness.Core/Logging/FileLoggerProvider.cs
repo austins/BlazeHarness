@@ -10,7 +10,8 @@ namespace BlazeHarness.Core.Logging;
 /// <remarks>
 /// A day's file stops growing at <see cref="MaxFileBytes"/> and files older than <see cref="RetainedDays"/> days are deleted,
 /// so the logs can't fill the disk. A failure to write is ignored, because logging must never break the app.
-/// Callers must log identifiers and counts, never the text of messages or files.
+/// Callers must log identifiers and counts, never the text of messages or files; an exception is written as its type,
+/// HTTP status and stack trace, never its message, which can echo what was sent or received.
 /// </remarks>
 public sealed class FileLoggerProvider : ILoggerProvider
 {
@@ -35,11 +36,17 @@ public sealed class FileLoggerProvider : ILoggerProvider
     public const int RetainedDays = 7;
 
     private const string DateFormat = "yyyyMMdd";
+    private const string TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss.fff'Z'";
+
+    private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
 
     private readonly string _directory;
     private readonly TimeProvider _time;
-    private readonly object _gate = new();
-    private DateOnly _preparedFor;
+    private readonly Lock _gate = new();
+    private FileStream? _stream;
+    private DateOnly _streamDay;
+    private long _size;
+    private bool _full;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FileLoggerProvider"/> class.
@@ -73,20 +80,20 @@ public sealed class FileLoggerProvider : ILoggerProvider
     /// <inheritdoc />
     public void Dispose()
     {
+        lock (_gate)
+        {
+            CloseStream();
+        }
     }
 
     internal void Write(LogLevel level, string category, string message, Exception? exception)
     {
         var now = _time.GetUtcNow();
-        var entry = new StringBuilder()
-            .Append(now.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture))
-            .Append(' ').Append(Abbreviation(level))
-            .Append(' ').Append(category)
-            .Append(' ').Append(message)
-            .Append('\n');
+        var entry = new StringBuilder();
+        AppendLine(entry, now, Abbreviation(level), category, message);
         if (exception is not null)
         {
-            entry.Append(exception).Append('\n');
+            AppendException(entry, exception);
         }
 
         var today = DateOnly.FromDateTime(now.UtcDateTime);
@@ -94,19 +101,59 @@ public sealed class FileLoggerProvider : ILoggerProvider
         {
             lock (_gate)
             {
-                Prepare(today);
-                var path = Path.Combine(_directory, FileNameOf(today));
-                if (File.Exists(path) && new FileInfo(path).Length >= MaxFileBytes)
+                if (_stream is null || _streamDay != today)
+                {
+                    OpenStream(today);
+                }
+
+                if (_full)
                 {
                     return;
                 }
 
-                File.AppendAllText(path, entry.ToString());
+                Append(entry.ToString());
+
+                // One marker, so a day with missing entries is not mistaken for a quiet one.
+                if (_size >= MaxFileBytes)
+                {
+                    _full = true;
+                    var marker = new StringBuilder();
+                    AppendLine(marker, now, Abbreviation(LogLevel.Warning), nameof(FileLoggerProvider), "Log file is full; later entries of this day are dropped.");
+                    Append(marker.ToString());
+                }
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // Logging must not break the app, and there is nowhere else to report this.
+            // Logging must not break the app, and there is nowhere else to report this. The next entry opens the file again.
+            CloseStream();
+        }
+    }
+
+    private static void AppendLine(StringBuilder entry, DateTimeOffset now, string level, string category, string message)
+    {
+        entry.Append(now.ToString(TimestampFormat, CultureInfo.InvariantCulture))
+            .Append(' ').Append(level)
+            .Append(' ').Append(category)
+            .Append(' ').Append(message)
+            .Append('\n');
+    }
+
+    private static void AppendException(StringBuilder entry, Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            entry.Append(current.GetType().FullName);
+            if (current is HttpRequestException { StatusCode: { } status })
+            {
+                entry.Append(" (HTTP ").Append((int)status).Append(')');
+            }
+
+            entry.Append('\n');
+            if (current.StackTrace is { } trace)
+            {
+                entry.Append(trace).Append('\n');
+            }
         }
     }
 
@@ -120,14 +167,11 @@ public sealed class FileLoggerProvider : ILoggerProvider
         _ => "CRT",
     };
 
-    // Runs on the first entry of each day: makes the folder and deletes files past the retention.
-    private void Prepare(DateOnly today)
+    // Runs on the first entry of each day: makes the folder, deletes files past the retention and opens the day's file.
+    private void OpenStream(DateOnly today)
     {
-        if (_preparedFor == today && Directory.Exists(_directory))
-        {
-            return;
-        }
-
+        _stream?.Dispose();
+        _stream = null;
         Directory.CreateDirectory(_directory);
         var oldest = today.AddDays(1 - RetainedDays);
         foreach (var file in Directory.EnumerateFiles(_directory, FilePrefix + "*" + FileExtension))
@@ -146,7 +190,30 @@ public sealed class FileLoggerProvider : ILoggerProvider
             }
         }
 
-        _preparedFor = today;
+        _stream = new FileStream(
+            Path.Combine(_directory, FileNameOf(today)),
+            FileMode.Append,
+            FileAccess.Write,
+            FileShare.ReadWrite | FileShare.Delete);
+        _streamDay = today;
+        _size = _stream.Length;
+
+        // A file that was already full got its marker before.
+        _full = _size >= MaxFileBytes;
+    }
+
+    private void Append(string text)
+    {
+        var bytes = Utf8WithoutBom.GetBytes(text);
+        _stream!.Write(bytes);
+        _stream.Flush();
+        _size += bytes.Length;
+    }
+
+    private void CloseStream()
+    {
+        _stream?.Dispose();
+        _stream = null;
     }
 
     private sealed class FileLogger(FileLoggerProvider provider, string category) : ILogger

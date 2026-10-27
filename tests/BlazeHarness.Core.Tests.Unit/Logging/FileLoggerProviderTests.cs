@@ -33,18 +33,18 @@ public sealed class FileLoggerProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task Log_Exception_WritesItAfterTheMessage()
+    public async Task Log_Exception_WritesItsTypeButNotItsMessage()
     {
         // Arrange
         using var sut = new FileLoggerProvider(_directory, _time);
         var logger = sut.CreateLogger("C");
 
         // Act
-        Write(logger, LogLevel.Error, "Failed", new InvalidOperationException("boom"));
+        Write(logger, LogLevel.Error, "Failed", new InvalidOperationException("secret prompt text"));
 
         // Assert
         var text = await File.ReadAllTextAsync(Path.Combine(_directory, "blazeharness-20260310.log"), TestContext.Current.CancellationToken);
-        text.Should().StartWith("2026-03-10T08:30:15.123Z ERR C Failed\nSystem.InvalidOperationException: boom");
+        text.Should().StartWith("2026-03-10T08:30:15.123Z ERR C Failed\nSystem.InvalidOperationException\n").And.NotContain("secret prompt text");
     }
 
     [Fact]
@@ -116,6 +116,39 @@ public sealed class FileLoggerProviderTests : IDisposable
 
         // Assert
         new FileInfo(path).Length.Should().Be(FileLoggerProvider.MaxFileBytes);
+    }
+
+    [Fact]
+    public async Task Log_ExceptionWithStatusCode_WritesTheStatusAndInnerType()
+    {
+        // Arrange
+        using var sut = new FileLoggerProvider(_directory, _time);
+        var failure = new InvalidOperationException("outer", new HttpRequestException("echoed body", null, System.Net.HttpStatusCode.TooManyRequests));
+
+        // Act
+        Write(sut.CreateLogger("C"), LogLevel.Error, "Failed", failure);
+
+        // Assert
+        var text = await File.ReadAllTextAsync(Path.Combine(_directory, "blazeharness-20260310.log"), TestContext.Current.CancellationToken);
+        text.Should().Contain("System.Net.Http.HttpRequestException (HTTP 429)").And.NotContain("echoed body");
+    }
+
+    [Fact]
+    public async Task Log_EntryFillsTheFile_WritesOneFullMarkerAndDropsTheRest()
+    {
+        // Arrange
+        using var sut = new FileLoggerProvider(_directory, _time);
+        var logger = sut.CreateLogger("C");
+
+        // Act
+        Write(logger, LogLevel.Information, new string('x', (int)FileLoggerProvider.MaxFileBytes));
+        Write(logger, LogLevel.Error, "dropped one");
+        Write(logger, LogLevel.Error, "dropped two");
+
+        // Assert
+        var text = await File.ReadAllTextAsync(Path.Combine(_directory, "blazeharness-20260310.log"), TestContext.Current.CancellationToken);
+        text.Should().NotContain("dropped one").And.NotContain("dropped two");
+        text.Split('\n', StringSplitOptions.RemoveEmptyEntries).Count(line => line.Contains("Log file is full", StringComparison.Ordinal)).Should().Be(1);
     }
 
     [Fact]
