@@ -82,7 +82,7 @@ public sealed class ToolSetTests : IDisposable
     public async Task ExecuteAsync_IoFailure_BecomesAnErrorResult()
     {
         // Arrange
-        var sut = new ToolSet([new ThrowingTool(new IOException("disk on fire"))], _workspace.Context);
+        var sut = new ToolSet([Tool(TimeSpan.FromSeconds(5), _ => throw new IOException("disk on fire"))], _workspace.Context);
 
         // Act
         var result = await sut.ExecuteAsync(sut.Tools[0], "{}", TestContext.Current.CancellationToken);
@@ -95,7 +95,7 @@ public sealed class ToolSetTests : IDisposable
     public async Task ExecuteAsync_ToolRunsTooLong_IsStoppedWithATimeoutResult()
     {
         // Arrange
-        var sut = new ToolSet([new HangingTool(TimeSpan.FromMilliseconds(50))], _workspace.Context);
+        var sut = new ToolSet([Hanging(TimeSpan.FromMilliseconds(50))], _workspace.Context);
 
         // Act
         var result = await sut.ExecuteAsync(sut.Tools[0], "{}", TestContext.Current.CancellationToken);
@@ -109,7 +109,7 @@ public sealed class ToolSetTests : IDisposable
     public async Task ExecuteAsync_CallerCancels_Throws()
     {
         // Arrange
-        var sut = new ToolSet([new HangingTool(TimeSpan.FromMinutes(1))], _workspace.Context);
+        var sut = new ToolSet([Hanging(TimeSpan.FromMinutes(1))], _workspace.Context);
         var cancelled = new CancellationToken(canceled: true);
 
         // Act
@@ -123,7 +123,7 @@ public sealed class ToolSetTests : IDisposable
     public async Task ExecuteAsync_HugeOutput_IsLimited()
     {
         // Arrange
-        var sut = new ToolSet([new ThrowingTool(null, new string('x', ToolSet.MaxOutputCharacters * 2))], _workspace.Context);
+        var sut = new ToolSet([Tool(TimeSpan.FromSeconds(5), _ => Task.FromResult(ToolResult.Ok(new string('x', ToolSet.MaxOutputCharacters * 2))))], _workspace.Context);
 
         // Act
         var result = await sut.ExecuteAsync(sut.Tools[0], "{}", TestContext.Current.CancellationToken);
@@ -152,39 +152,25 @@ public sealed class ToolSetTests : IDisposable
         result.Should().Be("src/a.cs");
     }
 
-    private abstract class FakeTool : ITool
+    private static ITool Tool(TimeSpan timeout, Func<CancellationToken, Task<ToolResult>> run)
     {
-        public string Name => "fake";
-
-        public string Description => "A fake tool.";
-
-        public string InputSchema => """{"type":"object"}""";
-
-        public bool IsReadOnly => true;
-
-        public virtual TimeSpan Timeout => TimeSpan.FromSeconds(5);
-
-        public string Summarize(JsonElement arguments) => string.Empty;
-
-        public abstract Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken);
+        var tool = Substitute.For<ITool>();
+        tool.Name.Returns("fake");
+        tool.Description.Returns("A fake tool.");
+        tool.InputSchema.Returns("""{"type":"object"}""");
+        tool.IsReadOnly.Returns(true);
+        tool.Timeout.Returns(timeout);
+        tool.Summarize(Arg.Any<JsonElement>()).Returns(string.Empty);
+        tool.ExecuteAsync(Arg.Any<ToolArguments>(), Arg.Any<ToolContext>(), Arg.Any<CancellationToken>()).Returns(call => run(call.Arg<CancellationToken>()));
+        return tool;
     }
 
-    private sealed class ThrowingTool(Exception? exception, string output = "") : FakeTool
+    private static ITool Hanging(TimeSpan timeout)
     {
-        public override Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)
+        return Tool(timeout, async token =>
         {
-            return exception is null ? Task.FromResult(ToolResult.Ok(output)) : throw exception;
-        }
-    }
-
-    private sealed class HangingTool(TimeSpan timeout) : FakeTool
-    {
-        public override TimeSpan Timeout => timeout;
-
-        public override async Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)
-        {
-            await Task.Delay(TimeSpan.FromMinutes(5), cancellationToken);
+            await Task.Delay(TimeSpan.FromMinutes(5), token);
             return ToolResult.Ok("never");
-        }
+        });
     }
 }

@@ -67,7 +67,7 @@ public sealed class ChatRunnerToolTests
         // Arrange
         var read = new FakeTool("read", isReadOnly: true);
         var write = new FakeTool("write", isReadOnly: false);
-        var approver = new FakeApprover(allow: true);
+        var approver = Approver(ApprovalChoice.AllowOnce);
         using var client = new ScriptedChatClient(
                 [ScriptedChatClient.Call("c1", "read"), ScriptedChatClient.Call("c2", "write"), ScriptedChatClient.Call("c3", "read")])
             .Enqueue([ScriptedChatClient.Text("fin")]);
@@ -77,7 +77,8 @@ public sealed class ChatRunnerToolTests
         var events = await Collect(client, history, Tools(read, write), approver, TestContext.Current.CancellationToken);
 
         // Assert
-        approver.Asked.Should().Equal("write");
+        await approver.Received(1).RequestAsync(Arg.Any<ApprovalRequest>(), Arg.Any<CancellationToken>());
+        await approver.Received(1).RequestAsync(Arg.Is<ApprovalRequest>(r => r.ToolName == "write"), Arg.Any<CancellationToken>());
         events.OfType<ToolCallFinished>().Select(e => e.CallId).Should().Equal("c1", "c2", "c3");
         events.OfType<ToolAwaitingApproval>().Should().ContainSingle().Which.CallId.Should().Be("c2");
         events.Should().ContainInOrder(events.OfType<ToolAwaitingApproval>().Single(), new ToolCallRunning("c2"));
@@ -94,7 +95,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(write), new FakeApprover(allow: false), TestContext.Current.CancellationToken);
+        var events = await Collect(client, history, Tools(write), Approver(ApprovalChoice.Deny), TestContext.Current.CancellationToken);
 
         // Assert
         write.Started.Should().Be(0);
@@ -206,7 +207,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(read, write), new FakeApprover(allow: true), cts.Token);
+        var events = await Collect(client, history, Tools(read, write), Approver(ApprovalChoice.AllowOnce), cts.Token);
 
         // Assert
         events.OfType<ToolCallFinished>().Select(e => (e.CallId, e.Status)).Should().Equal(
@@ -223,7 +224,7 @@ public sealed class ChatRunnerToolTests
     {
         // Arrange
         var write = new FakeTool("write", isReadOnly: false);
-        var approver = new FakeApprover(allow: true);
+        var approver = Approver(ApprovalChoice.AllowOnce);
         var permissions = new PermissionEngine { Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst) };
         using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
             .Enqueue([ScriptedChatClient.Text("fin")]);
@@ -234,7 +235,7 @@ public sealed class ChatRunnerToolTests
 
         // Assert
         write.Started.Should().Be(0);
-        approver.Asked.Should().BeEmpty();
+        await approver.DidNotReceive().RequestAsync(Arg.Any<ApprovalRequest>(), Arg.Any<CancellationToken>());
         events.OfType<ToolCallFinished>().Single().Status.Should().Be(ToolCallStatus.Denied);
         history[2].Contents.OfType<FunctionResultContent>().Single().Result!.ToString().Should().Contain("Read only");
     }
@@ -244,7 +245,7 @@ public sealed class ChatRunnerToolTests
     {
         // Arrange
         var write = new FakeTool("write", isReadOnly: false);
-        var approver = new FakeApprover(allow: false);
+        var approver = Approver(ApprovalChoice.Deny);
         var permissions = new PermissionEngine { Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.AutoApprove) };
         using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
             .Enqueue([ScriptedChatClient.Text("fin")]);
@@ -254,7 +255,7 @@ public sealed class ChatRunnerToolTests
 
         // Assert
         write.Started.Should().Be(1);
-        approver.Asked.Should().BeEmpty();
+        await approver.DidNotReceive().RequestAsync(Arg.Any<ApprovalRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -262,7 +263,7 @@ public sealed class ChatRunnerToolTests
     {
         // Arrange
         var write = new FakeTool("write", isReadOnly: false);
-        var approver = new FakeApprover(_ => Task.FromResult(ApprovalChoice.AllowForSession));
+        var approver = Approver(ApprovalChoice.AllowForSession);
         using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
             .Enqueue([ScriptedChatClient.Call("c2", "write")])
             .Enqueue([ScriptedChatClient.Text("fin")]);
@@ -272,7 +273,8 @@ public sealed class ChatRunnerToolTests
 
         // Assert
         write.Started.Should().Be(2);
-        approver.Requests.Should().ContainSingle().Which.CanRemember.Should().BeTrue();
+        await approver.Received(1).RequestAsync(Arg.Is<ApprovalRequest>(r => r.CanRemember), Arg.Any<CancellationToken>());
+        await approver.Received(1).RequestAsync(Arg.Any<ApprovalRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -280,7 +282,7 @@ public sealed class ChatRunnerToolTests
     {
         // Arrange
         var write = new FakeTool("write", isReadOnly: false);
-        var approver = new FakeApprover(allow: true);
+        var approver = Approver(ApprovalChoice.AllowOnce);
         using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
             .Enqueue([ScriptedChatClient.Call("c2", "write")])
             .Enqueue([ScriptedChatClient.Text("fin")]);
@@ -289,7 +291,7 @@ public sealed class ChatRunnerToolTests
         await Collect(client, NewHistory(), Tools(write), approver, TestContext.Current.CancellationToken);
 
         // Assert
-        approver.Asked.Should().Equal("write", "write");
+        await approver.Received(2).RequestAsync(Arg.Is<ApprovalRequest>(r => r.ToolName == "write"), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -301,7 +303,7 @@ public sealed class ChatRunnerToolTests
             .Enqueue([ScriptedChatClient.Text("fin")]);
 
         // Act
-        var events = await Collect(client, NewHistory(), Tools(write), new FakeApprover(allow: true), TestContext.Current.CancellationToken);
+        var events = await Collect(client, NewHistory(), Tools(write), Approver(ApprovalChoice.AllowOnce), TestContext.Current.CancellationToken);
 
         // Assert
         var awaiting = events.OfType<ToolAwaitingApproval>().Single();
@@ -315,7 +317,8 @@ public sealed class ChatRunnerToolTests
         // Arrange
         using var cts = new CancellationTokenSource();
         var write = new FakeTool("write", isReadOnly: false);
-        var approver = new FakeApprover(async _ =>
+        var approver = Substitute.For<IToolApprover>();
+        approver.RequestAsync(Arg.Any<ApprovalRequest>(), Arg.Any<CancellationToken>()).Returns(async _ =>
         {
             await cts.CancelAsync();
             await Task.Delay(TimeSpan.FromSeconds(10), cts.Token);
@@ -353,6 +356,13 @@ public sealed class ChatRunnerToolTests
         history.Should().HaveCount(2);
         history[1].Contents.OfType<FunctionCallContent>().Should().BeEmpty();
         history[1].Text.Should().Be("part");
+    }
+
+    private static IToolApprover Approver(ApprovalChoice choice)
+    {
+        var approver = Substitute.For<IToolApprover>();
+        approver.RequestAsync(Arg.Any<ApprovalRequest>(), Arg.Any<CancellationToken>()).Returns(choice);
+        return approver;
     }
 
     private static List<ChatMessage> NewHistory() => [new(ChatRole.User, "hi")];

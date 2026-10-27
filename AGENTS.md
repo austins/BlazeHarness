@@ -39,4 +39,8 @@
 - xUnit v3 on Microsoft.Testing.Platform, NSubstitute, AwesomeAssertions (`.Should()`).
 - `Method_Scenario_Expected` names, `// Arrange` / `// Act` / `// Assert`, class under test in `_sut`.
 - Helpers used by more than one test project go in `tests/BlazeHarness.Tests.Shared` (`LoggerFake<T>`, `ScriptedChatClient`). Parallelism is set per project in its `AssemblyInfo.cs`: unit projects run all tests in parallel, the integration project uses the default.
+- Mocks and fakes:
+  - Use NSubstitute for an interface where a test needs a canned answer, a thrown exception, or a check that a call was or wasn't made (an approver that says yes, a tool that throws or hangs).
+  - Write a hand-made fake when it needs state or logic of its own: replaying a script of streamed responses (`ScriptedChatClient`), measuring concurrency (`FakeTool`), keeping events in memory (`RecordingSessionLog`), or recording log entries (`LoggerFake<T>`). A fake used by more than one test class should stay a real class so its behavior is written once.
+  - Prefer the real class when it is cheap and deterministic (temp folders, `FakeTimeProvider`, the real file tools) over either.
 - Use `LoggerFake<T>` for loggers, and pass `TestContext.Current.CancellationToken` to async calls.
