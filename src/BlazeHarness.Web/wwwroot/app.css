@@ -414,6 +414,10 @@ details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600
 .msg[data-status="streaming"] > .msg-body:last-of-type:not(.md)::after, .msg[data-status="streaming"] > .md:last-of-type > :last-child::after { content: "▍"; color: var(--fg-muted); }
 .msg-thinking { color: var(--fg-muted); font-size: var(--text-sm); border-inline-start: 2px solid var(--border); padding-inline-start: var(--space-3); }
 
+.compaction { align-self: stretch; border-block: 1px dashed var(--border-strong); padding-block: var(--space-2); font-size: var(--text-sm); color: var(--fg-muted); }
+.compaction > summary { cursor: pointer; text-align: center; }
+.compaction-body { margin-block-start: var(--space-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+
 .tool { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-subtle); font-size: var(--text-sm); min-width: 0; }
 .tool[data-status="awaitingapproval"] { border-color: var(--accent); }
 .tool[data-status="failed"], .tool[data-status="denied"] { border-color: var(--danger); }
@@ -437,6 +441,9 @@ details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600
 .composer-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .composer-bar .select { width: auto; max-width: 14rem; }
 .composer-spacer { flex: 1; }
+.context { font-size: var(--text-xs); color: var(--fg-muted); white-space: nowrap; }
+.context[data-level="high"] { color: var(--accent); }
+.context[data-level="full"] { color: var(--danger); font-weight: 600; }
 .composer-empty { flex-direction: row; align-items: center; justify-content: center; }
 
 /* Markdown in assistant messages */

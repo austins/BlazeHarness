@@ -1,6 +1,7 @@
 @inject ProviderService Providers
 @inject IJSRuntime JS
 @using BlazeHarness.Core.Attachments
+@using BlazeHarness.Core.Compaction
 
 @if (_models.Count == 0)
 {
@@ -68,6 +69,14 @@ else
                 </select>
             }
             <span class="composer-spacer"></span>
+            @if (CurrentTarget() is { } current && ContextOf?.Invoke(current) is { } context)
+            {
+                <ContextIndicator Status="context" />
+            }
+            @if (CanCompact && !Running && Editing is null)
+            {
+                <button type="button" class="btn" title="Replace older messages with a summary" @onclick="CompactAsync"><Icon Name="compress" /> Compact</button>
+            }
             @if (CanRetry && Editing is null)
             {
                 <button type="button" class="btn" @onclick="RetryAsync"><Icon Name="retry" /> Retry</button>
@@ -131,6 +140,24 @@ else
     /// </summary>
     [Parameter]
     public bool CanRetry { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the conversation can be compacted now.
+    /// </summary>
+    [Parameter]
+    public bool CanCompact { get; set; }
+
+    /// <summary>
+    /// Gets or sets the function that tells how full the context is for the chosen model, or null when there is no chat yet.
+    /// </summary>
+    [Parameter]
+    public Func<ChatTarget, ContextStatus>? ContextOf { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback to compact the conversation with the chosen target.
+    /// </summary>
+    [Parameter]
+    public EventCallback<ChatTarget> OnCompact { get; set; }
 
     /// <summary>
     /// Gets or sets the message being edited, whose text fills the box until it is sent or the edit is cancelled, or null.
@@ -337,6 +364,14 @@ else
     private async Task CancelEditAsync()
     {
         await OnCancelEdit.InvokeAsync();
+    }
+
+    private async Task CompactAsync()
+    {
+        if (CurrentTarget() is { } target)
+        {
+            await OnCompact.InvokeAsync(target);
+        }
     }
 
     private async Task RetryAsync()

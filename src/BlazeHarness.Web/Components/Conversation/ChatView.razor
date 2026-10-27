@@ -7,6 +7,7 @@
 @inject NavigationManager Navigation
 @inject TimeProvider Time
 @inject IJSRuntime JS
+@inject ToastService Toasts
 @using BlazeHarness.Core.Attachments
 
 @if (_missing)
@@ -89,6 +90,12 @@ else
                 }
                 @foreach (var entry in _entries)
                 {
+                    if (entry.Compaction is { } compaction)
+                    {
+                        <CompactionMarker @key="entry.Id" Info="compaction" />
+                        continue;
+                    }
+
                     var showLabel = entry.Role == ChatRole.Assistant && entry.Label != previousLabel;
                     if (entry.Role == ChatRole.Assistant)
                     {
@@ -104,7 +111,7 @@ else
 
         @if (!_loading)
         {
-            <Composer SessionId="@SessionId" Remembered="_info" Running="_session?.IsRunning ?? false" CanRetry="_session?.CanRetry ?? false" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnStop="Stop" />
+            <Composer SessionId="@SessionId" Remembered="_info" Running="_session?.IsRunning ?? false" CanRetry="_session?.CanRetry ?? false" CanCompact="_session?.CanCompact ?? false" ContextOf="_session is null ? null : _session.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop" />
         }
 
         <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
@@ -351,6 +358,26 @@ else
         {
             await FollowAsync();
             await Sessions.RetryAsync(id, target);
+        }
+    }
+
+    private async Task CompactAsync(ChatTarget target)
+    {
+        if (_openId is not { } id)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!await Sessions.CompactAsync(id, target))
+            {
+                Toasts.Show("There is not enough earlier conversation to summarize.", ToastKind.Info);
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            Toasts.Show($"The conversation could not be summarized: {ex.Message}", ToastKind.Error);
         }
     }
 

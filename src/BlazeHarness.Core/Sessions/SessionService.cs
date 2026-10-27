@@ -282,6 +282,25 @@ public sealed partial class SessionService : IDisposable
     }
 
     /// <summary>
+    /// Replace the older messages of a session with a summary.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="target">The model that writes the summary.</param>
+    /// <returns>True when the session was compacted; false when it is unknown, busy, has nothing older to summarize, or was stopped.</returns>
+    /// <exception cref="InvalidOperationException">The model could not write the summary.</exception>
+    public async Task<bool> CompactAsync(string id, ChatTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        if (await OpenAsync(id).ConfigureAwait(false) is not { CanCompact: true } session)
+        {
+            return false;
+        }
+
+        await ApplyFolderAsync(id, session).ConfigureAwait(false);
+        return await session.CompactAsync(target).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Stop the reply a session is producing, if any.
     /// </summary>
     /// <param name="id">The session id.</param>

@@ -72,7 +72,7 @@ public sealed partial class ChatSession
     /// The older messages stay in the conversation and in the log, with a marker where the summary begins to stand in for them.
     /// </remarks>
     /// <param name="target">The model that writes the summary.</param>
-    /// <returns>True when the conversation was compacted; false when a reply is running or there is nothing older to summarize.</returns>
+    /// <returns>True when the conversation was compacted; false when a reply is running, there is nothing older to summarize, or it was stopped.</returns>
     /// <exception cref="InvalidOperationException">The model could not write the summary.</exception>
     public async Task<bool> CompactAsync(ChatTarget target)
     {
@@ -104,6 +104,10 @@ public sealed partial class ChatSession
             }
 
             return await ApplyCompactionAsync(result);
+        }
+        catch (OperationCanceledException) when (run.IsCancellationRequested)
+        {
+            return false;
         }
         finally
         {

@@ -1,0 +1,14 @@
+@using BlazeHarness.Core.Compaction
+
+<details class="compaction">
+    <summary>@($"Earlier messages were summarized to save space ({TokenFormat.Of(Info.TokensBefore)} → {TokenFormat.Of(Info.TokensAfter)} tokens)")</summary>
+    <div class="compaction-body">@Info.Summary</div>
+</details>
+
+@code {
+    /// <summary>
+    /// Gets or sets the summary that stands in for the messages above it.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public CompactionInfo Info { get; set; } = null!;
+}
