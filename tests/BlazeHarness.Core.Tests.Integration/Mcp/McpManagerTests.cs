@@ -1,4 +1,7 @@
+using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Mcp;
+using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.Time.Testing;
 
@@ -14,13 +17,17 @@ public sealed class McpManagerTests : IAsyncLifetime
     private readonly Dictionary<string, string> _environment = [];
     private readonly CancellationTokenSource _cancel = new();
     private readonly McpConfigFile _file;
+    private readonly JsonFileStore<AppConfig> _appConfig;
+    private readonly PermissionDefaults _permissions;
     private readonly McpManager _sut;
 
     public McpManagerTests()
     {
         Directory.CreateDirectory(_dir);
         _file = new McpConfigFile(Path.Combine(_dir, "mcp.json"), new LoggerFake<McpConfigFile>(), watch: false);
-        _sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, TimeSpan.FromSeconds(10));
+        _appConfig = new JsonFileStore<AppConfig>(Path.Combine(_dir, "config.json"), new LoggerFake<McpManagerTests>(), watch: false);
+        _permissions = new PermissionDefaults(_appConfig, new AppPaths(Path.Combine(_dir, "app"), _dir));
+        _sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, TimeSpan.FromSeconds(10), _permissions);
     }
 
     public async ValueTask InitializeAsync() => await _file.SaveAsync(Two, TestContext.Current.CancellationToken);
@@ -30,6 +37,7 @@ public sealed class McpManagerTests : IAsyncLifetime
         _cancel.Dispose();
         await _sut.DisposeAsync();
         _file.Dispose();
+        _appConfig.Dispose();
         Directory.Delete(_dir, recursive: true);
     }
 
@@ -270,6 +278,37 @@ public sealed class McpManagerTests : IAsyncLifetime
         await alpha.DidNotReceive().DisposeAsync();
         _sut.Statuses().Single(s => s.Config.Name == "alpha").State.Should().Be(McpServerState.Connected);
         _sut.Statuses().Single(s => s.Config.Name == "beta").State.Should().Be(McpServerState.Stopped);
+    }
+
+    [Fact]
+    public async Task ConfigChange_TrustedServerChanged_WithdrawsTrustOnlyForThatServer()
+    {
+        // Arrange
+        await _permissions.SetMcpServerTrustedAsync("alpha", trusted: true, TestContext.Current.CancellationToken);
+        await _permissions.SetMcpServerTrustedAsync("beta", trusted: true, TestContext.Current.CancellationToken);
+        _ = _sut.Statuses();
+
+        // Act
+        await _file.SaveAsync("""{"mcpServers": {"alpha": {"command": "a"}, "beta": {"command": "other"}}}""", TestContext.Current.CancellationToken);
+        await _sut.ReconcileAsync();
+
+        // Assert
+        _permissions.TrustedMcpServers.Should().Equal("alpha");
+    }
+
+    [Fact]
+    public async Task ConfigChange_OnlyTheDisabledFlag_KeepsTrust()
+    {
+        // Arrange
+        await _permissions.SetMcpServerTrustedAsync("alpha", trusted: true, TestContext.Current.CancellationToken);
+        _ = _sut.Statuses();
+
+        // Act
+        await _file.SaveAsync("""{"mcpServers": {"alpha": {"command": "a", "disabled": true}, "beta": {"command": "b"}}}""", TestContext.Current.CancellationToken);
+        await _sut.ReconcileAsync();
+
+        // Assert
+        _permissions.TrustedMcpServers.Should().Equal("alpha");
     }
 
     [Fact]

@@ -53,6 +53,22 @@ public sealed class McpSecretsTests
         found.Should().HaveCount(flagged ? 1 : 0);
     }
 
+    [Theory]
+    [InlineData("http://example.test/mcp", "header Authorization (sent over plain http)")]
+    [InlineData("https://example.test/mcp", "header Authorization")]
+    [InlineData("http://localhost:3000/mcp", "header Authorization")]
+    public void LiteralsIn_SecretHeader_IsNotedWhenItGoesOverPlainHttpToAnotherMachine(string url, string expected)
+    {
+        // Arrange
+        var server = Remote(url, new Dictionary<string, string> { ["Authorization"] = "Bearer abc" });
+
+        // Act
+        var found = McpSecrets.LiteralsIn(server);
+
+        // Assert
+        found.Should().Equal(expected);
+    }
+
     [Fact]
     public void LiteralsIn_NeverIncludesTheValue()
     {

@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
@@ -21,9 +22,11 @@ public sealed partial class McpManager : IAsyncDisposable
     private readonly Func<string, string?> _environment;
     private readonly TimeProvider _time;
     private readonly TimeSpan _connectTimeout;
+    private readonly PermissionDefaults? _permissions;
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _reconcile = new(1, 1);
+    private Dictionary<string, McpServerConfig> _known;
     private bool _disposed;
 
     /// <summary>
@@ -35,13 +38,15 @@ public sealed partial class McpManager : IAsyncDisposable
     /// <param name="environment">Looks up the variables that <c>${NAME}</c> references name; defaults to the process environment.</param>
     /// <param name="time">The clock, used to decide when to retry a failed server; defaults to the system clock.</param>
     /// <param name="connectTimeout">How long a server may take to start; defaults to one minute, which leaves room for a first download.</param>
+    /// <param name="permissions">Where trust in a server is kept, so it can be withdrawn when the server's settings change; when null, trust is left alone.</param>
     public McpManager(
         McpConfigFile config,
         IMcpConnector connector,
         ILogger<McpManager> log,
         Func<string, string?>? environment = null,
         TimeProvider? time = null,
-        TimeSpan? connectTimeout = null)
+        TimeSpan? connectTimeout = null,
+        PermissionDefaults? permissions = null)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(connector);
@@ -52,6 +57,8 @@ public sealed partial class McpManager : IAsyncDisposable
         _environment = environment ?? Environment.GetEnvironmentVariable;
         _time = time ?? TimeProvider.System;
         _connectTimeout = connectTimeout ?? TimeSpan.FromMinutes(1);
+        _permissions = permissions;
+        _known = _config.Parsed.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
         _config.Changed += OnConfigChanged;
     }
 
@@ -215,6 +222,12 @@ public sealed partial class McpManager : IAsyncDisposable
         try
         {
             var current = _config.Parsed.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
+            foreach (var (name, _) in _known.Where(p => !current.TryGetValue(p.Key, out var now) || !now.SameAs(p.Value)))
+            {
+                await WithdrawTrustAsync(name).ConfigureAwait(false);
+            }
+
+            _known = current;
             List<Entry> stale;
             lock (_gate)
             {
@@ -487,6 +500,15 @@ public sealed partial class McpManager : IAsyncDisposable
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             LogDisposeFailed(ex);
+        }
+    }
+
+    // Trust was given to what the server was when the user chose it, not to whatever the file says next.
+    private async Task WithdrawTrustAsync(string name)
+    {
+        if (_permissions?.IsMcpServerTrusted(name) == true)
+        {
+            await _permissions.SetMcpServerTrustedAsync(name, trusted: false).ConfigureAwait(false);
         }
     }
 

@@ -11,20 +11,27 @@ public static partial class McpSecrets
     /// List the settings of a server that hold a value that looks like a secret and is not a <c>${NAME}</c> reference.
     /// </summary>
     /// <param name="server">The server as written in the file.</param>
-    /// <returns>A label for each such setting, such as <c>env GITHUB_TOKEN</c>, <c>header Authorization</c> or <c>url</c>. The values are never included.</returns>
+    /// <returns>A label for each such setting, such as <c>env GITHUB_TOKEN</c>, <c>header Authorization</c> or <c>url</c>, with a note when it goes over plain http to another machine. The values are never included.</returns>
     public static IReadOnlyList<string> LiteralsIn(McpServerConfig server)
     {
         ArgumentNullException.ThrowIfNull(server);
 
+        var clearText = IsClearText(server.Url);
+        var suffix = clearText ? " (sent over plain http)" : string.Empty;
         List<string> found = [];
         found.AddRange(server.Env.Where(pair => LooksSecret(pair.Key, pair.Value)).Select(pair => "env " + pair.Key));
-        found.AddRange(server.Headers.Where(pair => LooksSecret(pair.Key, pair.Value)).Select(pair => "header " + pair.Key));
+        found.AddRange(server.Headers.Where(pair => LooksSecret(pair.Key, pair.Value)).Select(pair => "header " + pair.Key + suffix));
         if (server.Url is { } url && !url.Contains("${", StringComparison.Ordinal) && SecretInUrl().IsMatch(url))
         {
-            found.Add("url");
+            found.Add("url" + suffix);
         }
 
         return found;
+    }
+
+    private static bool IsClearText(string? url)
+    {
+        return Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttp && !uri.IsLoopback;
     }
 
     [GeneratedRegex(@"[?&](api[_-]?key|key|token|access_token|secret|password)=[^&]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]

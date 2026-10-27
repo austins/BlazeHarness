@@ -16,6 +16,9 @@ public sealed partial class SdkMcpConnector : IMcpConnector
 {
     private const int StderrLinesKept = 8;
 
+    // Shorter values would blank out ordinary words in the output.
+    private const int MinRedactedLength = 4;
+
     private readonly ILoggerFactory _loggers;
     private readonly ILogger _log;
 
@@ -54,9 +57,29 @@ public sealed partial class SdkMcpConnector : IMcpConnector
                 tail = string.Join('\n', errorLines);
             }
 
+            tail = Redact(tail, config);
             var message = tail.Length == 0 ? ex.Message : string.Create(CultureInfo.InvariantCulture, $"{ex.Message}\n{tail}");
             throw new McpConnectException(message, ex);
         }
+    }
+
+    /// <summary>
+    /// Hide the values of a server's settings in text it printed, since a server may echo its own secrets.
+    /// </summary>
+    /// <param name="text">The text from the server.</param>
+    /// <param name="config">The server whose environment and header values are hidden.</param>
+    /// <returns>The text with each such value replaced.</returns>
+    internal static string Redact(string text, McpServerConfig config)
+    {
+        foreach (var value in config.Env.Values.Concat(config.Headers.Values))
+        {
+            if (value.Length >= MinRedactedLength)
+            {
+                text = text.Replace(value, "***", StringComparison.Ordinal);
+            }
+        }
+
+        return text;
     }
 
     private static StdioClientTransport StdioTransport(McpServerConfig config, Queue<string> errorLines)
