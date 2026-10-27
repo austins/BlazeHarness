@@ -73,6 +73,22 @@ public sealed class ChatSessionSkillsTests
         client.Requests[1][0].Text.Should().Be(client.Requests[0][0].Text);
     }
 
+    [Fact]
+    public async Task SendAsync_OnlyHiddenSkills_OffersTheLoadToolButNeverListsThem()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        using var sut = Create(client, tools: true);
+        sut.Skills = new SkillSet([new SkillInfo("secret", "Hidden.", "/skills/secret", SkillSource.App, ModelInvocable: false)]);
+
+        // Act
+        await sut.SendAsync("/secret go", TestTargets.Create());
+
+        // Assert
+        client.Requests[0][0].Text.Should().Contain("/skill-name").And.NotContain("- secret");
+        client.Options[0]!.Tools!.Select(t => t.Name).Should().Contain("load_skill");
+    }
+
     private static ChatSession Create(ScriptedChatClient client, bool tools)
     {
         return new ChatSession((_, _) => Task.FromResult<IChatClient>(client))

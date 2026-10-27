@@ -124,6 +124,82 @@ public sealed class LoadSkillToolTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_HiddenSkillNobodyStarted_IsRefusedAndNotNamed()
+    {
+        // Arrange
+        var sut = ToolWith(started: new HashSet<string>());
+
+        // Act
+        var result = await RunAsync(sut, new { name = "manual" });
+
+        // Assert
+        result.Should().Be(ToolResult.Error("There is no skill named 'manual'. The skills are: guide, report."));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_HiddenSkillTheUserStarted_Loads()
+    {
+        // Arrange
+        var sut = ToolWith(started: new HashSet<string> { "manual" });
+
+        // Act
+        var result = await RunAsync(sut, new { name = "manual" });
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Output.Should().Contain("Skill: manual");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_HiddenSkillNamedByALoadableSkill_Loads()
+    {
+        // Arrange
+        var sut = ToolWith(started: new HashSet<string>(), guideBody: "Finish by running manual.");
+
+        // Act
+        var result = await RunAsync(sut, new { name = "manual" });
+
+        // Assert
+        result.IsError.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_HiddenSkillOnlyNamedInsideAnotherWord_IsRefused()
+    {
+        // Arrange
+        var sut = ToolWith(started: new HashSet<string>(), guideBody: "Use manual-labor and manuals.");
+
+        // Act
+        var result = await RunAsync(sut, new { name = "manual" });
+
+        // Assert
+        result.IsError.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task LoadableBy_ChainOfHiddenSkills_FollowsMentionsFromReachableOnesOnly()
+    {
+        // Arrange
+        var chained = _folders.Add("skills", "chained", "Second hidden.", "Done.");
+        var manual = _folders.Add("skills", "manual", "First hidden.", "Then run chained.");
+        var guide = _folders.Add("skills", "guide", "Visible.", "Nothing here.");
+        var skills = new SkillSet(
+        [
+            new SkillInfo("guide", "Visible.", guide, SkillSource.App),
+            new SkillInfo("manual", "First hidden.", manual, SkillSource.App, ModelInvocable: false),
+            new SkillInfo("chained", "Second hidden.", chained, SkillSource.App, ModelInvocable: false),
+        ]);
+
+        // Act
+        var unreachable = skills.LoadableBy(new HashSet<string>());
+        var reachable = skills.LoadableBy(new HashSet<string> { "manual" });
+
+        // Assert
+        unreachable.Should().BeEquivalentTo("guide");
+        reachable.Should().BeEquivalentTo("guide", "manual", "chained");
+    }
+
+    [Fact]
     public void Summarize_WithAndWithoutPath_ShowsTheTarget()
     {
         // Arrange
@@ -136,6 +212,21 @@ public sealed class LoadSkillToolTests : IDisposable
         // Assert
         summaries.Should().Equal("report", "report/a.md");
     }
+
+    private LoadSkillTool ToolWith(IReadOnlySet<string> started, string guideBody = "Nothing here.")
+    {
+        var manual = _folders.Add("skills", "manual", "Only by hand.");
+        var guide = _folders.Add("skills", "guide", "Visible.", guideBody);
+        var skills = new SkillSet(
+        [
+            new SkillInfo("report", "Write reports.", _folder, SkillSource.App),
+            new SkillInfo("guide", "Visible.", guide, SkillSource.App),
+            new SkillInfo("manual", "Only by hand.", manual, SkillSource.App, ModelInvocable: false),
+        ]);
+        return new LoadSkillTool(skills, started);
+    }
+
+    private Task<ToolResult> RunAsync(LoadSkillTool tool, object args) => tool.ExecuteAsync(TempWorkspace.Args(args), _context, TestContext.Current.CancellationToken);
 
     private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), _context, TestContext.Current.CancellationToken);
 }

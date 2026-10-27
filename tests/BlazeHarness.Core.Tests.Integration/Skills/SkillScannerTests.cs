@@ -39,6 +39,21 @@ public sealed class SkillScannerTests : IDisposable
     }
 
     [Fact]
+    public void Scan_DisableModelInvocation_MarksTheSkillAsNotModelInvocable()
+    {
+        // Arrange
+        _folders.AddRaw("skills", "manual", "---\nname: manual\ndescription: Only by hand.\ndisable-model-invocation: true\n---\nbody");
+        _folders.Add("skills", "auto", "Either way.");
+
+        // Act
+        var scan = SkillScanner.Scan(Path.Combine(_folders.Root, "skills"), SkillSource.App);
+
+        // Assert
+        scan.Skills.Should().ContainSingle(s => s.Name == "manual").Which.ModelInvocable.Should().BeFalse();
+        scan.Skills.Should().ContainSingle(s => s.Name == "auto").Which.ModelInvocable.Should().BeTrue();
+    }
+
+    [Fact]
     public void Scan_NameMissing_UsesTheFolderName()
     {
         // Arrange

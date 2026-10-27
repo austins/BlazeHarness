@@ -103,5 +103,53 @@ public sealed class SkillSetTests
         first.SameAs(null).Should().BeFalse();
     }
 
+    [Fact]
+    public void ToPrompt_SkillThatDisablesModelInvocation_IsNotListed()
+    {
+        // Arrange
+        var sut = new SkillSet([Skill("open", "Shown."), Hidden("secret")]);
+
+        // Act
+        var prompt = sut.ToPrompt();
+
+        // Assert
+        prompt.Should().Contain("- open: Shown.").And.NotContain("secret");
+    }
+
+    [Fact]
+    public void ToPrompt_OnlyHiddenSkills_StillExplainsSlashNames()
+    {
+        // Arrange
+        var sut = new SkillSet([Hidden("secret")]);
+
+        // Act
+        var prompt = sut.ToPrompt();
+
+        // Assert
+        prompt.Should().Contain("/skill-name").And.Contain("No skills are listed").And.NotContain("secret").And.NotContain("Available skills");
+    }
+
+    [Theory]
+    [InlineData("/secret", true)]
+    [InlineData("/secret do it", true)]
+    [InlineData("/secret\nmore", true)]
+    [InlineData("/secrets", false)]
+    [InlineData("use /secret", false)]
+    [InlineData("/nothing", false)]
+    [InlineData("/", false)]
+    public void StartedIn_Messages_FindsSkillsNamedAtTheStart(string message, bool expected)
+    {
+        // Arrange
+        var sut = new SkillSet([Hidden("secret")]);
+
+        // Act
+        var started = sut.StartedIn([message]);
+
+        // Assert
+        started.Contains("secret").Should().Be(expected);
+    }
+
+    private static SkillInfo Hidden(string name) => new(name, "Hidden.", "/skills/" + name, SkillSource.App, ModelInvocable: false);
+
     private static SkillInfo Skill(string name, string description) => new(name, description, "/skills/" + name, SkillSource.App);
 }

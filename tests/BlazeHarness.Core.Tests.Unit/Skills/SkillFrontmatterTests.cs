@@ -18,6 +18,23 @@ public sealed class SkillFrontmatterTests
     }
 
     [Theory]
+    [InlineData("true", true)]
+    [InlineData("TRUE", true)]
+    [InlineData("false", false)]
+    [InlineData("yes", false)]
+    public void Parse_DisableModelInvocation_IsTrueOnlyForTrue(string value, bool expected)
+    {
+        // Arrange
+        var text = $"---\nname: a\ndescription: B.\ndisable-model-invocation: {value}\n---\nbody";
+
+        // Act
+        var result = SkillFrontmatter.Parse(text);
+
+        // Assert
+        result.DisableModelInvocation.Should().Be(expected);
+    }
+
+    [Theory]
     [InlineData("description: \"Say \\\"hi\\\": now\"", "Say \"hi\": now")]
     [InlineData("description: 'It''s fine'", "It's fine")]
     [InlineData("description: plain: text with colon", "plain: text with colon")]

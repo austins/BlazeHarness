@@ -83,7 +83,7 @@ public sealed partial class ChatSession
 
         if (Skills is { Skills.Count: > 0 } skills)
         {
-            tools = tools.With([new LoadSkillTool(skills)]);
+            tools = tools.With([new LoadSkillTool(skills, skills.StartedIn(Entries.Where(e => e.Role == ChatRole.User).Select(e => e.Text)))]);
         }
 
         return ExtraTools is { } extra ? tools.With(await extra(cancellation)) : tools;

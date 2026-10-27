@@ -19,15 +19,18 @@ public sealed class LoadSkillTool : ITool
     private const int MaxListedFiles = 50;
 
     private readonly SkillSet _skills;
+    private readonly IReadOnlySet<string> _started;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LoadSkillTool"/> class.
     /// </summary>
     /// <param name="skills">The skills the tool can load.</param>
-    public LoadSkillTool(SkillSet skills)
+    /// <param name="started">The names of skills the user started with <c>/name</c>, which the model may load even when they disable model invocation.</param>
+    public LoadSkillTool(SkillSet skills, IReadOnlySet<string>? started = null)
     {
         ArgumentNullException.ThrowIfNull(skills);
         _skills = skills;
+        _started = started ?? new HashSet<string>();
     }
 
     /// <inheritdoc />
@@ -75,9 +78,10 @@ public sealed class LoadSkillTool : ITool
         var path = arguments.OptionalString("path");
         var offset = arguments.OptionalInt("offset", minimum: 1) ?? 1;
         var limit = arguments.OptionalInt("limit", minimum: 1, maximum: 10_000) ?? 2000;
-        if (_skills.Skills.FirstOrDefault(skill => skill.Name == name) is not { } skill)
+        var loadable = _skills.LoadableBy(_started);
+        if (!loadable.Contains(name) || _skills.Skills.FirstOrDefault(skill => skill.Name == name) is not { } skill)
         {
-            var known = string.Join(", ", _skills.Skills.Select(s => s.Name));
+            var known = string.Join(", ", _skills.Skills.Where(s => s.ModelInvocable).Select(s => s.Name));
             return Task.FromResult(ToolResult.Error($"There is no skill named '{name}'. The skills are: {(known.Length == 0 ? "none" : known)}."));
         }
 

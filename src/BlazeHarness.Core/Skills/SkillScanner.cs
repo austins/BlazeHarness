@@ -155,7 +155,7 @@ public static partial class SkillScanner
             description = description[..(MaxDescriptionLength - 1)] + "…";
         }
 
-        return new SkillInfo(name, description, folder, source);
+        return new SkillInfo(name, description, folder, source, !parsed.DisableModelInvocation);
     }
 
     private static bool LeavesBoundary(string path, string boundary)

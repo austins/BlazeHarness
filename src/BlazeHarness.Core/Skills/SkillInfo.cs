@@ -7,7 +7,8 @@ namespace BlazeHarness.Core.Skills;
 /// <param name="Description">What the skill does and when to use it, on one line.</param>
 /// <param name="Directory">The full path of the skill's folder.</param>
 /// <param name="Source">Where the skill was found.</param>
-public sealed record SkillInfo(string Name, string Description, string Directory, SkillSource Source)
+/// <param name="ModelInvocable">False when the skill says <c>disable-model-invocation: true</c>: the model isn't told about it and loads it only after the user types <c>/name</c>.</param>
+public sealed record SkillInfo(string Name, string Description, string Directory, SkillSource Source, bool ModelInvocable = true)
 {
     /// <summary>
     /// The name of the file that holds a skill's instructions.

@@ -10,14 +10,15 @@ namespace BlazeHarness.Core.Skills;
 /// <param name="Description">The <c>description</c> field on one line, or null when it is missing.</param>
 /// <param name="Body">The instructions after the front matter.</param>
 /// <param name="Error">Why the file could not be read as a skill, or null when it can.</param>
-public sealed record SkillFile(string? Name, string? Description, string Body, string? Error);
+/// <param name="DisableModelInvocation">True when the <c>disable-model-invocation</c> field is <c>true</c>, so only the user may start the skill.</param>
+public sealed record SkillFile(string? Name, string? Description, string Body, string? Error, bool DisableModelInvocation = false);
 
 /// <summary>
 /// Reads the YAML front matter at the top of a <c>SKILL.md</c> file.
 /// </summary>
 /// <remarks>
 /// Only what skills use is understood: <c>key: value</c> lines at the top level, quoted values, values that continue on
-/// indented lines, and the <c>&gt;</c> and <c>|</c> block forms. Fields other than the name and the description are skipped.
+/// indented lines, and the <c>&gt;</c> and <c>|</c> block forms. Fields other than the name, the description and <c>disable-model-invocation</c> are skipped.
 /// </remarks>
 public static partial class SkillFrontmatter
 {
@@ -46,7 +47,8 @@ public static partial class SkillFrontmatter
 
         var fields = Fields(lines.Skip(1).Take(end - 1));
         var body = string.Join('\n', lines.Skip(end + 1)).Trim('\n');
-        return new SkillFile(Value(fields, "name"), Value(fields, "description"), body, null);
+        var disabled = string.Equals(Value(fields, "disable-model-invocation"), "true", StringComparison.OrdinalIgnoreCase);
+        return new SkillFile(Value(fields, "name"), Value(fields, "description"), body, null, disabled);
     }
 
     private static List<(string Key, string Inline, List<string> More)> Fields(IEnumerable<string> lines)
