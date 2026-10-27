@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Secrets;
 /// A fallback for machines without a keyring; the UI flags it as insecure.
 /// </remarks>
 /// <param name="path">The full path of the secrets file.</param>
-public sealed class FileSecretStore(string path) : FileBackedSecretStore(path, value => value, value => value, ownerOnly: true)
+internal sealed class FileSecretStore(string path) : FileBackedSecretStore(path, value => value, value => value, ownerOnly: true)
 {
     /// <inheritdoc />
     public override string Name => "Plaintext file (owner-only)";

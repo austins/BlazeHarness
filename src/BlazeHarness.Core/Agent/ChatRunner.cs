@@ -11,7 +11,7 @@ namespace BlazeHarness.Core.Agent;
 /// <summary>
 /// Runs an assistant turn against a chat client, calling tools the model asks for, and reports it as a stream of <see cref="AgentEvent"/> values.
 /// </summary>
-public static class ChatRunner
+internal static class ChatRunner
 {
     /// <summary>
     /// The default most times the model is called in one run, so a model stuck in a loop can't run forever.

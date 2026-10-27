@@ -8,4 +8,4 @@ namespace BlazeHarness.Core.Sessions;
 /// <param name="At">When the settings changed.</param>
 /// <param name="Access">The access level from then on.</param>
 /// <param name="Approvals">The approval mode from then on.</param>
-public sealed record PermissionsChangedEvent(DateTimeOffset At, AccessLevel Access, ApprovalMode Approvals) : SessionEvent(At);
+internal sealed record PermissionsChangedEvent(DateTimeOffset At, AccessLevel Access, ApprovalMode Approvals) : SessionEvent(At);

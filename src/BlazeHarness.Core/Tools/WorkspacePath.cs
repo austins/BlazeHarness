@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Tools;
 /// A path is checked twice: as written, after removing <c>..</c> parts, and again after following every symbolic link
 /// and junction on the way, so a link inside the folder can't lead out of it.
 /// </remarks>
-public static class WorkspacePath
+internal static class WorkspacePath
 {
     private const int MaxLinkDepth = 32;
 

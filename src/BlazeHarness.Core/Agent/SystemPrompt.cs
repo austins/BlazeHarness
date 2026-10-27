@@ -10,7 +10,7 @@ namespace BlazeHarness.Core.Agent;
 /// It is deterministic for a given session (no dates, counters or per-turn text), so the provider's prompt cache keeps hitting.
 /// Volatile facts belong in the latest user message.
 /// </remarks>
-public static class SystemPrompt
+internal static class SystemPrompt
 {
     /// <summary>
     /// Build the system prompt for a session.

@@ -65,7 +65,7 @@ public sealed record ProjectContext(string FolderPath, IReadOnlyList<ProjectFile
 /// The search starts at the folder and goes up through its parents to the nearest enclosing git root, or stops at the folder
 /// when there is no git repository. A symbolic link is followed only if its target is inside that same boundary.
 /// </remarks>
-public static class ProjectContextLoader
+internal static class ProjectContextLoader
 {
     /// <summary>
     /// The most bytes of <c>AGENTS.md</c> text kept for one session, shared by all of its files.

@@ -5,7 +5,7 @@ namespace BlazeHarness.Core.Compaction;
 /// <summary>
 /// How much conversation a model can hold before it is compacted.
 /// </summary>
-public static class ContextBudget
+internal static class ContextBudget
 {
     /// <summary>
     /// The part of the room left for the conversation, after the response, that may be used before compacting.

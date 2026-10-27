@@ -5,4 +5,4 @@ namespace BlazeHarness.Core.Sessions;
 /// </summary>
 /// <param name="Info">The metadata to give the new session. Its id is empty.</param>
 /// <param name="Events">The events to write to the new session's log.</param>
-public sealed record ImportedSession(SessionInfo Info, IReadOnlyList<SessionEvent> Events);
+internal sealed record ImportedSession(SessionInfo Info, IReadOnlyList<SessionEvent> Events);

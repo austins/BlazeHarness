@@ -9,7 +9,7 @@ namespace BlazeHarness.Core.Mcp;
 /// Servers run outside the sandbox and the harness cannot see what they touch, so the permission engine treats
 /// these tools apart from the built-in ones.
 /// </remarks>
-public interface IMcpTool : ITool
+internal interface IMcpTool : ITool
 {
     /// <summary>
     /// Gets the name of the server, as written in <c>mcp.json</c>.

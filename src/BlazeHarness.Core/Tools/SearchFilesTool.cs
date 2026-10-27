@@ -8,7 +8,7 @@ namespace BlazeHarness.Core.Tools;
 /// <summary>
 /// Searches the text files inside the working folder for a regular expression.
 /// </summary>
-public sealed class SearchFilesTool : ITool
+internal sealed class SearchFilesTool : ITool
 {
     private const int DefaultLimit = 100;
     private const int MaxLineCharacters = 300;

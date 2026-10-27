@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Providers;
 /// <summary>
 /// Checks provider settings before they are saved.
 /// </summary>
-public static class ProviderValidator
+internal static class ProviderValidator
 {
     private const string InvalidPathMessage = "Use letters, digits, dashes and underscores, with dots to reach into an object; no spaces or brackets.";
 

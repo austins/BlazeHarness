@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Sessions;
 /// <summary>
 /// Turns a chat into a file.
 /// </summary>
-public static class SessionExport
+internal static class SessionExport
 {
     /// <summary>
     /// The value of the <c>format</c> property of an exported JSON file.

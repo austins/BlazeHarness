@@ -8,7 +8,7 @@ namespace BlazeHarness.Core.Tools;
 /// <summary>
 /// Lists the files and folders inside the working folder.
 /// </summary>
-public sealed class ListFilesTool : ITool
+internal sealed class ListFilesTool : ITool
 {
     private const int DefaultLimit = 200;
 

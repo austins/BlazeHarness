@@ -9,7 +9,7 @@ namespace BlazeHarness.Core.Secrets;
 /// </summary>
 /// <param name="path">The full path of the file holding the encrypted values.</param>
 [SupportedOSPlatform("windows")]
-public sealed class DpapiSecretStore(string path) : FileBackedSecretStore(path, Protect, Unprotect, ownerOnly: false)
+internal sealed class DpapiSecretStore(string path) : FileBackedSecretStore(path, Protect, Unprotect, ownerOnly: false)
 {
     /// <inheritdoc />
     public override string Name => "Windows DPAPI";

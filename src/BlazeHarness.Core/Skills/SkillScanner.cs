@@ -19,7 +19,7 @@ public sealed record SkillScan(IReadOnlyList<SkillInfo> Skills, IReadOnlyList<st
 /// <summary>
 /// Finds the skills in a folder, where each skill is a subfolder with a <c>SKILL.md</c> file.
 /// </summary>
-public static partial class SkillScanner
+internal static partial class SkillScanner
 {
     /// <summary>
     /// The longest a skill name may be.

@@ -14,7 +14,7 @@ namespace BlazeHarness.Core.Secrets;
 /// <param name="protect">Turns a plain value into the text stored in the file.</param>
 /// <param name="unprotect">Turns a stored value back into the plain value.</param>
 /// <param name="ownerOnly">True to create the file readable only by the current user.</param>
-public abstract class FileBackedSecretStore(
+internal abstract class FileBackedSecretStore(
     string path,
     Func<string, string> protect,
     Func<string, string> unprotect,

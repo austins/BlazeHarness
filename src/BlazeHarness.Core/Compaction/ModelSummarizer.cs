@@ -13,7 +13,7 @@ namespace BlazeHarness.Core.Compaction;
 /// Tool output is cut short in the text that is sent, because it is the bulk of a long coding session and the summary only needs what was learned.
 /// If the text still doesn't fit, the oldest messages are left out of it.
 /// </remarks>
-public sealed class ModelSummarizer : ISummarizer
+internal sealed class ModelSummarizer : ISummarizer
 {
     /// <summary>
     /// The most characters of one tool result that are sent for summarizing.

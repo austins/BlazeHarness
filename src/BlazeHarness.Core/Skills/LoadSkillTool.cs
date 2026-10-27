@@ -9,7 +9,7 @@ namespace BlazeHarness.Core.Skills;
 /// <summary>
 /// The <c>load_skill</c> tool: returns a skill's instructions, or one of the files that come with it.
 /// </summary>
-public sealed class LoadSkillTool : ITool
+internal sealed class LoadSkillTool : ITool
 {
     /// <summary>
     /// The name the model calls the tool by.

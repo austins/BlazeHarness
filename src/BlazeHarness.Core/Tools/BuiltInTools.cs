@@ -6,7 +6,7 @@ namespace BlazeHarness.Core.Tools;
 /// <summary>
 /// Creates the tool set every session with a working folder gets.
 /// </summary>
-public static class BuiltInTools
+internal static class BuiltInTools
 {
     /// <summary>
     /// Create the built-in tools over a working folder.

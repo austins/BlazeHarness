@@ -9,4 +9,4 @@ namespace BlazeHarness.Core.Sessions;
 /// <param name="EntryId">The id of the message.</param>
 /// <param name="Text">The message text.</param>
 /// <param name="Attachments">The attached files, or null when there are none.</param>
-public sealed record UserMessageEvent(DateTimeOffset At, Guid EntryId, string Text, IReadOnlyList<SentAttachment>? Attachments = null) : SessionEvent(At);
+internal sealed record UserMessageEvent(DateTimeOffset At, Guid EntryId, string Text, IReadOnlyList<SentAttachment>? Attachments = null) : SessionEvent(At);

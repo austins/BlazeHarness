@@ -7,4 +7,4 @@ namespace BlazeHarness.Core.Sessions;
 /// <param name="EntryId">The id of the reply the text belongs to.</param>
 /// <param name="Text">Visible text to append, or an empty string.</param>
 /// <param name="Reasoning">Thinking text to append, or an empty string.</param>
-public sealed record AssistantDeltaEvent(DateTimeOffset At, Guid EntryId, string Text, string Reasoning) : SessionEvent(At);
+internal sealed record AssistantDeltaEvent(DateTimeOffset At, Guid EntryId, string Text, string Reasoning) : SessionEvent(At);

@@ -10,7 +10,7 @@ namespace BlazeHarness.Core.Sessions;
 /// A file may come from anyone, so only the conversation is taken from it. Attached files and saved tool output files
 /// are not part of the import, which also means a file cannot make the app read a path it names.
 /// </remarks>
-public static class SessionImport
+internal static class SessionImport
 {
     private const int MaxTitleLength = 200;
 

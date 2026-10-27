@@ -5,7 +5,7 @@ namespace BlazeHarness.Core.Attachments;
 /// <summary>
 /// Recognizes image files from their content, not from their name.
 /// </summary>
-public static class ImageFiles
+internal static class ImageFiles
 {
     /// <summary>
     /// The number of bytes at the start of a file that decide its type.

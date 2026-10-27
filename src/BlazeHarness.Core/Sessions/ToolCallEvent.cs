@@ -9,4 +9,4 @@ namespace BlazeHarness.Core.Sessions;
 /// <param name="Name">The name of the tool.</param>
 /// <param name="ArgumentsJson">The call arguments as a JSON object string.</param>
 /// <param name="Summary">A few words describing the call, or an empty string.</param>
-public sealed record ToolCallEvent(DateTimeOffset At, Guid EntryId, string CallId, string Name, string ArgumentsJson, string Summary) : SessionEvent(At);
+internal sealed record ToolCallEvent(DateTimeOffset At, Guid EntryId, string CallId, string Name, string ArgumentsJson, string Summary) : SessionEvent(At);

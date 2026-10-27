@@ -8,7 +8,7 @@ namespace BlazeHarness.Core.Tools;
 /// <summary>
 /// Runs one command in the working folder.
 /// </summary>
-public sealed class ShellTool : ITool
+internal sealed class ShellTool : ITool
 {
     private const int DefaultTimeoutSeconds = 120;
     private const int MaxTimeoutSeconds = 600;

@@ -5,7 +5,7 @@ namespace BlazeHarness.Core.Mcp;
 /// <summary>
 /// Replaces <c>${VAR}</c> and <c>${VAR:-default}</c> in text, the way <c>mcp.json</c> files of other tools use them.
 /// </summary>
-public static class McpVariables
+internal static class McpVariables
 {
     /// <summary>
     /// Replace every variable reference in a text.

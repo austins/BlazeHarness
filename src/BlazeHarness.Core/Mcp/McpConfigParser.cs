@@ -10,7 +10,7 @@ namespace BlazeHarness.Core.Mcp;
 /// <remarks>
 /// A server with a problem is reported and left out, so one mistake doesn't hide the others. Fields the app doesn't know are ignored here and kept by <see cref="McpConfigEditor"/>.
 /// </remarks>
-public static partial class McpConfigParser
+internal static partial class McpConfigParser
 {
     /// <summary>
     /// Parse the text of an <c>mcp.json</c> file.

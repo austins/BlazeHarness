@@ -11,4 +11,4 @@ namespace BlazeHarness.Core.Sessions;
 /// <param name="Status">How it ended.</param>
 /// <param name="Error">The error message when it failed.</param>
 /// <param name="Usage">The token usage the server reported.</param>
-public sealed record AssistantEndEvent(DateTimeOffset At, Guid EntryId, EntryStatus Status, string? Error, UsageReported? Usage) : SessionEvent(At);
+internal sealed record AssistantEndEvent(DateTimeOffset At, Guid EntryId, EntryStatus Status, string? Error, UsageReported? Usage) : SessionEvent(At);

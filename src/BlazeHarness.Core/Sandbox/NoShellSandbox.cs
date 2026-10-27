@@ -3,7 +3,7 @@ namespace BlazeHarness.Core.Sandbox;
 /// <summary>
 /// A sandbox that cannot confine anything, so only commands that ask for no sandbox can run.
 /// </summary>
-public sealed class NoShellSandbox : IShellSandbox
+internal sealed class NoShellSandbox : IShellSandbox
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="NoShellSandbox"/> class.

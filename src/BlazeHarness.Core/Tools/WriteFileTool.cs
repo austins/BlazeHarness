@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Tools;
 /// <summary>
 /// Creates a file or replaces its whole content.
 /// </summary>
-public sealed class WriteFileTool : ITool
+internal sealed class WriteFileTool : ITool
 {
     private const int SampleBytes = 8192;
 

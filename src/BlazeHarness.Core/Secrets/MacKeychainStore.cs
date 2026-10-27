@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Secrets;
 /// Commands go over stdin (<c>security -i</c>), not arguments, so values never appear in the process list.
 /// </remarks>
 /// <param name="serviceName">The service name the secrets are filed under.</param>
-public sealed class MacKeychainStore(string serviceName = "blazeharness") : ISecretStore
+internal sealed class MacKeychainStore(string serviceName = "blazeharness") : ISecretStore
 {
     private const string Tool = "/usr/bin/security";
 

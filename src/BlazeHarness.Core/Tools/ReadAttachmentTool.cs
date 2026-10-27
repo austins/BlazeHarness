@@ -6,7 +6,7 @@ namespace BlazeHarness.Core.Tools;
 /// <summary>
 /// Reads a file the user attached to the session.
 /// </summary>
-public sealed class ReadAttachmentTool : ITool
+internal sealed class ReadAttachmentTool : ITool
 {
     private readonly SessionAttachments _attachments;
 

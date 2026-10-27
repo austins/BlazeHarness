@@ -9,7 +9,7 @@ namespace BlazeHarness.Core.Mcp;
 /// <summary>
 /// An <see cref="IMcpConnection"/> on a client of the official MCP SDK.
 /// </summary>
-public sealed class SdkMcpConnection : IMcpConnection
+internal sealed class SdkMcpConnection : IMcpConnection
 {
     private readonly McpClient _client;
 

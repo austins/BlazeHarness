@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Tools;
 /// <summary>
 /// Reads a text file, a range of lines at a time.
 /// </summary>
-public sealed class ReadFileTool : ITool
+internal sealed class ReadFileTool : ITool
 {
     /// <summary>
     /// The number of lines a call reads when it gives no limit.

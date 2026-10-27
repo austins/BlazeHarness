@@ -51,7 +51,7 @@ public sealed record FolderInfo
 /// <summary>
 /// The contents of <c>folders.json</c>.
 /// </summary>
-public sealed record FoldersDocument
+internal sealed record FoldersDocument
 {
     /// <summary>
     /// Gets the folders the user opened.

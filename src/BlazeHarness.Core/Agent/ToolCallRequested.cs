@@ -7,4 +7,4 @@ namespace BlazeHarness.Core.Agent;
 /// <param name="Name">The name of the tool being called.</param>
 /// <param name="ArgumentsJson">The call arguments as a JSON object string.</param>
 /// <param name="Summary">A few words describing the call, or an empty string.</param>
-public sealed record ToolCallRequested(string CallId, string Name, string ArgumentsJson, string Summary) : AgentEvent;
+internal sealed record ToolCallRequested(string CallId, string Name, string ArgumentsJson, string Summary) : AgentEvent;

@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Secrets;
 /// Values are passed to <c>secret-tool</c> over stdin so they never appear in the process list.
 /// </remarks>
 /// <param name="serviceName">The service attribute the secrets are filed under. Tests use a throwaway name.</param>
-public sealed class LibsecretStore(string serviceName = "blazeharness") : ISecretStore
+internal sealed class LibsecretStore(string serviceName = "blazeharness") : ISecretStore
 {
     private const string Tool = "secret-tool";
 

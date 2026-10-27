@@ -5,4 +5,4 @@ namespace BlazeHarness.Core.Sessions;
 /// </summary>
 /// <param name="At">When the rewind happened.</param>
 /// <param name="ToEntryId">The last message to keep, or <see cref="Guid.Empty"/> to keep none.</param>
-public sealed record RewindEvent(DateTimeOffset At, Guid ToEntryId) : SessionEvent(At);
+internal sealed record RewindEvent(DateTimeOffset At, Guid ToEntryId) : SessionEvent(At);

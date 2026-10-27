@@ -9,4 +9,4 @@ namespace BlazeHarness.Core.Sessions;
 /// <param name="Summary">The summary of every message before that one.</param>
 /// <param name="TokensBefore">The estimated size of the conversation before compacting.</param>
 /// <param name="TokensAfter">The estimated size of the conversation after compacting.</param>
-public sealed record CompactionEvent(DateTimeOffset At, Guid EntryId, Guid FirstKeptEntryId, string Summary, long TokensBefore, long TokensAfter) : SessionEvent(At);
+internal sealed record CompactionEvent(DateTimeOffset At, Guid EntryId, Guid FirstKeptEntryId, string Summary, long TokensBefore, long TokensAfter) : SessionEvent(At);
