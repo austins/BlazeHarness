@@ -57,8 +57,8 @@ public sealed partial class SdkMcpConnector : IMcpConnector
                 tail = string.Join('\n', errorLines);
             }
 
-            tail = Redact(tail, config);
-            var message = tail.Length == 0 ? ex.Message : string.Create(CultureInfo.InvariantCulture, $"{ex.Message}\n{tail}");
+            // The SDK can put the server's stderr into its own message, so redact all of it.
+            var message = Redact(tail.Length == 0 ? ex.Message : string.Create(CultureInfo.InvariantCulture, $"{ex.Message}\n{tail}"), config);
             throw new McpConnectException(message, ex);
         }
     }

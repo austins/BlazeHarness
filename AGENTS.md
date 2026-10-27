@@ -39,7 +39,10 @@
   `Secrets/ApiKeyResolverTests.cs` and uses namespace `BlazeHarness.Core.Tests.Unit.Secrets`. One test class per file.
 - xUnit v3 on Microsoft.Testing.Platform, NSubstitute, AwesomeAssertions (`.Should()`).
 - `Method_Scenario_Expected` names, `// Arrange` / `// Act` / `// Assert`, class under test in `_sut`.
-- Helpers used by more than one test project go in `tests/BlazeHarness.Tests.Shared` (`LoggerFake<T>`, `ScriptedChatClient`). Parallelism is set per project in its `AssemblyInfo.cs`: unit projects run all tests in parallel, the integration project uses the default.
+- Helpers used by more than one test project go in `tests/BlazeHarness.Tests.Shared` (`LoggerFake<T>`, `ScriptedChatClient`, `FakeOpenAiServer` on a Kestrel port 0, `TempFolder`, `TestTargets`, `TestTimeouts.Default` with `.Bounded()`, `FakeTimeProviderExtensions.AdvanceUntilAsync`, `ChatRunnerCollector`). Shared helpers use only the public API, and their namespaces match their folders. Every project sets `Parallelization(Mode = ParallelMode.All)` in its `AssemblyInfo.cs`, so all tests run in parallel.
+  - `BlazeHarness.Web.Tests.Integration` holds endpoint and host tests that need real files (`Hosting/`).
+  - Tests that touch the real OS keyring or Keychain are opt-in: set `BLAZEHARNESS_TEST_KEYRING=1`.
+  - Unit projects do no file I/O; anything that touches the file system belongs in the matching Integration project.
 - Mocks and fakes:
   - Use NSubstitute for an interface where a test needs a canned answer, a thrown exception, or a check that a call was or wasn't made (an approver that says yes, a tool that throws or hangs).
   - Write a hand-made fake when it needs state or logic of its own: replaying a script of streamed responses (`ScriptedChatClient`), measuring concurrency (`FakeTool`), keeping events in memory (`RecordingSessionLog`), or recording log entries (`LoggerFake<T>`). A fake used by more than one test class should stay a real class so its behavior is written once.
