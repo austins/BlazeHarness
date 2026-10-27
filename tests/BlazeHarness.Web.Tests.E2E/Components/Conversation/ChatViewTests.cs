@@ -34,6 +34,20 @@ public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)
     }
 
     [Fact]
+    public async Task AttachFilesButton_Click_OpensTheFileChooser()
+    {
+        // Arrange
+        await LaunchAsync();
+
+        // Act
+        var chooser = await Page.RunAndWaitForFileChooserAsync(
+            () => Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Attach files" }).ClickAsync());
+
+        // Assert
+        chooser.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task ToolApproval_Deny_LeavesTheFileUnwrittenAndTheChatContinues()
     {
         // Arrange

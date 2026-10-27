@@ -73,7 +73,7 @@ else
             @if (Editing is null)
             {
                 <InputFile @ref="_picker" OnChange="AddFilesAsync" multiple tabindex="-1" class="visually-hidden" aria-hidden="true" />
-                <button type="button" class="btn btn-ghost btn-icon" aria-label="Attach files" title="Attach files" onclick="bhChat.pick(this)"><Icon Name="paperclip" /></button>
+                <button type="button" class="btn btn-ghost btn-icon" aria-label="Attach files" title="Attach files" data-bh-action="pick"><Icon Name="paperclip" /></button>
             }
             <select class="select" aria-label="Model" value="@_selected" @onchange="OnModelChanged">
                 @foreach (var group in _models.GroupBy(m => m.Provider.Id))

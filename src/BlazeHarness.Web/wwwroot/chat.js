@@ -273,7 +273,27 @@ window.bhChat = {
         input.addEventListener("input", () => window.bhChat.resize(input));
         input.focus();
     },
+    // The page's script policy blocks inline handlers, so buttons name an action and one listener runs it.
+    initActions: () => {
+        document.addEventListener("click", (e) => {
+            const button = e.target instanceof Element ? e.target.closest("[data-bh-action]") : null;
+            switch (button?.dataset.bhAction) {
+                case "pick":
+                    window.bhChat.pick(button);
+                    break;
+                case "toBottom":
+                    window.bhChat.toBottom(button);
+                    break;
+                case "skipToChat":
+                    window.bhUi.skipToChat();
+                    break;
+                default:
+                    break;
+            }
+        });
+    },
 };
 
+window.bhChat.initActions();
 window.bhChat.initCopy();
 window.bhChat.initTimes();
