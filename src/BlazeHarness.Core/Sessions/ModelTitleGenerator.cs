@@ -57,6 +57,10 @@ public sealed class ModelTitleGenerator : ITitleGenerator
                     break;
                 case AgentError error:
                     throw new InvalidOperationException(error.Message);
+                case Done { Reason: not StopReason.Completed }:
+                    // A stopped run ends with a Done event instead of an exception, and half a title must not be saved.
+                    cancellationToken.ThrowIfCancellationRequested();
+                    throw new InvalidOperationException("The model did not finish the title.");
                 default:
                     break;
             }

@@ -28,6 +28,21 @@ public sealed class ModelTitleGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateAsync_StoppedPartWay_ThrowsCancellationInsteadOfReturningHalfATitle()
+    {
+        // Arrange
+        using var stop = new CancellationTokenSource();
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Weath")], cancelAfterwards: stop);
+        var sut = Generator(client);
+
+        // Act
+        var act = async () => await sut.GenerateAsync(Target(), "What is the weather?", "Sunny.", stop.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public async Task GenerateAsync_LongExchange_SendsOnlyAnExcerpt()
     {
         // Arrange
