@@ -34,9 +34,14 @@ public sealed class AppPaths
     public string UserHome { get; }
 
     /// <summary>
-    /// Gets the path of <c>config.json</c> (providers, models and defaults).
+    /// Gets the path of <c>config.json</c> (defaults, permissions and switches).
     /// </summary>
     public string ConfigFile => Path.Combine(Home, "config.json");
+
+    /// <summary>
+    /// Gets the path of <c>providers.json</c> (providers and their models).
+    /// </summary>
+    public string ProvidersFile => Path.Combine(Home, "providers.json");
 
     /// <summary>
     /// Gets the path of <c>mcp.json</c> (MCP server definitions).

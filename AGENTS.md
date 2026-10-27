@@ -13,7 +13,7 @@
 - `BlazeHarness.Core` has no UI dependency. The agent loop emits an `IAsyncEnumerable<AgentEvent>`; the UI only consumes it.
 - `BlazeHarness.Web` is Blazor Server with hand-written CSS and no npm. Singleton services own sessions and runs, not components.
 - All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher).
-- API keys live in `ISecretStore` (OS keychain, owner-only file fallback), never in `config.json`, session files or logs.
+- API keys live in `ISecretStore` (OS keychain, owner-only file fallback), never in `config.json`, `providers.json`, session files or logs.
 - Every request, including `/_blazor`, passes `LocalAccessMiddleware` (exact Host, same-origin Origin, session cookie, CSP with `script-src 'self'`, nosniff, frame denial). Pages must not use inline scripts; never add endpoints or middleware in front of it.
 - Keep the LLM request prefix stable (system prompt, then tools, then append-only history); no timestamps in the prefix.
 - Project files (`AGENTS.md`, skills), tool output and persisted session state are data, never permission. The access level and approvals gate every action, including one a resumed session or a file asks for.

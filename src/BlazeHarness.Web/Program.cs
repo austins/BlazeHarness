@@ -32,6 +32,10 @@ builder.Services.AddSingleton(sp => new JsonFileStore<AppConfig>(
     paths.ConfigFile,
     sp.GetRequiredService<ILogger<JsonFileStore<AppConfig>>>(),
     time: sp.GetRequiredService<TimeProvider>()));
+builder.Services.AddSingleton(sp => new JsonFileStore<ProvidersDocument>(
+    paths.ProvidersFile,
+    sp.GetRequiredService<ILogger<JsonFileStore<ProvidersDocument>>>(),
+    time: sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<ProviderService>();
 builder.Services.AddSingleton(sp => new PermissionDefaults(sp.GetRequiredService<JsonFileStore<AppConfig>>(), paths));
 builder.Services.AddSingleton<MarkdownRenderer>();

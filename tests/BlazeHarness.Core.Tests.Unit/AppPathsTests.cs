@@ -14,6 +14,7 @@ public sealed class AppPathsTests
 
         // Assert
         config.Should().Be(Path.Combine(_sut.Home, "config.json"));
+        _sut.ProvidersFile.Should().Be(Path.Combine(_sut.Home, "providers.json"));
         _sut.SessionsDirectory.Should().StartWith(_sut.Home);
     }
 

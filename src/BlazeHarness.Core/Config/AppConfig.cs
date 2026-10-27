@@ -1,20 +1,14 @@
 using BlazeHarness.Core.Permissions;
-using BlazeHarness.Core.Providers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace BlazeHarness.Core.Config;
 
 /// <summary>
-/// The contents of <c>config.json</c>.
+/// The contents of <c>config.json</c>: defaults, permissions and switches. Providers live in <c>providers.json</c>.
 /// </summary>
 public sealed record AppConfig
 {
-    /// <summary>
-    /// Gets the configured providers.
-    /// </summary>
-    public IReadOnlyList<ProviderConfig> Providers { get; init; } = [];
-
     /// <summary>
     /// Gets the provider preselected for new chats.
     /// </summary>

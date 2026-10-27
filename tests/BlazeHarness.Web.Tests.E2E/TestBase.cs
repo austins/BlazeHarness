@@ -32,7 +32,7 @@ public abstract class TestBase : IAsyncLifetime
     {
         Assert.SkipWhen(_browser.Browser is null, _browser.SkipReason ?? "The browser is not available.");
 
-        var config = new AppConfig
+        var providers = new ProvidersDocument
         {
             Providers =
             [
@@ -44,9 +44,13 @@ public abstract class TestBase : IAsyncLifetime
                     Models = [new ModelConfig { Id = ModelId, ContextWindow = 8192, MaxOutputTokens = 1024 }],
                 },
             ],
+        };
+        var config = new AppConfig
+        {
             DefaultProviderId = "fake",
             DefaultModelId = ModelId,
         };
+        await File.WriteAllTextAsync(_home.Combine("providers.json"), JsonSerializer.Serialize(providers, JsonDefaults.Options), TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(_home.Combine("config.json"), JsonSerializer.Serialize(config, JsonDefaults.Options), TestContext.Current.CancellationToken);
 
 #pragma warning disable IDISP003 // Set once per test.

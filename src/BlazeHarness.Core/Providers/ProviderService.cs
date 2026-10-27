@@ -5,26 +5,30 @@ using System.Text;
 namespace BlazeHarness.Core.Providers;
 
 /// <summary>
-/// Reads and changes the configured providers, keeping their API keys in the secret store rather than in <c>config.json</c>.
+/// Reads and changes the configured providers, keeping their API keys in the secret store rather than in <c>providers.json</c>.
 /// </summary>
 public sealed class ProviderService
 {
     private readonly JsonFileStore<AppConfig> _config;
+    private readonly JsonFileStore<ProvidersDocument> _providers;
     private readonly ISecretStore _secrets;
     private readonly ApiKeyResolver _keys;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ProviderService"/> class.
     /// </summary>
-    /// <param name="config">The store behind <c>config.json</c>.</param>
+    /// <param name="config">The store behind <c>config.json</c>, which holds the default provider and model.</param>
+    /// <param name="providers">The store behind <c>providers.json</c>.</param>
     /// <param name="secrets">Where API keys are kept.</param>
     /// <param name="keys">Resolves a provider's key, including environment variable references.</param>
-    public ProviderService(JsonFileStore<AppConfig> config, ISecretStore secrets, ApiKeyResolver keys)
+    public ProviderService(JsonFileStore<AppConfig> config, JsonFileStore<ProvidersDocument> providers, ISecretStore secrets, ApiKeyResolver keys)
     {
         _config = config;
+        _providers = providers;
         _secrets = secrets;
         _keys = keys;
         config.ExternalChange += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
+        providers.ExternalChange += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -36,6 +40,11 @@ public sealed class ProviderService
     /// Gets the current configuration.
     /// </summary>
     public AppConfig Config => _config.Current;
+
+    /// <summary>
+    /// Gets the configured providers.
+    /// </summary>
+    public IReadOnlyList<ProviderConfig> Configured => _providers.Current.Providers;
 
     /// <summary>
     /// Gets the secret store, so the UI can say whether keys are held securely.
@@ -70,7 +79,7 @@ public sealed class ProviderService
 
         var id = baseId;
         var n = 2;
-        while (_config.Current.Providers.Any(p => p.Id == id))
+        while (Configured.Any(p => p.Id == id))
         {
             id = $"{baseId}-{n++}";
         }
@@ -123,7 +132,7 @@ public sealed class ProviderService
             await _secrets.SetAsync(SecretStoreFactory.KeyFor(provider), newApiKey.Trim(), cancellationToken);
         }
 
-        await _config.UpdateAsync(
+        await _providers.UpdateAsync(
             current =>
             {
                 var providers = current.Providers.ToList();
@@ -137,7 +146,13 @@ public sealed class ProviderService
                     providers.Add(provider);
                 }
 
-                var next = current with { Providers = providers };
+                return current with { Providers = providers };
+            },
+            cancellationToken);
+
+        await _config.UpdateAsync(
+            next =>
+            {
                 if (next.DefaultProviderId is null)
                 {
                     next = next with { DefaultProviderId = provider.Id, DefaultModelId = null };
@@ -178,16 +193,16 @@ public sealed class ProviderService
     public async Task RemoveAsync(string providerId, CancellationToken cancellationToken = default)
     {
         await _secrets.DeleteAsync(SecretStoreFactory.KeyFor(providerId), cancellationToken);
+        await _providers.UpdateAsync(current => current with { Providers = current.Providers.Where(p => p.Id != providerId).ToList() }, cancellationToken);
         await _config.UpdateAsync(
-            current =>
+            next =>
             {
-                var providers = current.Providers.Where(p => p.Id != providerId).ToList();
-                var next = current with { Providers = providers };
                 if (next.DefaultProviderId != providerId)
                 {
                     return next;
                 }
 
+                var providers = Configured;
                 var first = providers.Count > 0 ? providers[0] : null;
                 return next with { DefaultProviderId = first?.Id, DefaultModelId = first is { Models: [var model, ..] } ? model.Id : null };
             },
@@ -205,7 +220,7 @@ public sealed class ProviderService
     /// <returns>True when saved; false when the provider or model does not exist.</returns>
     public async Task<bool> SetDefaultAsync(string providerId, string modelId, CancellationToken cancellationToken = default)
     {
-        var provider = _config.Current.Providers.FirstOrDefault(p => p.Id == providerId);
+        var provider = Configured.FirstOrDefault(p => p.Id == providerId);
         if (provider is null || provider.Models.All(m => m.Id != modelId))
         {
             return false;

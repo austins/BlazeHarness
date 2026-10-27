@@ -9,19 +9,22 @@ public sealed class ProviderServiceTests : IDisposable
 {
     private readonly TempFolder _temp = new("bh-providers-");
     private readonly JsonFileStore<AppConfig> _config;
+    private readonly JsonFileStore<ProvidersDocument> _providers;
     private readonly FileSecretStore _secrets;
     private readonly ProviderService _sut;
 
     public ProviderServiceTests()
     {
         _config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
+        _providers = new JsonFileStore<ProvidersDocument>(Path.Combine(_temp.Root, "providers.json"), NullLogger<JsonFileStore<ProvidersDocument>>.Instance, watch: false);
         _secrets = new FileSecretStore(Path.Combine(_temp.Root, "secrets.json"));
-        _sut = new ProviderService(_config, _secrets, new ApiKeyResolver(_secrets, _ => null));
+        _sut = new ProviderService(_config, _providers, _secrets, new ApiKeyResolver(_secrets, _ => null));
     }
 
     public void Dispose()
     {
         _config.Dispose();
+        _providers.Dispose();
         _secrets.Dispose();
         _temp.Dispose();
     }
@@ -37,7 +40,7 @@ public sealed class ProviderServiceTests : IDisposable
 
         // Assert
         issues.Should().BeEmpty();
-        _sut.Config.Providers.Should().ContainSingle(p => p.Id == "ds");
+        _sut.Configured.Should().ContainSingle(p => p.Id == "ds");
         _sut.Config.DefaultProviderId.Should().Be("ds");
         (await _secrets.GetAsync("provider:ds", TestContext.Current.CancellationToken)).Should().Be("sk-1");
         (await File.ReadAllTextAsync(Path.Combine(_temp.Root, "config.json"), TestContext.Current.CancellationToken)).Should().NotContain("sk-1");
@@ -54,7 +57,7 @@ public sealed class ProviderServiceTests : IDisposable
 
         // Assert
         issues.Should().BeEmpty();
-        _sut.Config.Providers.Should().ContainSingle(p => p.Id == "local");
+        _sut.Configured.Should().ContainSingle(p => p.Id == "local");
         (await _sut.HasKeyAsync(provider, TestContext.Current.CancellationToken)).Should().BeFalse();
     }
 
@@ -68,7 +71,7 @@ public sealed class ProviderServiceTests : IDisposable
         await _sut.SaveAsync(Provider("ds", "m1") with { DisplayName = "Renamed" }, null, TestContext.Current.CancellationToken);
 
         // Assert
-        _sut.Config.Providers.Should().ContainSingle().Which.DisplayName.Should().Be("Renamed");
+        _sut.Configured.Should().ContainSingle().Which.DisplayName.Should().Be("Renamed");
         (await _secrets.GetAsync("provider:ds", TestContext.Current.CancellationToken)).Should().Be("sk-1");
     }
 
@@ -80,7 +83,7 @@ public sealed class ProviderServiceTests : IDisposable
 
         // Assert
         issues.Should().NotBeEmpty();
-        _sut.Config.Providers.Should().BeEmpty();
+        _sut.Configured.Should().BeEmpty();
         (await _secrets.GetAsync("provider:ds", TestContext.Current.CancellationToken)).Should().BeNull();
     }
 
@@ -135,7 +138,7 @@ public sealed class ProviderServiceTests : IDisposable
         // Assert
         (await _secrets.GetAsync("provider:a", TestContext.Current.CancellationToken)).Should().BeNull();
         (await _secrets.GetAsync("provider:b", TestContext.Current.CancellationToken)).Should().Be("kb");
-        _sut.Config.Providers.Select(p => p.Id).Should().Equal("a", "b");
+        _sut.Configured.Select(p => p.Id).Should().Equal("a", "b");
     }
 
     [Fact]
@@ -149,7 +152,7 @@ public sealed class ProviderServiceTests : IDisposable
         await _sut.RemoveAsync("a", TestContext.Current.CancellationToken);
 
         // Assert
-        _sut.Config.Providers.Select(p => p.Id).Should().Equal("b");
+        _sut.Configured.Select(p => p.Id).Should().Equal("b");
         _sut.Config.DefaultProviderId.Should().Be("b");
         _sut.Config.DefaultModelId.Should().Be("m2");
         (await _secrets.GetAsync("provider:a", TestContext.Current.CancellationToken)).Should().BeNull();

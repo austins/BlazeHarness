@@ -320,7 +320,7 @@ else
 
     private void LoadModels()
     {
-        _models = [.. Providers.Config.Providers.SelectMany(p => p.Models.Select(m => new Choice(KeyOf(p, m), p, m)))];
+        _models = [.. Providers.Configured.SelectMany(p => p.Models.Select(m => new Choice(KeyOf(p, m), p, m)))];
     }
 
     private void LoadLevels()

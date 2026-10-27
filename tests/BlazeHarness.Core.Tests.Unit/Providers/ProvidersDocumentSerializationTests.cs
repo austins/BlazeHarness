@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace BlazeHarness.Core.Tests.Unit.Providers;
 
-public sealed class AppConfigSerializationTests
+public sealed class ProvidersDocumentSerializationTests
 {
     [Fact]
     public void RoundTrip_LevelsAndUnknownFields_ArePreserved()
@@ -21,7 +21,7 @@ public sealed class AppConfigSerializationTests
             """;
 
         // Act
-        var config = JsonSerializer.Deserialize<AppConfig>(json, JsonDefaults.Options)!;
+        var config = JsonSerializer.Deserialize<ProvidersDocument>(json, JsonDefaults.Options)!;
         var written = JsonSerializer.Serialize(config, JsonDefaults.Options);
 
         // Assert
@@ -36,7 +36,7 @@ public sealed class AppConfigSerializationTests
     public void Serialize_DoesNotContainApiKeyValues()
     {
         // Arrange
-        var config = new AppConfig
+        var config = new ProvidersDocument
         {
             Providers = [new ProviderConfig { Id = "p", DisplayName = "P", BaseUrl = new Uri("http://x"), ApiKeyRef = "${KEY}" }],
         };

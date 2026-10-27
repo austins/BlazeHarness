@@ -15,7 +15,7 @@
     <div class="split">
         <aside class="stack" aria-label="Configured providers">
             <div class="list">
-                @foreach (var provider in Service.Config.Providers)
+                @foreach (var provider in Service.Configured)
                 {
                     var isCurrent = _edit is { IsNew: false } && _edit.Id == provider.Id;
                     <button type="button" class="list-item" aria-current="@(isCurrent ? "true" : "false")" @onclick="() => Select(provider)">
@@ -31,7 +31,7 @@
             @if (_edit is null)
             {
                 <div class="card empty">
-                    @if (Service.Config.Providers.Count == 0)
+                    @if (Service.Configured.Count == 0)
                     {
                         <h2>Connect your first provider</h2>
                         <p>Pick a starting point, or add any OpenAI-compatible endpoint.</p>
@@ -281,7 +281,7 @@
     {
         Service.Changed += OnProvidersChanged;
         var cfg = Service.Config;
-        var first = cfg.Providers.FirstOrDefault(p => p.Id == cfg.DefaultProviderId) ?? cfg.Providers.FirstOrDefault();
+        var first = Service.Configured.FirstOrDefault(p => p.Id == cfg.DefaultProviderId) ?? Service.Configured.FirstOrDefault();
         if (first is not null)
         {
             _edit = ProviderEditModel.FromConfig(first);
@@ -293,7 +293,7 @@
 
     private async Task RefreshKeyAsync()
     {
-        _hasStoredKey = _edit is { IsNew: false } && Service.Config.Providers.FirstOrDefault(p => p.Id == _edit.Id) is { } saved
+        _hasStoredKey = _edit is { IsNew: false } && Service.Configured.FirstOrDefault(p => p.Id == _edit.Id) is { } saved
             && await Service.HasKeyAsync(saved);
     }
 
@@ -313,7 +313,7 @@
 
     private async Task Cancel()
     {
-        var saved = _edit is { IsNew: false } ? Service.Config.Providers.FirstOrDefault(p => p.Id == _edit.Id) : null;
+        var saved = _edit is { IsNew: false } ? Service.Configured.FirstOrDefault(p => p.Id == _edit.Id) : null;
         _edit = saved is null ? null : ProviderEditModel.FromConfig(saved);
         ResetFeedback();
         await RefreshKeyAsync();
@@ -383,7 +383,7 @@
     }
 
     private bool IsSaved(ModelEditModel model) =>
-        _edit is { IsNew: false } && Service.Config.Providers.Any(p => p.Id == _edit.Id && p.Models.Any(m => m.Id == model.Id));
+        _edit is { IsNew: false } && Service.Configured.Any(p => p.Id == _edit.Id && p.Models.Any(m => m.Id == model.Id));
 
     private bool IsDefault(ModelEditModel model) =>
         _edit is not null && Service.Config.DefaultProviderId == _edit.Id && Service.Config.DefaultModelId == model.Id;
