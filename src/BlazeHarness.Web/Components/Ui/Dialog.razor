@@ -2,7 +2,7 @@
 
 @if (Open)
 {
-    <dialog class="dialog@(Wide ? " dialog-wide" : "")" @ref="_dialog" aria-labelledby="@_titleId" @oncancel="Close" @oncancel:preventDefault>
+    <dialog class="@CssClasses" @ref="_dialog" aria-labelledby="@_titleId" @oncancel="Close" @oncancel:preventDefault>
         <div class="dialog-header">
             <h2 id="@_titleId">@Title</h2>
             <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Close" @onclick="Close"><Icon Name="close" /></button>
@@ -19,6 +19,8 @@
     private readonly string _titleId = "dlg-" + Guid.NewGuid().ToString("N");
     private ElementReference _dialog;
     private bool _shown;
+
+    private string CssClasses => string.Join(' ', new[] { "dialog", Wide ? "dialog-wide" : null, Class }.Where(c => !string.IsNullOrEmpty(c)));
 
     /// <summary>
     /// Gets or sets the heading, which also names the dialog for screen readers.
@@ -37,6 +39,12 @@
     /// </summary>
     [Parameter]
     public bool Wide { get; set; }
+
+    /// <summary>
+    /// Gets or sets an extra CSS class for the dialog.
+    /// </summary>
+    [Parameter]
+    public string? Class { get; set; }
 
     /// <summary>
     /// Gets or sets the callback for the user closing the dialog.

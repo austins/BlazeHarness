@@ -40,6 +40,7 @@ builder.Services.AddSingleton<ProviderService>();
 builder.Services.AddSingleton(sp => new PermissionDefaults(sp.GetRequiredService<JsonFileStore<AppConfig>>(), paths));
 builder.Services.AddSingleton<MarkdownRenderer>();
 builder.Services.AddScoped<ToastService>();
+builder.Services.AddScoped<SettingsDialogState>();
 builder.Services.AddSingleton<ChatClientSource>();
 builder.Services.AddSingleton(sp => new SessionStore(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<IShellSandbox>(sp => new MxcShellSandbox(() => sp.GetRequiredService<PermissionDefaults>().Sensitive()));

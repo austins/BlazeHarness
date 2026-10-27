@@ -1,4 +1,3 @@
-@page "/settings/diagnostics"
 @using System.Reflection
 @using System.Runtime.InteropServices
 @using BlazeHarness.Core
@@ -14,8 +13,6 @@
 @inject McpManager Mcp
 @inject SkillCatalog Skills
 @inject IShellSandbox Sandbox
-
-<PageTitle>Diagnostics · BlazeHarness</PageTitle>
 
 <div class="page">
     <header class="page-header">
@@ -76,7 +73,7 @@
     private IReadOnlyList<McpServerStatus> _servers = [];
     private int _skillCount;
 
-    private static string Version => typeof(Diagnostics).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "unknown";
+    private static string Version => typeof(DiagnosticsSettings).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "unknown";
 
     protected override async Task OnInitializedAsync()
     {

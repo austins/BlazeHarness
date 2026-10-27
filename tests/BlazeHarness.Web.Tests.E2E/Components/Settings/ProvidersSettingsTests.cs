@@ -1,4 +1,4 @@
-namespace BlazeHarness.Web.Tests.E2E.Components.Pages;
+namespace BlazeHarness.Web.Tests.E2E.Components.Settings;
 
 public sealed class ProvidersSettingsTests(BrowserFixture browser) : TestBase(browser)
 {
@@ -6,9 +6,10 @@ public sealed class ProvidersSettingsTests(BrowserFixture browser) : TestBase(br
     public async Task Open_SeededProvider_IsListed()
     {
         // Arrange
-        await LaunchAsync("/settings/providers");
+        await LaunchAsync();
 
         // Act
+        await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Settings" }).ClickAsync();
         var provider = Page.GetByLabel("Configured providers").GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = ProviderName });
 
         // Assert

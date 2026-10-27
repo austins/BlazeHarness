@@ -2,6 +2,7 @@
 @using BlazeHarness.Core.Skills
 @implements IDisposable
 @inject SkillCatalog Catalog
+@inject SettingsDialogState SettingsState
 @inject SessionService Sessions
 
 @if (_available.Skills.Count > 0)
@@ -20,7 +21,7 @@
                 </li>
             }
         </ul>
-        <p class="hint">A change applies from the next reply, and the model reads the whole prompt again. <a href="settings/skills">Manage skills</a></p>
+        <p class="hint">A change applies from the next reply, and the model reads the whole prompt again. <button type="button" class="link-button" @onclick="() => SettingsState.Open(SettingsSection.Skills)">Manage skills</button></p>
     </details>
 }
 

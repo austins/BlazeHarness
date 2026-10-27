@@ -4,6 +4,7 @@
 @inject NavigationManager Navigation
 @inject FolderRegistry Folders
 @inject ToastService Toasts
+@inject SettingsDialogState SettingsState
 
 <nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="Main">
     <div class="sidebar-brand"><span class="logo" aria-hidden="true">🔥</span> BlazeHarness</div>
@@ -129,12 +130,7 @@
 
     <div class="sidebar-footer">
         <div class="sidebar-links">
-            <NavLink class="nav-link" href="settings/providers" data-shortcut="settings" title="Settings (Ctrl+,)"><Icon Name="settings" /> Providers</NavLink>
-            <NavLink class="nav-link" href="settings/permissions"><Icon Name="shield" /> Permissions</NavLink>
-            <NavLink class="nav-link" href="settings/mcp"><Icon Name="plug" /> MCP servers</NavLink>
-            <NavLink class="nav-link" href="settings/skills"><Icon Name="book" /> Skills</NavLink>
-            <NavLink class="nav-link" href="settings/appearance"><Icon Name="text-size" /> Appearance</NavLink>
-            <NavLink class="nav-link" href="settings/diagnostics"><Icon Name="wrench" /> Diagnostics</NavLink>
+            <button type="button" class="nav-link" data-shortcut="settings" title="Settings (Ctrl+,)" @onclick="() => SettingsState.Open()"><Icon Name="settings" /> Settings</button>
         </div>
         <button type="button" class="btn btn-ghost btn-icon" @onclick="ToggleThemeAsync"
                 title="@(_dark ? "Switch to light theme" : "Switch to dark theme")"

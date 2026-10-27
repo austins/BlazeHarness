@@ -2,6 +2,7 @@
 @inject IJSRuntime JS
 @inject SkillCatalog Catalog
 @inject SessionService Sessions
+@inject SettingsDialogState SettingsState
 @using System.Text
 @using BlazeHarness.Core.Attachments
 @using BlazeHarness.Core.Compaction
@@ -11,7 +12,7 @@
 {
     <div class="composer composer-empty">
         <p class="muted">Add a model to a provider to start chatting.</p>
-        <a class="btn btn-primary btn-sm" href="settings/providers">Open providers</a>
+        <button type="button" class="btn btn-primary btn-sm" @onclick="() => SettingsState.Open()">Open providers</button>
     </div>
 }
 else

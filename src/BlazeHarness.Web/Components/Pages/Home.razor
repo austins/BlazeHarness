@@ -1,6 +1,7 @@
 @page "/"
 @page "/chat/{Id}"
 @inject ProviderService Service
+@inject SettingsDialogState SettingsState
 
 <PageTitle>BlazeHarness</PageTitle>
 
@@ -10,7 +11,7 @@
         <div class="card empty">
             <h1>Welcome to BlazeHarness</h1>
             <p>Connect an OpenAI-compatible endpoint to start chatting. A hosted API or a local server such as llama.cpp both work.</p>
-            <a class="btn btn-primary" href="settings/providers">Set up a provider</a>
+            <button type="button" class="btn btn-primary" @onclick="() => SettingsState.Open()">Set up a provider</button>
         </div>
     </div>
 }

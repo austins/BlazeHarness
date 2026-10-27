@@ -3,6 +3,7 @@
 @using BlazeHarness.Core.Sessions
 @implements IDisposable
 @inject McpManager Manager
+@inject SettingsDialogState SettingsState
 @inject SessionService Sessions
 
 @if (_servers.Count > 0)
@@ -29,7 +30,7 @@
                 </li>
             }
         </ul>
-        <p class="hint">A change applies from the next reply. It also changes the tool list, so the model reads the whole prompt again. <a href="settings/mcp">Manage servers</a></p>
+        <p class="hint">A change applies from the next reply. It also changes the tool list, so the model reads the whole prompt again. <button type="button" class="link-button" @onclick="() => SettingsState.Open(SettingsSection.Mcp)">Manage servers</button></p>
     </details>
 }
 

@@ -1,0 +1,68 @@
+@implements IDisposable
+@inject SettingsDialogState State
+
+<Dialog Title="Settings" Open="State.Section is not null" Class="dialog-settings" OnClose="State.Close">
+    <div class="settings">
+        <nav class="settings-nav" aria-label="Settings sections">
+            @foreach (var (section, label, icon) in Sections)
+            {
+                <button type="button" class="nav-link@(State.Section == section ? " active" : "")"
+                        aria-current="@(State.Section == section ? "page" : null)" @onclick="() => State.Open(section)">
+                    <Icon Name="@icon" /> @label
+                </button>
+            }
+        </nav>
+        <div class="settings-content">
+            @switch (State.Section)
+            {
+                case SettingsSection.Providers:
+                    <ProvidersSettings />
+                    break;
+                case SettingsSection.Permissions:
+                    <PermissionsSettings />
+                    break;
+                case SettingsSection.Mcp:
+                    <McpSettings />
+                    break;
+                case SettingsSection.Skills:
+                    <SkillsSettings />
+                    break;
+                case SettingsSection.Appearance:
+                    <AppearanceSettings />
+                    break;
+                case SettingsSection.Diagnostics:
+                    <DiagnosticsSettings />
+                    break;
+                default:
+                    break;
+            }
+        </div>
+    </div>
+</Dialog>
+
+@code {
+    private static readonly (SettingsSection Section, string Label, string Icon)[] Sections =
+    [
+        (SettingsSection.Providers, "Providers", "settings"),
+        (SettingsSection.Permissions, "Permissions", "shield"),
+        (SettingsSection.Mcp, "MCP servers", "plug"),
+        (SettingsSection.Skills, "Skills", "book"),
+        (SettingsSection.Appearance, "Appearance", "text-size"),
+        (SettingsSection.Diagnostics, "Diagnostics", "wrench"),
+    ];
+
+    protected override void OnInitialized()
+    {
+        State.Changed += OnChanged;
+    }
+
+    public void Dispose()
+    {
+        State.Changed -= OnChanged;
+    }
+
+    private void OnChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+}
