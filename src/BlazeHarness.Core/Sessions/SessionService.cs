@@ -2,6 +2,7 @@ using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -28,6 +29,7 @@ public sealed partial class SessionService : IDisposable
     private readonly ILoggerFactory _loggers;
     private readonly TimeProvider _time;
     private readonly ITitleGenerator? _titles;
+    private readonly IShellSandbox _sandbox;
     private readonly ILogger _log;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
@@ -42,12 +44,14 @@ public sealed partial class SessionService : IDisposable
     /// <param name="loggers">Creates loggers for the sessions.</param>
     /// <param name="time">The clock for timestamps; defaults to the system clock.</param>
     /// <param name="titles">Writes a title after the first exchange; without it a session keeps its placeholder title.</param>
+    /// <param name="sandbox">Runs shell commands; without it commands only run in sessions with the Unrestricted access level.</param>
     public SessionService(
         SessionStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
         ILoggerFactory loggers,
         TimeProvider? time = null,
-        ITitleGenerator? titles = null)
+        ITitleGenerator? titles = null,
+        IShellSandbox? sandbox = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
@@ -57,6 +61,7 @@ public sealed partial class SessionService : IDisposable
         _loggers = loggers;
         _time = time ?? TimeProvider.System;
         _titles = titles;
+        _sandbox = sandbox ?? new NoShellSandbox("No sandbox is set up.");
         _log = loggers.CreateLogger<SessionService>();
     }
 
@@ -373,10 +378,10 @@ public sealed partial class SessionService : IDisposable
             session.Project = loaded;
         }
 
-        ApplyTools(session, folderPath);
+        ApplyTools(id, session, folderPath);
     }
 
-    private void ApplyTools(ChatSession session, string? folderPath)
+    private void ApplyTools(string id, ChatSession session, string? folderPath)
     {
         if (folderPath is null || !Directory.Exists(folderPath))
         {
@@ -388,7 +393,7 @@ public sealed partial class SessionService : IDisposable
         try
         {
             var shell = ShellInfo.DetectCurrent();
-            var tools = BuiltInTools.Create(folderPath, shell, session.Attachments);
+            var tools = BuiltInTools.Create(folderPath, shell, session.Attachments, _sandbox, _store.ShellDirectory(id));
             if (session.Tools?.Context.Root != tools.Context.Root)
             {
                 session.Tools = tools;
@@ -451,6 +456,7 @@ public sealed partial class SessionService : IDisposable
             Attachments = new SessionAttachments(_store.AttachmentsDirectory(id)),
         };
         session.Permissions.Sensitive = SensitivePaths.Default(_store.Paths, id);
+        session.Permissions.Sandbox = _sandbox.Status;
         var wasRunning = false;
         session.Changed += (_, _) =>
         {

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Sandbox;
 
 namespace BlazeHarness.Core.Tools;
 
@@ -13,13 +14,17 @@ public static class BuiltInTools
     /// <param name="folder">The working folder, which must exist.</param>
     /// <param name="shell">The shell for the <c>shell</c> tool, or null to leave that tool out.</param>
     /// <param name="attachments">The session's attached files for the <c>read_attachment</c> tool, or null to leave that tool out.</param>
+    /// <param name="sandbox">Starts the shell commands. Required when <paramref name="shell"/> is set.</param>
+    /// <param name="scratchDirectory">The folder confined shell commands may always write to. Required when <paramref name="shell"/> is set.</param>
     /// <returns>The tool set.</returns>
-    public static ToolSet Create(string folder, ShellInfo? shell = null, SessionAttachments? attachments = null)
+    public static ToolSet Create(string folder, ShellInfo? shell = null, SessionAttachments? attachments = null, IShellSandbox? sandbox = null, string? scratchDirectory = null)
     {
         List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool()];
         if (shell is not null)
         {
-            tools.Add(new ShellTool(shell));
+            ArgumentNullException.ThrowIfNull(sandbox);
+            ArgumentException.ThrowIfNullOrWhiteSpace(scratchDirectory);
+            tools.Add(new ShellTool(shell, sandbox, scratchDirectory));
         }
 
         if (attachments is not null)

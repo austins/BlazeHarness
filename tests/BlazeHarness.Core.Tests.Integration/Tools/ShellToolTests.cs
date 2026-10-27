@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tools;
 using System.Text.Json;
 
@@ -10,10 +11,12 @@ public sealed class ShellToolTests : IDisposable
 
     public ShellToolTests()
     {
-        _sut = new ShellTool(ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false));
+        _sut = new ShellTool(ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false), new NoShellSandbox("none"), Path.GetTempPath());
     }
 
     public static bool IsWindows => OperatingSystem.IsWindows();
+
+    private ToolContext Context => _workspace.Context.WithShell(ShellMode.Unconfined);
 
     public void Dispose() => _workspace.Dispose();
 
@@ -112,10 +115,10 @@ public sealed class ShellToolTests : IDisposable
     public async Task ExecuteAsync_ShellThatCannotStart_ReturnsAnError()
     {
         // Arrange
-        var sut = new ShellTool(new ShellInfo("bash", Path.Combine(_workspace.Root, "missing-shell"), IsPowerShell: false));
+        var sut = new ShellTool(new ShellInfo("bash", Path.Combine(_workspace.Root, "missing-shell"), IsPowerShell: false), new NoShellSandbox("none"), Path.GetTempPath());
 
         // Act
-        var result = await sut.ExecuteAsync(TempWorkspace.Args(new { command = "true" }), _workspace.Context, TestContext.Current.CancellationToken);
+        var result = await sut.ExecuteAsync(TempWorkspace.Args(new { command = "true" }), Context, TestContext.Current.CancellationToken);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -149,11 +152,11 @@ public sealed class ShellToolTests : IDisposable
     private async Task<ToolResult> RunUntilCancelledAsync(string command)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        var run = _sut.ExecuteAsync(TempWorkspace.Args(new { command }), _workspace.Context, cts.Token);
+        var run = _sut.ExecuteAsync(TempWorkspace.Args(new { command }), Context, cts.Token);
         await Task.Delay(500, TestContext.Current.CancellationToken);
         await cts.CancelAsync();
         return await run;
     }
 
-    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), _workspace.Context, TestContext.Current.CancellationToken);
+    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), Context, TestContext.Current.CancellationToken);
 }

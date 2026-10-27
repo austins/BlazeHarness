@@ -1,5 +1,4 @@
-using System.ComponentModel;
-using System.Diagnostics;
+using BlazeHarness.Core.Sandbox;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -14,16 +13,26 @@ public sealed class ShellTool : ITool
     private const int DefaultTimeoutSeconds = 120;
     private const int MaxTimeoutSeconds = 600;
 
+    private static readonly TimeSpan OutputGrace = TimeSpan.FromSeconds(2);
+
     private readonly ShellInfo _shell;
+    private readonly IShellSandbox _sandbox;
+    private readonly string _scratchDirectory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ShellTool"/> class.
     /// </summary>
     /// <param name="shell">The shell to run commands in.</param>
-    public ShellTool(ShellInfo shell)
+    /// <param name="sandbox">Starts the commands, inside a sandbox when the call's shell mode asks for one.</param>
+    /// <param name="scratchDirectory">A folder confined commands may always write to, for their home and temporary files.</param>
+    public ShellTool(ShellInfo shell, IShellSandbox sandbox, string scratchDirectory)
     {
         ArgumentNullException.ThrowIfNull(shell);
+        ArgumentNullException.ThrowIfNull(sandbox);
+        ArgumentException.ThrowIfNullOrWhiteSpace(scratchDirectory);
         _shell = shell;
+        _sandbox = sandbox;
+        _scratchDirectory = scratchDirectory;
     }
 
     /// <inheritdoc />
@@ -33,7 +42,8 @@ public sealed class ShellTool : ITool
     public string Description =>
         $"Run one command in {_shell.Name} with the working folder as the current directory, and return its combined output and exit code. " +
         "Use it for builds, tests, git and other programs. Use the file tools to read, search and edit files. " +
-        "The command cannot read input, so avoid anything interactive.";
+        "The command cannot read input, so avoid anything interactive. " +
+        "Unless the user turned it off, the command runs in a sandbox that can only change the working folder and can't see the rest of the computer's files.";
 
     /// <inheritdoc />
     public string InputSchema => $$"""
@@ -73,86 +83,73 @@ public sealed class ShellTool : ITool
         var command = arguments.RequiredString("command");
         var seconds = arguments.OptionalInt("timeout_seconds", 1, MaxTimeoutSeconds) ?? DefaultTimeoutSeconds;
 
-        using var process = new Process { StartInfo = CreateStartInfo(command, context.Root) };
-        var output = new ShellOutput();
-        process.OutputDataReceived += (_, e) => Append(output, e.Data);
-        process.ErrorDataReceived += (_, e) => Append(output, e.Data);
-
+        var launch = new ShellLaunch(_shell, command, context.Root, context.Shell, _scratchDirectory, TimeSpan.FromSeconds(seconds));
+        IShellProcess process;
         try
         {
-            process.Start();
+            process = await _sandbox.StartAsync(launch, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        catch (Exception ex) when (ex is IOException or InvalidOperationException)
         {
-            return ToolResult.Error($"Could not start {_shell.Name}: {ex.Message}");
+            return ToolResult.Error(ex.Message);
         }
 
-        process.StandardInput.Close();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(seconds));
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, limit.Token);
-        try
+        using (process)
         {
-            await process.WaitForExitAsync(linked.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            Kill(process);
-            if (cancellationToken.IsCancellationRequested)
+            var output = new ShellOutput();
+            var readers = Task.WhenAll(PumpAsync(process.Output, output), PumpAsync(process.Error, output));
+            using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(seconds));
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, limit.Token);
+            int exitCode;
+            try
             {
-                throw;
+                exitCode = await process.WaitAsync(linked.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                process.Kill();
+                await FinishReadingAsync(readers).ConfigureAwait(false);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
+                return ToolResult.Error(string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"{output}\n[The command ran longer than {seconds} seconds and was stopped.]"));
             }
 
-            return ToolResult.Error(string.Create(
-                CultureInfo.InvariantCulture,
-                $"{output}\n[The command ran longer than {seconds} seconds and was stopped.]"));
-        }
-
-        var exitCode = process.ExitCode;
-        var text = string.Create(CultureInfo.InvariantCulture, $"{output}[exit code {exitCode}]");
-        return exitCode == 0 ? ToolResult.Ok(text) : ToolResult.Error(text);
-    }
-
-    private static void Append(ShellOutput output, string? line)
-    {
-        if (line is not null)
-        {
-            output.AppendLine(line);
+            await FinishReadingAsync(readers).ConfigureAwait(false);
+            var text = string.Create(CultureInfo.InvariantCulture, $"{output}[exit code {exitCode}]");
+            return exitCode == 0 ? ToolResult.Ok(text) : ToolResult.Error(text);
         }
     }
 
-    private static void Kill(Process process)
+    private static async Task PumpAsync(Stream stream, ShellOutput output)
     {
         try
         {
-            process.Kill(entireProcessTree: true);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            while (await reader.ReadLineAsync().ConfigureAwait(false) is { } line)
+            {
+                output.AppendLine(line);
+            }
         }
-        catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {
-            // The process had already exited.
+            // The command ended and closed its streams.
         }
     }
 
-    private ProcessStartInfo CreateStartInfo(string command, string workingDirectory)
+    private static async Task FinishReadingAsync(Task readers)
     {
-        var info = new ProcessStartInfo(_shell.Executable)
+        try
         {
-            WorkingDirectory = workingDirectory,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        };
-        foreach (var argument in _shell.ArgumentsFor(command))
-        {
-            info.ArgumentList.Add(argument);
+            await readers.WaitAsync(OutputGrace).ConfigureAwait(false);
         }
-
-        return info;
+        catch (TimeoutException)
+        {
+            // A program the command started is still holding the streams open; what it printed so far is enough.
+        }
     }
 }

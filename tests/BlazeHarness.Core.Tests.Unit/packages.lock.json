@@ -179,6 +179,11 @@
         "resolved": "10.0.14",
         "contentHash": "1bbZqqCJTPba3inTADExbp/9PsGVyvGOX3zr6tFr7ySCgVkX9Lpw7BV0TizktNItd3SsbUu1sQfSAYm1GZMoNw=="
       },
+      "Microsoft.Mxc.Sdk": {
+        "type": "Transitive",
+        "resolved": "1.0.1",
+        "contentHash": "+UjsTZiLDtxKRLWJgYphaQ4C8mG9tLNASaHJvskpIzy96kDY06PuQLyJad8l9JIjylbnEmAvuw5nUrDBeAoAXQ=="
+      },
       "Microsoft.Testing.Extensions.Telemetry": {
         "type": "Transitive",
         "resolved": "2.5.1",
@@ -312,6 +317,7 @@
           "Microsoft.Extensions.AI.OpenAI": "[10.11.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.14, )",
           "Microsoft.Extensions.Options": "[10.0.14, )",
+          "Microsoft.Mxc.Sdk": "[1.0.1, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.14, )"
         }
       }

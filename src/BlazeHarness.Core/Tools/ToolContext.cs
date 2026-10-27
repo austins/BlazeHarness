@@ -1,3 +1,5 @@
+using BlazeHarness.Core.Sandbox;
+
 namespace BlazeHarness.Core.Tools;
 
 /// <summary>
@@ -14,10 +16,11 @@ public sealed class ToolContext
         Root = WorkspacePath.CanonicalRoot(folder);
     }
 
-    private ToolContext(string root, bool allowsOutside)
+    private ToolContext(string root, bool allowsOutside, ShellMode shell)
     {
         Root = root;
         AllowsOutside = allowsOutside;
+        Shell = shell;
     }
 
     /// <summary>
@@ -31,13 +34,25 @@ public sealed class ToolContext
     public bool AllowsOutside { get; }
 
     /// <summary>
+    /// Gets how far a shell command of this call may reach.
+    /// </summary>
+    public ShellMode Shell { get; } = ShellMode.Writable;
+
+    /// <summary>
     /// Get a copy of this context that accepts paths outside the working folder.
     /// </summary>
     /// <remarks>
     /// Only for a call that has already passed the permission check.
     /// </remarks>
     /// <returns>A context with the same root that accepts any path.</returns>
-    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true);
+    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true, Shell);
+
+    /// <summary>
+    /// Get a copy of this context with a different shell mode.
+    /// </summary>
+    /// <param name="shell">How far a shell command may reach.</param>
+    /// <returns>A context with the same root and path rules.</returns>
+    public ToolContext WithShell(ShellMode shell) => new(Root, AllowsOutside, shell);
 
     /// <summary>
     /// Resolve a path from a call to a real path inside the working folder.

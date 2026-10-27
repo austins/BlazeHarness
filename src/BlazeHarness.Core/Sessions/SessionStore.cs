@@ -89,10 +89,17 @@ public sealed partial class SessionStore : IDisposable
     public AppPaths Paths => _paths;
 
     /// <summary>
-    /// Get the folder a session keeps its attached files in.
+    /// Get the folder a session's confined shell commands keep their home and temporary files in.
     /// </summary>
     /// <param name="id">The session id.</param>
     /// <returns>The folder path, which may not exist yet.</returns>
+    public string ShellDirectory(string id) => Path.Combine(_paths.SessionDirectory(id), "shell");
+
+    /// <summary>
+    /// Get the folder a session keeps its attached files in.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <returns>The full path.</returns>
     public string AttachmentsDirectory(string id) => Path.Combine(_paths.SessionDirectory(id), AttachmentsFolder);
 
     /// <summary>

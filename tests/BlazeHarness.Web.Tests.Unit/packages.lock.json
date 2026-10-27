@@ -111,6 +111,11 @@
           "OpenAI": "2.14.0"
         }
       },
+      "Microsoft.Mxc.Sdk": {
+        "type": "Transitive",
+        "resolved": "1.0.1",
+        "contentHash": "+UjsTZiLDtxKRLWJgYphaQ4C8mG9tLNASaHJvskpIzy96kDY06PuQLyJad8l9JIjylbnEmAvuw5nUrDBeAoAXQ=="
+      },
       "Microsoft.Testing.Extensions.Telemetry": {
         "type": "Transitive",
         "resolved": "2.5.1",
@@ -234,6 +239,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.AI.OpenAI": "[10.11.0, )",
+          "Microsoft.Mxc.Sdk": "[1.0.1, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.14, )"
         }
       },

@@ -1,4 +1,6 @@
 @using BlazeHarness.Core.Permissions
+@using BlazeHarness.Core.Sandbox
+@inject IShellSandbox Sandbox
 
 <select class="select" @key="@("access" + _version)" aria-label="Access level" title="What the model's tools may touch" value="@Settings.Access" @onchange="OnAccessChanged">
     <option value="@AccessLevel.ReadOnly">Read only</option>
@@ -10,6 +12,18 @@
     <option value="@ApprovalMode.AutoApprove">Auto-approve</option>
     <option value="@ApprovalMode.NeverAsk">Never ask</option>
 </select>
+@if (Settings.Access != AccessLevel.Unrestricted)
+{
+    @if (Sandbox.Status.IsAvailable)
+    {
+        <span class="badge badge-success" role="status" title="@Sandbox.Status.Detail"><Icon Name="shield" /> Sandboxed</span>
+    }
+    else
+    {
+        <span class="badge badge-warning" role="status" title="@Sandbox.Status.Detail"><Icon Name="alert" /> No sandbox, commands blocked</span>
+    }
+}
+
 @if (Settings.IsRisky)
 {
     <span class="badge badge-warning" role="status" title="Some safeguards are off for this chat"><Icon Name="alert" /> @(Settings.Access == AccessLevel.Unrestricted ? "Unrestricted" : "Never asks")</span>

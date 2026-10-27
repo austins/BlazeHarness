@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tools;
 using System.Collections.Concurrent;
 using System.Globalization;
@@ -15,8 +16,9 @@ namespace BlazeHarness.Core.Permissions;
 /// <see cref="AccessLevel.Unrestricted"/> or <see cref="ApprovalMode.NeverAsk"/>. Writes outside the folder need <see cref="AccessLevel.Unrestricted"/>.
 /// </para>
 /// <para>
-/// Until the shell runs inside an OS sandbox (<see cref="ShellConfined"/>), a command can do anything the user can,
-/// so below <see cref="AccessLevel.Unrestricted"/> it always asks, and at <see cref="AccessLevel.ReadOnly"/> it is refused.
+/// Below <see cref="AccessLevel.Unrestricted"/> a shell command runs in the OS sandbox (<see cref="Sandbox"/>), which can only change the
+/// working folder, or can't change anything at <see cref="AccessLevel.ReadOnly"/>. Without a sandbox it is refused, so a command never
+/// runs unconfined unless the user chose <see cref="AccessLevel.Unrestricted"/>.
 /// </para>
 /// </remarks>
 public sealed class PermissionEngine
@@ -53,9 +55,9 @@ public sealed class PermissionEngine
     public SensitivePaths Sensitive { get; set; } = SensitivePaths.None;
 
     /// <summary>
-    /// Gets or sets a value indicating whether shell commands run inside an OS sandbox that enforces the access level.
+    /// Gets or sets whether shell commands can run inside an OS sandbox that enforces the access level.
     /// </summary>
-    public bool ShellConfined { get; set; }
+    public SandboxStatus Sandbox { get; set; } = SandboxStatus.Unavailable("No sandbox is set up.");
 
     /// <summary>
     /// Decide what to do with a tool call.
@@ -77,7 +79,7 @@ public sealed class PermissionEngine
             ? EvaluateCommand(arguments, settings)
             : EvaluatePaths(tool, arguments, settings, context);
         return decision is { Verdict: PermissionVerdict.Ask, GrantKey: { } key } && _grants.ContainsKey(key)
-            ? PermissionDecision.Allow with { AllowOutside = decision.AllowOutside }
+            ? PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell }
             : decision;
     }
 
@@ -114,27 +116,29 @@ public sealed class PermissionEngine
 
     private PermissionDecision EvaluateCommand(JsonElement arguments, PermissionSettings settings)
     {
-        if (settings.Access == AccessLevel.ReadOnly)
-        {
-            return new PermissionDecision(PermissionVerdict.Deny, "This session is Read only, so commands can't run. Say what you wanted to run, and the user can change the access level.");
-        }
-
         var key = "shell:" + (Text(arguments, "command") ?? string.Empty).Trim();
         if (settings.Access == AccessLevel.Unrestricted)
         {
             return settings.Approvals == ApprovalMode.AskFirst
-                ? new PermissionDecision(PermissionVerdict.Ask, "Runs a command on your computer.", key)
-                : PermissionDecision.Allow;
+                ? new PermissionDecision(PermissionVerdict.Ask, "Runs a command on your computer.", key, Shell: ShellMode.Unconfined)
+                : PermissionDecision.Allow with { Shell = ShellMode.Unconfined };
         }
 
-        if (!ShellConfined)
+        if (!Sandbox.IsAvailable)
         {
-            return new PermissionDecision(PermissionVerdict.Ask, "Runs a command on your computer. Commands are not confined to the working folder yet.", key);
+            return new PermissionDecision(
+                PermissionVerdict.Deny,
+                $"Commands can't run in this session because there is no sandbox to confine them. {Sandbox.Detail} Say what you wanted to run, and the user can choose the Unrestricted access level.");
         }
 
+        var mode = settings.Access == AccessLevel.ReadOnly ? ShellMode.ReadOnly : ShellMode.Writable;
         return settings.Approvals == ApprovalMode.AskFirst
-            ? new PermissionDecision(PermissionVerdict.Ask, "Runs a command on your computer.", key)
-            : PermissionDecision.Allow;
+            ? new PermissionDecision(
+                PermissionVerdict.Ask,
+                mode == ShellMode.ReadOnly ? "Runs a command in a sandbox that can't change files." : "Runs a command in a sandbox that can only change the working folder.",
+                key,
+                Shell: mode)
+            : PermissionDecision.Allow with { Shell = mode };
     }
 
     private PermissionDecision EvaluatePaths(ITool tool, JsonElement arguments, PermissionSettings settings, ToolContext context)

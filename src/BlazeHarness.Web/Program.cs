@@ -1,7 +1,9 @@
 using BlazeHarness.Core;
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
+using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Secrets;
 using BlazeHarness.Core.Sessions;
 using BlazeHarness.Web.Components;
@@ -25,12 +27,14 @@ builder.Services.AddSingleton<MarkdownRenderer>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddSingleton<ChatClientSource>();
 builder.Services.AddSingleton(sp => new SessionStore(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
+builder.Services.AddSingleton<IShellSandbox>(new MxcShellSandbox(SensitivePaths.Default(paths)));
 builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<SessionStore>(),
     sp.GetRequiredService<ChatClientSource>().CreateAsync,
     sp.GetRequiredService<ILoggerFactory>(),
     sp.GetRequiredService<TimeProvider>(),
-    new ModelTitleGenerator(sp.GetRequiredService<ChatClientSource>().CreateAsync)));
+    new ModelTitleGenerator(sp.GetRequiredService<ChatClientSource>().CreateAsync),
+    sp.GetRequiredService<IShellSandbox>()));
 builder.Services.AddSingleton(sp => new FolderRegistry(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<LaunchCredentials>();
 builder.Services.AddHttpClient();
@@ -57,5 +61,7 @@ app.MapStaticAssets();
 app.MapAttachments();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+_ = Task.Run(() => app.Services.GetRequiredService<IShellSandbox>().Status);
 
 await HostLauncher.RunAsync(app, args);

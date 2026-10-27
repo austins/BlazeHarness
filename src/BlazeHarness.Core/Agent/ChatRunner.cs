@@ -353,7 +353,8 @@ public static class ChatRunner
 
     private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision)
     {
-        return decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context;
+        var context = decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context;
+        return decision.Shell == context.Shell ? context : context.WithShell(decision.Shell);
     }
 
     private static async Task<ToolResult> RunAsync(ToolSet tools, PlannedCall call, ToolContext context, CancellationToken cancellationToken)

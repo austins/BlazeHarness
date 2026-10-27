@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tests.Integration.Tools;
 using BlazeHarness.Core.Tools;
 using System.Text.Json;
@@ -18,6 +19,8 @@ public sealed class PermissionEngineTests : IDisposable
     }
 
     public static bool IsWindows => OperatingSystem.IsWindows();
+
+    private static SandboxStatus Available { get; } = new(true, "test", "A test sandbox.");
 
     public void Dispose()
     {
@@ -237,24 +240,45 @@ public sealed class PermissionEngineTests : IDisposable
         decision.Verdict.Should().Be(PermissionVerdict.Ask);
     }
 
-    [Fact]
-    public void Evaluate_ShellWhenReadOnly_Denies()
+    [Theory]
+    [InlineData(AccessLevel.ReadOnly)]
+    [InlineData(AccessLevel.WriteInFolder)]
+    public void Evaluate_ShellWithoutSandbox_DeniesAndExplainsWhy(AccessLevel access)
     {
         // Arrange
-        _sut.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.NeverAsk);
+        _sut.Sandbox = SandboxStatus.Unavailable("Intel Macs are not supported.");
+        _sut.Settings = new PermissionSettings(access, ApprovalMode.NeverAsk);
 
         // Act
         var decision = Evaluate(NewShell(), new { command = "ls" });
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Deny);
+        decision.Reason.Should().Contain("Intel Macs are not supported.").And.Contain("Unrestricted");
+    }
+
+    [Theory]
+    [InlineData(AccessLevel.ReadOnly, ShellMode.ReadOnly)]
+    [InlineData(AccessLevel.WriteInFolder, ShellMode.Writable)]
+    public void Evaluate_ShellWithSandbox_RunsConfinedToTheAccessLevel(AccessLevel access, ShellMode expected)
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        _sut.Settings = new PermissionSettings(access, ApprovalMode.AutoApprove);
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "ls" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Allow);
+        decision.Shell.Should().Be(expected);
     }
 
     [Fact]
-    public void Evaluate_ShellNotConfined_AsksEvenWhenNeverAsk()
+    public void Evaluate_ShellWithSandboxAskFirst_Asks()
     {
         // Arrange
-        _sut.Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.NeverAsk);
+        _sut.Sandbox = Available;
 
         // Act
         var decision = Evaluate(NewShell(), new { command = "ls" });
@@ -262,27 +286,14 @@ public sealed class PermissionEngineTests : IDisposable
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Ask);
         decision.GrantKey.Should().Be("shell:ls");
-    }
-
-    [Fact]
-    public void Evaluate_ShellConfinedAutoApprove_Allows()
-    {
-        // Arrange
-        _sut.ShellConfined = true;
-        _sut.Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.AutoApprove);
-
-        // Act
-        var decision = Evaluate(NewShell(), new { command = "ls" });
-
-        // Assert
-        decision.Verdict.Should().Be(PermissionVerdict.Allow);
+        decision.Shell.Should().Be(ShellMode.Writable);
     }
 
     [Theory]
     [InlineData(ApprovalMode.AskFirst, PermissionVerdict.Ask)]
     [InlineData(ApprovalMode.AutoApprove, PermissionVerdict.Allow)]
     [InlineData(ApprovalMode.NeverAsk, PermissionVerdict.Allow)]
-    public void Evaluate_ShellUnrestricted_FollowsTheApprovalMode(ApprovalMode approvals, PermissionVerdict expected)
+    public void Evaluate_ShellUnrestricted_FollowsTheApprovalModeWithoutASandbox(ApprovalMode approvals, PermissionVerdict expected)
     {
         // Arrange
         _sut.Settings = new PermissionSettings(AccessLevel.Unrestricted, approvals);
@@ -292,12 +303,14 @@ public sealed class PermissionEngineTests : IDisposable
 
         // Assert
         decision.Verdict.Should().Be(expected);
+        decision.Shell.Should().Be(ShellMode.Unconfined);
     }
 
     [Fact]
     public void Evaluate_ShellGrant_AllowsOnlyThatCommand()
     {
         // Arrange
+        _sut.Sandbox = Available;
         _sut.Remember("shell:ls");
 
         // Act
@@ -306,6 +319,7 @@ public sealed class PermissionEngineTests : IDisposable
 
         // Assert
         same.Verdict.Should().Be(PermissionVerdict.Allow);
+        same.Shell.Should().Be(ShellMode.Writable);
         other.Verdict.Should().Be(PermissionVerdict.Ask);
     }
 
@@ -319,7 +333,10 @@ public sealed class PermissionEngineTests : IDisposable
         decision.Verdict.Should().Be(PermissionVerdict.Allow);
     }
 
-    private static ShellTool NewShell() => new(ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false));
+    private static ShellTool NewShell() => new(
+        ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false),
+        new NoShellSandbox("none"),
+        Path.GetTempPath());
 
     private PermissionDecision Evaluate(ITool tool, object arguments)
     {
