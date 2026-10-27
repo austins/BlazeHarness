@@ -592,6 +592,29 @@ public sealed class SessionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SendAsync_SearchChatInFolderScope_FindsAnotherChatOfTheFolder()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var folder = Path.Combine(_temp.Root, "work");
+        Directory.CreateDirectory(folder);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Noted.")])
+            .Enqueue([ScriptedChatClient.Call("c1", "search_chat", """{"query":"zebra","scope":"folder"}""")])
+            .Enqueue([ScriptedChatClient.Text("Found it.")]);
+        var sut = Create(client);
+        var earlier = await sut.CreateAsync(folder, ct);
+        var current = await sut.CreateAsync(folder, ct);
+        await sut.SendAsync(earlier.Id, "the codename is zebra", TestTargets.Create("p1", "fast"));
+
+        // Act
+        await sut.SendAsync(current.Id, "what was the codename?", TestTargets.Create("p1", "fast"));
+
+        // Assert
+        var session = (await sut.OpenAsync(current.Id))!;
+        session.Entries[1].ToolCalls.Single().Output.Should().Contain("the codename is zebra").And.Contain("[the codename is zebra]");
+    }
+
+    [Fact]
     public async Task SendAsync_SessionWithoutAFolder_WorksInItsOutputsFolder()
     {
         // Arrange

@@ -30,6 +30,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 
 * Chat and coding in one interface, with streamed replies and multiple providers.
 * Tools for shell commands, reading, writing and editing files, listing folders, and searching files. Read-only tools run in parallel.
+* A `search_chat` tool lets the agent look back through the full chat (including tool output) for something compaction summarized away, and optionally through the other chats of the same folder.
 * Approvals let you decide, per tool and per action, what runs without asking.
 * Shell sandboxing where the platform supports it, so commands can stay inside the folder you opened. Otherwise commands run directly, behind approvals.
 * Folders and sessions. Open a folder and run sessions inside it, grouped by folder. Sessions can also exist without a folder, for general chat.

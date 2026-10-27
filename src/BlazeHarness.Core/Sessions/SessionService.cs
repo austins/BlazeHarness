@@ -27,6 +27,7 @@ public sealed partial class SessionService : IDisposable
     private const int PlaceholderLength = 48;
 
     private const int MaxTitleAttempts = 3;
+    private const int MaxSearchedChats = 30;
 
     private readonly SessionStore _store;
     private readonly Func<ChatTarget, CancellationToken, Task<IChatClient>> _clientFactory;
@@ -589,7 +590,7 @@ public sealed partial class SessionService : IDisposable
     {
         if (folderPath is not null && !Directory.Exists(folderPath))
         {
-            UseAttachmentsOnly(session);
+            UseAttachmentsOnly(id, session, folderPath);
             return;
         }
 
@@ -607,21 +608,36 @@ public sealed partial class SessionService : IDisposable
             }
 
             var shell = ShellInfo.DetectCurrent();
-            var tools = BuiltInTools.Create(root, shell, session.Attachments, _sandbox, _store.ShellDirectory(id), _time);
+            var tools = BuiltInTools.Create(root, shell, session.Attachments, _sandbox, _store.ShellDirectory(id), _time, ChatSearchFor(id, session, folderPath));
             session.Tools = tools;
             session.BasePrompt = SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
             LogToolsUnavailable(ex, root);
-            UseAttachmentsOnly(session);
+            UseAttachmentsOnly(id, session, folderPath);
         }
     }
 
-    private void UseAttachmentsOnly(ChatSession session)
+    private void UseAttachmentsOnly(string id, ChatSession session, string? folderPath)
     {
-        session.Tools = session.Attachments is { } files ? BuiltInTools.ForAttachments(files, _time) : null;
+        session.Tools = session.Attachments is { } files ? BuiltInTools.ForAttachments(files, _time, ChatSearchFor(id, session, folderPath)) : null;
         session.BasePrompt = null;
+    }
+
+    private SearchChatTool ChatSearchFor(string id, ChatSession session, string? folderPath)
+    {
+        return new SearchChatTool(() => session.Entries, async cancellationToken =>
+        {
+            List<(string Title, IReadOnlyList<ChatEntry> Entries)> others = [];
+            foreach (var other in _store.List().Where(s => s.Id != id && string.Equals(s.FolderPath, folderPath, StringComparison.Ordinal)).Take(MaxSearchedChats))
+            {
+                var events = await _store.GetLog(other.Id).ReadAsync(cancellationToken).ConfigureAwait(false);
+                others.Add((other.Title, SessionReplay.Replay(events)));
+            }
+
+            return others;
+        });
     }
 
     private void StartTitle(string id, ChatSession session, ChatTarget target)

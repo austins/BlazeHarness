@@ -17,6 +17,7 @@ internal static class BuiltInTools
     /// <param name="sandbox">Starts the shell commands. Required when <paramref name="shell"/> is set.</param>
     /// <param name="scratchDirectory">The folder confined shell commands may always write to. Required when <paramref name="shell"/> is set.</param>
     /// <param name="time">Times the tools' timeouts; the system clock when null.</param>
+    /// <param name="chatSearch">The <c>search_chat</c> tool, or null to leave it out.</param>
     /// <returns>The tool set.</returns>
     public static ToolSet Create(
         string folder,
@@ -24,9 +25,15 @@ internal static class BuiltInTools
         SessionAttachments? attachments = null,
         IShellSandbox? sandbox = null,
         string? scratchDirectory = null,
-        TimeProvider? time = null)
+        TimeProvider? time = null,
+        ITool? chatSearch = null)
     {
         List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool()];
+        if (chatSearch is not null)
+        {
+            tools.Add(chatSearch);
+        }
+
         if (shell is not null)
         {
             ArgumentNullException.ThrowIfNull(sandbox);
@@ -47,11 +54,18 @@ internal static class BuiltInTools
     /// </summary>
     /// <param name="attachments">The session's attached files.</param>
     /// <param name="time">Times the tool's timeout; the system clock when null.</param>
+    /// <param name="chatSearch">The <c>search_chat</c> tool, or null to leave it out.</param>
     /// <returns>The tool set.</returns>
-    public static ToolSet ForAttachments(SessionAttachments attachments, TimeProvider? time = null)
+    public static ToolSet ForAttachments(SessionAttachments attachments, TimeProvider? time = null, ITool? chatSearch = null)
     {
         ArgumentNullException.ThrowIfNull(attachments);
         Directory.CreateDirectory(attachments.Directory);
-        return new ToolSet([new ReadAttachmentTool(attachments)], new ToolContext(attachments.Directory), time);
+        List<ITool> tools = [new ReadAttachmentTool(attachments)];
+        if (chatSearch is not null)
+        {
+            tools.Add(chatSearch);
+        }
+
+        return new ToolSet(tools, new ToolContext(attachments.Directory), time);
     }
 }
