@@ -323,6 +323,69 @@ public sealed class PermissionEngineTests : IDisposable
         other.Verdict.Should().Be(PermissionVerdict.Ask);
     }
 
+    [Theory]
+    [InlineData(ApprovalMode.AskFirst)]
+    [InlineData(ApprovalMode.AutoApprove)]
+    [InlineData(ApprovalMode.NeverAsk)]
+    public void Evaluate_ForbiddenShellCommand_AsksUnderEveryApprovalMode(ApprovalMode approvals)
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        _sut.Settings = new PermissionSettings(AccessLevel.WriteInFolder, approvals);
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "echo ok && rm -rf build" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Ask);
+        decision.Reason.Should().Contain("every time");
+        decision.GrantKey.Should().BeNull();
+        decision.Shell.Should().Be(ShellMode.Writable);
+    }
+
+    [Fact]
+    public void Evaluate_ForbiddenShellCommandWithGrantForSameText_StillAsks()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        _sut.Remember("shell:rm -rf build");
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "rm -rf build" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Ask);
+    }
+
+    [Fact]
+    public void Evaluate_ForbiddenShellCommandUnrestricted_FollowsTheApprovalMode()
+    {
+        // Arrange
+        _sut.Settings = new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk);
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "rm -rf build" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Allow);
+        decision.Shell.Should().Be(ShellMode.Unconfined);
+    }
+
+    [Fact]
+    public void Evaluate_ForbiddenShellCommandWithEmptyList_Runs()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        _sut.Forbidden = ForbiddenCommands.None;
+        _sut.Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.AutoApprove);
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "rm -rf build" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Allow);
+    }
+
     [Fact]
     public void Evaluate_MalformedArguments_DoesNotThrow()
     {

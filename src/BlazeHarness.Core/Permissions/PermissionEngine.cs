@@ -20,6 +20,10 @@ namespace BlazeHarness.Core.Permissions;
 /// working folder, or can't change anything at <see cref="AccessLevel.ReadOnly"/>. Without a sandbox it is refused, so a command never
 /// runs unconfined unless the user chose <see cref="AccessLevel.Unrestricted"/>.
 /// </para>
+/// <para>
+/// A command on the <see cref="Forbidden"/> list, such as a recursive delete, always asks, under every approval mode, and the answer can't be
+/// remembered. <see cref="AccessLevel.Unrestricted"/> skips the list, because the user has already accepted that commands run unconfined.
+/// </para>
 /// </remarks>
 public sealed class PermissionEngine
 {
@@ -53,6 +57,11 @@ public sealed class PermissionEngine
     /// Gets or sets the folders no call may touch.
     /// </summary>
     public SensitivePaths Sensitive { get; set; } = SensitivePaths.None;
+
+    /// <summary>
+    /// Gets or sets the commands that need the user's approval every time.
+    /// </summary>
+    public ForbiddenCommands Forbidden { get; set; } = ForbiddenCommands.BuiltIn;
 
     /// <summary>
     /// Gets or sets whether shell commands can run inside an OS sandbox that enforces the access level.
@@ -132,6 +141,11 @@ public sealed class PermissionEngine
         }
 
         var mode = settings.Access == AccessLevel.ReadOnly ? ShellMode.ReadOnly : ShellMode.Writable;
+        if (Forbidden.Find(Text(arguments, "command") ?? string.Empty) is { } forbidden)
+        {
+            return new PermissionDecision(PermissionVerdict.Ask, $"{forbidden.Risk} This kind of command needs your approval every time.", GrantKey: null, Shell: mode);
+        }
+
         return settings.Approvals == ApprovalMode.AskFirst
             ? new PermissionDecision(
                 PermissionVerdict.Ask,

@@ -1,0 +1,21 @@
+{
+  "rules": [
+    { "programs": ["rm"], "flags": ["-r", "-R", "-f", "--recursive", "--force"], "risk": "Deletes files recursively or by force." },
+    { "programs": ["del", "erase", "rd", "rmdir"], "flags": ["/s"], "flagStyle": "windows", "risk": "Deletes files recursively." },
+    { "programs": ["remove-item", "ri", "rm", "del", "erase", "rd", "rmdir"], "flags": ["-Recurse", "-Force"], "flagStyle": "powershell", "risk": "Deletes files recursively or by force." },
+    { "programs": ["find"], "flags": ["-delete"], "risk": "Deletes every file it finds." },
+    { "programs": ["shred", "wipefs"], "risk": "Destroys file or disk contents." },
+    { "programs": ["dd"], "risk": "Writes raw data to disks and files." },
+    { "programs": ["mkfs*", "mke2fs", "fdisk", "sfdisk", "parted", "format", "diskpart"], "risk": "Formats or partitions disks." },
+    { "programs": ["sudo", "su", "doas", "pkexec", "runas"], "risk": "Runs with elevated privileges." },
+    { "programs": ["chmod", "chown", "chgrp"], "flags": ["-R", "--recursive"], "risk": "Changes permissions or ownership of a whole folder tree." },
+    { "programs": ["icacls", "takeown"], "risk": "Changes file permissions or ownership." },
+    { "programs": ["shutdown", "reboot", "halt", "poweroff"], "risk": "Shuts down or restarts the computer." },
+    { "programs": ["security"], "arguments": ["find-generic-password"], "platforms": ["macos"], "risk": "Reads a password from the keychain." },
+    { "programs": ["security"], "arguments": ["find-internet-password"], "platforms": ["macos"], "risk": "Reads a password from the keychain." },
+    { "programs": ["cmdkey"], "platforms": ["windows"], "risk": "Reads or changes stored Windows credentials." },
+    { "programs": ["dotnet"], "arguments": ["user-secrets", "list"], "risk": "Prints .NET user secrets." },
+    { "programs": ["printenv"], "contains": ["key", "token", "secret", "password"], "risk": "Prints a secret from the environment." },
+    { "contains": ["/.ssh", "/.aws", "/.azure", "/.gnupg", "/.kube", "/usersecrets", "/.netrc", "/id_rsa", "/id_ed25519"], "risk": "Uses a path that holds keys or credentials." }
+  ]
+}
