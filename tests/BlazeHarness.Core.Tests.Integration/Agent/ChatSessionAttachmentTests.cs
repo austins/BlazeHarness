@@ -2,6 +2,7 @@ using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Core.Tests.Integration.Attachments;
 using Microsoft.Extensions.AI;
 
 namespace BlazeHarness.Core.Tests.Integration.Agent;

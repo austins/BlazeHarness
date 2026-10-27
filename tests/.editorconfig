@@ -22,3 +22,6 @@ dotnet_diagnostic.IDISP004.severity = none
 
 # VSTHRD002: Synchronously waiting on tasks
 dotnet_diagnostic.VSTHRD002.severity = none
+
+# CA2000: ScriptedChatClient's Dispose is a no-op, and the analyzer loses ownership through its fluent Enqueue
+dotnet_code_quality.CA2000.excluded_type_names_with_derived_types = ScriptedChatClient

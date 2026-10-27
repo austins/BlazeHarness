@@ -23,6 +23,7 @@ public sealed class RecordingSessionLog : ISessionLog
         }
     }
 
+    /// <inheritdoc />
     public Task AppendAsync(IReadOnlyCollection<SessionEvent> events, CancellationToken cancellationToken = default)
     {
         if (FailWith is not null)
@@ -38,6 +39,7 @@ public sealed class RecordingSessionLog : ISessionLog
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<SessionEvent>> ReadAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(Events);

@@ -7,6 +7,8 @@ public class LoggerFake : ILogger
     private readonly List<LogEntry> _entries = [];
     private readonly Type? _categoryName;
 
+    /// <summary>Initializes a new instance of the <see cref="LoggerFake"/> class.</summary>
+    /// <param name="categoryName">The type whose name labels the test output, or null.</param>
     protected LoggerFake(Type? categoryName = null)
     {
         _categoryName = categoryName;
@@ -24,6 +26,7 @@ public class LoggerFake : ILogger
         }
     }
 
+    /// <inheritdoc />
     public void Log<TState>(
         LogLevel logLevel,
         EventId eventId,
@@ -46,8 +49,14 @@ public class LoggerFake : ILogger
             $"[{nameof(LoggerFake)}] {logLevel} {_categoryName?.FullName}[{eventId.Id}]: {logEntry.Message}");
     }
 
+    /// <inheritdoc />
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.Trace;
 
+    /// <inheritdoc />
     public IDisposable? BeginScope<TState>(TState state)
         where TState : notnull => null;
 }
+
+/// <summary>A <see cref="LoggerFake"/> for the category of one class.</summary>
+/// <typeparam name="TCategoryName">The class the logger belongs to.</typeparam>
+public sealed class LoggerFake<TCategoryName>() : LoggerFake(typeof(TCategoryName)), ILogger<TCategoryName>;

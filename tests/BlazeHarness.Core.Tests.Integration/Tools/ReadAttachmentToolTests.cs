@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Tests.Integration.Attachments;
 using BlazeHarness.Core.Tools;
 using System.Text.Json;
 

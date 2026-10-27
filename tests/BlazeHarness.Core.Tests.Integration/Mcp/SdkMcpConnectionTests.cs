@@ -12,6 +12,7 @@ public sealed class SdkMcpConnectionTests : IAsyncLifetime
     private readonly Pipe _toClient = new();
     private readonly Pipe _toServer = new();
     private McpServer _server = null!;
+    private StreamServerTransport _transport = null!;
     private SdkMcpConnection _sut = null!;
 
     public async ValueTask InitializeAsync()
@@ -32,7 +33,8 @@ public sealed class SdkMcpConnectionTests : IAsyncLifetime
             ],
         };
 
-        _server = McpServer.Create(new StreamServerTransport(_toServer.Reader.AsStream(), _toClient.Writer.AsStream()), options);
+        _transport = new StreamServerTransport(_toServer.Reader.AsStream(), _toClient.Writer.AsStream());
+        _server = McpServer.Create(_transport, options);
         _ = _server.RunAsync(_stop.Token);
         var client = await McpClient.CreateAsync(
             new StreamClientTransport(_toServer.Writer.AsStream(), _toClient.Reader.AsStream()),
@@ -45,6 +47,7 @@ public sealed class SdkMcpConnectionTests : IAsyncLifetime
         await _sut.DisposeAsync();
         await _stop.CancelAsync();
         await _server.DisposeAsync();
+        await _transport.DisposeAsync();
         _stop.Dispose();
     }
 

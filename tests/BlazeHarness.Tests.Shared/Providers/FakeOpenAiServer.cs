@@ -21,11 +21,16 @@ public sealed class FakeOpenAiServer : IDisposable
     private readonly List<string> _requestBodies = [];
     private int _requestCount;
 
+    /// <summary>Initializes a new instance of the <see cref="FakeOpenAiServer"/> class that answers every request with the same chunks.</summary>
+    /// <param name="sseChunks">The chunks to stream, without the <c>data:</c> prefix or the closing <c>[DONE]</c>.</param>
     public FakeOpenAiServer(string[] sseChunks)
         : this(_ => sseChunks, _ => HttpStatusCode.OK)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="FakeOpenAiServer"/> class that picks its reply by request number.</summary>
+    /// <param name="chunksForRequest">Returns the chunks to stream for a request, counting from 1; null streams none.</param>
+    /// <param name="statusForRequest">Returns the status code for a request, counting from 1. Anything but OK sends no body.</param>
     public FakeOpenAiServer(Func<int, string[]?> chunksForRequest, Func<int, HttpStatusCode> statusForRequest)
         : this((index, _) => chunksForRequest(index), statusForRequest)
     {
@@ -54,6 +59,7 @@ public sealed class FakeOpenAiServer : IDisposable
         BaseUrl = new Uri($"{address}/v1");
     }
 
+    /// <summary>Gets the base URL to give a provider, ending in <c>/v1</c>.</summary>
     public Uri BaseUrl { get; }
 
     /// <summary>Gets a copy of the bodies of the requests received so far.</summary>
@@ -68,8 +74,10 @@ public sealed class FakeOpenAiServer : IDisposable
         }
     }
 
+    /// <summary>Gets the number of requests received so far.</summary>
     public int RequestCount => Volatile.Read(ref _requestCount);
 
+    /// <inheritdoc />
     public void Dispose()
     {
 #pragma warning disable VSTHRD002 // Dispose can't be asynchronous here.

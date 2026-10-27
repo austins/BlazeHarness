@@ -27,8 +27,10 @@ public sealed class DirectShellProcessTests : IDisposable
         using var process = await _sandbox.StartAsync(Launch("pwd; echo oops >&2; exit 3"), ct);
 
         // Act
-        var stdout = await new StreamReader(process.Output).ReadToEndAsync(ct).Bounded();
-        var stderr = await new StreamReader(process.Error).ReadToEndAsync(ct).Bounded();
+        using var stdoutReader = new StreamReader(process.Output);
+        using var stderrReader = new StreamReader(process.Error);
+        var stdout = await stdoutReader.ReadToEndAsync(ct).Bounded();
+        var stderr = await stderrReader.ReadToEndAsync(ct).Bounded();
         var exit = await process.WaitAsync(ct).Bounded();
 
         // Assert
@@ -45,7 +47,8 @@ public sealed class DirectShellProcessTests : IDisposable
         using var process = await _sandbox.StartAsync(Launch("cat; echo done"), ct);
 
         // Act
-        var stdout = await new StreamReader(process.Output).ReadToEndAsync(ct).Bounded();
+        using var stdoutReader = new StreamReader(process.Output);
+        var stdout = await stdoutReader.ReadToEndAsync(ct).Bounded();
         var exit = await process.WaitAsync(ct).Bounded();
 
         // Assert

@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
-        <Using Include="BlazeHarness.Core.Tests.Integration.Attachments" />
-    </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\..\src\BlazeHarness.Core\BlazeHarness.Core.csproj" />
+        <ProjectReference Include="..\..\src\BlazeHarness.Core\BlazeHarness.Core.csproj"/>
     </ItemGroup>
 </Project>

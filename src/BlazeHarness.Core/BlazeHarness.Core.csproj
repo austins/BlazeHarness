@@ -1,21 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <NoWarn>$(NoWarn);SCME0001</NoWarn>
-  </PropertyGroup>
-  <ItemGroup>
-    <InternalsVisibleTo Include="BlazeHarness.Core.Tests.Unit" />
-    <InternalsVisibleTo Include="BlazeHarness.Core.Tests.Integration" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Permissions\forbidden-commands.json" LogicalName="forbidden-commands.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.11.0" />
-    <PackageReference Include="Microsoft.Mxc.Sdk" Version="1.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.14" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.14" />
-    <PackageReference Include="ModelContextProtocol.Core" Version="2.3.0" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
-  </ItemGroup>
+    <PropertyGroup>
+        <NoWarn>$(NoWarn);SCME0001</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.11.0"/>
+        <PackageReference Include="Microsoft.Mxc.Sdk" Version="1.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.14"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14"/>
+        <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.14"/>
+        <PackageReference Include="ModelContextProtocol.Core" Version="2.3.0"/>
+        <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.14"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="BlazeHarness.Core.Tests.Unit"/>
+        <InternalsVisibleTo Include="BlazeHarness.Core.Tests.Integration"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Permissions\forbidden-commands.json" LogicalName="forbidden-commands.json"/>
+    </ItemGroup>
 </Project>
