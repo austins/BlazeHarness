@@ -1,9 +1,5 @@
-using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Permissions;
-using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
-using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Logging.Abstractions;
 
 #pragma warning disable IDISP001 // The service disposes the sessions it opens.
 
@@ -11,31 +7,22 @@ namespace BlazeHarness.Core.Tests.Integration.Sessions;
 
 public sealed class SessionServiceExportTests : IDisposable
 {
-    private readonly TempFolder _temp = new("bh-svc-export-");
-    private readonly SessionStore _store;
-    private readonly ScriptedChatClient _client = new([ScriptedChatClient.Text("Sunny.")]);
-    private readonly SessionService _sut;
+    private readonly SessionServiceRig _rig = new("bh-svc-export-", "Sunny.");
 
     public SessionServiceExportTests()
     {
-        var paths = new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root);
-        _store = new SessionStore(paths, NullLoggerFactory.Instance);
-        _sut = new SessionService(_store, (_, _) => Task.FromResult<IChatClient>(_client), NullLoggerFactory.Instance);
+        _rig.Build();
     }
 
-    public void Dispose()
-    {
-        _sut.Dispose();
-        _store.Dispose();
-        _client.Dispose();
-        _temp.Dispose();
-    }
+    private SessionService Sut => _rig.Service;
+
+    public void Dispose() => _rig.Dispose();
 
     [Fact]
     public async Task ExportAsync_UnknownSession_ReturnsNull()
     {
         // Act
-        var file = await _sut.ExportAsync("missing", ExportFormat.Json, TestContext.Current.CancellationToken);
+        var file = await Sut.ExportAsync("missing", ExportFormat.Json, TestContext.Current.CancellationToken);
 
         // Assert
         file.Should().BeNull();
@@ -46,14 +33,14 @@ public sealed class SessionServiceExportTests : IDisposable
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
-        var folder = Path.Combine(_temp.Root, "work");
+        var folder = Path.Combine(_rig.Root, "work");
         Directory.CreateDirectory(folder);
-        var source = await _sut.CreateAsync(folder, ct);
-        await _sut.SendAsync(source.Id, "What is the weather?", Target());
-        var exported = await _sut.ExportAsync(source.Id, ExportFormat.Json, ct);
+        var source = await Sut.CreateAsync(folder, ct);
+        await Sut.SendAsync(source.Id, "What is the weather?", TestTargets.Create());
+        var exported = await Sut.ExportAsync(source.Id, ExportFormat.Json, ct);
 
         // Act
-        var imported = await _sut.ImportAsync(exported!.Content, ct);
+        var imported = await Sut.ImportAsync(exported!.Content, ct);
 
         // Assert
         imported.Id.Should().NotBe(source.Id);
@@ -61,8 +48,8 @@ public sealed class SessionServiceExportTests : IDisposable
         imported.Title.Should().Be("What is the weather?");
         imported.ProviderId.Should().Be("p1");
         imported.Access.Should().Be(AccessLevel.ReadOnly);
-        var original = await _store.GetLog(source.Id).ReadAsync(ct);
-        (await _store.GetLog(imported.Id).ReadAsync(ct)).Select(e => e.GetType()).Should().Equal(original.Select(e => e.GetType()));
+        var original = await _rig.Store.GetLog(source.Id).ReadAsync(ct);
+        (await _rig.Store.GetLog(imported.Id).ReadAsync(ct)).Select(e => e.GetType()).Should().Equal(original.Select(e => e.GetType()));
     }
 
     [Fact]
@@ -70,13 +57,13 @@ public sealed class SessionServiceExportTests : IDisposable
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
-        var source = await _sut.CreateAsync(cancellationToken: ct);
-        await _sut.SendAsync(source.Id, "What is the weather?", Target());
-        var exported = await _sut.ExportAsync(source.Id, ExportFormat.Json, ct);
+        var source = await Sut.CreateAsync(cancellationToken: ct);
+        await Sut.SendAsync(source.Id, "What is the weather?", TestTargets.Create());
+        var exported = await Sut.ExportAsync(source.Id, ExportFormat.Json, ct);
 
         // Act
-        var imported = await _sut.ImportAsync(exported!.Content, ct);
-        var session = await _sut.OpenAsync(imported.Id);
+        var imported = await Sut.ImportAsync(exported!.Content, ct);
+        var session = await Sut.OpenAsync(imported.Id);
 
         // Assert
         session!.Entries.Select(e => e.Text).Should().Equal("What is the weather?", "Sunny.");
@@ -93,7 +80,7 @@ public sealed class SessionServiceExportTests : IDisposable
             DateTimeOffset.UnixEpoch);
 
         // Act
-        var imported = await _sut.ImportAsync(json, ct);
+        var imported = await Sut.ImportAsync(json, ct);
 
         // Assert
         imported.FolderPath.Should().BeNull();
@@ -105,17 +92,10 @@ public sealed class SessionServiceExportTests : IDisposable
     public async Task ImportAsync_NotAChatExport_ThrowsAndCreatesNothing()
     {
         // Act
-        var act = () => _sut.ImportAsync("{}", TestContext.Current.CancellationToken);
+        var act = () => Sut.ImportAsync("{}", TestContext.Current.CancellationToken);
 
         // Assert
         await act.Should().ThrowAsync<FormatException>();
-        _store.List().Should().BeEmpty();
-    }
-
-    private static ChatTarget Target()
-    {
-        var modelConfig = new ModelConfig { Id = "fast", ContextWindow = 8000, MaxOutputTokens = 1000 };
-        var providerConfig = new ProviderConfig { Id = "p1", DisplayName = "P1", BaseUrl = "http://localhost/v1", Models = [modelConfig] };
-        return new ChatTarget(providerConfig, modelConfig, null);
+        _rig.Store.List().Should().BeEmpty();
     }
 }

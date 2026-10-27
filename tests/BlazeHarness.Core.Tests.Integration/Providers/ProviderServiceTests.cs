@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Secrets;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BlazeHarness.Core.Tests.Integration.Providers;
 
@@ -13,7 +14,7 @@ public sealed class ProviderServiceTests : IDisposable
 
     public ProviderServiceTests()
     {
-        _config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), new LoggerFake<ProviderServiceTests>(), watch: false);
+        _config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
         _secrets = new FileSecretStore(Path.Combine(_temp.Root, "secrets.json"));
         _sut = new ProviderService(_config, _secrets, new ApiKeyResolver(_secrets, _ => null));
     }

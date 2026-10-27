@@ -6,9 +6,9 @@ namespace BlazeHarness.Tests.Shared.Agent;
 /// <summary>Builds chat targets for tests.</summary>
 public static class TestTargets
 {
-    public static ChatTarget Create(string provider = "p1", string model = "fast", ThinkingLevel? level = null, InputTypes input = InputTypes.Text)
+    public static ChatTarget Create(string provider = "p1", string model = "fast", ThinkingLevel? level = null, InputTypes input = InputTypes.Text, int contextWindow = 8000)
     {
-        var modelConfig = new ModelConfig { Id = model, ContextWindow = 8000, MaxOutputTokens = 1000, Input = input };
+        var modelConfig = new ModelConfig { Id = model, ContextWindow = contextWindow, MaxOutputTokens = 1000, Input = input };
         var providerConfig = new ProviderConfig
         {
             Id = provider,

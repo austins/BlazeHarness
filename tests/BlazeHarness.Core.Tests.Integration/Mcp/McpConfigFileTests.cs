@@ -1,4 +1,6 @@
 using BlazeHarness.Core.Mcp;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 
 namespace BlazeHarness.Core.Tests.Integration.Mcp;
 
@@ -24,7 +26,7 @@ public sealed class McpConfigFileTests : IDisposable
     public void Constructor_NoFile_IsEmpty()
     {
         // Act
-        using var sut = new McpConfigFile(_path, new LoggerFake<McpConfigFileTests>(), watch: false);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, watch: false);
 
         // Assert
         sut.Text.Should().BeEmpty();
@@ -39,7 +41,7 @@ public sealed class McpConfigFileTests : IDisposable
         await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
 
         // Act
-        using var sut = new McpConfigFile(_path, new LoggerFake<McpConfigFileTests>(), watch: false);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, watch: false);
 
         // Assert
         sut.Parsed.Servers.Should().ContainSingle().Which.Name.Should().Be("files");
@@ -49,7 +51,7 @@ public sealed class McpConfigFileTests : IDisposable
     public async Task OnExternalChange_EditedOnDisk_ReloadsAndRaisesChanged()
     {
         // Arrange
-        using var sut = new McpConfigFile(_path, new LoggerFake<McpConfigFileTests>(), watch: false);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, watch: false);
         var raised = 0;
         sut.Changed += (_, _) => raised++;
         await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
@@ -67,7 +69,7 @@ public sealed class McpConfigFileTests : IDisposable
     public void OnExternalChange_AfterDispose_DoesNotThrow()
     {
         // Arrange
-        var sut = new McpConfigFile(_path, new LoggerFake<McpConfigFileTests>(), watch: false);
+        var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, watch: false);
         sut.Dispose();
 
         // Act
@@ -82,7 +84,7 @@ public sealed class McpConfigFileTests : IDisposable
     public async Task SaveAsync_ValidText_WritesTheTextAsGiven()
     {
         // Arrange
-        using var sut = new McpConfigFile(_path, new LoggerFake<McpConfigFileTests>(), watch: false);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, watch: false);
         var raised = 0;
         sut.Changed += (_, _) => raised++;
 
@@ -103,7 +105,7 @@ public sealed class McpConfigFileTests : IDisposable
     {
         // Arrange
         await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
-        using var sut = new McpConfigFile(_path, new LoggerFake<McpConfigFileTests>(), watch: false);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, watch: false);
 
         // Act
         var result = await sut.SaveAsync("{ nope", TestContext.Current.CancellationToken);
@@ -119,7 +121,7 @@ public sealed class McpConfigFileTests : IDisposable
     {
         // Arrange
         await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
-        using var sut = new McpConfigFile(_path, new LoggerFake<McpConfigFileTests>(), watch: false);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, watch: false);
 
         // Act
         var saved = await sut.SetDisabledAsync("files", disabled: true, TestContext.Current.CancellationToken);
@@ -134,7 +136,7 @@ public sealed class McpConfigFileTests : IDisposable
     {
         // Arrange
         await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
-        using var sut = new McpConfigFile(_path, new LoggerFake<McpConfigFileTests>(), watch: false);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, watch: false);
 
         // Act
         var saved = await sut.SetDisabledAsync("other", disabled: true, TestContext.Current.CancellationToken);
@@ -148,13 +150,14 @@ public sealed class McpConfigFileTests : IDisposable
     public async Task ExternalEdit_IsPickedUpAndRaisesChanged()
     {
         // Arrange
-        using var sut = new McpConfigFile(_path, new LoggerFake<McpConfigFileTests>());
+        var time = new FakeTimeProvider();
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, time: time);
         var changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         sut.Changed += (_, _) => changed.TrySetResult();
 
         // Act
         await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
-        await changed.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
+        await time.AdvanceUntilAsync(changed.Task, TimeSpan.FromMilliseconds(250));
 
         // Assert
         sut.Parsed.Servers.Should().ContainSingle().Which.Name.Should().Be("files");
@@ -164,13 +167,14 @@ public sealed class McpConfigFileTests : IDisposable
     public async Task ExternalEdit_WithErrors_IsKeptSoTheUserSeesThem()
     {
         // Arrange
-        using var sut = new McpConfigFile(_path, new LoggerFake<McpConfigFileTests>());
+        var time = new FakeTimeProvider();
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, time: time);
         var changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         sut.Changed += (_, _) => changed.TrySetResult();
 
         // Act
         await File.WriteAllTextAsync(_path, "{ nope", TestContext.Current.CancellationToken);
-        await changed.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
+        await time.AdvanceUntilAsync(changed.Task, TimeSpan.FromMilliseconds(250));
 
         // Assert
         sut.Parsed.Errors.Should().NotBeEmpty();

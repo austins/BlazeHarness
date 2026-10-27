@@ -1,6 +1,6 @@
 using BlazeHarness.Core.Permissions;
 
-namespace BlazeHarness.Core.Tests.Integration.Permissions;
+namespace BlazeHarness.Core.Tests.Unit.Permissions;
 
 public sealed class SensitivePathsTests
 {

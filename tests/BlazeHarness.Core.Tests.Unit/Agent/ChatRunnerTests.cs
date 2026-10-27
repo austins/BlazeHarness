@@ -19,7 +19,7 @@ public sealed class ChatRunnerTests
         var history = new List<ChatMessage> { new(ChatRole.User, "hi") };
 
         // Act
-        var events = await Collect(client, history, CancellationToken.None);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken);
 
         // Assert
         events.Should().Equal(
@@ -41,7 +41,7 @@ public sealed class ChatRunnerTests
         var history = new List<ChatMessage> { new(ChatRole.User, "hi") };
 
         // Act
-        var events = await Collect(client, history, CancellationToken.None);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken);
 
         // Assert
         events.Should().Equal(new TextDelta("par"), new AgentError("boom"), new Done(StopReason.Error));
@@ -57,7 +57,7 @@ public sealed class ChatRunnerTests
         var history = new List<ChatMessage> { new(ChatRole.User, "hi") };
 
         // Act
-        var events = await Collect(client, history, cts.Token);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, cts.Token);
 
         // Assert
         events.Should().Equal(new TextDelta("so far"), new Done(StopReason.Cancelled));
@@ -72,7 +72,7 @@ public sealed class ChatRunnerTests
         var history = new List<ChatMessage> { new(ChatRole.User, "hi") };
 
         // Act
-        var events = await Collect(client, history, CancellationToken.None);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken);
 
         // Assert
         events.Should().Equal(new Done(StopReason.Completed));
@@ -80,15 +80,4 @@ public sealed class ChatRunnerTests
     }
 
     private static ChatResponseUpdate Update(AIContent content) => new(ChatRole.Assistant, [content]);
-
-    private static async Task<List<AgentEvent>> Collect(IChatClient client, IList<ChatMessage> history, CancellationToken cancellationToken)
-    {
-        var events = new List<AgentEvent>();
-        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), cancellationToken: cancellationToken))
-        {
-            events.Add(e);
-        }
-
-        return events;
-    }
 }

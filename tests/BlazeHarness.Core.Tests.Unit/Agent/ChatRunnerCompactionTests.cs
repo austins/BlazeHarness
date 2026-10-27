@@ -23,7 +23,7 @@ public sealed class ChatRunnerCompactionTests
         var context = new ConversationContext(1_000, _summarizer);
 
         // Act
-        var events = await Collect(client, history, context, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, context: context);
 
         // Assert
         events.Should().HaveCount(3);
@@ -45,7 +45,7 @@ public sealed class ChatRunnerCompactionTests
         var context = new ConversationContext(100_000, _summarizer);
 
         // Act
-        var events = await Collect(client, Conversation(10), context, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, Conversation(10), TestContext.Current.CancellationToken, context: context);
 
         // Assert
         events.OfType<ContextCompacted>().Should().BeEmpty();
@@ -65,7 +65,7 @@ public sealed class ChatRunnerCompactionTests
         var context = new ConversationContext(1_000, _summarizer);
 
         // Act
-        var events = await Collect(client, history, context, TestContext.Current.CancellationToken, new ToolSet([read], new ToolContext(Path.GetTempPath())));
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, context: context, tools: new ToolSet([read], new ToolContext(Path.GetTempPath())));
 
         // Assert
         var types = events.Select(e => e.GetType()).ToList();
@@ -84,7 +84,7 @@ public sealed class ChatRunnerCompactionTests
         var context = new ConversationContext(1_000, _summarizer);
 
         // Act
-        var events = await Collect(client, Conversation(10), context, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, Conversation(10), TestContext.Current.CancellationToken, context: context);
 
         // Assert
         events[0].Should().Be(new ContextCompactionFailed("no summary"));
@@ -104,7 +104,7 @@ public sealed class ChatRunnerCompactionTests
         var context = new ConversationContext(1_000, _summarizer);
 
         // Act
-        var events = await Collect(client, Conversation(10), context, stop.Token);
+        var events = await ChatRunnerCollector.CollectAsync(client, Conversation(10), stop.Token, context: context);
 
         // Assert
         events.Should().Equal(new Done(StopReason.Cancelled));
@@ -115,21 +115,5 @@ public sealed class ChatRunnerCompactionTests
     private static List<ChatMessage> Conversation(int count)
     {
         return [.. Enumerable.Range(0, count).Select(i => new ChatMessage(i % 2 == 0 ? ChatRole.User : ChatRole.Assistant, new string('x', 400)))];
-    }
-
-    private static async Task<List<AgentEvent>> Collect(
-        IChatClient client,
-        IList<ChatMessage> history,
-        ConversationContext context,
-        CancellationToken cancellationToken,
-        ToolSet? tools = null)
-    {
-        var events = new List<AgentEvent>();
-        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), tools, context: context, cancellationToken: cancellationToken))
-        {
-            events.Add(e);
-        }
-
-        return events;
     }
 }

@@ -1,4 +1,6 @@
 using BlazeHarness.Core.Config;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 
 namespace BlazeHarness.Core.Tests.Integration.Config;
 
@@ -9,7 +11,7 @@ public sealed class JsonFileStoreTests : IDisposable
 
     public JsonFileStoreTests()
     {
-        _sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "doc.json"), new LoggerFake<JsonFileStoreTests>());
+        _sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "doc.json"), NullLogger<JsonFileStore<Doc>>.Instance, watch: false);
     }
 
     public void Dispose()
@@ -43,23 +45,25 @@ public sealed class JsonFileStoreTests : IDisposable
     public async Task ExternalEdit_IsPickedUp()
     {
         // Arrange
+        var time = new FakeTimeProvider();
+        using var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "watched.json"), NullLogger<JsonFileStore<Doc>>.Instance, time: time);
         var changed = new TaskCompletionSource<Doc>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _sut.ExternalChange += (_, e) => changed.TrySetResult(e.Value);
+        sut.ExternalChange += (_, e) => changed.TrySetResult(e.Value);
 
         // Act
-        await File.WriteAllTextAsync(Path.Combine(_temp.Root, "doc.json"), """{"count": 99}""", TestContext.Current.CancellationToken);
-        var result = await changed.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(_temp.Root, "watched.json"), """{"count": 99}""", TestContext.Current.CancellationToken);
+        var result = await time.AdvanceUntilAsync(changed.Task, TimeSpan.FromMilliseconds(250));
 
         // Assert
         result.Count.Should().Be(99);
-        _sut.Current.Count.Should().Be(99);
+        sut.Current.Count.Should().Be(99);
     }
 
     [Fact]
     public async Task OnExternalChange_HandlerThrows_IsLoggedAndDoesNotEscape()
     {
         // Arrange
-        var logger = new LoggerFake<JsonFileStoreTests>();
+        var logger = new LoggerFake<JsonFileStore<Doc>>();
         using var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "handler.json"), logger, watch: false);
         sut.ExternalChange += (_, _) => throw new InvalidOperationException("boom");
         await File.WriteAllTextAsync(Path.Combine(_temp.Root, "handler.json"), """{"count": 5}""", TestContext.Current.CancellationToken);
@@ -77,7 +81,7 @@ public sealed class JsonFileStoreTests : IDisposable
     public async Task OnExternalChange_HandlerUpdatesTheStore_DoesNotDeadlock()
     {
         // Arrange
-        using var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "reenter.json"), new LoggerFake<JsonFileStoreTests>(), watch: false);
+        using var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "reenter.json"), NullLogger<JsonFileStore<Doc>>.Instance, watch: false);
 #pragma warning disable VSTHRD002 // The event handler is synchronous.
         sut.ExternalChange += (_, e) => sut.UpdateAsync(d => d with { Count = e.Value.Count + 1 }).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002
@@ -94,7 +98,7 @@ public sealed class JsonFileStoreTests : IDisposable
     public void OnExternalChange_AfterDispose_DoesNotThrow()
     {
         // Arrange
-        var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "gone.json"), new LoggerFake<JsonFileStoreTests>(), watch: false);
+        var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "gone.json"), NullLogger<JsonFileStore<Doc>>.Instance, watch: false);
 #pragma warning disable IDISP016, IDISP017 // Raising the callback after disposal is the scenario.
         sut.Dispose();
 
@@ -115,7 +119,7 @@ public sealed class JsonFileStoreTests : IDisposable
         File.WriteAllText(path, "{ not json");
 
         // Act
-        using var sut = new JsonFileStore<Doc>(path, new LoggerFake<JsonFileStoreTests>(), watch: false);
+        using var sut = new JsonFileStore<Doc>(path, NullLogger<JsonFileStore<Doc>>.Instance, watch: false);
 
         // Assert
         sut.Current.Count.Should().Be(0);

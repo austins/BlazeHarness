@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Skills;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
 namespace BlazeHarness.Core.Tests.Integration.Skills;
@@ -15,7 +16,7 @@ public sealed class SkillCatalogTests : IDisposable
     public SkillCatalogTests()
     {
         _paths = new AppPaths(Path.Combine(_folders.Root, "home"), Path.Combine(_folders.Root, "user"));
-        _config = new JsonFileStore<AppConfig>(_paths.ConfigFile, new LoggerFake<SkillCatalogTests>(), watch: false);
+        _config = new JsonFileStore<AppConfig>(_paths.ConfigFile, NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
         _sut = new SkillCatalog(_paths, _config, new LoggerFake<SkillCatalog>(), watch: false, _time);
     }
 

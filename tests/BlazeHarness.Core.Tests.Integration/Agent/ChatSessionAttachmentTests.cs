@@ -183,10 +183,10 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")]).Enqueue([ScriptedChatClient.Text("two")]);
         using var sut = Create(client);
         var file = await _attachments.SaveAsync("big.txt", new string('x', 20_000));
-        await sut.SendAsync("first", [file], Target(1_000_000));
+        await sut.SendAsync("first", [file], TestTargets.Create("p", "m", contextWindow: 1_000_000));
 
         // Act
-        await sut.EditAsync(sut.Entries[0].Id, "second", Target(8000));
+        await sut.EditAsync(sut.Entries[0].Id, "second", TestTargets.Create("p", "m", contextWindow: 8000));
 
         // Assert
         sut.Entries[0].Attachments.Should().Equal(new SentAttachment(file, AttachmentDelivery.OnDemand));
@@ -227,12 +227,6 @@ public sealed class ChatSessionAttachmentTests : IDisposable
     }
 
     public static bool IsWindows => OperatingSystem.IsWindows();
-
-    private static ChatTarget Target(int contextWindow)
-    {
-        var model = new ModelConfig { Id = "m", ContextWindow = contextWindow, MaxOutputTokens = 1000 };
-        return new ChatTarget(new ProviderConfig { Id = "p", DisplayName = "P", BaseUrl = "http://localhost/v1", Models = [model] }, model, null);
-    }
 
     private ChatSession Create(ScriptedChatClient client)
     {

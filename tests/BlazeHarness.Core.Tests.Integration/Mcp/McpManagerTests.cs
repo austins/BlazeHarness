@@ -2,6 +2,7 @@ using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
 namespace BlazeHarness.Core.Tests.Integration.Mcp;
@@ -26,7 +27,7 @@ public sealed class McpManagerTests : IAsyncLifetime
     {
         Directory.CreateDirectory(_temp.Root);
         _file = new McpConfigFile(Path.Combine(_temp.Root, "mcp.json"), new LoggerFake<McpConfigFile>(), watch: false);
-        _appConfig = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), new LoggerFake<McpManagerTests>(), watch: false);
+        _appConfig = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
         _permissions = new PermissionDefaults(_appConfig, new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root));
         _sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, ConnectTimeout, _permissions);
     }

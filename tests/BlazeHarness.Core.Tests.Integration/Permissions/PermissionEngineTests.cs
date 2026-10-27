@@ -502,6 +502,7 @@ public sealed class PermissionEngineTests : IDisposable
     [Fact]
     public void Evaluate_MalformedArguments_DoesNotThrow()
     {
+        // The tool parses the same text with the same parser and refuses it, so allowing here cannot run anything.
         // Act
         var decision = _sut.Evaluate(new ReadFileTool(), "{not json", _workspace.Context);
 

@@ -17,7 +17,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(read), approver: null, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(read));
 
         // Assert
         events.Should().Equal(
@@ -54,7 +54,7 @@ public sealed class ChatRunnerToolTests
             .Enqueue([ScriptedChatClient.Text("fin")]);
 
         // Act
-        var events = await Collect(client, NewHistory(), Tools(read), approver: null, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(read));
 
         // Assert
         read.MaxConcurrent.Should().Be(2);
@@ -74,7 +74,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(read, write), approver, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(read, write), approver: approver);
 
         // Assert
         await approver.Received(1).RequestAsync(Arg.Any<ApprovalRequest>(), Arg.Any<CancellationToken>());
@@ -95,7 +95,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(write), Approver(ApprovalChoice.Deny), TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(write), approver: Approver(ApprovalChoice.Deny));
 
         // Assert
         write.Started.Should().Be(0);
@@ -112,7 +112,7 @@ public sealed class ChatRunnerToolTests
             .Enqueue([ScriptedChatClient.Text("fin")]);
 
         // Act
-        var events = await Collect(client, NewHistory(), Tools(write), approver: null, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(write));
 
         // Assert
         write.Started.Should().Be(0);
@@ -130,7 +130,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(read), approver: null, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(read));
 
         // Assert
         var finished = events.OfType<ToolCallFinished>().Single();
@@ -148,7 +148,7 @@ public sealed class ChatRunnerToolTests
             .Enqueue([ScriptedChatClient.Text("fin")]);
 
         // Act
-        var events = await Collect(client, NewHistory(), Tools(read), approver: null, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(read));
 
         // Assert
         events.OfType<ToolCallFinished>().Single().Should().Be(new ToolCallFinished("c1", "read", "no such file", ToolCallStatus.Failed));
@@ -163,7 +163,7 @@ public sealed class ChatRunnerToolTests
             .Enqueue([ScriptedChatClient.Text("fin")]);
 
         // Act
-        var events = await Collect(client, NewHistory(), Tools(read), approver: null, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(read));
 
         // Assert
         events.OfType<ToolCallFinished>().Single().Output.Should().Contain("kaput");
@@ -181,7 +181,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(read), approver: null, TestContext.Current.CancellationToken, maxRounds: 2);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(read), maxRounds: 2);
 
         // Assert
         events[^1].Should().Be(new Done(StopReason.MaxIterations));
@@ -207,7 +207,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(read, write), Approver(ApprovalChoice.AllowOnce), cts.Token);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, cts.Token, tools: Tools(read, write), approver: Approver(ApprovalChoice.AllowOnce));
 
         // Assert
         events.OfType<ToolCallFinished>().Select(e => (e.CallId, e.Status)).Should().Equal(
@@ -231,7 +231,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(write), approver, TestContext.Current.CancellationToken, permissions: permissions);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(write), approver: approver, permissions: permissions);
 
         // Assert
         write.Started.Should().Be(0);
@@ -251,7 +251,7 @@ public sealed class ChatRunnerToolTests
             .Enqueue([ScriptedChatClient.Text("fin")]);
 
         // Act
-        await Collect(client, NewHistory(), Tools(write), approver, TestContext.Current.CancellationToken, permissions: permissions);
+        await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(write), approver: approver, permissions: permissions);
 
         // Assert
         write.Started.Should().Be(1);
@@ -269,7 +269,7 @@ public sealed class ChatRunnerToolTests
             .Enqueue([ScriptedChatClient.Text("fin")]);
 
         // Act
-        await Collect(client, NewHistory(), Tools(write), approver, TestContext.Current.CancellationToken);
+        await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(write), approver: approver);
 
         // Assert
         write.Started.Should().Be(2);
@@ -288,7 +288,7 @@ public sealed class ChatRunnerToolTests
             .Enqueue([ScriptedChatClient.Text("fin")]);
 
         // Act
-        await Collect(client, NewHistory(), Tools(write), approver, TestContext.Current.CancellationToken);
+        await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(write), approver: approver);
 
         // Assert
         await approver.Received(2).RequestAsync(Arg.Is<ApprovalRequest>(r => r.ToolName == "write"), Arg.Any<CancellationToken>());
@@ -303,7 +303,7 @@ public sealed class ChatRunnerToolTests
             .Enqueue([ScriptedChatClient.Text("fin")]);
 
         // Act
-        var events = await Collect(client, NewHistory(), Tools(write), Approver(ApprovalChoice.AllowOnce), TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(write), approver: Approver(ApprovalChoice.AllowOnce));
 
         // Assert
         var awaiting = events.OfType<ToolAwaitingApproval>().Single();
@@ -328,7 +328,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(write), approver, cts.Token);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, cts.Token, tools: Tools(write), approver: approver);
 
         // Assert
         write.Started.Should().Be(0);
@@ -348,7 +348,7 @@ public sealed class ChatRunnerToolTests
         var history = NewHistory();
 
         // Act
-        var events = await Collect(client, history, Tools(read), approver: null, TestContext.Current.CancellationToken);
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(read));
 
         // Assert
         events.Should().NotContain(e => e is ToolCallRequested);
@@ -368,22 +368,4 @@ public sealed class ChatRunnerToolTests
     private static List<ChatMessage> NewHistory() => [new(ChatRole.User, "hi")];
 
     private static ToolSet Tools(params ITool[] tools) => new(tools, new ToolContext(Path.GetTempPath()));
-
-    private static async Task<List<AgentEvent>> Collect(
-        IChatClient client,
-        IList<ChatMessage> history,
-        ToolSet tools,
-        IToolApprover? approver,
-        CancellationToken cancellationToken,
-        int maxRounds = ChatRunner.DefaultMaxRounds,
-        PermissionEngine? permissions = null)
-    {
-        var events = new List<AgentEvent>();
-        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), tools, approver, permissions, maxRounds, cancellationToken: cancellationToken))
-        {
-            events.Add(e);
-        }
-
-        return events;
-    }
 }

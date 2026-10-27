@@ -2,7 +2,6 @@ using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Permissions;
-using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -42,7 +41,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, "  What is\n the weather?  ", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "  What is\n the weather?  ", TestTargets.Create("p1", "fast"));
 
         // Assert
         var saved = sut.Store.Find(info.Id)!;
@@ -63,7 +62,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, new string('a', 200), Target("p1", "fast"));
+        await sut.SendAsync(info.Id, new string('a', 200), TestTargets.Create("p1", "fast"));
 
         // Assert
         sut.Store.Find(info.Id)!.Title.Should().HaveLength(49).And.EndWith("…");
@@ -77,7 +76,7 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hello")]);
         var first = Create(client);
         var info = await first.CreateAsync(cancellationToken: ct);
-        await first.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await first.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
 
         // Act
         var second = Create(client);
@@ -215,7 +214,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
         await client.Started.WaitAsync(TestTimeouts.Default, ct);
         client.Release();
         await turn.Bounded();
@@ -235,7 +234,7 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new GatedChatClient();
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
         await client.Started.WaitAsync(TestTimeouts.Default, ct);
 
         // Act
@@ -267,7 +266,7 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new GatedChatClient();
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
         await client.Started.WaitAsync(TestTimeouts.Default, ct);
 
         // Act
@@ -288,11 +287,11 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")]).Enqueue([ScriptedChatClient.Text("two")]);
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SendAsync(info.Id, "first draft", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "first draft", TestTargets.Create("p1", "fast"));
         var entryId = (await sut.OpenAsync(info.Id))!.Entries[0].Id;
 
         // Act
-        await sut.EditAsync(info.Id, entryId, "better question", Target("p1", "fast"));
+        await sut.EditAsync(info.Id, entryId, "better question", TestTargets.Create("p1", "fast"));
 
         // Assert
         sut.Store.Find(info.Id)!.Title.Should().Be("better question");
@@ -310,12 +309,12 @@ public sealed class SessionServiceTests : IDisposable
             .Enqueue([ScriptedChatClient.Text("three")]);
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SendAsync(info.Id, "topic", Target("p1", "fast"));
-        await sut.SendAsync(info.Id, "follow up", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "topic", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "follow up", TestTargets.Create("p1", "fast"));
         var entryId = (await sut.OpenAsync(info.Id))!.Entries[2].Id;
 
         // Act
-        await sut.EditAsync(info.Id, entryId, "other follow up", Target("p1", "fast"));
+        await sut.EditAsync(info.Id, entryId, "other follow up", TestTargets.Create("p1", "fast"));
 
         // Assert
         sut.Store.Find(info.Id)!.Title.Should().Be("topic");
@@ -329,12 +328,12 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new GatedChatClient();
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
         await client.Started.WaitAsync(TestTimeouts.Default, ct);
         var session = (await sut.OpenAsync(info.Id))!;
 
         // Act
-        await sut.EditAsync(info.Id, session.Entries[0].Id, "changed", Target("p1", "fast"));
+        await sut.EditAsync(info.Id, session.Entries[0].Id, "changed", TestTargets.Create("p1", "fast"));
         client.Release();
         await turn.Bounded();
 
@@ -350,7 +349,7 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
 
         // Act
         var deleted = await sut.DeleteAsync(info.Id);
@@ -373,7 +372,7 @@ public sealed class SessionServiceTests : IDisposable
         await sut.DeleteAsync(info.Id);
 
         // Act
-        await session.SendAsync("late", [], Target("p1", "fast"));
+        await session.SendAsync("late", [], TestTargets.Create("p1", "fast"));
 
         // Assert
         client.Requests.Should().BeEmpty();
@@ -398,7 +397,7 @@ public sealed class SessionServiceTests : IDisposable
         };
 
         // Act
-        var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
         await client.Started.WaitAsync(TestTimeouts.Default, ct);
         client.Release();
         await turn.Bounded();
@@ -424,7 +423,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, "hi there", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi there", TestTargets.Create("p1", "fast"));
         await sut.PendingTitleAsync(info.Id);
 
         // Assert
@@ -449,7 +448,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(folder, ct);
 
         // Act
-        await sut.SendAsync(info.Id, "what is here?", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "what is here?", TestTargets.Create("p1", "fast"));
         await sut.PendingTitleAsync(info.Id);
 
         // Assert
@@ -467,11 +466,11 @@ public sealed class SessionServiceTests : IDisposable
         titles.GenerateAsync(Arg.Any<ChatTarget>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns("Greeting");
         var sut = Create(client, titles);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
         await sut.PendingTitleAsync(info.Id);
 
         // Act
-        await sut.SendAsync(info.Id, "more", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "more", TestTargets.Create("p1", "fast"));
         await sut.PendingTitleAsync(info.Id);
 
         // Assert
@@ -491,7 +490,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
         await sut.PendingTitleAsync(info.Id);
 
         // Assert
@@ -513,7 +512,7 @@ public sealed class SessionServiceTests : IDisposable
 #pragma warning restore VSTHRD003, IDISP013
         var sut = Create(client, titles);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
 
         // Act
         await sut.Store.RenameAsync(info.Id, "Mine", ct);
@@ -537,7 +536,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
         await sut.PendingTitleAsync(info.Id);
 
         // Assert
@@ -558,7 +557,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(folder, ct);
 
         // Act
-        await sut.SendAsync(info.Id, "read notes", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "read notes", TestTargets.Create("p1", "fast"));
 
         // Assert
         var session = (await sut.OpenAsync(info.Id))!;
@@ -578,7 +577,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
 
         // Assert
         client.Options[0]!.Tools.Should().Contain(t => t.Name == "write_file").And.Contain(t => t.Name == "read_attachment");
@@ -656,7 +655,7 @@ public sealed class SessionServiceTests : IDisposable
         var file = await sut.SaveAttachmentAsync(info.Id, "notes.txt", content, ct);
 
         // Act
-        await sut.SendAsync(info.Id, "summarize", [file!], Target("p1", "fast"));
+        await sut.SendAsync(info.Id, "summarize", [file!], TestTargets.Create("p1", "fast"));
 
         // Assert
         client.Requests[0].Should().Contain(m => m.Role == ChatRole.User && m.Text.Contains("summarize") && m.Text.Contains("some notes"));
@@ -676,7 +675,7 @@ public sealed class SessionServiceTests : IDisposable
         var file = await sut.SaveAttachmentAsync(info.Id, "notes.txt", content, ct);
 
         // Act
-        await sut.SendAsync(info.Id, string.Empty, [file!], Target("p1", "fast"));
+        await sut.SendAsync(info.Id, string.Empty, [file!], TestTargets.Create("p1", "fast"));
 
         // Assert
         sut.Store.Find(info.Id)!.Title.Should().Be("notes.txt");
@@ -724,22 +723,9 @@ public sealed class SessionServiceTests : IDisposable
         sut.FindFolderImage("nope", "a.png").Should().BeNull();
     }
 
-    private static ChatTarget Target(string provider, string model)
-    {
-        var modelConfig = new ModelConfig { Id = model, ContextWindow = 8000, MaxOutputTokens = 1000 };
-        var providerConfig = new ProviderConfig
-        {
-            Id = provider,
-            DisplayName = provider.ToUpperInvariant(),
-            BaseUrl = "http://localhost/v1",
-            Models = [modelConfig],
-        };
-        return new ChatTarget(providerConfig, modelConfig, null);
-    }
-
     private async Task<PermissionDefaults> NewDefaultsAsync(PermissionSettings settings, bool allowBypass)
     {
-        var config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), new LoggerFake<SessionServiceTests>(), watch: false);
+        var config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
         _disposables.Add(config);
         var defaults = new PermissionDefaults(config, _paths);
         await defaults.SaveAsync(settings, allowBypass, TestContext.Current.CancellationToken);

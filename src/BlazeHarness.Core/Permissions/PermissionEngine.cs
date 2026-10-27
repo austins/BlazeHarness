@@ -180,6 +180,7 @@ public sealed class PermissionEngine
         }
         catch (JsonException)
         {
+            // Not a bypass: ToolArguments.Parse uses the same parser, so the tool refuses these arguments and never runs.
             return JsonDocument.Parse("{}");
         }
     }

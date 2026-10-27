@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Tests.Unit.Agent;
 
 public sealed class ChatSessionTests
 {
-    private static readonly ChatTarget Fast = Target("p1", "fast", null);
+    private static readonly ChatTarget Fast = TestTargets.Create("p1", "fast", null);
 
     [Fact]
     public async Task SendAsync_StreamsReply_AddsEntriesAndHistory()
@@ -111,7 +111,7 @@ public sealed class ChatSessionTests
         await sut.SendAsync("hi", Fast);
 
         // Act
-        await sut.RetryAsync(Target("p2", "smart", ThinkingLevel.High));
+        await sut.RetryAsync(TestTargets.Create("p2", "smart", ThinkingLevel.High));
 
         // Assert
         sut.Entries.Select(e => e.Text).Should().Equal("hi", "full answer");
@@ -185,7 +185,7 @@ public sealed class ChatSessionTests
         var second = sut.Entries[2].Id;
 
         // Act
-        await sut.EditAsync(second, "b2", Target("p2", "smart", null));
+        await sut.EditAsync(second, "b2", TestTargets.Create("p2", "smart", null));
 
         // Assert
         sut.Entries.Select(e => e.Text).Should().Equal("a", "one", "b2", "new two");
@@ -307,7 +307,7 @@ public sealed class ChatSessionTests
 
         // Act
         await sut.SendAsync("a", Fast);
-        await sut.SendAsync("b", Target("p2", "smart", ThinkingLevel.Low));
+        await sut.SendAsync("b", TestTargets.Create("p2", "smart", ThinkingLevel.Low));
 
         // Assert
         client.Requests[1].Select(m => m.Text).Should().Equal("a", "one", "b");
@@ -321,17 +321,4 @@ public sealed class ChatSessionTests
             onTarget?.Invoke(target);
             return Task.FromResult<IChatClient>(client);
         });
-
-    private static ChatTarget Target(string provider, string model, ThinkingLevel? level)
-    {
-        var modelConfig = new ModelConfig { Id = model, ContextWindow = 8000, MaxOutputTokens = 1000 };
-        var providerConfig = new ProviderConfig
-        {
-            Id = provider,
-            DisplayName = provider.ToUpperInvariant(),
-            BaseUrl = "http://localhost/v1",
-            Models = [modelConfig],
-        };
-        return new ChatTarget(providerConfig, modelConfig, level);
-    }
 }
