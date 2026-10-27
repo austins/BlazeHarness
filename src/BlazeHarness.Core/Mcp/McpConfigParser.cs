@@ -76,7 +76,7 @@ public static partial class McpConfigParser
         server = null;
         if (!NamePattern().IsMatch(name) || name.Contains("__", StringComparison.Ordinal) || name.EndsWith('_'))
         {
-            return "the name can only have letters, digits, - and single _ characters (not at the end), up to 64 of them.";
+            return $"the name can only have letters, digits, - and single _ characters (not at the end), up to {McpToolNames.MaxServerLength} of them.";
         }
 
         if (node is not JsonObject fields)
@@ -240,6 +240,6 @@ public static partial class McpConfigParser
         return null;
     }
 
-    [GeneratedRegex("^[A-Za-z0-9_-]{1,64}$", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("^[A-Za-z0-9_-]{1,32}$", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex NamePattern();
 }

@@ -8,7 +8,7 @@ namespace BlazeHarness.Core.Mcp;
 /// Builds the names the model sees for MCP tools, which put the server first so two servers can offer a tool with the same name.
 /// </summary>
 /// <remarks>
-/// A name is <c>server__tool</c> and uses only letters, digits, <c>_</c> and <c>-</c>, up to 64 characters, which is what model APIs accept.
+/// A name is <c>server__tool</c> and uses only letters, digits, <c>_</c> and <c>-</c>, up to <see cref="MaxLength"/> characters, which is what model APIs accept.
 /// Server names have no <c>__</c> and do not end in <c>_</c>, so the first <c>__</c> always ends the server name.
 /// </remarks>
 public static partial class McpToolNames
@@ -22,6 +22,15 @@ public static partial class McpToolNames
     /// The longest name model APIs accept.
     /// </summary>
     public const int MaxLength = 64;
+
+    /// <summary>
+    /// The longest server name; it leaves room in <see cref="MaxLength"/> for the separator and a shortened tool name.
+    /// </summary>
+    public const int MaxServerLength = 32;
+
+    private const int HashLength = 6;
+
+    private const int HashSuffixLength = HashLength + 1;
 
     /// <summary>
     /// Split a name the model used into its server and tool parts.
@@ -52,8 +61,21 @@ public static partial class McpToolNames
         ArgumentException.ThrowIfNullOrEmpty(tool);
         ArgumentNullException.ThrowIfNull(taken);
 
-        var full = server + Separator + Unsafe().Replace(tool, "_");
-        var name = full.Length <= MaxLength ? full : full[..(MaxLength - 7)] + "_" + Hash(server + Separator + tool);
+        var cleaned = Unsafe().Replace(tool, "_");
+        var full = server + Separator + cleaned;
+
+        // A name that was rewritten gets a hash of the original so it does not depend on which tool came first.
+        string name;
+        if (full.Length <= MaxLength && cleaned == tool)
+        {
+            name = full;
+        }
+        else
+        {
+            var kept = full[..Math.Min(full.Length, MaxLength - HashSuffixLength)];
+            name = kept + "_" + Hash(server + Separator + tool);
+        }
+
         var candidate = name;
         var copy = 1;
         while (!taken.Add(candidate))
@@ -68,7 +90,7 @@ public static partial class McpToolNames
 
     private static string Hash(string text)
     {
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..6].ToUpperInvariant();
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..HashLength];
     }
 
     [GeneratedRegex("[^A-Za-z0-9_-]", RegexOptions.None, matchTimeoutMilliseconds: 1000)]

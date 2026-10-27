@@ -15,16 +15,16 @@ public sealed class McpToolNamesTests
     }
 
     [Theory]
-    [InlineData("search docs", "files__search_docs")]
-    [InlineData("a.b/c", "files__a_b_c")]
-    [InlineData("naïve", "files__na_ve")]
-    public void Build_UnsafeCharacters_AreReplaced(string tool, string expected)
+    [InlineData("search docs", "^files__search_docs_[0-9A-F]{6}$")]
+    [InlineData("a.b/c", "^files__a_b_c_[0-9A-F]{6}$")]
+    [InlineData("naïve", "^files__na_ve_[0-9A-F]{6}$")]
+    public void Build_UnsafeCharacters_AreReplacedAndHashed(string tool, string expected)
     {
         // Act
         var name = McpToolNames.Build("files", tool, new HashSet<string>());
 
         // Assert
-        name.Should().Be(expected);
+        name.Should().MatchRegex(expected);
     }
 
     [Fact]
@@ -47,18 +47,44 @@ public sealed class McpToolNamesTests
     }
 
     [Fact]
-    public void Build_SameNameAfterCleaning_GetsASuffix()
+    public void Build_SameNameAfterCleaning_IsDistinctWhateverTheOrder()
     {
-        // Arrange
-        var taken = new HashSet<string>();
-
         // Act
-        var one = McpToolNames.Build("files", "a b", taken);
-        var two = McpToolNames.Build("files", "a.b", taken);
-        var three = McpToolNames.Build("files", "a/b", taken);
+        var forward = new HashSet<string>();
+        var one = McpToolNames.Build("files", "a b", forward);
+        var two = McpToolNames.Build("files", "a.b", forward);
+        var backward = new HashSet<string>();
+        var twoAgain = McpToolNames.Build("files", "a.b", backward);
+        var oneAgain = McpToolNames.Build("files", "a b", backward);
 
         // Assert
-        new[] { one, two, three }.Should().Equal("files__a_b", "files__a_b_2", "files__a_b_3");
+        one.Should().NotBe(two);
+        oneAgain.Should().Be(one);
+        twoAgain.Should().Be(two);
+    }
+
+    [Fact]
+    public void Build_NameThatNeedsNoCleaning_IsKeptAsItIs()
+    {
+        // Act
+        var name = McpToolNames.Build("files", "a_b", new HashSet<string>());
+
+        // Assert
+        name.Should().Be("files__a_b");
+    }
+
+    [Fact]
+    public void Build_LongNameWithAServerAtTheLimit_KeepsTheSeparator()
+    {
+        // Arrange
+        var server = new string('s', McpToolNames.MaxServerLength);
+
+        // Act
+        var name = McpToolNames.Build(server, new string('t', 100), new HashSet<string>());
+
+        // Assert
+        McpToolNames.TrySplit(name, out var found, out _).Should().BeTrue();
+        found.Should().Be(server);
     }
 
     [Fact]

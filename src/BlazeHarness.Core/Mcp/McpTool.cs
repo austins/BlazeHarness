@@ -15,6 +15,9 @@ internal sealed class McpTool : IMcpTool
     private const int MaxSummaryCharacters = 120;
     private const int MaxSummaryValueCharacters = 40;
 
+    // Long enough for a slow server call, short enough that a hung one does not stall the run.
+    private static readonly TimeSpan CallTimeout = TimeSpan.FromMinutes(2);
+
     private readonly IMcpConnection _connection;
 
     public McpTool(string name, string serverName, McpToolInfo info, IMcpConnection connection)
@@ -50,7 +53,7 @@ internal sealed class McpTool : IMcpTool
     // The harness cannot see what a server does, so none of its tools may run alongside others on a hint.
     public bool IsReadOnly => false;
 
-    public TimeSpan Timeout { get; } = TimeSpan.FromMinutes(2);
+    public TimeSpan Timeout { get; } = CallTimeout;
 
     public static string TrimDescription(string? description)
     {
