@@ -85,6 +85,11 @@ public sealed record SessionInfo
     public IReadOnlyDictionary<string, bool>? McpServers { get; init; }
 
     /// <summary>
+    /// Gets the skills this session turns on or off against their global state, by skill name, or null when none differ.
+    /// </summary>
+    public IReadOnlyDictionary<string, bool>? Skills { get; init; }
+
+    /// <summary>
     /// Gets the permission settings the session runs with.
     /// </summary>
     [JsonIgnore]

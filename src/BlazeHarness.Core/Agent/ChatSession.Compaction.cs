@@ -123,7 +123,7 @@ public sealed partial class ChatSession
 
     private string SystemPromptText()
     {
-        return string.Join(Environment.NewLine, new[] { BasePrompt, Project?.ToPrompt() }.Where(p => !string.IsNullOrWhiteSpace(p)));
+        return string.Join(Environment.NewLine, new[] { BasePrompt, Project?.ToPrompt(), Tools is null ? null : Skills?.ToPrompt() }.Where(p => !string.IsNullOrWhiteSpace(p)));
     }
 
     private ConversationContext CreateContext(IChatClient client, ChatTarget target, int leadingMessages)

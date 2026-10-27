@@ -375,6 +375,11 @@ public sealed record AppConfig
     public IReadOnlyList<string> TrustedMcpServers { get; init; } = [];
 
     /// <summary>
+    /// Gets the names of the skills that are turned off for every chat, unless a chat turns one back on.
+    /// </summary>
+    public IReadOnlyList<string> DisabledSkills { get; init; } = [];
+
+    /// <summary>
     /// Gets a value indicating whether the Unrestricted and Never-ask options are hidden.
     /// </summary>
     public bool DisableBypassModes { get; init; }

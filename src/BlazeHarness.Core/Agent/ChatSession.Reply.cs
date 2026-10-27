@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using System.Text;
@@ -73,7 +74,17 @@ public sealed partial class ChatSession
     private async Task<ToolSet?> TurnToolsAsync(CancellationToken cancellation)
     {
         var tools = Tools;
-        return tools is not null && ExtraTools is { } extra ? tools.With(await extra(cancellation)) : tools;
+        if (tools is null)
+        {
+            return null;
+        }
+
+        if (Skills is { Skills.Count: > 0 } skills)
+        {
+            tools = tools.With([new LoadSkillTool(skills)]);
+        }
+
+        return ExtraTools is { } extra ? tools.With(await extra(cancellation)) : tools;
     }
 
     private async Task ApplyAsync(Reply reply, AgentEvent e)

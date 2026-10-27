@@ -4,6 +4,7 @@ using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -33,6 +34,7 @@ public sealed partial class SessionService : IDisposable
     private readonly IShellSandbox _sandbox;
     private readonly PermissionDefaults? _defaults;
     private readonly McpManager? _mcp;
+    private readonly SkillCatalog? _skills;
     private readonly ILogger _log;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
@@ -50,6 +52,7 @@ public sealed partial class SessionService : IDisposable
     /// <param name="sandbox">Runs shell commands; without it commands only run in sessions with the Unrestricted access level.</param>
     /// <param name="defaults">The global permission choices; without it new chats start with the built-in settings and the risky options stay available.</param>
     /// <param name="mcp">Provides the tools of MCP servers; without it sessions have no MCP tools.</param>
+    /// <param name="skills">Finds the skills a session can use; without it sessions have no skills.</param>
     public SessionService(
         SessionStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
@@ -58,7 +61,8 @@ public sealed partial class SessionService : IDisposable
         ITitleGenerator? titles = null,
         IShellSandbox? sandbox = null,
         PermissionDefaults? defaults = null,
-        McpManager? mcp = null)
+        McpManager? mcp = null,
+        SkillCatalog? skills = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
@@ -68,6 +72,7 @@ public sealed partial class SessionService : IDisposable
         _loggers = loggers;
         _time = time ?? TimeProvider.System;
         _titles = titles;
+        _skills = skills;
         _sandbox = sandbox ?? new NoShellSandbox("No sandbox is set up.");
         _defaults = defaults;
         _mcp = mcp;
@@ -197,6 +202,46 @@ public sealed partial class SessionService : IDisposable
 
                 return s with { McpServers = chosen.Count == 0 ? null : chosen };
             });
+    }
+
+    /// <summary>
+    /// Get whether a skill is on for a session.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="skillName">The skill's name.</param>
+    /// <returns>True when the session offers the skill: its own choice if it made one, else the global state.</returns>
+    public bool IsSkillEnabled(string id, string skillName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(skillName);
+        return SkillCatalog.IsEnabled(skillName, _skills?.IsDisabledGlobally(skillName) ?? false, _store.Find(id)?.Skills);
+    }
+
+    /// <summary>
+    /// Turn a skill on or off for one session, or go back to its global state.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="skillName">The skill's name.</param>
+    /// <param name="enabled">True or false to choose for this session, or null to follow the global state again.</param>
+    /// <returns>A task that completes once the choice is saved. It applies from the session's next reply.</returns>
+    public async Task SetSkillAsync(string id, string skillName, bool? enabled)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(skillName);
+        await _store.UpdateAsync(
+            id,
+            s =>
+            {
+                var chosen = (s.Skills ?? new Dictionary<string, bool>()).Where(pair => !string.Equals(pair.Key, skillName, StringComparison.Ordinal)).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+                if (enabled is { } value)
+                {
+                    chosen[skillName] = value;
+                }
+
+                return s with { Skills = chosen.Count == 0 ? null : chosen };
+            }).ConfigureAwait(false);
+        if (_live.TryGetValue(id, out var session))
+        {
+            ApplySkills(id, session);
+        }
     }
 
     /// <summary>
@@ -443,7 +488,23 @@ public sealed partial class SessionService : IDisposable
             session.Project = loaded;
         }
 
+        ApplySkills(id, session);
         ApplyTools(id, session, folderPath);
+    }
+
+    private void ApplySkills(string id, ChatSession session)
+    {
+        if (_skills is null)
+        {
+            return;
+        }
+
+        var info = _store.Find(id);
+        var wanted = _skills.For(info?.FolderPath, info?.Skills);
+        if (!wanted.SameAs(session.Skills) && !(wanted.Skills.Count == 0 && session.Skills is null))
+        {
+            session.Skills = wanted;
+        }
     }
 
     private void ApplyTools(string id, ChatSession session, string? folderPath)

@@ -3,6 +3,7 @@ using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -44,6 +45,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ApprovalChoice>> _approvals = new(StringComparer.Ordinal);
     private IReadOnlyList<ChatEntry> _snapshot = [];
     private ProjectContext? _project;
+    private SkillSet? _skills;
     private ToolSet? _tools;
     private Func<CancellationToken, Task<IReadOnlyList<ITool>>>? _extraTools;
     private SessionAttachments? _attachments;
@@ -106,6 +108,23 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         set
         {
             Volatile.Write(ref _project, value);
+            RaiseChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the skills the session offers the model, or null for none.
+    /// </summary>
+    /// <remarks>
+    /// They are listed in the system prompt and loaded with the <c>load_skill</c> tool, so they only apply while the session has tools.
+    /// A reply reads this once when it starts, so changing it never alters a reply that is running.
+    /// </remarks>
+    public SkillSet? Skills
+    {
+        get => Volatile.Read(ref _skills);
+        set
+        {
+            Volatile.Write(ref _skills, value);
             RaiseChanged();
         }
     }
