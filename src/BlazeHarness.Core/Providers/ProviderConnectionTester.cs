@@ -84,7 +84,7 @@ public static class ProviderConnectionTester
         }
 
         var stream = await content.ReadAsStreamAsync(cancellationToken);
-        await using (stream.ConfigureAwait(false))
+        await using (stream)
         {
             using var buffer = new MemoryStream();
             var chunk = new byte[8192];

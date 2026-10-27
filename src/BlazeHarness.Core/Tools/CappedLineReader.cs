@@ -70,7 +70,7 @@ internal sealed class CappedLineReader
         Begin();
         while (true)
         {
-            if (_position == _length && !Fill(await _reader.ReadAsync(_buffer.AsMemory(), cancellationToken).ConfigureAwait(false)))
+            if (_position == _length && !Fill(await _reader.ReadAsync(_buffer.AsMemory(), cancellationToken)))
             {
                 return Finish();
             }

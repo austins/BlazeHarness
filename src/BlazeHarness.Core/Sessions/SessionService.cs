@@ -106,17 +106,17 @@ public sealed partial class SessionService : IDisposable
     /// <returns>The new session's metadata.</returns>
     public async Task<SessionInfo> CreateAsync(string? folderPath = null, CancellationToken cancellationToken = default)
     {
-        var info = await _store.CreateAsync(folderPath, cancellationToken).ConfigureAwait(false);
+        var info = await _store.CreateAsync(folderPath, cancellationToken);
         var start = StartingPermissions(folderPath is not null);
         if (start != info.Permissions)
         {
-            info = await _store.UpdateAsync(info.Id, s => StoreSettings(s, start), cancellationToken: cancellationToken).ConfigureAwait(false) ?? info;
+            info = await _store.UpdateAsync(info.Id, s => StoreSettings(s, start), cancellationToken: cancellationToken) ?? info;
         }
 
         var session = NewSession(info.Id);
         session.Permissions.Settings = info.Permissions;
         _live[info.Id] = session;
-        await ApplyFolderAsync(info.Id, session).ConfigureAwait(false);
+        await ApplyFolderAsync(info.Id, session);
         return info;
     }
 
@@ -134,7 +134,7 @@ public sealed partial class SessionService : IDisposable
             return null;
         }
 
-        var events = await _store.GetLog(id).ReadAsync(cancellationToken).ConfigureAwait(false);
+        var events = await _store.GetLog(id).ReadAsync(cancellationToken);
         return SessionExport.Export(info, events, format, _time.GetUtcNow());
     }
 
@@ -156,11 +156,11 @@ public sealed partial class SessionService : IDisposable
             throw new FormatException(error);
         }
 
-        var created = await _store.CreateAsync(null, cancellationToken).ConfigureAwait(false);
+        var created = await _store.CreateAsync(null, cancellationToken);
         var start = StartingPermissions(false);
         try
         {
-            await _store.GetLog(created.Id).AppendAsync(imported.Events, cancellationToken).ConfigureAwait(false);
+            await _store.GetLog(created.Id).AppendAsync(imported.Events, cancellationToken);
             return await _store.UpdateAsync(
                 created.Id,
                 s => StoreSettings(
@@ -175,11 +175,11 @@ public sealed partial class SessionService : IDisposable
                     },
                     start),
                 touch: true,
-                cancellationToken: cancellationToken).ConfigureAwait(false) ?? created;
+                cancellationToken: cancellationToken) ?? created;
         }
         catch
         {
-            await _store.DeleteAsync(created.Id, CancellationToken.None).ConfigureAwait(false);
+            await _store.DeleteAsync(created.Id, CancellationToken.None);
             throw;
         }
     }
@@ -201,7 +201,7 @@ public sealed partial class SessionService : IDisposable
             return live;
         }
 
-        await _opening.WaitAsync().ConfigureAwait(false);
+        await _opening.WaitAsync();
         try
         {
             if (_live.TryGetValue(id, out live))
@@ -212,9 +212,9 @@ public sealed partial class SessionService : IDisposable
 #pragma warning disable CA2000 // The live registry owns the session once it is added.
             var session = NewSession(id);
 #pragma warning restore CA2000
-            session.Restore(await _store.GetLog(id).ReadAsync().ConfigureAwait(false));
+            session.Restore(await _store.GetLog(id).ReadAsync());
             session.Permissions.Settings = _store.Find(id)?.Permissions ?? PermissionSettings.Default;
-            await ApplyFolderAsync(id, session).ConfigureAwait(false);
+            await ApplyFolderAsync(id, session);
             _live[id] = session;
             return session;
         }
@@ -232,13 +232,13 @@ public sealed partial class SessionService : IDisposable
     /// <returns>A task that completes once the change is saved; it does nothing when the session is unknown.</returns>
     public async Task SetPermissionsAsync(string id, PermissionSettings settings)
     {
-        if (await OpenAsync(id).ConfigureAwait(false) is not { } session)
+        if (await OpenAsync(id) is not { } session)
         {
             return;
         }
 
-        await session.SetPermissionsAsync(settings).ConfigureAwait(false);
-        await _store.UpdateAsync(id, s => StoreSettings(s, settings)).ConfigureAwait(false);
+        await session.SetPermissionsAsync(settings);
+        await _store.UpdateAsync(id, s => StoreSettings(s, settings));
     }
 
     /// <summary>
@@ -320,7 +320,7 @@ public sealed partial class SessionService : IDisposable
                 }
 
                 return s with { Skills = chosen.Count == 0 ? null : chosen };
-            }).ConfigureAwait(false);
+            });
         if (_live.TryGetValue(id, out var session))
         {
             ApplySkills(id, session);
@@ -349,14 +349,14 @@ public sealed partial class SessionService : IDisposable
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(target);
-        if (await OpenAsync(id).ConfigureAwait(false) is not { IsRunning: false } session || (string.IsNullOrWhiteSpace(text) && files.Count == 0))
+        if (await OpenAsync(id) is not { IsRunning: false } session || (string.IsNullOrWhiteSpace(text) && files.Count == 0))
         {
             return;
         }
 
-        await RememberAsync(id, target, string.IsNullOrWhiteSpace(text) ? string.Join(", ", files.Select(f => f.Name)) : text).ConfigureAwait(false);
-        await ApplyFolderAsync(id, session).ConfigureAwait(false);
-        await session.SendAsync(text, files, target).ConfigureAwait(false);
+        await RememberAsync(id, target, string.IsNullOrWhiteSpace(text) ? string.Join(", ", files.Select(f => f.Name)) : text);
+        await ApplyFolderAsync(id, session);
+        await session.SendAsync(text, files, target);
         StartTitle(id, session, target);
     }
 
@@ -373,7 +373,7 @@ public sealed partial class SessionService : IDisposable
     {
         return _store.Find(id) is null
             ? null
-            : await new SessionAttachments(_store.AttachmentsDirectory(id)).SaveAsync(fileName, content, cancellationToken).ConfigureAwait(false);
+            : await new SessionAttachments(_store.AttachmentsDirectory(id)).SaveAsync(fileName, content, cancellationToken);
     }
 
     /// <summary>
@@ -416,7 +416,7 @@ public sealed partial class SessionService : IDisposable
     public async Task EditAsync(string id, Guid entryId, string text, ChatTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
-        if (await OpenAsync(id).ConfigureAwait(false) is not { IsRunning: false } session
+        if (await OpenAsync(id) is not { IsRunning: false } session
             || string.IsNullOrWhiteSpace(text)
             || !session.CanEdit(entryId))
         {
@@ -424,9 +424,9 @@ public sealed partial class SessionService : IDisposable
         }
 
         var first = session.Entries is [{ } head, ..] && head.Id == entryId;
-        await RememberAsync(id, target, first ? text : null, replacePlaceholder: first).ConfigureAwait(false);
-        await ApplyFolderAsync(id, session).ConfigureAwait(false);
-        await session.EditAsync(entryId, text, target).ConfigureAwait(false);
+        await RememberAsync(id, target, first ? text : null, replacePlaceholder: first);
+        await ApplyFolderAsync(id, session);
+        await session.EditAsync(entryId, text, target);
         StartTitle(id, session, target);
     }
 
@@ -439,14 +439,14 @@ public sealed partial class SessionService : IDisposable
     public async Task RetryAsync(string id, ChatTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
-        if (await OpenAsync(id).ConfigureAwait(false) is not { CanRetry: true } session)
+        if (await OpenAsync(id) is not { CanRetry: true } session)
         {
             return;
         }
 
-        await RememberAsync(id, target, null).ConfigureAwait(false);
-        await ApplyFolderAsync(id, session).ConfigureAwait(false);
-        await session.RetryAsync(target).ConfigureAwait(false);
+        await RememberAsync(id, target, null);
+        await ApplyFolderAsync(id, session);
+        await session.RetryAsync(target);
         StartTitle(id, session, target);
     }
 
@@ -460,13 +460,13 @@ public sealed partial class SessionService : IDisposable
     public async Task<bool> CompactAsync(string id, ChatTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
-        if (await OpenAsync(id).ConfigureAwait(false) is not { CanCompact: true } session)
+        if (await OpenAsync(id) is not { CanCompact: true } session)
         {
             return false;
         }
 
-        await ApplyFolderAsync(id, session).ConfigureAwait(false);
-        return await session.CompactAsync(target).ConfigureAwait(false);
+        await ApplyFolderAsync(id, session);
+        return await session.CompactAsync(target);
     }
 
     /// <summary>
@@ -509,7 +509,7 @@ public sealed partial class SessionService : IDisposable
             session.Dispose();
         }
 
-        await _store.DeleteAsync(id).ConfigureAwait(false);
+        await _store.DeleteAsync(id);
         return true;
     }
 
@@ -537,7 +537,7 @@ public sealed partial class SessionService : IDisposable
     {
         return folderPath is null || !Directory.Exists(folderPath)
             ? null
-            : await ProjectContextLoader.LoadAsync(folderPath).ConfigureAwait(false);
+            : await ProjectContextLoader.LoadAsync(folderPath);
     }
 
     /// <summary>
@@ -548,7 +548,7 @@ public sealed partial class SessionService : IDisposable
     {
         foreach (var (id, session) in _live.ToArray())
         {
-            await ApplyFolderAsync(id, session).ConfigureAwait(false);
+            await ApplyFolderAsync(id, session);
         }
     }
 
@@ -565,7 +565,7 @@ public sealed partial class SessionService : IDisposable
     private async Task ApplyFolderAsync(string id, ChatSession session)
     {
         var folderPath = _store.Find(id)?.FolderPath;
-        var loaded = await LoadProjectAsync(folderPath).ConfigureAwait(false);
+        var loaded = await LoadProjectAsync(folderPath);
         var current = session.Project;
         if (loaded is null ? current is not null : !loaded.SameAs(current))
         {
@@ -637,7 +637,7 @@ public sealed partial class SessionService : IDisposable
             List<(string Title, IReadOnlyList<ChatEntry> Entries)> others = [];
             foreach (var other in _store.List().Where(s => s.Id != id && string.Equals(s.FolderPath, folderPath, StringComparison.Ordinal)).Take(MaxSearchedChats))
             {
-                var events = await _store.GetLog(other.Id).ReadAsync(cancellationToken).ConfigureAwait(false);
+                var events = await _store.GetLog(other.Id).ReadAsync(cancellationToken);
                 others.Add((other.Title, SessionReplay.Replay(events)));
             }
 
@@ -669,12 +669,12 @@ public sealed partial class SessionService : IDisposable
         {
             try
             {
-                if (await _titles.GenerateAsync(target, first.Text.Length > 0 ? first.Text : string.Join(", ", first.Attachments.Select(a => a.File.Name)), reply.Text, _shutdown.Token).ConfigureAwait(false) is { } title)
+                if (await _titles.GenerateAsync(target, first.Text.Length > 0 ? first.Text : string.Join(", ", first.Attachments.Select(a => a.File.Name)), reply.Text, _shutdown.Token) is { } title)
                 {
                     await _store.UpdateAsync(
                         id,
                         s => s.TitleSource == TitleSource.Placeholder ? s with { Title = title, TitleSource = TitleSource.Generated } : s,
-                        cancellationToken: _shutdown.Token).ConfigureAwait(false);
+                        cancellationToken: _shutdown.Token);
                 }
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
@@ -726,7 +726,7 @@ public sealed partial class SessionService : IDisposable
             {
                 var overrides = _store.Find(id)?.McpServers;
                 var wanted = mcp.Statuses().Where(status => McpManager.IsEnabled(status.Config, overrides)).Select(status => status.Config.Name);
-                return await mcp.ToolsAsync(wanted, cancellation).ConfigureAwait(false);
+                return await mcp.ToolsAsync(wanted, cancellation);
             };
             if (_defaults is { } trust)
             {

@@ -52,7 +52,7 @@ public static class ExportEndpoints
         ArgumentNullException.ThrowIfNull(sessions);
         ArgumentNullException.ThrowIfNull(context);
 
-        var file = await sessions.ExportAsync(sessionId, format == JsonFormat ? ExportFormat.Json : ExportFormat.Markdown, cancellationToken).ConfigureAwait(false);
+        var file = await sessions.ExportAsync(sessionId, format == JsonFormat ? ExportFormat.Json : ExportFormat.Markdown, cancellationToken);
         if (file is null)
         {
             return Results.NotFound();

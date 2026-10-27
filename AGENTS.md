@@ -28,6 +28,7 @@
 - Anything that reads the time takes a `TimeProvider` (registered once in `Program.cs`, never `DateTime.Now` or `TimeProvider.System` inline), so tests can use `FakeTimeProvider`.
 - Every public type and member needs XML docs (CS1591 is an error in `src/`): `<summary>`, plus `<remarks>`, `<param>`, `<returns>` and `<exception>` where they add something. Use `<inheritdoc />` on interface implementations and `<param>` on the type for positional records. Properties start with "Gets" or "Gets or sets"; method summaries use the imperative.
 - Give every `#pragma warning disable` a trailing comment saying why.
+- Don't use `.ConfigureAwait(false)` unless a case really needs it. Blazor components run on the circuit's `SynchronizationContext` and must resume on it, and the host has no other context to avoid. Never block on a task (`.Result`, `.Wait()`, `GetAwaiter().GetResult()`); marshal events raised on other threads with `InvokeAsync`.
 
 ## Tests
 

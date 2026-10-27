@@ -81,7 +81,7 @@ internal sealed class ModelSummarizer : ISummarizer
         ];
 
         var summary = new StringBuilder();
-        await foreach (var e in ChatRunner.RunAsync(_client, request, _options, cancellationToken: cancellationToken).ConfigureAwait(false))
+        await foreach (var e in ChatRunner.RunAsync(_client, request, _options, cancellationToken: cancellationToken))
         {
             switch (e)
             {

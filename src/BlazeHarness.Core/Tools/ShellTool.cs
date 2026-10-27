@@ -90,7 +90,7 @@ internal sealed class ShellTool : ITool
         IShellProcess process;
         try
         {
-            process = await _sandbox.StartAsync(launch, cancellationToken).ConfigureAwait(false);
+            process = await _sandbox.StartAsync(launch, cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException)
         {
@@ -106,12 +106,12 @@ internal sealed class ShellTool : ITool
             int exitCode;
             try
             {
-                exitCode = await process.WaitAsync(linked.Token).ConfigureAwait(false);
+                exitCode = await process.WaitAsync(linked.Token);
             }
             catch (OperationCanceledException)
             {
                 process.Kill();
-                await FinishReadingAsync(readers, _time).ConfigureAwait(false);
+                await FinishReadingAsync(readers, _time);
                 if (cancellationToken.IsCancellationRequested)
                 {
                     throw;
@@ -122,7 +122,7 @@ internal sealed class ShellTool : ITool
                     $"{output}\n[The command ran longer than {seconds} seconds and was stopped.]"));
             }
 
-            await FinishReadingAsync(readers, _time).ConfigureAwait(false);
+            await FinishReadingAsync(readers, _time);
             var text = string.Create(CultureInfo.InvariantCulture, $"{output}[exit code {exitCode}]");
             return exitCode == 0 ? ToolResult.Ok(text) : ToolResult.Error(text);
         }
@@ -134,7 +134,7 @@ internal sealed class ShellTool : ITool
         {
             using var reader = new StreamReader(stream, Encoding.UTF8);
             var lines = new CappedLineReader(reader, ShellOutput.MaxLineCharacters);
-            while (await lines.ReadLineAsync().ConfigureAwait(false) is { } line)
+            while (await lines.ReadLineAsync() is { } line)
             {
                 output.AppendLine(lines.DroppedCharacters > 0
                     ? string.Create(CultureInfo.InvariantCulture, $"{line} [{lines.DroppedCharacters} more characters of this line left out]")
@@ -151,7 +151,7 @@ internal sealed class ShellTool : ITool
     {
         try
         {
-            await readers.WaitAsync(OutputGrace, time).ConfigureAwait(false);
+            await readers.WaitAsync(OutputGrace, time);
         }
         catch (TimeoutException)
         {

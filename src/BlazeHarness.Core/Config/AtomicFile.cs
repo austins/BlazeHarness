@@ -56,7 +56,7 @@ internal static class AtomicFile
             }
 
             var stream = new FileStream(temp, options);
-            await using (stream.ConfigureAwait(false))
+            await using (stream)
             {
                 if (ownerOnly && OperatingSystem.IsWindows())
                 {

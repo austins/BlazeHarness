@@ -43,7 +43,7 @@ public static class LogTail
             }
 
             using var reader = new StreamReader(stream, Encoding.UTF8);
-            var lines = (await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false)).Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var lines = (await reader.ReadToEndAsync(cancellationToken)).Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
             // The first line may start before the part that was read.
             var start = cut ? 1 : 0;

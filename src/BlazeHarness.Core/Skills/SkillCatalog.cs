@@ -152,7 +152,7 @@ public sealed partial class SkillCatalog : IDisposable
                 var others = config.DisabledSkills.Where(existing => !string.Equals(existing, name, StringComparison.Ordinal));
                 return config with { DisabledSkills = disabled ? [.. others, name] : [.. others] };
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
         Changed?.Invoke(this, EventArgs.Empty);
     }
 

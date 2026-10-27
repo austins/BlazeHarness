@@ -90,7 +90,7 @@ internal static class ProjectContextLoader
                 continue;
             }
 
-            var (text, truncated) = await ReadAsync(real, remaining, cancellationToken).ConfigureAwait(false);
+            var (text, truncated) = await ReadAsync(real, remaining, cancellationToken);
             if (text.Length == 0 && !truncated)
             {
                 continue;
@@ -171,7 +171,7 @@ internal static class ProjectContextLoader
             var read = 0;
             while (read < buffer.Length)
             {
-                var count = await stream.ReadAsync(buffer.AsMemory(read), cancellationToken).ConfigureAwait(false);
+                var count = await stream.ReadAsync(buffer.AsMemory(read), cancellationToken);
                 if (count == 0)
                 {
                     break;

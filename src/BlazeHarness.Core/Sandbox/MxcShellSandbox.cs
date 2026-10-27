@@ -50,7 +50,7 @@ public sealed class MxcShellSandbox : IShellSandbox
             throw new InvalidOperationException(Status.Detail);
         }
 
-        return await SpawnAsync(launch, cancellationToken).ConfigureAwait(false);
+        return await SpawnAsync(launch, cancellationToken);
     }
 
     private static string? UnsupportedReason()
@@ -196,7 +196,7 @@ public sealed class MxcShellSandbox : IShellSandbox
         var request = BuildRequest(launch);
         try
         {
-            return new MxcShellProcess(await MxcContainer.SpawnAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false));
+            return new MxcShellProcess(await MxcContainer.SpawnAsync(request, cancellationToken: cancellationToken));
         }
         catch (MxcException ex)
         {

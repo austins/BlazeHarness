@@ -171,7 +171,7 @@ public sealed class ConversationContext
 
         var before = Size(messages).Tokens;
         var older = messages.Skip(_leading + _keptFrom).Take(cut - _keptFrom).ToList();
-        var summary = await _summarizer.SummarizeAsync(_summary, older, cancellationToken).ConfigureAwait(false);
+        var summary = await _summarizer.SummarizeAsync(_summary, older, cancellationToken);
 
         _summary = summary;
         _keptFrom = cut;

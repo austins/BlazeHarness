@@ -44,9 +44,9 @@ public sealed class ModelTitleGenerator : ITitleGenerator
             new(ChatRole.User, "User: " + Excerpt(userText) + "\n\nAssistant: " + Excerpt(replyText)),
         ];
 
-        using var client = await _clientFactory(target, cancellationToken).ConfigureAwait(false);
+        using var client = await _clientFactory(target, cancellationToken);
         var title = new StringBuilder();
-        await foreach (var e in ChatRunner.RunAsync(client, messages, options, cancellationToken: cancellationToken).ConfigureAwait(false))
+        await foreach (var e in ChatRunner.RunAsync(client, messages, options, cancellationToken: cancellationToken))
         {
             switch (e)
             {

@@ -31,7 +31,7 @@ internal sealed class SdkMcpConnection : IMcpConnection
     /// <inheritdoc />
     public async Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken cancellationToken)
     {
-        var tools = await _client.ListToolsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        var tools = await _client.ListToolsAsync(cancellationToken: cancellationToken);
         return [.. tools.Select(t => new McpToolInfo(
             t.ProtocolTool.Name,
             t.ProtocolTool.Description ?? string.Empty,
@@ -59,7 +59,7 @@ internal sealed class SdkMcpConnection : IMcpConnection
 
         try
         {
-            var result = await _client.CallToolAsync(new CallToolRequestParams { Name = name, Arguments = arguments }, cancellationToken).ConfigureAwait(false);
+            var result = await _client.CallToolAsync(new CallToolRequestParams { Name = name, Arguments = arguments }, cancellationToken);
             return McpResultText.Convert(result);
         }
         catch (McpException ex)

@@ -20,7 +20,7 @@ internal sealed class MxcShellProcess : IShellProcess
 
     public async Task<int> WaitAsync(CancellationToken cancellationToken)
     {
-        var result = await _process.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var result = await _process.WaitAsync(cancellationToken);
         return result.ExitCode;
     }
 

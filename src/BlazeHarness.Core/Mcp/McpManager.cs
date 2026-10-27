@@ -107,7 +107,7 @@ public sealed partial class McpManager : IAsyncDisposable
         }
 
         var entry = EntryFor(config);
-        await entry.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await entry.Gate.WaitAsync(cancellationToken);
         try
         {
             if (!IsCurrent(entry))
@@ -115,8 +115,8 @@ public sealed partial class McpManager : IAsyncDisposable
                 return null;
             }
 
-            await StopAsync(entry).ConfigureAwait(false);
-            await ConnectCoreAsync(entry, config, cancellationToken).ConfigureAwait(false);
+            await StopAsync(entry);
+            await ConnectCoreAsync(entry, config, cancellationToken);
         }
         finally
         {
@@ -144,10 +144,10 @@ public sealed partial class McpManager : IAsyncDisposable
             return;
         }
 
-        await entry.Gate.WaitAsync().ConfigureAwait(false);
+        await entry.Gate.WaitAsync();
         try
         {
-            await StopAsync(entry).ConfigureAwait(false);
+            await StopAsync(entry);
         }
         finally
         {
@@ -166,7 +166,7 @@ public sealed partial class McpManager : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(servers);
         var wanted = servers.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         var configs = _config.Parsed.Servers.Where(s => wanted.Contains(s.Name)).OrderBy(s => s.Name, StringComparer.Ordinal).ToList();
-        await Task.WhenAll(configs.Select(c => EnsureConnectedAsync(c, cancellationToken))).ConfigureAwait(false);
+        await Task.WhenAll(configs.Select(c => EnsureConnectedAsync(c, cancellationToken)));
 
         var taken = new HashSet<string>(StringComparer.Ordinal);
         List<ITool> tools = [];
@@ -211,7 +211,7 @@ public sealed partial class McpManager : IAsyncDisposable
         _config.Changed -= OnConfigChanged;
         foreach (var entry in entries)
         {
-            await CloseConnectionAsync(entry).ConfigureAwait(false);
+            await CloseConnectionAsync(entry);
         }
 
         _reconcile.Dispose();
@@ -223,13 +223,13 @@ public sealed partial class McpManager : IAsyncDisposable
     /// <returns>A task that completes once the changed servers have stopped.</returns>
     internal async Task ReconcileAsync()
     {
-        await _reconcile.WaitAsync().ConfigureAwait(false);
+        await _reconcile.WaitAsync();
         try
         {
             var current = _config.Parsed.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
             foreach (var (name, _) in _known.Where(p => !current.TryGetValue(p.Key, out var now) || !now.SameAs(p.Value)))
             {
-                await WithdrawTrustAsync(name).ConfigureAwait(false);
+                await WithdrawTrustAsync(name);
             }
 
             _known = current;
@@ -245,10 +245,10 @@ public sealed partial class McpManager : IAsyncDisposable
 
             foreach (var entry in stale)
             {
-                await entry.Gate.WaitAsync().ConfigureAwait(false);
+                await entry.Gate.WaitAsync();
                 try
                 {
-                    await StopAsync(entry).ConfigureAwait(false);
+                    await StopAsync(entry);
                     Reset(entry, current.TryGetValue(entry.Name, out var now) ? now : entry.Config);
                 }
                 finally
@@ -327,7 +327,7 @@ public sealed partial class McpManager : IAsyncDisposable
     private async Task EnsureConnectedAsync(McpServerConfig config, CancellationToken cancellationToken)
     {
         var entry = EntryFor(config);
-        await entry.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await entry.Gate.WaitAsync(cancellationToken);
         try
         {
             // A server removed from mcp.json, or a disposed manager, must not start a process nobody will stop.
@@ -338,14 +338,14 @@ public sealed partial class McpManager : IAsyncDisposable
 
             if (!config.SameAs(entry.Config))
             {
-                await StopAsync(entry).ConfigureAwait(false);
+                await StopAsync(entry);
                 Reset(entry, config);
             }
 
             var retry = entry.State == McpServerState.Failed && _time.GetUtcNow() - entry.FailedAt >= RetryAfterFailure;
             if (entry.State == McpServerState.Stopped || retry)
             {
-                await ConnectCoreAsync(entry, config, cancellationToken).ConfigureAwait(false);
+                await ConnectCoreAsync(entry, config, cancellationToken);
             }
         }
         finally
@@ -367,7 +367,7 @@ public sealed partial class McpManager : IAsyncDisposable
         Func<string, string?> lookup;
         try
         {
-            lookup = await LookupAsync(config, cancellationToken).ConfigureAwait(false);
+            lookup = await LookupAsync(config, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -387,8 +387,8 @@ public sealed partial class McpManager : IAsyncDisposable
         IMcpConnection? connection = null;
         try
         {
-            connection = await _connector.ConnectAsync(expanded, linked.Token).ConfigureAwait(false);
-            var tools = await connection.ListToolsAsync(linked.Token).ConfigureAwait(false);
+            connection = await _connector.ConnectAsync(expanded, linked.Token);
+            var tools = await connection.ListToolsAsync(linked.Token);
             bool kept;
             lock (_gate)
             {
@@ -403,7 +403,7 @@ public sealed partial class McpManager : IAsyncDisposable
 
             if (!kept)
             {
-                await DisposeQuietlyAsync(connection).ConfigureAwait(false);
+                await DisposeQuietlyAsync(connection);
                 return;
             }
 
@@ -412,7 +412,7 @@ public sealed partial class McpManager : IAsyncDisposable
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            await DisposeQuietlyAsync(connection).ConfigureAwait(false);
+            await DisposeQuietlyAsync(connection);
             lock (_gate)
             {
                 entry.State = McpServerState.Stopped;
@@ -423,7 +423,7 @@ public sealed partial class McpManager : IAsyncDisposable
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            await DisposeQuietlyAsync(connection).ConfigureAwait(false);
+            await DisposeQuietlyAsync(connection);
             LogConnectFailed(ex, config.Name);
             Fail(entry, ex is OperationCanceledException
                 ? string.Create(CultureInfo.InvariantCulture, $"The server did not answer within {_connectTimeout.TotalSeconds:0} seconds.")
@@ -436,7 +436,7 @@ public sealed partial class McpManager : IAsyncDisposable
         try
         {
 #pragma warning disable VSTHRD003 // The connection's own signal that it ended.
-            await connection.Closed.ConfigureAwait(false);
+            await connection.Closed;
 #pragma warning restore VSTHRD003
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
@@ -478,7 +478,7 @@ public sealed partial class McpManager : IAsyncDisposable
 
     private async Task StopAsync(Entry entry)
     {
-        await CloseConnectionAsync(entry).ConfigureAwait(false);
+        await CloseConnectionAsync(entry);
         lock (_gate)
         {
             entry.State = McpServerState.Stopped;
@@ -511,7 +511,7 @@ public sealed partial class McpManager : IAsyncDisposable
         try
         {
 #pragma warning disable IDISP007 // The manager owns the connections it opened.
-            await connection.DisposeAsync().ConfigureAwait(false);
+            await connection.DisposeAsync();
 #pragma warning restore IDISP007
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
@@ -525,7 +525,7 @@ public sealed partial class McpManager : IAsyncDisposable
     {
         if (_permissions?.IsMcpServerTrusted(name) == true)
         {
-            await _permissions.SetMcpServerTrustedAsync(name, trusted: false).ConfigureAwait(false);
+            await _permissions.SetMcpServerTrustedAsync(name, trusted: false);
         }
     }
 
@@ -540,7 +540,7 @@ public sealed partial class McpManager : IAsyncDisposable
         Dictionary<string, string> found = new(StringComparer.Ordinal);
         foreach (var variable in McpSecretVariables.Referenced(config).Where(v => _environment(v) is null))
         {
-            if (await _secrets.GetAsync(McpSecretVariables.StoreKey(variable), cancellationToken).ConfigureAwait(false) is { } value)
+            if (await _secrets.GetAsync(McpSecretVariables.StoreKey(variable), cancellationToken) is { } value)
             {
                 found[variable] = value;
             }

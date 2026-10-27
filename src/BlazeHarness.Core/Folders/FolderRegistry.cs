@@ -119,7 +119,7 @@ public sealed class FolderRegistry : IDisposable
                     : existing with { LastOpenedAt = now };
                 return doc with { Folders = [.. doc.Folders.Where(f => f != existing), opened] };
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
 
         Changed?.Invoke(this, EventArgs.Empty);
         return new OpenFolderResult(opened, FolderError.None);
@@ -143,7 +143,7 @@ public sealed class FolderRegistry : IDisposable
             {
                 Folders = [.. doc.Folders.Select(f => FolderPaths.Comparer.Equals(f.Path, folder.Path) ? f with { LastOpenedAt = _time.GetUtcNow() } : f)],
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -169,7 +169,7 @@ public sealed class FolderRegistry : IDisposable
                 removed = kept.Count != doc.Folders.Count;
                 return removed ? doc with { Folders = kept } : doc;
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
 
         if (removed)
         {
@@ -191,7 +191,7 @@ public sealed class FolderRegistry : IDisposable
         var old = Find(oldPath);
         if (old is null)
         {
-            return await OpenAsync(newPath, cancellationToken).ConfigureAwait(false);
+            return await OpenAsync(newPath, cancellationToken);
         }
 
         var error = Check(newPath);
@@ -210,7 +210,7 @@ public sealed class FolderRegistry : IDisposable
                 var others = doc.Folders.Where(f => !FolderPaths.Comparer.Equals(f.Path, old.Path) && !FolderPaths.Comparer.Equals(f.Path, key));
                 return doc with { Folders = [.. others, moved] };
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
 
         Changed?.Invoke(this, EventArgs.Empty);
         return new OpenFolderResult(moved, FolderError.None);

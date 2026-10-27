@@ -91,7 +91,7 @@ internal sealed class SearchChatTool : ITool
         List<(string? Title, IReadOnlyList<ChatEntry> Entries)> sources = [(null, _current())];
         if (scope == FolderScope && _others is not null)
         {
-            sources.AddRange((await _others(cancellationToken).ConfigureAwait(false)).Select(c => ((string?)c.Title, c.Entries)));
+            sources.AddRange((await _others(cancellationToken)).Select(c => ((string?)c.Title, c.Entries)));
         }
 
         var matches = new List<string>();

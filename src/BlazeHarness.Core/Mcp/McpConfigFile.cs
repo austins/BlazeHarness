@@ -88,10 +88,10 @@ public sealed partial class McpConfigFile : IDisposable
             return snapshot.Result;
         }
 
-        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _lock.WaitAsync(cancellationToken);
         try
         {
-            await AtomicFile.WriteAllTextAsync(_path, text, cancellationToken).ConfigureAwait(false);
+            await AtomicFile.WriteAllTextAsync(_path, text, cancellationToken);
             Volatile.Write(ref _current, snapshot);
         }
         finally
@@ -118,7 +118,7 @@ public sealed partial class McpConfigFile : IDisposable
             return false;
         }
 
-        return (await SaveAsync(edited, cancellationToken).ConfigureAwait(false)).Errors.Count == 0;
+        return (await SaveAsync(edited, cancellationToken)).Errors.Count == 0;
     }
 
     /// <inheritdoc />

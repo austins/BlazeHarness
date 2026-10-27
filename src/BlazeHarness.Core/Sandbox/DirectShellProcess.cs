@@ -55,7 +55,7 @@ internal sealed class DirectShellProcess : IShellProcess
 
     public async Task<int> WaitAsync(CancellationToken cancellationToken)
     {
-        await _process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        await _process.WaitForExitAsync(cancellationToken);
         return _process.ExitCode;
     }
 

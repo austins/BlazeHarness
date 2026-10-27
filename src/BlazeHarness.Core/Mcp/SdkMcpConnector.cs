@@ -45,7 +45,7 @@ public sealed partial class SdkMcpConnector : IMcpConnector
         try
         {
             var options = new McpClientOptions { ClientInfo = new Implementation { Name = "BlazeHarness", Version = "1.0" } };
-            var client = await McpClient.CreateAsync(transport, options, _loggers, cancellationToken).ConfigureAwait(false);
+            var client = await McpClient.CreateAsync(transport, options, _loggers, cancellationToken);
             return new SdkMcpConnection(client);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not OutOfMemoryException)

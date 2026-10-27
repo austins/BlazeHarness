@@ -69,12 +69,12 @@ public sealed class McpServerEditor
         };
         foreach (var (key, value) in server.Env)
         {
-            draft.Env.Add(await EntryAsync(server.Name, key, value, cancellationToken).ConfigureAwait(false));
+            draft.Env.Add(await EntryAsync(server.Name, key, value, cancellationToken));
         }
 
         foreach (var (key, value) in server.Headers)
         {
-            draft.Headers.Add(await EntryAsync(server.Name, key, value, cancellationToken).ConfigureAwait(false));
+            draft.Headers.Add(await EntryAsync(server.Name, key, value, cancellationToken));
         }
 
         return draft;
@@ -107,8 +107,8 @@ public sealed class McpServerEditor
         Dictionary<string, string> headers = new(StringComparer.OrdinalIgnoreCase);
         List<(string Variable, string Value)> toStore = [];
         var isLocal = draft.Transport == McpTransport.Stdio;
-        await ReadEntriesAsync(name, isLocal ? draft.Env : [], env, "environment variable", toStore, problems, cancellationToken).ConfigureAwait(false);
-        await ReadEntriesAsync(name, isLocal ? [] : draft.Headers, headers, "header", toStore, problems, cancellationToken).ConfigureAwait(false);
+        await ReadEntriesAsync(name, isLocal ? draft.Env : [], env, "environment variable", toStore, problems, cancellationToken);
+        await ReadEntriesAsync(name, isLocal ? [] : draft.Headers, headers, "header", toStore, problems, cancellationToken);
         if (problems.Count > 0)
         {
             return problems;
@@ -139,10 +139,10 @@ public sealed class McpServerEditor
 
         foreach (var (variable, value) in toStore)
         {
-            await _secrets.SetAsync(McpSecretVariables.StoreKey(variable), value, cancellationToken).ConfigureAwait(false);
+            await _secrets.SetAsync(McpSecretVariables.StoreKey(variable), value, cancellationToken);
         }
 
-        var saved = await _file.SaveAsync(merged.Text, cancellationToken).ConfigureAwait(false);
+        var saved = await _file.SaveAsync(merged.Text, cancellationToken);
         if (saved.Errors.Count > 0)
         {
             return saved.Errors;
@@ -150,11 +150,11 @@ public sealed class McpServerEditor
 
         if (existing is not null)
         {
-            await DeleteUnusedAsync(existing, config, cancellationToken).ConfigureAwait(false);
+            await DeleteUnusedAsync(existing, config, cancellationToken);
         }
 
         // A changed secret doesn't change the file, so the running connection would keep the old one.
-        await _manager.StopAsync(name).ConfigureAwait(false);
+        await _manager.StopAsync(name);
         return [];
     }
 
@@ -174,7 +174,7 @@ public sealed class McpServerEditor
             return false;
         }
 
-        var saved = await _file.SaveAsync(text, cancellationToken).ConfigureAwait(false);
+        var saved = await _file.SaveAsync(text, cancellationToken);
         if (saved.Errors.Count > 0)
         {
             return false;
@@ -182,10 +182,10 @@ public sealed class McpServerEditor
 
         foreach (var variable in McpSecretVariables.Referenced(existing))
         {
-            await _secrets.DeleteAsync(McpSecretVariables.StoreKey(variable), cancellationToken).ConfigureAwait(false);
+            await _secrets.DeleteAsync(McpSecretVariables.StoreKey(variable), cancellationToken);
         }
 
-        await _manager.StopAsync(name).ConfigureAwait(false);
+        await _manager.StopAsync(name);
         return true;
     }
 
@@ -196,7 +196,7 @@ public sealed class McpServerEditor
         var variable = McpSecretVariables.NameFor(server, key);
         if (McpSecretVariables.TryParseReference(value, out var referenced)
             && string.Equals(referenced, variable, StringComparison.Ordinal)
-            && await _secrets.GetAsync(McpSecretVariables.StoreKey(variable), cancellationToken).ConfigureAwait(false) is not null)
+            && await _secrets.GetAsync(McpSecretVariables.StoreKey(variable), cancellationToken) is not null)
         {
             return new McpDraftEntry { Name = key, Secret = true, StoredVariable = variable };
         }
@@ -256,7 +256,7 @@ public sealed class McpServerEditor
             var value = entry.Value.Length > 0
                 ? entry.Value
                 : entry.StoredVariable is { } stored
-                    ? await _secrets.GetAsync(McpSecretVariables.StoreKey(stored), cancellationToken).ConfigureAwait(false)
+                    ? await _secrets.GetAsync(McpSecretVariables.StoreKey(stored), cancellationToken)
                     : null;
             if (string.IsNullOrEmpty(value))
             {
@@ -274,7 +274,7 @@ public sealed class McpServerEditor
         var kept = McpSecretVariables.Referenced(after);
         foreach (var variable in McpSecretVariables.Referenced(before).Where(v => !kept.Contains(v)))
         {
-            await _secrets.DeleteAsync(McpSecretVariables.StoreKey(variable), cancellationToken).ConfigureAwait(false);
+            await _secrets.DeleteAsync(McpSecretVariables.StoreKey(variable), cancellationToken);
         }
     }
 }
