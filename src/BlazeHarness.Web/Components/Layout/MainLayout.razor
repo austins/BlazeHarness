@@ -46,19 +46,32 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && await JS.InvokeAsync<bool>("bhUi.isNarrow"))
+        if (firstRender && await IsNarrowAsync())
         {
             _collapsed = true;
             StateHasChanged();
         }
     }
 
+    // An async void handler has nowhere to send an exception, so a closed browser must not escape it.
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        if (!_collapsed && await JS.InvokeAsync<bool>("bhUi.isNarrow"))
+        if (!_collapsed && await IsNarrowAsync())
         {
             _collapsed = true;
             StateHasChanged();
+        }
+    }
+
+    private async Task<bool> IsNarrowAsync()
+    {
+        try
+        {
+            return await JS.InvokeAsync<bool>("bhUi.isNarrow");
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or TaskCanceledException or ObjectDisposedException)
+        {
+            return false;
         }
     }
 }

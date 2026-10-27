@@ -3,6 +3,7 @@
 @using BlazeHarness.Core.Diff
 @using BlazeHarness.Core.Mcp
 @using BlazeHarness.Core.Permissions
+@using BlazeHarness.Core.Tools
 @using BlazeHarness.Web.Hosting
 
 <div class="tool" data-status="@StatusKey" role="group" aria-label="@Label">
@@ -61,7 +62,7 @@
         </div>
     }
 
-    @if (ImageAddress is { } address)
+    @if (_imageAddress is { } address)
     {
         <a class="tool-image" href="@address" target="_blank" rel="noopener"><img class="msg-image" src="@address" alt="@Call.Summary" loading="lazy" /></a>
     }
@@ -70,15 +71,15 @@
     {
         <div class="tool-body" id="@_bodyId">
             @{
-                var diff = EditDiff();
+                ShowDetails();
             }
 
-            @if (diff is not null)
+            @if (_diff is not null)
             {
-                <DiffView Lines="diff" />
+                <DiffView Lines="_diff" />
             }
 
-            @foreach (var (name, value) in Arguments(diff is not null))
+            @foreach (var (name, value) in _arguments)
             {
                 <div class="tool-arg">
                     <span class="tool-arg-name">@name</span>
@@ -90,7 +91,7 @@
             {
                 <div class="tool-arg">
                     <span class="tool-arg-name">Output</span>
-                    <pre class="tool-pre">@(_showAll ? Call.Output : Shorten(Call.Output, OutputPreviewLength))</pre>
+                    <pre class="tool-pre">@(_showAll ? Call.Output : TextShortener.Shorten(Call.Output, OutputPreviewLength))</pre>
                     @if (!_showAll && Call.Output.Length > OutputPreviewLength)
                     {
                         <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _showAll = true">Show all @Call.Output.Length.ToString("N0", CultureInfo.CurrentCulture) characters</button>
@@ -108,6 +109,12 @@
     private readonly string _bodyId = "tool-" + Guid.NewGuid().ToString("N");
     private bool _expanded;
     private bool _showAll;
+    private ToolCallEntry? _parsedFor;
+    private (string? SessionId, ToolCallStatus Status)? _imageFor;
+    private string? _imageAddress;
+    private bool _detailsReady;
+    private IReadOnlyList<DiffLine>? _diff;
+    private List<(string Name, string Value)> _arguments = [];
 
     /// <summary>
     /// Gets or sets the call to show.
@@ -127,26 +134,39 @@
     [Parameter]
     public EventCallback<(string CallId, ApprovalChoice Choice)> OnDecide { get; set; }
 
-    private string? ImageAddress
+    protected override void OnParametersSet()
     {
-        get
+        if (!ReferenceEquals(Call, _parsedFor))
         {
-            if (SessionId is null || Call is not { Name: "show_image", Status: ToolCallStatus.Succeeded })
-            {
-                return null;
-            }
+            _parsedFor = Call;
+            _detailsReady = false;
+            _imageFor = null;
+        }
 
-            try
-            {
-                using var document = JsonDocument.Parse(Call.ArgumentsJson);
-                return document.RootElement.TryGetProperty("path", out var path) && path.ValueKind == JsonValueKind.String
-                    ? AttachmentEndpoints.FileAddressOf(SessionId, path.GetString()!)
-                    : null;
-            }
-            catch (JsonException)
-            {
-                return null;
-            }
+        if (_imageFor != (SessionId, Call.Status))
+        {
+            _imageFor = (SessionId, Call.Status);
+            _imageAddress = FindImageAddress();
+        }
+    }
+
+    private string? FindImageAddress()
+    {
+        if (SessionId is null || Call is not { Name: ShowImageTool.ToolName, Status: ToolCallStatus.Succeeded })
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(Call.ArgumentsJson);
+            return document.RootElement.TryGetProperty(ShowImageTool.PathArgument, out var path) && path.ValueKind == JsonValueKind.String
+                ? AttachmentEndpoints.FileAddressOf(SessionId, path.GetString()!)
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 
@@ -169,36 +189,33 @@
 
     private string Label => $"{Call.Name}: {StatusText}";
 
-    private static string Shorten(string text, int length)
-    {
-        if (text.Length <= length)
-        {
-            return text;
-        }
-
-        var cut = char.IsHighSurrogate(text[length - 1]) ? length - 1 : length;
-        return text[..cut] + "…";
-    }
-
     private void Toggle()
     {
         _expanded = !Open;
     }
 
-    private IReadOnlyList<DiffLine>? EditDiff()
+    // The arguments of a call never change, so they are parsed once, and only when the call is opened.
+    private void ShowDetails()
     {
-        if (Call.Name != "edit_file")
+        if (_detailsReady)
         {
-            return null;
+            return;
         }
 
+        _detailsReady = true;
+        _diff = Call.Name == EditFileTool.ToolName ? EditDiff() : null;
+        _arguments = Arguments(_diff is not null);
+    }
+
+    private IReadOnlyList<DiffLine>? EditDiff()
+    {
         try
         {
             using var document = JsonDocument.Parse(Call.ArgumentsJson);
             var root = document.RootElement;
             return root.ValueKind == JsonValueKind.Object
-                && root.TryGetProperty("old_string", out var oldText) && oldText.ValueKind == JsonValueKind.String
-                && root.TryGetProperty("new_string", out var newText) && newText.ValueKind == JsonValueKind.String
+                && root.TryGetProperty(EditFileTool.OldStringArgument, out var oldText) && oldText.ValueKind == JsonValueKind.String
+                && root.TryGetProperty(EditFileTool.NewStringArgument, out var newText) && newText.ValueKind == JsonValueKind.String
                     ? LineDiff.Compare(oldText.GetString()!, newText.GetString()!)
                     : null;
         }
@@ -221,18 +238,18 @@
 
             foreach (var property in document.RootElement.EnumerateObject())
             {
-                if (hideEditText && property.Name is "old_string" or "new_string")
+                if (hideEditText && property.Name is EditFileTool.OldStringArgument or EditFileTool.NewStringArgument)
                 {
                     continue;
                 }
 
                 var value = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() ?? string.Empty : property.Value.GetRawText();
-                list.Add((property.Name, Shorten(value, ArgumentPreviewLength)));
+                list.Add((property.Name, TextShortener.Shorten(value, ArgumentPreviewLength)));
             }
         }
         catch (JsonException)
         {
-            list.Add(("arguments", Shorten(Call.ArgumentsJson, ArgumentPreviewLength)));
+            list.Add(("arguments", TextShortener.Shorten(Call.ArgumentsJson, ArgumentPreviewLength)));
         }
 
         return list;

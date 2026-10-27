@@ -9,12 +9,27 @@ namespace BlazeHarness.Core.Tools;
 /// </summary>
 public sealed class EditFileTool : ITool
 {
+    /// <summary>
+    /// The name the model calls the tool by.
+    /// </summary>
+    public const string ToolName = "edit_file";
+
+    /// <summary>
+    /// The name of the argument that holds the text to replace.
+    /// </summary>
+    public const string OldStringArgument = "old_string";
+
+    /// <summary>
+    /// The name of the argument that holds the replacement text.
+    /// </summary>
+    public const string NewStringArgument = "new_string";
+
     private const long MaxFileBytes = 10 * 1024 * 1024;
 
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     /// <inheritdoc />
-    public string Name => "edit_file";
+    public string Name => ToolName;
 
     /// <inheritdoc />
     public string Description =>
@@ -54,8 +69,8 @@ public sealed class EditFileTool : ITool
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(context);
 
-        var oldText = arguments.RequiredString("old_string");
-        var newText = arguments.RequiredString("new_string");
+        var oldText = arguments.RequiredString(OldStringArgument);
+        var newText = arguments.RequiredString(NewStringArgument);
         var replaceAll = arguments.OptionalBool("replace_all");
         if (!context.TryResolve(arguments.RequiredString("path"), out var full, out var error))
         {

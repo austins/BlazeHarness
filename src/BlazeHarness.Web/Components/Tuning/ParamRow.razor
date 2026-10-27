@@ -36,15 +36,27 @@
 @code {
     private bool OutOfRange(double value) => double.IsNaN(value) || value < Range.Min || value > Range.Max;
 
+    /// <summary>
+    /// Gets or sets the parameter this row edits.
+    /// </summary>
     [Parameter, EditorRequired]
     public SamplingRange Range { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the value, or null when the parameter is not set.
+    /// </summary>
     [Parameter]
     public double? Value { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback for the value changing, with null when the user unsets it.
+    /// </summary>
     [Parameter]
     public EventCallback<double?> ValueChanged { get; set; }
 
+    /// <summary>
+    /// Gets or sets the value the parameter has when this row does not set it, or null when the server decides.
+    /// </summary>
     [Parameter]
     public double? Inherited { get; set; }
 
@@ -74,12 +86,7 @@
 
     private double StartValue()
     {
-        var start = Inherited ?? Range.Key switch
-        {
-            "temperature" or "topP" or "repetitionPenalty" => 1,
-            "topK" => 40,
-            _ => 0,
-        };
+        var start = Inherited ?? Range.Start;
         return Math.Clamp(start, Range.Min, Range.SliderMax);
     }
 }

@@ -12,35 +12,47 @@ namespace BlazeHarness.Web.Services;
 /// <param name="sessionId">The chat the text belongs to, which images that point into its folder are served from, or null for none.</param>
 public sealed class StreamingMarkdown(MarkdownRenderer renderer, string? sessionId = null)
 {
-    private string _settledHtml = string.Empty;
+    private const int MinFenceLength = 3;
+
     private int _settled;
     private int _scanned;
-    private bool _inFence;
+    private char _fenceMarker;
+    private int _fenceLength;
 
     /// <summary>
-    /// Render the message text so far.
+    /// Gets the HTML of the settled text, which only changes when another block settles, so a view can leave it out of an update.
+    /// </summary>
+    public string Settled { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Gets the HTML of the text after the settled part, which is parsed again on each update.
+    /// </summary>
+    public string Tail { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Render the message text so far into <see cref="Settled"/> and <see cref="Tail"/>.
     /// </summary>
     /// <param name="text">The whole text received so far, which only ever grows.</param>
-    /// <returns>Safe HTML.</returns>
-    public string Render(string text)
+    public void Render(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
         if (text.Length < _scanned)
         {
-            _settledHtml = string.Empty;
+            Settled = string.Empty;
             _settled = 0;
             _scanned = 0;
-            _inFence = false;
+            _fenceMarker = '\0';
+            _fenceLength = 0;
         }
 
         var boundary = AdvanceScan(text);
         if (boundary > _settled)
         {
-            _settledHtml += renderer.ToHtml(text[_settled..boundary], sessionId);
+            Settled += renderer.ToHtml(text[_settled..boundary], sessionId);
             _settled = boundary;
         }
 
-        return _settledHtml + renderer.ToHtml(text[_settled..], sessionId);
+        Tail = renderer.ToHtml(text[_settled..], sessionId);
     }
 
     private int AdvanceScan(string text)
@@ -56,14 +68,52 @@ public sealed class StreamingMarkdown(MarkdownRenderer renderer, string? session
 
             var line = text.AsSpan(_scanned, end - _scanned).Trim();
             _scanned = end + 1;
-            if (line.StartsWith("```", StringComparison.Ordinal) || line.StartsWith("~~~", StringComparison.Ordinal))
+            if (TrackFence(line))
             {
-                _inFence = !_inFence;
+                continue;
             }
-            else if (line.IsEmpty && !_inFence)
+
+            if (line.IsEmpty && _fenceMarker == '\0')
             {
                 boundary = _scanned;
             }
         }
+    }
+
+    // A fence closes only with the same character, at least as long, and nothing after it.
+    private bool TrackFence(ReadOnlySpan<char> line)
+    {
+        if (line.Length < MinFenceLength || (line[0] != '`' && line[0] != '~'))
+        {
+            return false;
+        }
+
+        var marker = line[0];
+        var length = line.IndexOfAnyExcept(marker);
+        if (length < 0)
+        {
+            length = line.Length;
+        }
+
+        if (length < MinFenceLength)
+        {
+            return false;
+        }
+
+        if (_fenceMarker == '\0')
+        {
+            _fenceMarker = marker;
+            _fenceLength = length;
+            return true;
+        }
+
+        if (marker == _fenceMarker && length >= _fenceLength && length == line.Length)
+        {
+            _fenceMarker = '\0';
+            _fenceLength = 0;
+            return true;
+        }
+
+        return false;
     }
 }

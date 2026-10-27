@@ -7,10 +7,11 @@ namespace BlazeHarness.Web.Services;
 /// The first request starts a short wait, and every request during the wait is folded into one render at its end,
 /// so the final state is always rendered.
 /// </remarks>
-public sealed class RenderThrottle : IDisposable
+public sealed partial class RenderThrottle : IDisposable
 {
     private readonly Func<Task> _render;
     private readonly TimeSpan _interval;
+    private readonly ILogger _logger;
     private readonly TimeProvider _time;
     private readonly CancellationTokenSource _stop = new();
     private int _pending;
@@ -20,12 +21,15 @@ public sealed class RenderThrottle : IDisposable
     /// </summary>
     /// <param name="render">The action that renders the view.</param>
     /// <param name="interval">The shortest time between renders.</param>
+    /// <param name="logger">The log that receives the type of an exception the render throws.</param>
     /// <param name="time">The clock, which tests replace; null uses the system clock.</param>
-    public RenderThrottle(Func<Task> render, TimeSpan interval, TimeProvider? time = null)
+    public RenderThrottle(Func<Task> render, TimeSpan interval, ILogger logger, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(render);
+        ArgumentNullException.ThrowIfNull(logger);
         _render = render;
         _interval = interval;
+        _logger = logger;
         _time = time ?? TimeProvider.System;
     }
 
@@ -61,5 +65,13 @@ public sealed class RenderThrottle : IDisposable
         {
             // The view went away while a render was waiting.
         }
+        catch (Exception ex)
+        {
+            // Nothing awaits this task, so an exception would be lost; the next request still renders.
+            LogRenderFailed(ex);
+        }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A render failed.")]
+    private partial void LogRenderFailed(Exception ex);
 }

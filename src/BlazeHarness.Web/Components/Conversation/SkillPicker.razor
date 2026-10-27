@@ -48,7 +48,9 @@
         _available = Sessions.AvailableSkills(SessionId);
     }
 
-    private static string Short(string description) => description.Length <= 80 ? description : description[..79] + "…";
+    private const int DescriptionLength = 80;
+
+    private static string Short(string description) => TextShortener.Shorten(description, DescriptionLength);
 
     private bool IsOn(SkillInfo skill) => Sessions.IsSkillEnabled(SessionId, skill.Name);
 

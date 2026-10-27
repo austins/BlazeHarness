@@ -36,7 +36,7 @@ else
                         <span class="chip-name" title="@file.Name">@file.Name</span>
                         <span class="chip-size">@FileSize.Format(file.Content.Length)</span>
                         <span class="chip-hint">@HintFor(delivery)</span>
-                        @if (IsPasted(file))
+                        @if (file.IsPasted)
                         {
                             <button type="button" class="btn btn-ghost btn-sm" aria-expanded="@(_previewing == file.Id ? "true" : "false")" @onclick="() => TogglePreview(file)">Preview</button>
                             <button type="button" class="btn btn-ghost btn-sm" @onclick="() => InsertAsText(file)">Insert as text</button>
@@ -97,9 +97,9 @@ else
                 </select>
             }
             <span class="composer-spacer"></span>
-            @if (CurrentTarget() is { } current && ContextOf?.Invoke(current) is { } context)
+            @if (_context is not null)
             {
-                <ContextIndicator Status="context" />
+                <ContextIndicator Status="_context" />
             }
             @if (CanCompact && !Running && Editing is null)
             {
@@ -115,7 +115,7 @@ else
             }
             else
             {
-                <button type="submit" class="btn btn-primary"><Icon Name="send" /> Send</button>
+                <button type="submit" class="btn btn-primary"><Icon Name="arrow-up" /> Send</button>
             }
         </div>
         @if (_note is not null)
@@ -140,12 +140,17 @@ else
     private string _selected = string.Empty;
     private string _level = string.Empty;
     private const int PreviewBytes = 2000;
+    private const int SuggestionDescriptionLength = 90;
+    private const int MaxSuggestions = 8;
 
     private readonly List<PendingFile> _files = [];
     private Guid? _previewing;
     private ElementReference _form;
     private InputFile? _picker;
     private string? _note;
+    private ContextStatus? _context;
+    private string? _suggestedFor;
+    private List<SkillInfo>? _suggestions;
     private bool _resize;
     private bool _applied;
     private bool _creating;
@@ -249,19 +254,26 @@ else
             _resize = true;
         }
 
-        if (_applied && SessionId == _appliedFor)
+        if (!_applied || SessionId != _appliedFor)
         {
-            return;
+            var createdByThisComposer = _creating && SessionId is not null;
+            _creating = false;
+            _applied = true;
+            _appliedFor = SessionId;
+            _suggestedFor = null;
+            if (!createdByThisComposer)
+            {
+                ApplyChoices();
+            }
         }
 
-        var createdByThisComposer = _creating && SessionId is not null;
-        _creating = false;
-        _applied = true;
-        _appliedFor = SessionId;
-        if (!createdByThisComposer)
-        {
-            ApplyChoices();
-        }
+        RefreshContext();
+    }
+
+    // Reading the context takes the session lock and may estimate the whole history, so it is not done on every keystroke.
+    private void RefreshContext()
+    {
+        _context = CurrentTarget() is { } target ? ContextOf?.Invoke(target) : null;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -328,12 +340,14 @@ else
             _level = string.Empty;
         }
 
+        RefreshContext();
     }
 
     private void OnLevelChanged(ChangeEventArgs e)
     {
         _level = e.Value?.ToString() ?? string.Empty;
         _note = null;
+        RefreshContext();
     }
 
     private ChatTarget? CurrentTarget()
@@ -348,9 +362,21 @@ else
         return new ChatTarget(choice.Provider, choice.Model, level);
     }
 
-    private static string ShortDescription(SkillInfo skill) => skill.Description.Length <= 90 ? skill.Description : skill.Description[..89] + "…";
+    private static string ShortDescription(SkillInfo skill) => TextShortener.Shorten(skill.Description, SuggestionDescriptionLength);
 
+    // Looking up skills reads the disk, so the list is only rebuilt when the text changes.
     private List<SkillInfo>? Suggestions()
+    {
+        if (_suggestedFor == _text)
+        {
+            return _suggestions;
+        }
+
+        _suggestedFor = _text;
+        return _suggestions = FindSuggestions();
+    }
+
+    private List<SkillInfo>? FindSuggestions()
     {
         if (_text.Length == 0 || _text[0] != '/' || _text.Any(char.IsWhiteSpace))
         {
@@ -359,7 +385,7 @@ else
 
         var typed = _text[1..];
         var available = SessionId is null ? Catalog.For(FolderPath, null).Skills : Sessions.AvailableSkills(SessionId).Skills.Where(s => Sessions.IsSkillEnabled(SessionId, s.Name)).ToList();
-        return [.. available.Where(skill => skill.Name.StartsWith(typed, StringComparison.Ordinal)).Take(8)];
+        return [.. available.Where(skill => skill.Name.StartsWith(typed, StringComparison.Ordinal)).Take(MaxSuggestions)];
     }
 
     private async Task ChooseSkillAsync(SkillInfo skill)
@@ -431,8 +457,6 @@ else
     {
         _files.Remove(file);
     }
-
-    private static bool IsPasted(PendingFile file) => file.Name.StartsWith("pasted-text-", StringComparison.Ordinal);
 
     private static string Preview(PendingFile file)
     {

@@ -1,4 +1,5 @@
 @page "/settings/mcp"
+@using BlazeHarness.Core.Compaction
 @using BlazeHarness.Core.Mcp
 @using BlazeHarness.Core.Permissions
 @implements IDisposable
@@ -71,7 +72,7 @@
                 {
                     <p class="hint">
                         @(status.Tools.Count == 1 ? "1 tool" : $"{status.Tools.Count} tools"),
-                        about @TokenEstimate(status) tokens of the prompt when it is on.
+                        about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens of the prompt when it is on.
                     </p>
                     @if (status.Tools.Count > 0)
                     {
@@ -177,12 +178,12 @@
         _ => server.Url ?? string.Empty,
     };
 
-    private static int TokenEstimate(McpServerStatus status) => (status.PromptCharacters + 3) / 4;
+    private const int DescriptionLength = 120;
 
     private static string FirstLine(string? description)
     {
         var line = description?.Split('\n', 2)[0].Trim() ?? string.Empty;
-        return line.Length > 120 ? line[..120] + "…" : line;
+        return TextShortener.Shorten(line, DescriptionLength);
     }
 
     private void OnFileChanged(object? sender, EventArgs e)

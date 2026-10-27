@@ -9,13 +9,13 @@
         <li @key="chat.Id" class="chat-item">
             @if (_renaming == chat.Id)
             {
-                <input class="input input-sm" @ref="_renameInput" aria-label="Chat name" maxlength="200"
+                <input class="input input-sm" @ref="_renameInput" aria-label="Chat name" maxlength="@MaxTitleLength"
                        @bind="_renameText" @bind:event="oninput"
                        @onkeydown="OnRenameKey" @onblur="CommitRenameAsync" />
             }
             else
             {
-                <NavLink class="chat-link" href="@("chat/" + chat.Id)">
+                <NavLink class="chat-link" href="@Routes.Chat(chat.Id)">
                     <span class="chat-title">@DisplayTitle(chat)</span>
                     @if (Sessions.IsRunning(chat.Id))
                     {
@@ -48,6 +48,8 @@
 </Dialog>
 
 @code {
+    private const int MaxTitleLength = 200;
+
     private string? _renaming;
     private string _renameText = string.Empty;
     private bool _focusRename;
@@ -142,7 +144,7 @@
             return;
         }
 
-        if (Navigation.ToBaseRelativePath(Navigation.Uri).Equals("chat/" + chat.Id, StringComparison.Ordinal))
+        if (Navigation.ToBaseRelativePath(Navigation.Uri).Equals(Routes.Chat(chat.Id), StringComparison.Ordinal))
         {
             Navigation.NavigateTo(string.Empty);
         }

@@ -42,7 +42,7 @@
     {
         @if (Entry.Role == ChatRole.Assistant)
         {
-            <div class="msg-body md">@((MarkupString)AssistantHtml())</div>
+            <div class="msg-body md">@((MarkupString)_settledHtml)@((MarkupString)_tailHtml)</div>
         }
         else
         {
@@ -77,12 +77,12 @@
     <footer class="msg-meta">
         @if (Entry.Text.Length > 0 && Entry.Status != EntryStatus.Streaming)
         {
-            <button type="button" class="btn btn-ghost btn-sm btn-icon msg-edit" aria-label="Copy this message" title="Copy message" @onclick="CopyAsync"><Icon Name="copy" /></button>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon msg-action" aria-label="Copy this message" title="Copy message" @onclick="CopyAsync"><Icon Name="copy" /></button>
         }
 
         @if (CanEdit && Entry.Role == ChatRole.User)
         {
-            <button type="button" class="btn btn-ghost btn-sm btn-icon msg-edit" aria-label="Edit and resend this message" title="Edit and resend" @onclick="() => OnEdit.InvokeAsync(Entry)"><Icon Name="pencil" /></button>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon msg-action" aria-label="Edit and resend this message" title="Edit and resend" @onclick="() => OnEdit.InvokeAsync(Entry)"><Icon Name="pencil" /></button>
         }
 
         <time class="msg-time" datetime="@Entry.At.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)"></time>
@@ -137,21 +137,45 @@
     public EventCallback<(string CallId, ApprovalChoice Choice)> OnDecide { get; set; }
 
     private StreamingMarkdown? _streaming;
+    private string? _htmlText;
+    private bool _htmlStreaming;
+    private string _settledHtml = string.Empty;
+    private string _tailHtml = string.Empty;
+
+    // Every token re-renders every message, so the HTML is only rebuilt when the text it came from is a new string.
+    protected override void OnParametersSet()
+    {
+        if (Entry.Role != ChatRole.Assistant)
+        {
+            return;
+        }
+
+        var text = Entry.Text;
+        var streaming = Entry.Status == EntryStatus.Streaming;
+        if (ReferenceEquals(text, _htmlText) && streaming == _htmlStreaming)
+        {
+            return;
+        }
+
+        _htmlText = text;
+        _htmlStreaming = streaming;
+        if (streaming)
+        {
+            _streaming ??= new StreamingMarkdown(Markdown, SessionId);
+            _streaming.Render(text);
+            _settledHtml = _streaming.Settled;
+            _tailHtml = _streaming.Tail;
+        }
+        else
+        {
+            _settledHtml = Markdown.ToCachedHtml(text, SessionId);
+            _tailHtml = string.Empty;
+        }
+    }
 
     private async Task CopyAsync()
     {
         var copied = await JS.InvokeAsync<bool>("bhChat.copyText", Entry.Text);
         Toasts.Show(copied ? "Message copied." : "The message could not be copied.", copied ? ToastKind.Success : ToastKind.Error);
-    }
-
-    private string AssistantHtml()
-    {
-        if (Entry.Status != EntryStatus.Streaming)
-        {
-            return Markdown.ToCachedHtml(Entry.Text, SessionId);
-        }
-
-        _streaming ??= new StreamingMarkdown(Markdown, SessionId);
-        return _streaming.Render(Entry.Text);
     }
 }

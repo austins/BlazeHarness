@@ -14,17 +14,16 @@ public sealed class StreamingMarkdownTests
         // Arrange
         var sut = new StreamingMarkdown(_renderer);
         var text = string.Empty;
-        string? html = null;
 
         // Act
         foreach (var chunk in Document.Chunk(7))
         {
             text += new string(chunk);
-            html = sut.Render(text);
+            sut.Render(text);
         }
 
         // Assert
-        html.Should().Be(_renderer.ToHtml(Document));
+        (sut.Settled + sut.Tail).Should().Be(_renderer.ToHtml(Document));
     }
 
     [Fact]
@@ -34,7 +33,8 @@ public sealed class StreamingMarkdownTests
         var sut = new StreamingMarkdown(_renderer);
 
         // Act
-        var html = sut.Render("```\nline one\n\nline two\n");
+        sut.Render("```\nline one\n\nline two\n");
+        var html = sut.Settled + sut.Tail;
 
         // Assert
         html.Should().Contain("line one").And.Contain("line two");
@@ -49,9 +49,66 @@ public sealed class StreamingMarkdownTests
         sut.Render("first\n\nsecond\n\nthird");
 
         // Act
-        var html = sut.Render("fresh");
+        sut.Render("fresh");
 
         // Assert
-        html.Should().Be(_renderer.ToHtml("fresh"));
+        (sut.Settled + sut.Tail).Should().Be(_renderer.ToHtml("fresh"));
+    }
+
+    [Fact]
+    public void Render_BlankLineAfterWhichTextContinues_KeepsSettledHtmlStable()
+    {
+        // Arrange
+        var sut = new StreamingMarkdown(_renderer);
+        sut.Render("first\n\nsec");
+        var settled = sut.Settled;
+
+        // Act
+        sut.Render("first\n\nsecond word");
+
+        // Assert
+        sut.Settled.Should().BeSameAs(settled).And.Contain("first");
+        sut.Tail.Should().Contain("second word");
+    }
+
+    [Fact]
+    public void Render_FenceOfOtherKindInsideFence_DoesNotEndTheBlock()
+    {
+        // Arrange
+        var sut = new StreamingMarkdown(_renderer);
+
+        // Act
+        sut.Render("```\n~~~\n\nstill code\n");
+
+        // Assert
+        sut.Settled.Should().BeEmpty();
+        sut.Tail.Should().Contain("still code");
+    }
+
+    [Fact]
+    public void Render_ShorterFenceInsideLongerFence_DoesNotEndTheBlock()
+    {
+        // Arrange
+        var sut = new StreamingMarkdown(_renderer);
+
+        // Act
+        sut.Render("````\n```\n\nstill code\n");
+
+        // Assert
+        sut.Settled.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Render_ClosedFence_AllowsSettlingAfterIt()
+    {
+        // Arrange
+        var sut = new StreamingMarkdown(_renderer);
+
+        // Act
+        sut.Render("~~~\ncode\n~~~\n\nafter");
+
+        // Assert
+        sut.Settled.Should().Contain("code");
+        sut.Tail.Should().Contain("after");
     }
 }

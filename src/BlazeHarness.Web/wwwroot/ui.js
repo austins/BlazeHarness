@@ -2,6 +2,7 @@
 const openers = [];
 
 window.bhUi = {
+    // Keep in sync with the @media (max-width: 48rem) breakpoint in app.css.
     isNarrow: () => window.matchMedia("(max-width: 48rem)").matches,
     focusSelect: (input) => {
         if (input) {

@@ -157,6 +157,9 @@
 
     private string Filter { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the sidebar is hidden.
+    /// </summary>
     [Parameter]
     public bool Collapsed { get; set; }
 
@@ -180,7 +183,7 @@
         {
             using var reader = new StreamReader(file.OpenReadStream(MaxImportBytes));
             var info = await Sessions.ImportAsync(await reader.ReadToEndAsync());
-            Navigation.NavigateTo($"chat/{info.Id}");
+            Navigation.NavigateTo(Routes.Chat(info.Id));
         }
         catch (FormatException ex)
         {

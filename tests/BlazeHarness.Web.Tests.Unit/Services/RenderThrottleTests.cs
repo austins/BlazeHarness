@@ -8,6 +8,7 @@ public sealed class RenderThrottleTests
     private static readonly TimeSpan Interval = TimeSpan.FromMilliseconds(50);
 
     private readonly FakeTimeProvider _time = new();
+    private readonly LoggerFake<RenderThrottle> _logger = new();
 
     [Fact]
     public async Task Request_ManyCallsInOneInterval_RendersOnce()
@@ -23,6 +24,7 @@ public sealed class RenderThrottleTests
                 return Task.CompletedTask;
             },
             Interval,
+            _logger,
             _time);
 
         // Act
@@ -51,6 +53,7 @@ public sealed class RenderThrottleTests
                 return Task.CompletedTask;
             },
             Interval,
+            _logger,
             _time);
 
         // Act
@@ -76,6 +79,7 @@ public sealed class RenderThrottleTests
                 return Task.CompletedTask;
             },
             Interval,
+            _logger,
             _time);
 
         // Act
@@ -104,6 +108,7 @@ public sealed class RenderThrottleTests
                 return Task.CompletedTask;
             },
             Interval,
+            _logger,
             _time))
         {
             sut.Request();
@@ -114,5 +119,41 @@ public sealed class RenderThrottleTests
 
         // Assert
         renders.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Request_RenderThrows_LogsTheExceptionAndRendersAgainOnTheNextRequest()
+    {
+        // Arrange
+        var renders = 0;
+        var failed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var second = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var sut = new RenderThrottle(
+            () =>
+            {
+                if (Interlocked.Increment(ref renders) == 1)
+                {
+                    failed.TrySetResult();
+                    throw new InvalidOperationException("secret text");
+                }
+
+                second.TrySetResult();
+                return Task.CompletedTask;
+            },
+            Interval,
+            _logger,
+            _time);
+
+        // Act
+        sut.Request();
+        _time.Advance(Interval);
+        await failed.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        SpinWait.SpinUntil(() => _logger.Entries.Count > 0, TimeSpan.FromSeconds(30));
+        sut.Request();
+        _time.Advance(Interval);
+        await second.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        // Assert
+        _logger.Entries.Should().ContainSingle().Which.Exception.Should().BeOfType<InvalidOperationException>();
     }
 }

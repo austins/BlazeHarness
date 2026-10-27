@@ -13,8 +13,18 @@ namespace BlazeHarness.Core.Tools;
 /// </remarks>
 public sealed class ShowImageTool : ITool
 {
+    /// <summary>
+    /// The name the model calls the tool by.
+    /// </summary>
+    public const string ToolName = "show_image";
+
+    /// <summary>
+    /// The name of the argument that holds the image path.
+    /// </summary>
+    public const string PathArgument = "path";
+
     /// <inheritdoc />
-    public string Name => "show_image";
+    public string Name => ToolName;
 
     /// <inheritdoc />
     public string Description =>
@@ -36,13 +46,13 @@ public sealed class ShowImageTool : ITool
     public bool IsReadOnly => true;
 
     /// <inheritdoc />
-    public IReadOnlyList<string> PathArguments { get; } = ["path"];
+    public IReadOnlyList<string> PathArguments { get; } = [PathArgument];
 
     /// <inheritdoc />
     public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(30);
 
     /// <inheritdoc />
-    public string Summarize(JsonElement arguments) => ToolSupport.Text(arguments, "path");
+    public string Summarize(JsonElement arguments) => ToolSupport.Text(arguments, PathArgument);
 
     /// <inheritdoc />
     public Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)
@@ -50,7 +60,7 @@ public sealed class ShowImageTool : ITool
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(context);
 
-        var path = arguments.RequiredString("path");
+        var path = arguments.RequiredString(PathArgument);
         return Task.FromResult(Check(context, path));
     }
 

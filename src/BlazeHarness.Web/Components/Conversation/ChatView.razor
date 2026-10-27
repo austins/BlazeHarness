@@ -8,6 +8,7 @@
 @inject TimeProvider Time
 @inject IJSRuntime JS
 @inject ToastService Toasts
+@inject ILogger<ChatView> Logger
 @using BlazeHarness.Core.Attachments
 
 @if (_missing)
@@ -26,31 +27,9 @@
 else
 {
     <section class="chat" data-pinned="true" @ref="_root" aria-label="Conversation">
-        @if (ContextPath is null)
-        {
-            <div class="chat-context" title="Files this chat creates are kept with the chat">
-                <Icon Name="file" />
-                <span class="chat-context-name">Session files</span>
-                <PermissionPicker Settings="CurrentPermissions" HasFolder="false" OnChange="ChangePermissionsAsync" />
-                @if (_openId is { } mcpId)
-                {
-                    <McpPicker SessionId="@mcpId" />
-                    <SkillPicker SessionId="@mcpId" />
-                    <ExportMenu SessionId="@mcpId" />
-                }
-                @if (_info is not null)
-                {
-                    <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
-                }
-                @if (_entries.Count > 0)
-                {
-                    <button type="button" class="btn btn-ghost btn-sm" data-shortcut="find" title="Find in this chat (Ctrl+F)" @onclick="OpenFind"><Icon Name="search" /> Find</button>
-                }
-            </div>
-        }
-        else if (ContextPath is { } folderPath)
-        {
-            <div class="chat-context" title="@folderPath">
+        <div class="chat-context" title="@(ContextPath ?? "Files this chat creates are kept with the chat")">
+            @if (ContextPath is { } folderPath)
+            {
                 <Icon Name="folder" />
                 <span class="chat-context-name">@(Folders.Find(folderPath)?.Name ?? FolderPaths.DisplayName(folderPath))</span>
                 <span class="chat-context-path mono">@folderPath</span>
@@ -72,28 +51,33 @@ else
                         </ul>
                     </details>
                 }
-                <PermissionPicker Settings="CurrentPermissions" OnChange="ChangePermissionsAsync" />
-                @if (_openId is { } mcpId)
-                {
-                    <McpPicker SessionId="@mcpId" />
-                    <SkillPicker SessionId="@mcpId" />
-                    <ExportMenu SessionId="@mcpId" />
-                }
-                @if (_info is not null)
-                {
-                    <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
-                }
-                @if (_entries.Count > 0)
-                {
-                    <button type="button" class="btn btn-ghost btn-sm" data-shortcut="find" title="Find in this chat (Ctrl+F)" @onclick="OpenFind"><Icon Name="search" /> Find</button>
-                }
+            }
+            else
+            {
+                <Icon Name="file" />
+                <span class="chat-context-name">Session files</span>
+            }
 
-                @if (!Directory.Exists(folderPath))
-                {
-                    <span class="chat-context-warning" role="status"><Icon Name="alert" /> Folder not found</span>
-                }
-            </div>
-        }
+            <PermissionPicker Settings="CurrentPermissions" HasFolder="ContextPath is not null" OnChange="ChangePermissionsAsync" />
+            @if (_openId is { } mcpId)
+            {
+                <McpPicker SessionId="@mcpId" />
+                <SkillPicker SessionId="@mcpId" />
+                <ExportMenu SessionId="@mcpId" />
+            }
+            @if (_info is not null)
+            {
+                <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
+            }
+            @if (_entries.Count > 0)
+            {
+                <button type="button" class="btn btn-ghost btn-sm" data-shortcut="find" title="Find in this chat (Ctrl+F)" @onclick="OpenFind"><Icon Name="search" /> Find</button>
+            }
+            @if (ContextPath is { } missingCheck && !Directory.Exists(missingCheck))
+            {
+                <span class="chat-context-warning" role="status"><Icon Name="alert" /> Folder not found</span>
+            }
+        </div>
 
         @if (_finding)
         {
@@ -160,6 +144,8 @@ else
     private const int InitialWindow = 60;
     private const int EarlierBatch = 40;
 
+    private static readonly TimeSpan RenderInterval = TimeSpan.FromMilliseconds(50);
+
     private RenderThrottle _throttle = null!;
     private IReadOnlyList<ChatEntry> _entries = [];
     private ChatSession? _session;
@@ -168,6 +154,8 @@ else
     private bool _missing;
     private bool _loading;
     private bool _watching;
+    private bool _disposed;
+    private int _openVersion;
     private bool _wasRunning;
     private int _windowStart;
     private bool _finding;
@@ -223,7 +211,7 @@ else
 
     protected override void OnInitialized()
     {
-        _throttle = new RenderThrottle(() => InvokeAsync(Refresh), TimeSpan.FromMilliseconds(50), Time);
+        _throttle = new RenderThrottle(() => InvokeAsync(Refresh), RenderInterval, Logger, Time);
         Sessions.Store.Changed += OnStoreChanged;
     }
 
@@ -239,21 +227,24 @@ else
             }
         }
 
-        if (SessionId == _openId)
+        var requested = SessionId;
+        if (requested == _openId)
         {
             return;
         }
 
+        // Blazor can start another parameter update while OpenAsync is awaited, so a stale one must not attach.
+        var version = ++_openVersion;
         Detach();
         _editing = null;
         _wasRunning = false;
         _announcement = string.Empty;
-        _openId = SessionId;
+        _openId = requested;
         _missing = false;
         _info = null;
         _entries = [];
         _windowStart = 0;
-        if (SessionId is null)
+        if (requested is null)
         {
             return;
         }
@@ -262,11 +253,19 @@ else
         ChatSession? session;
         try
         {
-            session = await Sessions.OpenAsync(SessionId);
+            session = await Sessions.OpenAsync(requested);
         }
         finally
         {
-            _loading = false;
+            if (version == _openVersion)
+            {
+                _loading = false;
+            }
+        }
+
+        if (_disposed || version != _openVersion)
+        {
+            return;
         }
 
         if (session is null)
@@ -278,7 +277,7 @@ else
 
         Attach(session);
         _windowStart = Math.Max(0, _entries.Count - InitialWindow);
-        _info = Sessions.Store.Find(SessionId);
+        _info = Sessions.Store.Find(requested);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -304,6 +303,7 @@ else
 
     public void Dispose()
     {
+        _disposed = true;
         Sessions.Store.Changed -= OnStoreChanged;
         Detach();
         _throttle.Dispose();
@@ -323,6 +323,7 @@ else
 
     private void Attach(ChatSession session)
     {
+        Detach();
         _session = session;
         _entries = session.Entries;
         session.Changed += OnChanged;
@@ -450,32 +451,43 @@ else
         }
 
         List<AttachmentInfo> files = [];
+        string? failure = null;
         try
         {
             foreach (var file in message.Files)
             {
-                await using var content = new MemoryStream(file.Content.ToArray());
-                files.Add((await Sessions.SaveAttachmentAsync(id, file.Name, content))!);
+                await using var content = file.OpenRead();
+                if (await Sessions.SaveAttachmentAsync(id, file.Name, content) is not { } saved)
+                {
+                    failure = "This chat no longer exists.";
+                    break;
+                }
+
+                files.Add(saved);
             }
         }
         catch (AttachmentException ex)
+        {
+            failure = ex.Message;
+        }
+
+        if (failure is not null)
         {
             if (created is not null)
             {
                 await Sessions.DeleteAsync(id);
             }
 
-            return ex.Message;
+            return failure;
         }
 
         if (created is not null)
         {
             var session = await Sessions.OpenAsync(id);
-            Detach();
             Attach(session!);
             _openId = id;
             _info = created;
-            Navigation.NavigateTo("chat/" + id);
+            Navigation.NavigateTo(Routes.Chat(id));
         }
 
         if (_editing is { } editing)

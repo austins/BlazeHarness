@@ -21,13 +21,23 @@ public static class TokenEstimate
     private const int MessageOverheadTokens = 4;
 
     /// <summary>
+    /// Estimate the tokens in a number of characters.
+    /// </summary>
+    /// <param name="characters">The number of characters.</param>
+    /// <returns>The estimate, rounded up.</returns>
+    public static long OfCharacters(int characters)
+    {
+        return (characters + CharactersPerToken - 1) / CharactersPerToken;
+    }
+
+    /// <summary>
     /// Estimate the tokens in a piece of text.
     /// </summary>
     /// <param name="text">The text to measure.</param>
     /// <returns>The estimate, rounded up.</returns>
     public static long Of(string? text)
     {
-        return string.IsNullOrEmpty(text) ? 0 : (text.Length + CharactersPerToken - 1) / CharactersPerToken;
+        return string.IsNullOrEmpty(text) ? 0 : OfCharacters(text.Length);
     }
 
     /// <summary>

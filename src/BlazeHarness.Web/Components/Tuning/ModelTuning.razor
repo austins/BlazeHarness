@@ -171,15 +171,27 @@
     private List<string> _importErrors = [];
     private ThinkingLevel? _tab;
 
+    /// <summary>
+    /// Gets or sets the provider whose model is tuned, which supplies the inherited values.
+    /// </summary>
     [Parameter]
     public ProviderEditModel? Provider { get; set; }
 
+    /// <summary>
+    /// Gets or sets the model being tuned.
+    /// </summary>
     [Parameter]
     public ModelEditModel? Model { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the tuning dialog is shown.
+    /// </summary>
     [Parameter]
     public bool Open { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback for the user closing the dialog.
+    /// </summary>
     [Parameter]
     public EventCallback OnClose { get; set; }
 

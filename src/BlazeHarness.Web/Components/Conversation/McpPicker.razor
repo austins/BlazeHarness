@@ -1,3 +1,4 @@
+@using BlazeHarness.Core.Compaction
 @using BlazeHarness.Core.Mcp
 @using BlazeHarness.Core.Sessions
 @implements IDisposable
@@ -23,7 +24,7 @@
                     }
                     else if (status.State is McpServerState.Connected)
                     {
-                        <span class="hint">@(status.Tools.Count == 1 ? "1 tool" : $"{status.Tools.Count} tools"), about @((status.PromptCharacters + 3) / 4) tokens</span>
+                        <span class="hint">@(status.Tools.Count == 1 ? "1 tool" : $"{status.Tools.Count} tools"), about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens</span>
                     }
                 </li>
             }

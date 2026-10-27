@@ -4,3 +4,12 @@
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
+
+@code {
+    /// <summary>
+    /// Get the page address of a chat.
+    /// </summary>
+    /// <param name="id">The id of the chat.</param>
+    /// <returns>The address relative to the base address of the app.</returns>
+    public static string Chat(string id) => "chat/" + id;
+}

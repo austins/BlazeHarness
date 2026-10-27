@@ -1,60 +1,73 @@
 @using BlazeHarness.Core.Compaction
 
-<span class="context" data-level="@Level" title="@Details" role="status">
-    <span class="context-text">@Text</span>
+<span class="context" data-level="@_level" title="@_details" role="status">
+    <span class="context-text">@_text</span>
 </span>
 
 @code {
-    private string Level
-    {
-        get
-        {
-            if (Status.Limit <= 0)
-            {
-                return "ok";
-            }
+    private const double HighShare = 0.8;
 
-            if (Status.Tokens >= Status.Limit)
-            {
-                return "full";
-            }
-
-            return Status.Tokens >= Status.Limit * 0.8 ? "high" : "ok";
-        }
-    }
-
-    private string Text
-    {
-        get
-        {
-            var tokens = (Status.Approximate ? "~" : string.Empty) + TokenFormat.Of(Status.Tokens);
-            return Status.Window > 0 ? $"{tokens} of {TokenFormat.Of(Status.Window)} tokens" : $"{tokens} tokens";
-        }
-    }
-
-    private string Details
-    {
-        get
-        {
-            var lines = new List<string>();
-            lines.Add(Status.Approximate ? "The size of the next request, estimated" : "The size of the next request, as the server counted it");
-            if (Status.Limit > 0)
-            {
-                lines.Add($"Older messages are summarized after {TokenFormat.Of(Status.Limit)} tokens");
-            }
-
-            if (Status.CacheHitRate is { } rate)
-            {
-                lines.Add($"Cache hits: {rate.ToString("P0", System.Globalization.CultureInfo.CurrentCulture)} of the last request");
-            }
-
-            return string.Join('\n', lines);
-        }
-    }
+    private string _level = "ok";
+    private string _text = string.Empty;
+    private string _details = string.Empty;
+    private ContextStatus? _shown;
 
     /// <summary>
     /// Gets or sets how full the context is.
     /// </summary>
     [Parameter, EditorRequired]
     public ContextStatus Status { get; set; } = null!;
+
+    protected override void OnParametersSet()
+    {
+        if (Status == _shown)
+        {
+            return;
+        }
+
+        _shown = Status;
+        _level = LevelOf(Status);
+        _text = TextOf(Status);
+        _details = DetailsOf(Status);
+    }
+
+    private static string LevelOf(ContextStatus status)
+    {
+        if (status.Limit <= 0)
+        {
+            return "ok";
+        }
+
+        if (status.Tokens >= status.Limit)
+        {
+            return "full";
+        }
+
+        return status.Tokens >= status.Limit * HighShare ? "high" : "ok";
+    }
+
+    private static string TextOf(ContextStatus status)
+    {
+        var tokens = (status.Approximate ? "~" : string.Empty) + TokenFormat.Of(status.Tokens);
+        return status.Window > 0 ? $"{tokens} of {TokenFormat.Of(status.Window)} tokens" : $"{tokens} tokens";
+    }
+
+    private static string DetailsOf(ContextStatus status)
+    {
+        var lines = new List<string>
+        {
+            status.Approximate ? "The size of the next request, estimated" : "The size of the next request, as the server counted it",
+        };
+        if (status.Limit > 0)
+        {
+            lines.Add($"Older messages are summarized after {TokenFormat.Of(status.Limit)} tokens");
+        }
+
+        if (status.CacheHitRate is { } rate)
+        {
+            lines.Add($"Cache hits: {rate.ToString("P0", System.Globalization.CultureInfo.CurrentCulture)} of the last request");
+        }
+
+        return string.Join('\n', lines);
+    }
 }

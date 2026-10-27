@@ -1,6 +1,7 @@
 @using BlazeHarness.Core.Config
 @implements IDisposable
 @inject ToastService Toasts
+@inject TimeProvider Time
 
 <div class="toasts" role="region" aria-label="Notifications" aria-live="polite">
     @foreach (var toast in _toasts)
@@ -13,7 +14,11 @@
 </div>
 
 @code {
+    private static readonly TimeSpan InfoDuration = TimeSpan.FromSeconds(4);
+    private static readonly TimeSpan ErrorDuration = TimeSpan.FromSeconds(9);
+
     private readonly List<Toast> _toasts = [];
+    private readonly CancellationTokenSource _closed = new();
 
     protected override void OnInitialized()
     {
@@ -23,6 +28,8 @@
     public void Dispose()
     {
         Toasts.Shown -= OnShown;
+        _closed.Cancel();
+        _closed.Dispose();
     }
 
     private void OnShown(object? sender, ValueEventArgs<Toast> e)
@@ -30,9 +37,22 @@
         var toast = e.Value;
         _ = InvokeAsync(async () =>
         {
+            if (_closed.IsCancellationRequested)
+            {
+                return;
+            }
+
             _toasts.Add(toast);
             StateHasChanged();
-            await Task.Delay(toast.Kind == ToastKind.Error ? 9000 : 4000);
+            try
+            {
+                await Task.Delay(toast.Kind == ToastKind.Error ? ErrorDuration : InfoDuration, Time, _closed.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
             Dismiss(toast.Id);
         });
     }
