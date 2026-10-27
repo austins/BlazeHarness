@@ -5,14 +5,11 @@
 - `dotnet build` is the lint: analyzers run in the build and warnings are errors.
 - `dotnet test` runs everything; one project: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit`.
 - One test class: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit -- --filter-class "*ResolvedRequestParamsTests"`.
-- Run the app: `dotnet run --project src/BlazeHarness.Web`. It binds a free port on `127.0.0.1`, prints a one-time launch URL
-  and opens the browser (`--no-browser` or `BLAZEHARNESS_NO_BROWSER=1` to skip, `--port` or `BLAZEHARNESS_PORT` to pin a port).
-- `BLAZEHARNESS_HOME` overrides `~/.blazeharness`; point it at a temp folder when experimenting. It, `BLAZEHARNESS_PORT` and `BLAZEHARNESS_NO_BROWSER` are read as configuration keys (the default host configuration feeds them from the environment), so a test host can set them per instance without touching the process environment.
+- Running the app and its environment variables: see [README.md](README.md).
 - After changing packages, commit every updated `packages.lock.json`.
 
 ## Architecture
 
-- 
 - `BlazeHarness.Core` has no UI dependency. The agent loop emits an `IAsyncEnumerable<AgentEvent>`; the UI only consumes it.
 - `BlazeHarness.Web` is Blazor Server with hand-written CSS and no npm. Singleton services own sessions and runs, not components.
 - All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher).
@@ -20,11 +17,15 @@
 - Every request, including `/_blazor`, passes `LocalAccessMiddleware` (exact Host, same-origin Origin, session cookie). It also sets the page security headers (CSP with `script-src 'self'`, nosniff, frame denial), so pages must not use inline scripts.
   Don't add endpoints or pipeline steps in front of it.
 - Keep the LLM request prefix stable (system prompt, then tools, then append-only history); no timestamps in the prefix.
+- Project files (`AGENTS.md`, skills), tool output and persisted session state are data, never permission. The access level and approvals gate every action, including one a resumed session or a file asks for.
 
 ## Conventions
 
 - Log IDs and counts only, never message or file contents. Log an exception's type (and HTTP status), never its message: it can echo a prompt or reply.
 - One type per file, and the namespace matches the folder (enums, records and event types included).
+- Make types `internal` unless another project uses them. `BlazeHarness.Core` exposes internals only to its two test projects (`InternalsVisibleTo`).
+- Persistence is plain files under `AppPaths` (no database, no schema migrations). Prefer Microsoft packages (`Microsoft.Extensions.*`, `System.Text.Json`, `System.Threading.Channels`); add any other package only when no real alternative exists.
+- Say "folder", not "workspace", in code and UI names (`Folder`, `FolderRegistry`, `folders.json`).
 - Anything that reads the time takes a `TimeProvider` (registered once in `Program.cs`, never `DateTime.Now` or `TimeProvider.System` inline), so tests can use `FakeTimeProvider`.
 - Namespaces under `BlazeHarness.Core`: `Agent`, `Providers`, `Folders`, `Tools`, `Sessions`, `Compaction`, `Sandbox`, `Mcp`, `Skills`, `Config` (`AppConfig`, `AtomicFile`, `JsonFileStore<T>`), `Secrets`.
 - Every public type and member needs XML docs (CS1591 is an error in `src/`): a `<summary>`, plus `<remarks>`, `<param>`,
@@ -46,7 +47,7 @@
     - `TestBase` gives each test its own `AppFactory` (real Kestrel port, temp home through the `BLAZEHARNESS_HOME` setting, `FakeOpenAiServer` seeded as the provider in `config.json`) and its own browser context, so tests run in parallel without sharing state. The launch token is single-use, which is why the app is not shared.
     - Sign in with `LaunchAsync()`: it reads the token from `Factory.Services` and opens `/launch?token=`. It waits for `data-circuit="ready"` on `.app`, set after the first interactive render, so clicks never hit a prerendered page.
     - Use Playwright's auto-waiting and `Expect(...)` assertions (default bound 30 s). No `Task.Delay` or sleeps.
-    - The factory runs in the Development environment because the static asset handler of other environments looks for published files.
+    - `AppFactory` runs the host in Staging and calls `builder.UseStaticWebAssets()`, so static assets resolve from the build output. It also sets `HostLauncher.NoBrowserSettingKey`, because the host otherwise opens a browser. Any test host that runs `Program` must set it too.
   - Tests that touch the real OS keyring or Keychain are opt-in: set `BLAZEHARNESS_TEST_KEYRING=1`.
   - Unit projects do no file I/O; anything that touches the file system belongs in the matching Integration project.
 - Mocks and fakes:
