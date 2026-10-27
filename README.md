@@ -31,6 +31,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 * Chat and coding in one interface, with streamed replies and multiple providers.
 * Tools for shell commands, reading, writing and editing files, listing folders, and searching files. Read-only tools run in parallel.
 * A `search_chat` tool lets the agent look back through the full chat (including tool output) for something compaction summarized away, and optionally through the other chats of the same folder.
+* Attachments from the composer. Images go to the model as image input, and text files are added to the message, or read on demand with `read_attachment` when they are large.
 * Approvals let you decide, per tool and per action, what runs without asking.
 * Shell sandboxing where the platform supports it, so commands can stay inside the folder you opened. Otherwise commands run directly, behind approvals.
 * Folders and sessions. Open a folder and run sessions inside it, grouped by folder. Sessions can also exist without a folder, for general chat.
@@ -50,11 +51,10 @@ Not built yet, and not promised:
 * Web search and web fetch tools, so the agent can look things up and read pages, with the usual approval prompts.
 * An "Ask user" tool that lets the agent pause and ask you a question, with free text or choices.
 * Attachments as tool input, so a text-only model can pass an uploaded image to a vision tool.
-* A session history tool that lets the agent read earlier messages to recover detail that compaction dropped.
 * Subagents that work in their own context and return a summary.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
-* Smaller additions: a command palette, a richer MCP editor with per-tool toggles, dynamic MCP tool loading, a sandbox network allow-list, message search across sessions, a duplicate-provider action, and a per-folder `.mcp.json`.
+* Smaller additions: a command palette, a richer MCP editor with per-tool toggles, dynamic MCP tool loading, a sandbox network allow-list, message search across all folders, a duplicate-provider action, and a per-folder `.mcp.json`.
 
 ## Not goals
 
