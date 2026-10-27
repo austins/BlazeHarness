@@ -49,3 +49,37 @@ document.addEventListener("keydown", (event) => {
         }
     }
 });
+
+// Click-to-enlarge for chat images. The image opens in a dialog, not by navigating to the file, so an SVG is never opened as a page.
+document.addEventListener("click", (event) => {
+    const image = event.target instanceof Element ? event.target.closest(".chat-thread img.msg-image") : null;
+    if (!image || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+    }
+
+    event.preventDefault();
+    let dialog = document.querySelector("dialog.lightbox");
+    if (!dialog) {
+        dialog = document.createElement("dialog");
+        dialog.className = "lightbox";
+        dialog.setAttribute("aria-label", "Enlarged image");
+        const big = document.createElement("img");
+        const close = document.createElement("button");
+        close.type = "button";
+        close.className = "btn btn-sm lightbox-close";
+        close.textContent = "Close";
+        close.addEventListener("click", () => dialog.close());
+        dialog.addEventListener("click", (e) => {
+            if (e.target === dialog) {
+                dialog.close();
+            }
+        });
+        dialog.append(big, close);
+        document.body.append(dialog);
+    }
+
+    const big = dialog.querySelector("img");
+    big.src = image.currentSrc || image.src;
+    big.alt = image.alt;
+    dialog.showModal();
+});
