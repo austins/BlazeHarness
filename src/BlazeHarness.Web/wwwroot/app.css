@@ -198,6 +198,7 @@ kbd {
 .chat-context-name { font-weight: 600; color: var(--fg); white-space: nowrap; }
 .chat-context-path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: start; font-size: var(--text-xs); }
 .chat-context { flex-wrap: wrap; }
+.chat-context .select { width: auto; max-width: 12rem; }
 .chat-context-files { font-size: var(--text-xs); }
 .chat-context-files[open] { flex-basis: 100%; }
 .chat-context-files summary { cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-1); }
