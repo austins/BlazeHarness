@@ -110,6 +110,10 @@ else
         {
             <div class="hint" role="status">@_note</div>
         }
+        else if (SwitchesModel)
+        {
+            <div class="hint" role="status">Sending with a different model starts the prompt cache over, so the first reply may be slower.</div>
+        }
     </form>
     </div>
 }
@@ -263,6 +267,11 @@ else
             await JS.InvokeVoidAsync("bhChat.resize", _input);
         }
     }
+
+    private bool SwitchesModel => Remembered is not null
+        && _selected.Length > 0
+        && _selected != $"{Remembered.ProviderId}|{Remembered.ModelId}"
+        && _models.Exists(m => m.Provider.Id == Remembered.ProviderId && m.Model.Id == Remembered.ModelId);
 
     private void ApplyChoices()
     {
