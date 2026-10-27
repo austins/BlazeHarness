@@ -7,13 +7,9 @@ namespace BlazeHarness.Core.Tests.Integration.Skills;
 /// </summary>
 internal sealed class SkillFolders : IDisposable
 {
-    public SkillFolders()
-    {
-        Root = Path.Combine(Path.GetTempPath(), "bh-skills-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Root);
-    }
+    private readonly TempFolder _temp = new("bh-skills-");
 
-    public string Root { get; }
+    public string Root => _temp.Root;
 
     public string AddRaw(string container, string folderName, string skillText)
     {
@@ -28,8 +24,5 @@ internal sealed class SkillFolders : IDisposable
         return AddRaw(container, name, $"---\nname: {name}\ndescription: {description}\n---\n{body}\n");
     }
 
-    public void Dispose()
-    {
-        Directory.Delete(Root, recursive: true);
-    }
+    public void Dispose() => _temp.Dispose();
 }

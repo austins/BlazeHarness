@@ -12,7 +12,7 @@ namespace BlazeHarness.Core.Tests.Integration.Sessions;
 
 public sealed class SessionServiceSkillsTests : IDisposable
 {
-    private readonly string _home = Path.Combine(Path.GetTempPath(), "bh-svc-skills-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-svc-skills-");
     private readonly string _work;
     private readonly SessionStore _store;
     private readonly JsonFileStore<AppConfig> _config;
@@ -22,9 +22,9 @@ public sealed class SessionServiceSkillsTests : IDisposable
 
     public SessionServiceSkillsTests()
     {
-        _work = Path.Combine(_home, "work");
+        _work = Path.Combine(_temp.Root, "work");
         Directory.CreateDirectory(_work);
-        var paths = new AppPaths(Path.Combine(_home, "app"), _home);
+        var paths = new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root);
         WriteSkill(Path.Combine(paths.SkillsDirectory, "report"), "report", "Write reports.");
         WriteSkill(Path.Combine(_work, ".agents", "skills", "local"), "local", "Project only.");
         _config = new JsonFileStore<AppConfig>(paths.ConfigFile, new LoggerFake<SessionServiceSkillsTests>(), watch: false);
@@ -40,7 +40,7 @@ public sealed class SessionServiceSkillsTests : IDisposable
         _config.Dispose();
         _store.Dispose();
         _client.Dispose();
-        Directory.Delete(_home, recursive: true);
+        _temp.Dispose();
     }
 
     [Fact]

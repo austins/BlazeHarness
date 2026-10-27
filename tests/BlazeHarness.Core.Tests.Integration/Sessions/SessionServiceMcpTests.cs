@@ -13,7 +13,7 @@ namespace BlazeHarness.Core.Tests.Integration.Sessions;
 
 public sealed class SessionServiceMcpTests : IAsyncLifetime
 {
-    private readonly string _home = Path.Combine(Path.GetTempPath(), "bh-svc-mcp-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-svc-mcp-");
     private readonly string _work;
     private readonly IMcpConnector _connector = Substitute.For<IMcpConnector>();
     private readonly SessionStore _store;
@@ -26,12 +26,12 @@ public sealed class SessionServiceMcpTests : IAsyncLifetime
 
     public SessionServiceMcpTests()
     {
-        _work = Path.Combine(_home, "work");
+        _work = Path.Combine(_temp.Root, "work");
         Directory.CreateDirectory(_work);
-        var paths = new AppPaths(Path.Combine(_home, "app"), _home);
-        _file = new McpConfigFile(Path.Combine(_home, "mcp.json"), new LoggerFake<McpConfigFile>(), watch: false);
+        var paths = new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root);
+        _file = new McpConfigFile(Path.Combine(_temp.Root, "mcp.json"), new LoggerFake<McpConfigFile>(), watch: false);
         _manager = new McpManager(_file, _connector, new LoggerFake<McpManager>());
-        _config = new JsonFileStore<AppConfig>(Path.Combine(_home, "config.json"), new LoggerFake<SessionServiceMcpTests>(), watch: false);
+        _config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), new LoggerFake<SessionServiceMcpTests>(), watch: false);
         _defaults = new PermissionDefaults(_config, paths);
         _store = new SessionStore(paths, NullLoggerFactory.Instance);
         _sut = new SessionService(_store, (_, _) => Task.FromResult<IChatClient>(_client), NullLoggerFactory.Instance, defaults: _defaults, mcp: _manager);
@@ -54,7 +54,7 @@ public sealed class SessionServiceMcpTests : IAsyncLifetime
         _config.Dispose();
         _store.Dispose();
         _client.Dispose();
-        Directory.Delete(_home, recursive: true);
+        _temp.Dispose();
     }
 
     [Fact]

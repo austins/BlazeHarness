@@ -6,23 +6,20 @@ namespace BlazeHarness.Core.Tests.Integration.Sessions;
 
 public sealed class SessionLogTests : IDisposable
 {
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "bh-log-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-log-");
     private readonly string _path;
     private readonly SessionLog _sut;
 
     public SessionLogTests()
     {
-        _path = Path.Combine(_dir, "messages.jsonl");
+        _path = Path.Combine(_temp.Root, "messages.jsonl");
         _sut = new SessionLog(_path, NullLogger.Instance);
     }
 
     public void Dispose()
     {
         _sut.Dispose();
-        if (Directory.Exists(_dir))
-        {
-            Directory.Delete(_dir, recursive: true);
-        }
+        _temp.Dispose();
     }
 
     [Fact]
@@ -97,7 +94,7 @@ public sealed class SessionLogTests : IDisposable
     public async Task AppendAsync_AfterTruncatedLine_StartsOnAFreshLine()
     {
         // Arrange
-        Directory.CreateDirectory(_dir);
+        Directory.CreateDirectory(_temp.Root);
         await File.WriteAllTextAsync(_path, "{\"type\":\"user\",\"at\":\"2026-01", TestContext.Current.CancellationToken);
 
         // Act
@@ -136,7 +133,7 @@ public sealed class SessionLogTests : IDisposable
 
         // Assert
         (await File.ReadAllTextAsync(_path, ct)).Length.Should().BeLessThan(2_000);
-        var saved = Directory.GetFiles(Path.Combine(_dir, SessionLog.OutputsFolder)).Should().ContainSingle().Subject;
+        var saved = Directory.GetFiles(Path.Combine(_temp.Root, SessionLog.OutputsFolder)).Should().ContainSingle().Subject;
         (await File.ReadAllTextAsync(saved, ct)).Should().Be(output);
     }
 
@@ -167,7 +164,7 @@ public sealed class SessionLogTests : IDisposable
         await _sut.AppendAsync([new ToolResultEvent(DateTimeOffset.UnixEpoch, Guid.NewGuid(), "c1", ToolCallStatus.Succeeded, new string('x', SessionLog.OutputFileThreshold))], ct);
 
         // Assert
-        Directory.Exists(Path.Combine(_dir, SessionLog.OutputsFolder)).Should().BeFalse();
+        Directory.Exists(Path.Combine(_temp.Root, SessionLog.OutputsFolder)).Should().BeFalse();
     }
 
     [Fact]
@@ -176,7 +173,7 @@ public sealed class SessionLogTests : IDisposable
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         await _sut.AppendAsync([new ToolResultEvent(DateTimeOffset.UnixEpoch, Guid.NewGuid(), "c1", ToolCallStatus.Succeeded, new string('x', SessionLog.OutputFileThreshold + 1))], ct);
-        Directory.Delete(Path.Combine(_dir, SessionLog.OutputsFolder), recursive: true);
+        Directory.Delete(Path.Combine(_temp.Root, SessionLog.OutputsFolder), recursive: true);
 
         // Act
         var read = await _sut.ReadAsync(ct);
@@ -190,8 +187,8 @@ public sealed class SessionLogTests : IDisposable
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
-        Directory.CreateDirectory(_dir);
-        await File.WriteAllTextAsync(Path.Combine(_dir, "secret.txt"), "secret", ct);
+        Directory.CreateDirectory(_temp.Root);
+        await File.WriteAllTextAsync(Path.Combine(_temp.Root, "secret.txt"), "secret", ct);
         await _sut.AppendAsync([new ToolResultEvent(DateTimeOffset.UnixEpoch, Guid.NewGuid(), "c1", ToolCallStatus.Succeeded, "preview", "../secret.txt")], ct);
 
         // Act

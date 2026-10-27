@@ -5,22 +5,22 @@ namespace BlazeHarness.Core.Tests.Integration.Sandbox;
 
 public sealed class SandboxPolicyTests : IDisposable
 {
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "bh-policy-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-policy-");
     private readonly string _work;
     private readonly string _scratch;
     private readonly string _toolBin;
 
     public SandboxPolicyTests()
     {
-        _work = Path.Combine(_root, "work");
-        _scratch = Path.Combine(_root, "scratch");
-        _toolBin = Path.Combine(_root, "tools", "bin");
+        _work = Path.Combine(_temp.Root, "work");
+        _scratch = Path.Combine(_temp.Root, "scratch");
+        _toolBin = Path.Combine(_temp.Root, "tools", "bin");
         Directory.CreateDirectory(_work);
         Directory.CreateDirectory(_scratch);
         Directory.CreateDirectory(_toolBin);
     }
 
-    public void Dispose() => Directory.Delete(_root, recursive: true);
+    public void Dispose() => _temp.Dispose();
 
     [Fact]
     public void Create_Writable_GivesTheWorkingFolderAndScratchWriteAccess()
@@ -71,7 +71,7 @@ public sealed class SandboxPolicyTests : IDisposable
     public void Create_HomeFolderOrItsParentOnThePath_IsNotMounted()
     {
         // Arrange
-        var home = Directory.CreateDirectory(Path.Combine(_root, "users", "me")).FullName;
+        var home = Directory.CreateDirectory(Path.Combine(_temp.Root, "users", "me")).FullName;
         var bin = Directory.CreateDirectory(Path.Combine(home, ".local", "bin")).FullName;
         var path = string.Join(Path.PathSeparator, home, Path.GetDirectoryName(home), bin);
 
@@ -86,13 +86,13 @@ public sealed class SandboxPolicyTests : IDisposable
     public void Create_ApprovedReadFolders_AreReadOnly()
     {
         // Arrange
-        var approved = Directory.CreateDirectory(Path.Combine(_root, "approved")).FullName;
+        var approved = Directory.CreateDirectory(Path.Combine(_temp.Root, "approved")).FullName;
 
         // Act
-        var policy = Create(ShellMode.Writable, readFolders: [approved, Path.Combine(_root, "missing")]);
+        var policy = Create(ShellMode.Writable, readFolders: [approved, Path.Combine(_temp.Root, "missing")]);
 
         // Assert
-        policy.ReadOnly.Should().Contain(Canonical(approved)).And.NotContain(Path.Combine(_root, "missing"));
+        policy.ReadOnly.Should().Contain(Canonical(approved)).And.NotContain(Path.Combine(_temp.Root, "missing"));
         policy.ReadWrite.Should().NotContain(Canonical(approved));
     }
 
@@ -100,7 +100,7 @@ public sealed class SandboxPolicyTests : IDisposable
     public void Create_ProtectedFolderInsideAnApprovedReadFolder_IsDenied()
     {
         // Arrange
-        var approved = Directory.CreateDirectory(Path.Combine(_root, "approved")).FullName;
+        var approved = Directory.CreateDirectory(Path.Combine(_temp.Root, "approved")).FullName;
         var keys = Directory.CreateDirectory(Path.Combine(approved, ".keys")).FullName;
 
         // Act
@@ -155,7 +155,7 @@ public sealed class SandboxPolicyTests : IDisposable
     {
         // Arrange
         var inside = Directory.CreateDirectory(Path.Combine(_work, ".keys")).FullName;
-        var elsewhere = Directory.CreateDirectory(Path.Combine(_root, "other-keys")).FullName;
+        var elsewhere = Directory.CreateDirectory(Path.Combine(_temp.Root, "other-keys")).FullName;
 
         // Act
         var policy = Create(ShellMode.Writable, protectedFolders: [inside, elsewhere, Path.Combine(_work, "missing")]);

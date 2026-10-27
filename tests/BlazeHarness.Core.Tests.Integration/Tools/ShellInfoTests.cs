@@ -4,14 +4,14 @@ namespace BlazeHarness.Core.Tests.Integration.Tools;
 
 public sealed class ShellInfoTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "bh-shell-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-shell-");
 
     public ShellInfoTests()
     {
-        Directory.CreateDirectory(_folder);
+        Directory.CreateDirectory(_temp.Root);
     }
 
-    public void Dispose() => Directory.Delete(_folder, recursive: true);
+    public void Dispose() => _temp.Dispose();
 
     [Fact]
     public void Detect_WindowsWithPwshAndPowerShell_PrefersPwsh()
@@ -21,7 +21,7 @@ public sealed class ShellInfoTests : IDisposable
         Touch("powershell.exe");
 
         // Act
-        var shell = ShellInfo.Detect(isWindows: true, shellVariable: null, _folder);
+        var shell = ShellInfo.Detect(isWindows: true, shellVariable: null, _temp.Root);
 
         // Assert
         shell.Should().Be(new ShellInfo("pwsh", pwsh, IsPowerShell: true));
@@ -34,7 +34,7 @@ public sealed class ShellInfoTests : IDisposable
         var legacy = Touch("powershell.exe");
 
         // Act
-        var shell = ShellInfo.Detect(isWindows: true, shellVariable: null, _folder);
+        var shell = ShellInfo.Detect(isWindows: true, shellVariable: null, _temp.Root);
 
         // Assert
         shell.Should().Be(new ShellInfo("powershell", legacy, IsPowerShell: true));
@@ -44,7 +44,7 @@ public sealed class ShellInfoTests : IDisposable
     public void Detect_WindowsWithNoPowerShell_ReturnsNull()
     {
         // Act
-        var shell = ShellInfo.Detect(isWindows: true, shellVariable: null, _folder);
+        var shell = ShellInfo.Detect(isWindows: true, shellVariable: null, _temp.Root);
 
         // Assert
         shell.Should().BeNull();
@@ -99,7 +99,7 @@ public sealed class ShellInfoTests : IDisposable
 
     private string Touch(string name)
     {
-        var path = Path.Combine(_folder, name);
+        var path = Path.Combine(_temp.Root, name);
         File.WriteAllText(path, string.Empty);
         return path;
     }

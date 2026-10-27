@@ -7,14 +7,14 @@ namespace BlazeHarness.Core.Tests.Integration.Sessions;
 
 public sealed class SessionStoreTests : IDisposable
 {
-    private readonly string _home = Path.Combine(Path.GetTempPath(), "bh-sessions-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-sessions-");
     private readonly AppPaths _paths;
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
     private readonly SessionStore _sut;
 
     public SessionStoreTests()
     {
-        _paths = new AppPaths(_home, _home);
+        _paths = new AppPaths(_temp.Root, _temp.Root);
         _sut = Create();
     }
 
@@ -23,10 +23,7 @@ public sealed class SessionStoreTests : IDisposable
     public void Dispose()
     {
         _sut.Dispose();
-        if (Directory.Exists(_home))
-        {
-            Directory.Delete(_home, recursive: true);
-        }
+        _temp.Dispose();
     }
 
     [Fact]

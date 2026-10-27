@@ -6,20 +6,17 @@ public sealed class SessionAttachmentsTests : IDisposable
 {
     private static readonly byte[] PngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0];
 
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "bh-attach-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-attach-");
     private readonly SessionAttachments _sut;
 
     public SessionAttachmentsTests()
     {
-        _sut = new SessionAttachments(Path.Combine(_folder, "attachments"));
+        _sut = new SessionAttachments(Path.Combine(_temp.Root, "attachments"));
     }
 
     public void Dispose()
     {
-        if (Directory.Exists(_folder))
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
+        _temp.Dispose();
     }
 
     [Fact]

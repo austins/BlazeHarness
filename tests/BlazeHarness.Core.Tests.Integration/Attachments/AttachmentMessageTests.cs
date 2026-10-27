@@ -7,20 +7,17 @@ public sealed class AttachmentMessageTests : IDisposable
 {
     private static readonly byte[] PngBytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4];
 
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "bh-attachmsg-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-attachmsg-");
     private readonly SessionAttachments _store;
 
     public AttachmentMessageTests()
     {
-        _store = new SessionAttachments(_folder);
+        _store = new SessionAttachments(_temp.Root);
     }
 
     public void Dispose()
     {
-        if (Directory.Exists(_folder))
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
+        _temp.Dispose();
     }
 
     [Fact]

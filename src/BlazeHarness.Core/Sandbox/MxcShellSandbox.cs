@@ -17,16 +17,19 @@ public sealed class MxcShellSandbox : IShellSandbox
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(15);
 
     private readonly Func<SensitivePaths> _sensitive;
+    private readonly Func<IReadOnlyDictionary<string, string>> _hostEnvironment;
     private readonly Lazy<SandboxStatus> _status;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MxcShellSandbox"/> class.
     /// </summary>
     /// <param name="sensitive">Gets the folders that stay out of reach even when they are inside the working folder, read at each launch so a change applies at once.</param>
-    public MxcShellSandbox(Func<SensitivePaths> sensitive)
+    /// <param name="hostEnvironment">Gets the environment variables the command's own environment is built from; defaults to the process environment.</param>
+    public MxcShellSandbox(Func<SensitivePaths> sensitive, Func<IReadOnlyDictionary<string, string>>? hostEnvironment = null)
     {
         ArgumentNullException.ThrowIfNull(sensitive);
         _sensitive = sensitive;
+        _hostEnvironment = hostEnvironment ?? HostEnvironment;
         _status = new Lazy<SandboxStatus>(Probe, LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
@@ -171,7 +174,7 @@ public sealed class MxcShellSandbox : IShellSandbox
         var platform = SandboxPolicy.CurrentPlatform();
         Directory.CreateDirectory(Path.Combine(launch.ScratchDirectory, "home"));
         Directory.CreateDirectory(Path.Combine(launch.ScratchDirectory, "tmp"));
-        var policy = SandboxPolicy.Create(launch, platform, HostEnvironment(), _sensitive().Folders);
+        var policy = SandboxPolicy.Create(launch, platform, _hostEnvironment(), _sensitive().Folders);
 
         var filesystem = new FilesystemPolicy();
         filesystem.ReadwritePaths.AddRange(policy.ReadWrite);

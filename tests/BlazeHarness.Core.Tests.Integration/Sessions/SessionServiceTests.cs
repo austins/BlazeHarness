@@ -13,13 +13,13 @@ namespace BlazeHarness.Core.Tests.Integration.Sessions;
 
 public sealed class SessionServiceTests : IDisposable
 {
-    private readonly string _home = Path.Combine(Path.GetTempPath(), "bh-service-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-service-");
     private readonly AppPaths _paths;
     private readonly List<IDisposable> _disposables = [];
 
     public SessionServiceTests()
     {
-        _paths = new AppPaths(Path.Combine(_home, "app"), _home);
+        _paths = new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root);
     }
 
     public void Dispose()
@@ -29,10 +29,7 @@ public sealed class SessionServiceTests : IDisposable
             d.Dispose();
         }
 
-        if (Directory.Exists(_home))
-        {
-            Directory.Delete(_home, recursive: true);
-        }
+        _temp.Dispose();
     }
 
     [Fact]
@@ -442,7 +439,7 @@ public sealed class SessionServiceTests : IDisposable
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
-        var folder = Path.Combine(_home, "work");
+        var folder = Path.Combine(_temp.Root, "work");
         Directory.CreateDirectory(folder);
         using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "list_files")])
             .Enqueue([ScriptedChatClient.Text("The folder is empty.")]);
@@ -552,7 +549,7 @@ public sealed class SessionServiceTests : IDisposable
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
-        var folder = Path.Combine(_home, "work");
+        var folder = Path.Combine(_temp.Root, "work");
         Directory.CreateDirectory(folder);
         await File.WriteAllTextAsync(Path.Combine(folder, "notes.txt"), "secret plans", ct);
         using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read_file", """{"path":"notes.txt"}""")])
@@ -601,7 +598,7 @@ public sealed class SessionServiceTests : IDisposable
         var sut = Create(client, defaults: defaults);
 
         // Act
-        var info = await sut.CreateAsync(_home, ct);
+        var info = await sut.CreateAsync(_temp.Root, ct);
         var session = await sut.OpenAsync(info.Id);
 
         // Assert
@@ -617,7 +614,7 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new ScriptedChatClient([]);
         var defaults = await NewDefaultsAsync(PermissionSettings.Default, allowBypass: true);
         var sut = Create(client, defaults: defaults);
-        var info = await sut.CreateAsync(_home, ct);
+        var info = await sut.CreateAsync(_temp.Root, ct);
         await sut.SetPermissionsAsync(info.Id, new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk));
         var session = await sut.OpenAsync(info.Id);
 
@@ -706,11 +703,11 @@ public sealed class SessionServiceTests : IDisposable
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
-        var folder = Path.Combine(_home, "work");
+        var folder = Path.Combine(_temp.Root, "work");
         Directory.CreateDirectory(folder);
         await File.WriteAllBytesAsync(Path.Combine(folder, "a.png"), [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1], ct);
         await File.WriteAllTextAsync(Path.Combine(folder, "a.txt"), "text", ct);
-        await File.WriteAllBytesAsync(Path.Combine(_home, "outside.png"), [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1], ct);
+        await File.WriteAllBytesAsync(Path.Combine(_temp.Root, "outside.png"), [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1], ct);
         using var client = new ScriptedChatClient([]);
         var sut = Create(client);
         var info = await sut.CreateAsync(folder, ct);
@@ -742,7 +739,7 @@ public sealed class SessionServiceTests : IDisposable
 
     private async Task<PermissionDefaults> NewDefaultsAsync(PermissionSettings settings, bool allowBypass)
     {
-        var config = new JsonFileStore<AppConfig>(Path.Combine(_home, "config.json"), new LoggerFake<SessionServiceTests>(), watch: false);
+        var config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), new LoggerFake<SessionServiceTests>(), watch: false);
         _disposables.Add(config);
         var defaults = new PermissionDefaults(config, _paths);
         await defaults.SaveAsync(settings, allowBypass, TestContext.Current.CancellationToken);

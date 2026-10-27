@@ -4,18 +4,18 @@ namespace BlazeHarness.Core.Tests.Integration.Config;
 
 public sealed class JsonFileStoreTests : IDisposable
 {
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "bh-store-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-store-");
     private readonly JsonFileStore<Doc> _sut;
 
     public JsonFileStoreTests()
     {
-        _sut = new JsonFileStore<Doc>(Path.Combine(_dir, "doc.json"), new LoggerFake<JsonFileStoreTests>());
+        _sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "doc.json"), new LoggerFake<JsonFileStoreTests>());
     }
 
     public void Dispose()
     {
         _sut.Dispose();
-        Directory.Delete(_dir, recursive: true);
+        _temp.Dispose();
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public sealed class JsonFileStoreTests : IDisposable
 
         // Assert
         _sut.Current.Count.Should().Be(3);
-        Directory.GetFiles(_dir).Select(Path.GetFileName).Should().BeEquivalentTo("doc.json");
+        Directory.GetFiles(_temp.Root).Select(Path.GetFileName).Should().BeEquivalentTo("doc.json");
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public sealed class JsonFileStoreTests : IDisposable
         _sut.ExternalChange += (_, e) => changed.TrySetResult(e.Value);
 
         // Act
-        await File.WriteAllTextAsync(Path.Combine(_dir, "doc.json"), """{"count": 99}""", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(_temp.Root, "doc.json"), """{"count": 99}""", TestContext.Current.CancellationToken);
         var result = await changed.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 
         // Assert
@@ -60,9 +60,9 @@ public sealed class JsonFileStoreTests : IDisposable
     {
         // Arrange
         var logger = new LoggerFake<JsonFileStoreTests>();
-        using var sut = new JsonFileStore<Doc>(Path.Combine(_dir, "handler.json"), logger, watch: false);
+        using var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "handler.json"), logger, watch: false);
         sut.ExternalChange += (_, _) => throw new InvalidOperationException("boom");
-        await File.WriteAllTextAsync(Path.Combine(_dir, "handler.json"), """{"count": 5}""", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(_temp.Root, "handler.json"), """{"count": 5}""", TestContext.Current.CancellationToken);
 
         // Act
         var act = sut.OnExternalChange;
@@ -77,11 +77,11 @@ public sealed class JsonFileStoreTests : IDisposable
     public async Task OnExternalChange_HandlerUpdatesTheStore_DoesNotDeadlock()
     {
         // Arrange
-        using var sut = new JsonFileStore<Doc>(Path.Combine(_dir, "reenter.json"), new LoggerFake<JsonFileStoreTests>(), watch: false);
+        using var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "reenter.json"), new LoggerFake<JsonFileStoreTests>(), watch: false);
 #pragma warning disable VSTHRD002 // The event handler is synchronous.
         sut.ExternalChange += (_, e) => sut.UpdateAsync(d => d with { Count = e.Value.Count + 1 }).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002
-        await File.WriteAllTextAsync(Path.Combine(_dir, "reenter.json"), """{"count": 5}""", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(_temp.Root, "reenter.json"), """{"count": 5}""", TestContext.Current.CancellationToken);
 
         // Act
         await Task.Run(sut.OnExternalChange, TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
@@ -94,7 +94,7 @@ public sealed class JsonFileStoreTests : IDisposable
     public void OnExternalChange_AfterDispose_DoesNotThrow()
     {
         // Arrange
-        var sut = new JsonFileStore<Doc>(Path.Combine(_dir, "gone.json"), new LoggerFake<JsonFileStoreTests>(), watch: false);
+        var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "gone.json"), new LoggerFake<JsonFileStoreTests>(), watch: false);
 #pragma warning disable IDISP016, IDISP017 // Raising the callback after disposal is the scenario.
         sut.Dispose();
 
@@ -110,7 +110,7 @@ public sealed class JsonFileStoreTests : IDisposable
     public void Constructor_InvalidJson_FallsBackToDefault()
     {
         // Arrange
-        var path = Path.Combine(_dir, "bad", "doc.json");
+        var path = Path.Combine(_temp.Root, "bad", "doc.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, "{ not json");
 

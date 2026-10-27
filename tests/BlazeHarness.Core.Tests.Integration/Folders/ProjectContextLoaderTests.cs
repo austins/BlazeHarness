@@ -6,11 +6,11 @@ public sealed class ProjectContextLoaderTests : IDisposable
 {
     public static bool IsWindows => OperatingSystem.IsWindows();
 
-    private readonly string _root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "bh-agents-" + Guid.NewGuid().ToString("N")));
+    private readonly TempFolder _temp = new("bh-agents-");
 
     public void Dispose()
     {
-        Directory.Delete(_root, recursive: true);
+        _temp.Dispose();
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public sealed class ProjectContextLoaderTests : IDisposable
 
         // Assert
         context.Files.Should().HaveCount(2);
-        context.Files[0].Should().Be(new ProjectFile(Path.Combine(_root, "repo", "AGENTS.md"), string.Empty, true));
+        context.Files[0].Should().Be(new ProjectFile(Path.Combine(_temp.Root, "repo", "AGENTS.md"), string.Empty, true));
         context.Files[1].Truncated.Should().BeFalse();
     }
 
@@ -188,7 +188,7 @@ public sealed class ProjectContextLoaderTests : IDisposable
 
     private string Dir(string relative)
     {
-        var path = Path.Combine(_root, relative);
+        var path = Path.Combine(_temp.Root, relative);
         Directory.CreateDirectory(path);
         return path;
     }

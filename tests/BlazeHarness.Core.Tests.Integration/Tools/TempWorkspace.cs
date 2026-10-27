@@ -8,12 +8,11 @@ namespace BlazeHarness.Core.Tests.Integration.Tools;
 /// </summary>
 internal sealed class TempWorkspace : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "bh-tools-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-tools-");
 
     public TempWorkspace()
     {
-        Directory.CreateDirectory(_folder);
-        Context = new ToolContext(_folder);
+        Context = new ToolContext(_temp.Root);
     }
 
     public ToolContext Context { get; }
@@ -53,6 +52,6 @@ internal sealed class TempWorkspace : IDisposable
 
     public void Dispose()
     {
-        Directory.Delete(_folder, recursive: true);
+        _temp.Dispose();
     }
 }

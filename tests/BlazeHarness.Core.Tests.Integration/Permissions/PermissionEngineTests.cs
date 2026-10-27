@@ -9,13 +9,13 @@ namespace BlazeHarness.Core.Tests.Integration.Permissions;
 public sealed class PermissionEngineTests : IDisposable
 {
     private readonly TempWorkspace _workspace = new();
-    private readonly string _elsewhere = Path.Combine(Path.GetTempPath(), "bh-else-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-else-");
     private readonly PermissionEngine _sut = new();
 
     public PermissionEngineTests()
     {
-        Directory.CreateDirectory(_elsewhere);
-        File.WriteAllText(Path.Combine(_elsewhere, "note.txt"), "hi");
+        Directory.CreateDirectory(_temp.Root);
+        File.WriteAllText(Path.Combine(_temp.Root, "note.txt"), "hi");
     }
 
     public static bool IsWindows => OperatingSystem.IsWindows();
@@ -25,7 +25,7 @@ public sealed class PermissionEngineTests : IDisposable
     public void Dispose()
     {
         _workspace.Dispose();
-        Directory.Delete(_elsewhere, recursive: true);
+        _temp.Dispose();
     }
 
     [Fact]
@@ -57,24 +57,24 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_ReadFileOutsideTheFolder_AsksAndKeysByThatFile()
     {
         // Act
-        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
+        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "note.txt") });
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Ask);
         decision.AllowOutside.Should().BeTrue();
-        decision.GrantKey.Should().Be("file:" + Path.Combine(WorkspacePath.CanonicalRoot(_elsewhere), "note.txt"));
+        decision.GrantKey.Should().Be("file:" + Path.Combine(WorkspacePath.CanonicalRoot(_temp.Root), "note.txt"));
     }
 
     [Fact]
     public void Evaluate_ReadFileOutsideAfterGrant_AllowsThatFileOnly()
     {
         // Arrange
-        var first = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
+        var first = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "note.txt") });
         _sut.Remember(first.GrantKey!);
 
         // Act
-        var again = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
-        var sibling = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "other.txt") });
+        var again = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "note.txt") });
+        var sibling = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "other.txt") });
 
         // Assert
         again.Should().Be(PermissionDecision.Allow with { AllowOutside = true });
@@ -85,22 +85,22 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_ReadFolderOutside_AsksAndKeysByFolder()
     {
         // Act
-        var decision = Evaluate(new ListFilesTool(), new { path = _elsewhere });
+        var decision = Evaluate(new ListFilesTool(), new { path = _temp.Root });
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Ask);
-        decision.GrantKey.Should().Be("dir:" + WorkspacePath.CanonicalRoot(_elsewhere));
+        decision.GrantKey.Should().Be("dir:" + WorkspacePath.CanonicalRoot(_temp.Root));
     }
 
     [Fact]
     public void Evaluate_ReadFolderOutsideAfterGrant_AllowsThatFolderOnly()
     {
         // Arrange
-        var first = Evaluate(new ListFilesTool(), new { path = _elsewhere });
+        var first = Evaluate(new ListFilesTool(), new { path = _temp.Root });
         _sut.Remember(first.GrantKey!);
 
         // Act
-        var inside = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "other.txt") });
+        var inside = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "other.txt") });
         var elsewhere = Evaluate(new ListFilesTool(), new { path = Path.GetTempPath() });
 
         // Assert
@@ -117,7 +117,7 @@ public sealed class PermissionEngineTests : IDisposable
         _sut.Settings = new PermissionSettings(access, approvals);
 
         // Act
-        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
+        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "note.txt") });
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Allow);
@@ -172,7 +172,7 @@ public sealed class PermissionEngineTests : IDisposable
         _sut.Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.NeverAsk);
 
         // Act
-        var decision = Evaluate(new WriteFileTool(), new { path = Path.Combine(_elsewhere, "new.txt"), content = "x" });
+        var decision = Evaluate(new WriteFileTool(), new { path = Path.Combine(_temp.Root, "new.txt"), content = "x" });
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Deny);
@@ -185,7 +185,7 @@ public sealed class PermissionEngineTests : IDisposable
         _sut.Settings = new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.AskFirst);
 
         // Act
-        var decision = Evaluate(new WriteFileTool(), new { path = Path.Combine(_elsewhere, "new.txt"), content = "x" });
+        var decision = Evaluate(new WriteFileTool(), new { path = Path.Combine(_temp.Root, "new.txt"), content = "x" });
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Ask);
@@ -200,7 +200,7 @@ public sealed class PermissionEngineTests : IDisposable
         _sut.Settings = new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk);
 
         // Act
-        var decision = Evaluate(new WriteFileTool(), new { path = Path.Combine(_elsewhere, "new.txt"), content = "x" });
+        var decision = Evaluate(new WriteFileTool(), new { path = Path.Combine(_temp.Root, "new.txt"), content = "x" });
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Allow);
@@ -214,11 +214,11 @@ public sealed class PermissionEngineTests : IDisposable
     {
         // Arrange
         _sut.Settings = new PermissionSettings(access, approvals);
-        _sut.Sensitive = () => new SensitivePaths([_elsewhere]);
+        _sut.Sensitive = () => new SensitivePaths([_temp.Root]);
 
         // Act
-        var read = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
-        var write = Evaluate(new WriteFileTool(), new { path = Path.Combine(_elsewhere, "note.txt"), content = "x" });
+        var read = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "note.txt") });
+        var write = Evaluate(new WriteFileTool(), new { path = Path.Combine(_temp.Root, "note.txt"), content = "x" });
 
         // Assert
         read.Verdict.Should().Be(PermissionVerdict.Deny);
@@ -229,8 +229,8 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_SymlinkIntoProtectedFolder_Denies()
     {
         // Arrange
-        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "innocent"), _elsewhere);
-        _sut.Sensitive = () => new SensitivePaths([_elsewhere]);
+        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "innocent"), _temp.Root);
+        _sut.Sensitive = () => new SensitivePaths([_temp.Root]);
 
         // Act
         var decision = Evaluate(new ReadFileTool(), new { path = "innocent/note.txt" });
@@ -243,7 +243,7 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_SymlinkOutOfTheFolder_CountsAsOutside()
     {
         // Arrange
-        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "link"), _elsewhere);
+        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "link"), _temp.Root);
 
         // Act
         var read = Evaluate(new ReadFileTool(), new { path = "link/note.txt" });
@@ -258,7 +258,7 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_DotDotEscape_CountsAsOutside()
     {
         // Arrange
-        var escape = "../" + Path.GetFileName(_elsewhere) + "/note.txt";
+        var escape = "../" + Path.GetFileName(_temp.Root) + "/note.txt";
 
         // Act
         var decision = Evaluate(new ReadFileTool(), new { path = escape });
@@ -355,7 +355,7 @@ public sealed class PermissionEngineTests : IDisposable
         _sut.BypassAllowed = () => false;
 
         // Act
-        var decision = Evaluate(new WriteFileTool(), new { path = Path.Combine(_elsewhere, "new.txt"), content = "x" });
+        var decision = Evaluate(new WriteFileTool(), new { path = Path.Combine(_temp.Root, "new.txt"), content = "x" });
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Deny);
@@ -366,14 +366,14 @@ public sealed class PermissionEngineTests : IDisposable
     {
         // Arrange
         _sut.Sandbox = Available;
-        var read = Evaluate(new ListFilesTool(), new { path = _elsewhere });
+        var read = Evaluate(new ListFilesTool(), new { path = _temp.Root });
         _sut.Remember(read.GrantKey!);
 
         // Act
         var decision = Evaluate(NewShell(), new { command = "cat note.txt" });
 
         // Assert
-        decision.ShellReadFolders.Should().ContainSingle().Which.Should().Be(WorkspacePath.CanonicalRoot(_elsewhere));
+        decision.ShellReadFolders.Should().ContainSingle().Which.Should().Be(WorkspacePath.CanonicalRoot(_temp.Root));
     }
 
     [Fact]
@@ -381,7 +381,7 @@ public sealed class PermissionEngineTests : IDisposable
     {
         // Arrange
         _sut.Sandbox = Available;
-        var read = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
+        var read = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "note.txt") });
         _sut.Remember(read.GrantKey!);
 
         // Act
@@ -571,11 +571,11 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_AllowRuleOnAProtectedPath_StillDenies()
     {
         // Arrange
-        _sut.Sensitive = () => new SensitivePaths([_elsewhere]);
+        _sut.Sensitive = () => new SensitivePaths([_temp.Root]);
         _sut.Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Allow, "**")];
 
         // Act
-        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
+        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "note.txt") });
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Deny);
@@ -585,10 +585,10 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_AllowRuleOnAFileOutsideTheFolder_SkipsTheQuestionToRead()
     {
         // Arrange
-        _sut.Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Allow, _elsewhere.Replace('\\', '/') + "/**")];
+        _sut.Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Allow, _temp.Root.Replace('\\', '/') + "/**")];
 
         // Act
-        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
+        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "note.txt") });
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Allow);

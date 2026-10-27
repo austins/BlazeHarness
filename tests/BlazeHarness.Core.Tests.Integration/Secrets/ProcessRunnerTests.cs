@@ -6,11 +6,11 @@ namespace BlazeHarness.Core.Tests.Integration.Secrets;
 public sealed class ProcessRunnerTests : IDisposable
 {
     private readonly CancellationTokenSource _cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "bh-proc-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-proc-");
 
     public ProcessRunnerTests()
     {
-        Directory.CreateDirectory(_dir);
+        Directory.CreateDirectory(_temp.Root);
     }
 
     public static bool IsWindows => OperatingSystem.IsWindows();
@@ -18,14 +18,14 @@ public sealed class ProcessRunnerTests : IDisposable
     public void Dispose()
     {
         _cts.Dispose();
-        Directory.Delete(_dir, recursive: true);
+        _temp.Dispose();
     }
 
     [Fact(Skip = "Needs a POSIX shell.", SkipWhen = nameof(IsWindows))]
     public async Task RunAsync_Cancelled_KillsTheProcess()
     {
         // Arrange
-        var pidFile = Path.Combine(_dir, "pid");
+        var pidFile = Path.Combine(_temp.Root, "pid");
         var run = Task.Run(async () => await ProcessRunner.RunAsync("sh", ["-c", "echo $$ > \"$1.tmp\" && mv \"$1.tmp\" \"$1\" && exec sleep 300", "sh", pidFile], null, _cts.Token), TestContext.Current.CancellationToken);
         while (!File.Exists(pidFile))
         {

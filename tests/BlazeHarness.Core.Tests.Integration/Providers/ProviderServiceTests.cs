@@ -6,15 +6,15 @@ namespace BlazeHarness.Core.Tests.Integration.Providers;
 
 public sealed class ProviderServiceTests : IDisposable
 {
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "bh-providers-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-providers-");
     private readonly JsonFileStore<AppConfig> _config;
     private readonly FileSecretStore _secrets;
     private readonly ProviderService _sut;
 
     public ProviderServiceTests()
     {
-        _config = new JsonFileStore<AppConfig>(Path.Combine(_dir, "config.json"), new LoggerFake<ProviderServiceTests>(), watch: false);
-        _secrets = new FileSecretStore(Path.Combine(_dir, "secrets.json"));
+        _config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), new LoggerFake<ProviderServiceTests>(), watch: false);
+        _secrets = new FileSecretStore(Path.Combine(_temp.Root, "secrets.json"));
         _sut = new ProviderService(_config, _secrets, new ApiKeyResolver(_secrets, _ => null));
     }
 
@@ -22,10 +22,7 @@ public sealed class ProviderServiceTests : IDisposable
     {
         _config.Dispose();
         _secrets.Dispose();
-        if (Directory.Exists(_dir))
-        {
-            Directory.Delete(_dir, recursive: true);
-        }
+        _temp.Dispose();
     }
 
     [Fact]
@@ -42,7 +39,7 @@ public sealed class ProviderServiceTests : IDisposable
         _sut.Config.Providers.Should().ContainSingle(p => p.Id == "ds");
         _sut.Config.DefaultProviderId.Should().Be("ds");
         (await _secrets.GetAsync("provider:ds", TestContext.Current.CancellationToken)).Should().Be("sk-1");
-        (await File.ReadAllTextAsync(Path.Combine(_dir, "config.json"), TestContext.Current.CancellationToken)).Should().NotContain("sk-1");
+        (await File.ReadAllTextAsync(Path.Combine(_temp.Root, "config.json"), TestContext.Current.CancellationToken)).Should().NotContain("sk-1");
     }
 
     [Fact]

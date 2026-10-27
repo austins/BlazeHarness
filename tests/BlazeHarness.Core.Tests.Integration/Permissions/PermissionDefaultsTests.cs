@@ -6,23 +6,20 @@ namespace BlazeHarness.Core.Tests.Integration.Permissions;
 
 public sealed class PermissionDefaultsTests : IDisposable
 {
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "bh-defaults-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-defaults-");
     private readonly JsonFileStore<AppConfig> _config;
     private readonly PermissionDefaults _sut;
 
     public PermissionDefaultsTests()
     {
-        _config = new JsonFileStore<AppConfig>(Path.Combine(_dir, "config.json"), new LoggerFake<PermissionDefaultsTests>(), watch: false);
-        _sut = new PermissionDefaults(_config, new AppPaths(Path.Combine(_dir, "app"), _dir));
+        _config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), new LoggerFake<PermissionDefaultsTests>(), watch: false);
+        _sut = new PermissionDefaults(_config, new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root));
     }
 
     public void Dispose()
     {
         _config.Dispose();
-        if (Directory.Exists(_dir))
-        {
-            Directory.Delete(_dir, recursive: true);
-        }
+        _temp.Dispose();
     }
 
     [Fact]
@@ -54,14 +51,14 @@ public sealed class PermissionDefaultsTests : IDisposable
     {
         // Assert
         _sut.UsesDefaultProtectedFolders.Should().BeTrue();
-        _sut.ProtectedFolders.Should().Contain(Path.Combine(_dir, ".ssh"));
+        _sut.ProtectedFolders.Should().Contain(Path.Combine(_temp.Root, ".ssh"));
     }
 
     [Fact]
     public async Task SaveProtectedFoldersAsync_AList_ReplacesTheBuiltInListKeepsTheAppFolderAndDropsRelativePaths()
     {
         // Arrange
-        var mine = Path.Combine(_dir, "mine");
+        var mine = Path.Combine(_temp.Root, "mine");
 
         // Act
         await _sut.SaveProtectedFoldersAsync([mine, "  ", mine, "relative/dir"], TestContext.Current.CancellationToken);
@@ -71,8 +68,8 @@ public sealed class PermissionDefaultsTests : IDisposable
         _sut.ProtectedFolders.Should().Equal(mine);
         var sensitive = _sut.Sensitive();
         sensitive.IsProtected(Path.Combine(mine, "a.txt")).Should().BeTrue();
-        sensitive.IsProtected(Path.Combine(_dir, ".ssh", "id_rsa")).Should().BeFalse();
-        sensitive.IsProtected(Path.Combine(_dir, "app", "config.json")).Should().BeTrue();
+        sensitive.IsProtected(Path.Combine(_temp.Root, ".ssh", "id_rsa")).Should().BeFalse();
+        sensitive.IsProtected(Path.Combine(_temp.Root, "app", "config.json")).Should().BeTrue();
     }
 
     [Fact]
@@ -84,14 +81,14 @@ public sealed class PermissionDefaultsTests : IDisposable
         // Act
         var again = _sut.Sensitive("s1");
         var other = _sut.Sensitive("s2");
-        await _sut.SaveProtectedFoldersAsync([Path.Combine(_dir, "mine")], TestContext.Current.CancellationToken);
+        await _sut.SaveProtectedFoldersAsync([Path.Combine(_temp.Root, "mine")], TestContext.Current.CancellationToken);
         var changed = _sut.Sensitive("s1");
 
         // Assert
         again.Should().BeSameAs(first);
         other.Should().NotBeSameAs(first);
         changed.Should().NotBeSameAs(first);
-        changed.Folders.Should().Contain(WorkspacePath.CanonicalRoot(Path.Combine(_dir, "mine")));
+        changed.Folders.Should().Contain(WorkspacePath.CanonicalRoot(Path.Combine(_temp.Root, "mine")));
     }
 
     [Fact]
@@ -178,7 +175,7 @@ public sealed class PermissionDefaultsTests : IDisposable
         // Arrange
         var rule = new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Ask, "**/.env");
         await _sut.SaveRulesAsync([rule], TestContext.Current.CancellationToken);
-        var json = await File.ReadAllTextAsync(Path.Combine(_dir, "config.json"), TestContext.Current.CancellationToken);
+        var json = await File.ReadAllTextAsync(Path.Combine(_temp.Root, "config.json"), TestContext.Current.CancellationToken);
 
         // Assert
         json.Should().Contain("\"filePath\"").And.Contain("\"ask\"");

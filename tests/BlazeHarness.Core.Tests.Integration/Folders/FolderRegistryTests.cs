@@ -8,7 +8,7 @@ public sealed class FolderRegistryTests : IDisposable
 {
     public static bool IsWindows => OperatingSystem.IsWindows();
 
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "bh-folders-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-folders-");
     private readonly string _home;
     private readonly AppPaths _paths;
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
@@ -16,16 +16,16 @@ public sealed class FolderRegistryTests : IDisposable
 
     public FolderRegistryTests()
     {
-        _home = Path.Combine(_root, "home");
+        _home = Path.Combine(_temp.Root, "home");
         Directory.CreateDirectory(_home);
-        _paths = new AppPaths(Path.Combine(_root, "data"), _home);
+        _paths = new AppPaths(Path.Combine(_temp.Root, "data"), _home);
         _sut = Create();
     }
 
     public void Dispose()
     {
         _sut.Dispose();
-        Directory.Delete(_root, recursive: true);
+        _temp.Dispose();
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class FolderRegistryTests : IDisposable
     public async Task OpenAsync_FileSystemRoot_IsRefused()
     {
         // Act
-        var result = await _sut.OpenAsync(Path.GetPathRoot(_root), TestContext.Current.CancellationToken);
+        var result = await _sut.OpenAsync(Path.GetPathRoot(_temp.Root), TestContext.Current.CancellationToken);
 
         // Assert
         result.Error.Should().Be(FolderError.NotAllowed);
@@ -113,7 +113,7 @@ public sealed class FolderRegistryTests : IDisposable
     {
         // Arrange
         var real = MakeFolder("real");
-        var link = Path.Combine(_root, "link");
+        var link = Path.Combine(_temp.Root, "link");
         CreateLink(link, real);
         await _sut.OpenAsync(real, TestContext.Current.CancellationToken);
 
@@ -130,7 +130,7 @@ public sealed class FolderRegistryTests : IDisposable
     {
         // Arrange
         var real = MakeFolder("some-long-checkout-name");
-        var link = Path.Combine(_root, "short");
+        var link = Path.Combine(_temp.Root, "short");
         CreateLink(link, real);
 
         // Act
@@ -171,7 +171,7 @@ public sealed class FolderRegistryTests : IDisposable
     public async Task OpenAsync_MissingPath_ReportsNotFound()
     {
         // Act
-        var result = await _sut.OpenAsync(Path.Combine(_root, "nope"), TestContext.Current.CancellationToken);
+        var result = await _sut.OpenAsync(Path.Combine(_temp.Root, "nope"), TestContext.Current.CancellationToken);
 
         // Assert
         result.Error.Should().Be(FolderError.NotFound);
@@ -181,7 +181,7 @@ public sealed class FolderRegistryTests : IDisposable
     public async Task OpenAsync_PathOfAFile_ReportsNotAFolder()
     {
         // Arrange
-        var file = Path.Combine(_root, "file.txt");
+        var file = Path.Combine(_temp.Root, "file.txt");
         await File.WriteAllTextAsync(file, "x", TestContext.Current.CancellationToken);
 
         // Act
@@ -201,7 +201,7 @@ public sealed class FolderRegistryTests : IDisposable
         _time.Advance(TimeSpan.FromMinutes(1));
 
         // Act
-        await _sut.TouchAsync(Path.Combine(_root, "a"), TestContext.Current.CancellationToken);
+        await _sut.TouchAsync(Path.Combine(_temp.Root, "a"), TestContext.Current.CancellationToken);
 
         // Assert
         _sut.List().Select(f => f.Name).Should().Equal("a", "b");
@@ -319,7 +319,7 @@ public sealed class FolderRegistryTests : IDisposable
         await _sut.OpenAsync(old, TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.RelocateAsync(old, Path.Combine(_root, "nope"), TestContext.Current.CancellationToken);
+        var result = await _sut.RelocateAsync(old, Path.Combine(_temp.Root, "nope"), TestContext.Current.CancellationToken);
 
         // Assert
         result.Error.Should().Be(FolderError.NotFound);
@@ -330,7 +330,7 @@ public sealed class FolderRegistryTests : IDisposable
 
     private string MakeFolder(string name)
     {
-        var path = Path.Combine(_root, name);
+        var path = Path.Combine(_temp.Root, name);
         Directory.CreateDirectory(path);
         return path;
     }

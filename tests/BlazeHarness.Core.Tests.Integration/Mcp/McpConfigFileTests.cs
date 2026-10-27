@@ -6,18 +6,18 @@ public sealed class McpConfigFileTests : IDisposable
 {
     private const string OneServer = """{"mcpServers": {"files": {"command": "run"}}}""";
 
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "bh-mcp-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-mcp-");
     private readonly string _path;
 
     public McpConfigFileTests()
     {
-        Directory.CreateDirectory(_dir);
-        _path = Path.Combine(_dir, "mcp.json");
+        Directory.CreateDirectory(_temp.Root);
+        _path = Path.Combine(_temp.Root, "mcp.json");
     }
 
     public void Dispose()
     {
-        Directory.Delete(_dir, recursive: true);
+        _temp.Dispose();
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class McpConfigFileTests : IDisposable
         sut.Text.Should().Be(OneServer);
         sut.Parsed.Servers.Should().HaveCount(1);
         raised.Should().Be(1);
-        Directory.GetFiles(_dir).Select(Path.GetFileName).Should().BeEquivalentTo("mcp.json");
+        Directory.GetFiles(_temp.Root).Select(Path.GetFileName).Should().BeEquivalentTo("mcp.json");
     }
 
     [Fact]

@@ -10,7 +10,7 @@ public sealed class McpManagerTests : IAsyncLifetime
 {
     private const string Two = """{"mcpServers": {"alpha": {"command": "a"}, "beta": {"command": "b"}}}""";
 
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "bh-mcpm-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-mcpm-");
     private readonly IMcpConnector _connector = Substitute.For<IMcpConnector>();
     private readonly FakeTimeProvider _time = new();
     private readonly Dictionary<string, string> _environment = [];
@@ -22,10 +22,10 @@ public sealed class McpManagerTests : IAsyncLifetime
 
     public McpManagerTests()
     {
-        Directory.CreateDirectory(_dir);
-        _file = new McpConfigFile(Path.Combine(_dir, "mcp.json"), new LoggerFake<McpConfigFile>(), watch: false);
-        _appConfig = new JsonFileStore<AppConfig>(Path.Combine(_dir, "config.json"), new LoggerFake<McpManagerTests>(), watch: false);
-        _permissions = new PermissionDefaults(_appConfig, new AppPaths(Path.Combine(_dir, "app"), _dir));
+        Directory.CreateDirectory(_temp.Root);
+        _file = new McpConfigFile(Path.Combine(_temp.Root, "mcp.json"), new LoggerFake<McpConfigFile>(), watch: false);
+        _appConfig = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), new LoggerFake<McpManagerTests>(), watch: false);
+        _permissions = new PermissionDefaults(_appConfig, new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root));
         _sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, TimeSpan.FromSeconds(10), _permissions);
     }
 
@@ -37,7 +37,7 @@ public sealed class McpManagerTests : IAsyncLifetime
         await _sut.DisposeAsync();
         _file.Dispose();
         _appConfig.Dispose();
-        Directory.Delete(_dir, recursive: true);
+        _temp.Dispose();
     }
 
     [Fact]
@@ -455,7 +455,7 @@ public sealed class McpManagerTests : IAsyncLifetime
         var tools = await _sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
 
         // Act
-        var result = await tools.Single().ExecuteAsync(ToolArguments.Parse("{}"), new ToolContext(_dir), TestContext.Current.CancellationToken);
+        var result = await tools.Single().ExecuteAsync(ToolArguments.Parse("{}"), new ToolContext(_temp.Root), TestContext.Current.CancellationToken);
 
         // Assert
         result.Output.Should().Be("done");

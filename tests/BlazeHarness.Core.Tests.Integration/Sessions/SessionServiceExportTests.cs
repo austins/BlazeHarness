@@ -11,14 +11,14 @@ namespace BlazeHarness.Core.Tests.Integration.Sessions;
 
 public sealed class SessionServiceExportTests : IDisposable
 {
-    private readonly string _home = Path.Combine(Path.GetTempPath(), "bh-svc-export-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-svc-export-");
     private readonly SessionStore _store;
     private readonly ScriptedChatClient _client = new([ScriptedChatClient.Text("Sunny.")]);
     private readonly SessionService _sut;
 
     public SessionServiceExportTests()
     {
-        var paths = new AppPaths(Path.Combine(_home, "app"), _home);
+        var paths = new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root);
         _store = new SessionStore(paths, NullLoggerFactory.Instance);
         _sut = new SessionService(_store, (_, _) => Task.FromResult<IChatClient>(_client), NullLoggerFactory.Instance);
     }
@@ -28,10 +28,7 @@ public sealed class SessionServiceExportTests : IDisposable
         _sut.Dispose();
         _store.Dispose();
         _client.Dispose();
-        if (Directory.Exists(_home))
-        {
-            Directory.Delete(_home, recursive: true);
-        }
+        _temp.Dispose();
     }
 
     [Fact]
@@ -49,7 +46,7 @@ public sealed class SessionServiceExportTests : IDisposable
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
-        var folder = Path.Combine(_home, "work");
+        var folder = Path.Combine(_temp.Root, "work");
         Directory.CreateDirectory(folder);
         var source = await _sut.CreateAsync(folder, ct);
         await _sut.SendAsync(source.Id, "What is the weather?", Target());

@@ -10,21 +10,18 @@ public sealed class ChatSessionAttachmentTests : IDisposable
 {
     private static readonly byte[] PngBytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4];
 
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "bh-sessattach-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-sessattach-");
     private readonly RecordingSessionLog _log = new();
     private readonly SessionAttachments _attachments;
 
     public ChatSessionAttachmentTests()
     {
-        _attachments = new SessionAttachments(_folder);
+        _attachments = new SessionAttachments(_temp.Root);
     }
 
     public void Dispose()
     {
-        if (Directory.Exists(_folder))
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
+        _temp.Dispose();
     }
 
     [Fact]

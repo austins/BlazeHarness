@@ -9,13 +9,13 @@ namespace BlazeHarness.Web.Tests.Integration.Hosting;
 
 public sealed class AttachmentEndpointsTests : IDisposable
 {
-    private readonly string _home = Path.Combine(Path.GetTempPath(), "bh-endpoint-" + Guid.NewGuid().ToString("N"));
+    private readonly TempFolder _temp = new("bh-endpoint-");
     private readonly SessionStore _store;
     private readonly SessionService _service;
 
     public AttachmentEndpointsTests()
     {
-        _store = new SessionStore(new AppPaths(_home, _home), NullLoggerFactory.Instance);
+        _store = new SessionStore(new AppPaths(_temp.Root, _temp.Root), NullLoggerFactory.Instance);
         _service = new SessionService(_store, (_, _) => throw new NotSupportedException(), NullLoggerFactory.Instance);
     }
 
@@ -68,7 +68,7 @@ public sealed class AttachmentEndpointsTests : IDisposable
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
-        var folder = Path.Combine(_home, "work");
+        var folder = Path.Combine(_temp.Root, "work");
         Directory.CreateDirectory(folder);
         await File.WriteAllBytesAsync(Path.Combine(folder, "a.png"), [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1], ct);
         await File.WriteAllTextAsync(Path.Combine(folder, "secret.txt"), "secret", ct);
@@ -113,9 +113,6 @@ public sealed class AttachmentEndpointsTests : IDisposable
     {
         _service.Dispose();
         _store.Dispose();
-        if (Directory.Exists(_home))
-        {
-            Directory.Delete(_home, recursive: true);
-        }
+        _temp.Dispose();
     }
 }
