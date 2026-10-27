@@ -147,6 +147,7 @@ kbd {
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     color: var(--fg); text-decoration: none; font-size: var(--text-sm);
+    border: 0; background: none; font-family: inherit; text-align: start; cursor: pointer;
     transition: background var(--duration) var(--ease);
 }
 .nav-link:hover { background: var(--bg-hover); }
@@ -353,7 +354,7 @@ dialog.dialog.dialog-settings { width: min(68rem, calc(100vw - 2rem)); height: m
 .dialog-settings .dialog-body { padding: 0; gap: 0; flex: 1; min-height: 0; overflow: hidden; }
 .settings { display: flex; flex: 1; min-height: 0; }
 .settings-nav { display: flex; flex-direction: column; gap: 2px; flex: none; width: 13rem; padding: var(--space-3); border-inline-end: 1px solid var(--border); overflow-y: auto; }
-.settings-nav .nav-link { width: 100%; border: 0; background: none; font: inherit; font-size: var(--text-sm); text-align: start; cursor: pointer; }
+.settings-nav .nav-link { width: 100%; }
 .settings-nav .nav-link:hover { background: var(--bg-hover); }
 .settings-nav .nav-link.active { background: var(--accent-soft); }
 .settings-content { flex: 1; min-width: 0; overflow: auto; }
