@@ -46,6 +46,7 @@ Not built yet, and not promised:
 * A touch-friendly layout for use from a phone or tablet. The app is localhost-only by design, so that would need to be configurable.
 * Localization of the web UI, starting with English.
 * An in-app browser that the agent can use to open a running service, read the page, and take a screenshot.
+* Web search and web fetch tools, so the agent can look things up and read pages, with the usual approval prompts.
 * An "Ask user" tool that lets the agent pause and ask you a question, with free text or choices.
 * Attachments as tool input, so a text-only model can pass an uploaded image to a vision tool.
 * A session history tool that lets the agent read earlier messages to recover detail that compaction dropped.
