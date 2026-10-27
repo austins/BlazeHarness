@@ -153,7 +153,17 @@ public static class WorkspacePath
                 continue;
             }
 
-            var target = info.ResolveLinkTarget(returnFinalTarget: true);
+            FileSystemInfo? target;
+            try
+            {
+                target = info.ResolveLinkTarget(returnFinalTarget: true);
+            }
+            catch (IOException)
+            {
+                // A loop of links, or a link that can't be read, is not a path to use.
+                return null;
+            }
+
             if (target is null)
             {
                 return null;
