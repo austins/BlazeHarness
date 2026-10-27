@@ -82,6 +82,25 @@ internal static class RuleMatcher
         return denied ?? asked ?? (allCovered ? allowed : null);
     }
 
+    /// <summary>
+    /// Find the rule that decides an MCP tool call.
+    /// </summary>
+    /// <param name="rules">The user's rules.</param>
+    /// <param name="serverName">The name of the MCP server.</param>
+    /// <param name="toolName">The tool's own name on that server.</param>
+    /// <returns>The deciding rule, or null when none applies.</returns>
+    public static PermissionRule? ForMcpTool(IReadOnlyList<PermissionRule> rules, string serverName, string toolName)
+    {
+        var target = serverName + "/" + toolName;
+        PermissionRule? decided = null;
+        foreach (var rule in rules.Where(r => r.Target == RuleTarget.McpTool && r.Pattern.Length > 0 && Matches(Compile(r.Pattern, pathStyle: false), target)))
+        {
+            decided = Stronger(decided, rule);
+        }
+
+        return decided;
+    }
+
     private static PermissionRule Stronger(PermissionRule? current, PermissionRule next)
     {
         return current is { Action: PermissionVerdict.Deny } && next.Action != PermissionVerdict.Deny ? current : next;

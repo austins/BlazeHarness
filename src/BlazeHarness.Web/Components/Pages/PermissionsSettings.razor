@@ -66,6 +66,7 @@
         <p class="hint">
             A rule that refuses always wins. Otherwise the last matching rule decides. An allow rule skips the question but never gets a call out of the sandbox or into a protected folder.
             Use * for any text and ? for one character. In a path, * stays inside one folder and ** crosses folders.
+            An MCP tool rule matches the server name and the tool name written as server/tool.
         </p>
         @if (_rules.Count == 0)
         {
@@ -86,13 +87,14 @@
             <select class="select" aria-label="Rule applies to" @bind="_newTarget">
                 <option value="@RuleTarget.ShellCommand">Shell command</option>
                 <option value="@RuleTarget.FilePath">File path</option>
+                <option value="@RuleTarget.McpTool">MCP tool</option>
             </select>
             <select class="select" aria-label="Rule action" @bind="_newAction">
                 <option value="@PermissionVerdict.Deny">Refuse</option>
                 <option value="@PermissionVerdict.Ask">Ask</option>
                 <option value="@PermissionVerdict.Allow">Allow</option>
             </select>
-            <input class="input mono" aria-label="Rule pattern" placeholder="@(_newTarget == RuleTarget.ShellCommand ? "git push*" : "**/.env")" @bind="_newPattern" @bind:event="oninput" @onkeydown="OnPatternKeyAsync" />
+            <input class="input mono" aria-label="Rule pattern" placeholder="@PatternExample(_newTarget)" @bind="_newPattern" @bind:event="oninput" @onkeydown="OnPatternKeyAsync" />
             <button type="button" class="btn" disabled="@string.IsNullOrWhiteSpace(_newPattern)" @onclick="AddRuleAsync">＋ Add rule</button>
         </div>
     </section>
@@ -121,7 +123,25 @@
         _protectedExample = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "my-tool");
     }
 
-    private static string TargetLabel(RuleTarget target) => target == RuleTarget.ShellCommand ? "Shell command" : "File path";
+    private static string TargetLabel(RuleTarget target)
+    {
+        return target switch
+        {
+            RuleTarget.ShellCommand => "Shell command",
+            RuleTarget.McpTool => "MCP tool",
+            _ => "File path",
+        };
+    }
+
+    private static string PatternExample(RuleTarget target)
+    {
+        return target switch
+        {
+            RuleTarget.ShellCommand => "git push*",
+            RuleTarget.McpTool => "server/tool*",
+            _ => "**/.env",
+        };
+    }
 
     private static string ActionLabel(PermissionVerdict action) => action switch
     {

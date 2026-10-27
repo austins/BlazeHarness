@@ -63,6 +63,21 @@ public sealed class PermissionDefaults
     public bool UsesDefaultProtectedFolders => _config.Current.ProtectedFolders is null;
 
     /// <summary>
+    /// Gets the names of the MCP servers the user trusts.
+    /// </summary>
+    public IReadOnlyList<string> TrustedMcpServers => _config.Current.TrustedMcpServers;
+
+    /// <summary>
+    /// Get whether the user trusts an MCP server.
+    /// </summary>
+    /// <param name="serverName">The server's name in <c>mcp.json</c>.</param>
+    /// <returns>True when the server's read-only tools may run without a question.</returns>
+    public bool IsMcpServerTrusted(string serverName)
+    {
+        return TrustedMcpServers.Contains(serverName, StringComparer.Ordinal);
+    }
+
+    /// <summary>
     /// Get the protected folders as they apply now.
     /// </summary>
     /// <param name="currentSession">The id of the session that is running, whose own directory stays usable, or null.</param>
@@ -113,6 +128,25 @@ public sealed class PermissionDefaults
             .Distinct(StringComparer.Ordinal)
             .ToList();
         return _config.UpdateAsync(config => config with { ProtectedFolders = kept }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Trust or stop trusting an MCP server.
+    /// </summary>
+    /// <param name="serverName">The server's name in <c>mcp.json</c>.</param>
+    /// <param name="trusted">True to trust the server, and false to ask about all its tools again.</param>
+    /// <param name="cancellationToken">A token to cancel the write.</param>
+    /// <returns>A task that completes once the choice is saved.</returns>
+    public Task SetMcpServerTrustedAsync(string serverName, bool trusted, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(serverName);
+        return _config.UpdateAsync(
+            config =>
+            {
+                var others = config.TrustedMcpServers.Where(name => !string.Equals(name, serverName, StringComparison.Ordinal));
+                return config with { TrustedMcpServers = trusted ? [.. others, serverName] : [.. others] };
+            },
+            cancellationToken);
     }
 
     /// <summary>

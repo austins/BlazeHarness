@@ -26,6 +26,30 @@ public sealed class PermissionDefaultsTests : IDisposable
     }
 
     [Fact]
+    public async Task SetMcpServerTrustedAsync_TrustThenUntrust_UpdatesTheList()
+    {
+        // Act
+        await _sut.SetMcpServerTrustedAsync("files", trusted: true, TestContext.Current.CancellationToken);
+        await _sut.SetMcpServerTrustedAsync("files", trusted: true, TestContext.Current.CancellationToken);
+        await _sut.SetMcpServerTrustedAsync("web", trusted: true, TestContext.Current.CancellationToken);
+        var trusted = _sut.TrustedMcpServers.ToList();
+        await _sut.SetMcpServerTrustedAsync("files", trusted: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        trusted.Should().Equal("files", "web");
+        _sut.TrustedMcpServers.Should().Equal("web");
+        _sut.IsMcpServerTrusted("web").Should().BeTrue();
+        _sut.IsMcpServerTrusted("files").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsMcpServerTrusted_NothingSaved_IsFalse()
+    {
+        // Assert
+        _sut.IsMcpServerTrusted("files").Should().BeFalse();
+    }
+
+    [Fact]
     public void ProtectedFolders_NothingSaved_IsTheBuiltInList()
     {
         // Assert

@@ -10,4 +10,7 @@ public enum RuleTarget
 
     /// <summary>A path a file tool reads or changes.</summary>
     FilePath,
+
+    /// <summary>An MCP tool, written as the server name and the tool's own name joined by <c>/</c>.</summary>
+    McpTool,
 }

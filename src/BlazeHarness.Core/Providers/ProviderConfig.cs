@@ -367,6 +367,14 @@ public sealed record AppConfig
     public IReadOnlyList<string>? ProtectedFolders { get; init; }
 
     /// <summary>
+    /// Gets the names of the MCP servers the user trusts, whose read-only tools may run without a question.
+    /// </summary>
+    /// <remarks>
+    /// It lives here and not in <c>mcp.json</c>, so a pasted server snippet can't grant itself trust.
+    /// </remarks>
+    public IReadOnlyList<string> TrustedMcpServers { get; init; } = [];
+
+    /// <summary>
     /// Gets a value indicating whether the Unrestricted and Never-ask options are hidden.
     /// </summary>
     public bool DisableBypassModes { get; init; }

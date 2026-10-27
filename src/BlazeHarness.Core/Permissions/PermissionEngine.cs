@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tools;
 using System.Collections.Concurrent;
@@ -23,6 +24,11 @@ namespace BlazeHarness.Core.Permissions;
 /// <para>
 /// A command on the <see cref="Forbidden"/> list, such as a recursive delete, always asks, under every approval mode, and the answer can't be
 /// remembered. <see cref="AccessLevel.Unrestricted"/> skips the list, because the user has already accepted that commands run unconfined.
+/// </para>
+/// <para>
+/// An MCP tool is not covered by the access level, because the harness can't see what a server touches. It asks first, unless the session is
+/// <see cref="ApprovalMode.NeverAsk"/>, or the user trusts the server and the server marks the tool read-only and not destructive. A Read only
+/// session never skips the question, and refuses under <see cref="ApprovalMode.NeverAsk"/>.
 /// </para>
 /// </remarks>
 public sealed class PermissionEngine
@@ -82,6 +88,14 @@ public sealed class PermissionEngine
     public Func<IReadOnlyList<PermissionRule>> Rules { get; set; } = static () => [];
 
     /// <summary>
+    /// Gets or sets whether the user trusts an MCP server, given its name.
+    /// </summary>
+    /// <remarks>
+    /// Only a trusted server's tools can skip the question, and only when the server says they only read.
+    /// </remarks>
+    public Func<string, bool> TrustedMcpServer { get; set; } = static _ => false;
+
+    /// <summary>
     /// Gets or sets whether shell commands can run inside an OS sandbox that enforces the access level.
     /// </summary>
     public SandboxStatus Sandbox { get; set; } = SandboxStatus.Unavailable("No sandbox is set up.");
@@ -102,9 +116,12 @@ public sealed class PermissionEngine
         using var document = Parse(argumentsJson);
         var arguments = document.RootElement;
 
-        var decision = tool.RunsCommands
-            ? EvaluateCommand(arguments, settings)
-            : EvaluatePaths(tool, arguments, settings, context);
+        var decision = tool switch
+        {
+            IMcpTool mcp => EvaluateMcp(mcp, settings),
+            { RunsCommands: true } => EvaluateCommand(arguments, settings),
+            _ => EvaluatePaths(tool, arguments, settings, context),
+        };
         decision = ApplyRules(tool, arguments, context, decision);
         if (decision is { Verdict: PermissionVerdict.Ask, GrantKey: { } key } && _grants.ContainsKey(key))
         {
@@ -181,7 +198,11 @@ public sealed class PermissionEngine
         }
 
         PermissionRule? rule;
-        if (tool.RunsCommands)
+        if (tool is IMcpTool mcp)
+        {
+            rule = RuleMatcher.ForMcpTool(rules, mcp.ServerName, mcp.RemoteName);
+        }
+        else if (tool.RunsCommands)
         {
             rule = RuleMatcher.ForCommand(rules, Text(arguments, "command") ?? string.Empty);
         }
@@ -200,6 +221,33 @@ public sealed class PermissionEngine
         }
 
         return rule is null ? decision : ApplyRule(rule, decision);
+    }
+
+    private PermissionDecision EvaluateMcp(IMcpTool tool, PermissionSettings settings)
+    {
+        if (settings.Access == AccessLevel.ReadOnly)
+        {
+            return settings.Approvals == ApprovalMode.NeverAsk
+                ? new PermissionDecision(PermissionVerdict.Deny, "This session is Read only, and an MCP tool can change things the harness can't see. Say what you wanted to do, and the user can change the access level.")
+                : AskMcp(tool);
+        }
+
+        if (settings.Approvals == ApprovalMode.NeverAsk)
+        {
+            return PermissionDecision.Allow;
+        }
+
+        return tool is { ReadOnlyHint: true, DestructiveHint: not true } && TrustedMcpServer(tool.ServerName)
+            ? PermissionDecision.Allow
+            : AskMcp(tool);
+    }
+
+    private static PermissionDecision AskMcp(IMcpTool tool)
+    {
+        return new PermissionDecision(
+            PermissionVerdict.Ask,
+            $"Calls the tool '{tool.RemoteName}' of the MCP server '{tool.ServerName}', which runs outside the sandbox and can reach whatever that server can.",
+            "mcp:" + tool.ServerName + "/" + tool.RemoteName);
     }
 
     private PermissionDecision EvaluateCommand(JsonElement arguments, PermissionSettings settings)

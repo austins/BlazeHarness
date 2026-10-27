@@ -128,6 +128,50 @@ public sealed class RuleMatcherTests
         rule.Action.Should().Be(PermissionVerdict.Deny);
     }
 
+    [Theory]
+    [InlineData("files/read", true)]
+    [InlineData("files/*", true)]
+    [InlineData("*/read", true)]
+    [InlineData("*", true)]
+    [InlineData("files/rea?", true)]
+    [InlineData("files/write", false)]
+    [InlineData("other/*", false)]
+    [InlineData("file/*", false)]
+    public void ForMcpTool_Pattern_MatchesServerSlashTool(string pattern, bool expected)
+    {
+        // Act
+        var rule = RuleMatcher.ForMcpTool([Mcp(PermissionVerdict.Ask, pattern)], "files", "read");
+
+        // Assert
+        (rule is not null).Should().Be(expected);
+    }
+
+    [Fact]
+    public void ForMcpTool_DenyAndAllowBothMatch_Denies()
+    {
+        // Arrange
+        PermissionRule[] rules = [Mcp(PermissionVerdict.Deny, "files/*"), Mcp(PermissionVerdict.Allow, "*")];
+
+        // Act
+        var rule = RuleMatcher.ForMcpTool(rules, "files", "read");
+
+        // Assert
+        rule.Should().NotBeNull();
+        rule.Action.Should().Be(PermissionVerdict.Deny);
+    }
+
+    [Fact]
+    public void ForMcpTool_RulesForOtherTargets_AreIgnored()
+    {
+        // Act
+        var rule = RuleMatcher.ForMcpTool([Shell(PermissionVerdict.Deny, "*"), File(PermissionVerdict.Deny, "**")], "files", "read");
+
+        // Assert
+        rule.Should().BeNull();
+    }
+
+    private static PermissionRule Mcp(PermissionVerdict action, string pattern) => new(RuleTarget.McpTool, action, pattern);
+
     private static PermissionRule Shell(PermissionVerdict action, string pattern) => new(RuleTarget.ShellCommand, action, pattern);
 
     private static PermissionRule File(PermissionVerdict action, string pattern) => new(RuleTarget.FilePath, action, pattern);

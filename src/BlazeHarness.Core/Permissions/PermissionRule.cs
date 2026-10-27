@@ -15,6 +15,7 @@ namespace BlazeHarness.Core.Permissions;
 /// where <c>*</c> stands for any text and <c>?</c> for one character. An allow rule only applies when every simple command in the call matches it.
 /// For a path the pattern is matched against the path relative to the working folder, and against the full path, where <c>*</c> stays inside one folder,
 /// <c>**</c> crosses folders and <c>?</c> is one character. Use <c>/</c> as the separator on every system.
+/// For an MCP tool the pattern is matched against <c>server/tool</c>, where <c>*</c> stands for any text and <c>?</c> for one character.
 /// </para>
 /// </remarks>
 /// <param name="Target">What the pattern is matched against.</param>
