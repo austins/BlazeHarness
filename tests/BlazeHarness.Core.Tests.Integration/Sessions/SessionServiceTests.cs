@@ -143,6 +143,7 @@ public sealed class SessionServiceTests : IDisposable
         // Assert
         session!.Permissions.Sensitive().IsProtected(_paths.ConfigFile).Should().BeTrue();
         session.Permissions.Sensitive().IsProtected(Path.Combine(_paths.SessionDirectory(info.Id), "outputs", "a.txt")).Should().BeFalse();
+        session.Permissions.ReadableFolders().Should().ContainSingle().Which.Should().Be(session.Attachments!.Directory);
     }
 
     [Fact]

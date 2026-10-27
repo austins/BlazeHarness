@@ -712,6 +712,7 @@ public sealed partial class SessionService : IDisposable
             CompactionModeSource = _compactionMode,
         };
         session.Permissions.Sensitive = () => _defaults?.Sensitive(id) ?? SensitivePaths.Default(_store.Paths, id);
+        session.Permissions.ReadableFolders = () => [_store.AttachmentsDirectory(id)];
         session.Permissions.Sandbox = _sandbox.Status;
         if (_defaults is { } defaults)
         {

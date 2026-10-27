@@ -35,7 +35,7 @@ internal static class AttachmentMessage
             switch (attachment.Delivery)
             {
                 case AttachmentDelivery.Image:
-                    parts.Add($"[Attached image: {info.Name}, id {info.Id}]");
+                    parts.Add($"[Attached image: {info.Name}, id {info.Id}, path {file.Path}]");
                     images.Add(new DataContent(File.ReadAllBytes(file.Path), info.MediaType));
                     break;
                 case AttachmentDelivery.Inline:

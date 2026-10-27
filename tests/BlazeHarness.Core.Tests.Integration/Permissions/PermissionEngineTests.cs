@@ -207,6 +207,48 @@ public sealed class PermissionEngineTests : IDisposable
         decision.AllowOutside.Should().BeTrue();
     }
 
+    [Fact]
+    public void Evaluate_ReadInAReadableFolder_AllowsWithoutAsking()
+    {
+        // Arrange
+        _sut.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst);
+        _sut.ReadableFolders = () => [_temp.Root];
+
+        // Act
+        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "note.txt") });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Allow);
+        decision.AllowOutside.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Evaluate_WriteInAReadableFolder_StillDenied()
+    {
+        // Arrange
+        _sut.ReadableFolders = () => [_temp.Root];
+
+        // Act
+        var decision = Evaluate(new WriteFileTool(), new { path = Path.Combine(_temp.Root, "note.txt"), content = "x" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Deny);
+    }
+
+    [Fact]
+    public void Evaluate_ShellWithAReadableFolder_CarriesIt()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        _sut.ReadableFolders = () => [_temp.Root];
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "ls" });
+
+        // Assert
+        decision.ShellReadFolders.Should().ContainSingle().Which.Should().Be(WorkspacePath.CanonicalRoot(_temp.Root));
+    }
+
     [Theory]
     [InlineData(AccessLevel.WriteInFolder, ApprovalMode.NeverAsk)]
     [InlineData(AccessLevel.Unrestricted, ApprovalMode.NeverAsk)]

@@ -83,7 +83,7 @@ public sealed class AttachmentMessageTests : IDisposable
         var message = AttachmentMessage.Build("what is this?", [new SentAttachment(info, AttachmentDelivery.Image)], _store);
 
         // Assert
-        message.Text.Should().Contain($"[Attached image: pic.png, id {info.Id}]");
+        message.Text.Should().Contain($"[Attached image: pic.png, id {info.Id}, path {_store.Find(info.Id)!.Path}]");
         var image = message.Contents.OfType<DataContent>().Should().ContainSingle().Subject;
         image.MediaType.Should().Be("image/png");
         image.Data.ToArray().Should().Equal(PngBytes);

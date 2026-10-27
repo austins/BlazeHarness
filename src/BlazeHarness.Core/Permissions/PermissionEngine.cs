@@ -82,6 +82,14 @@ public sealed class PermissionEngine
     public Func<SensitivePaths> Sensitive { get; set; } = () => SensitivePaths.None;
 
     /// <summary>
+    /// Gets or sets the folders outside the working folder that calls may always read without asking, such as the session's attached files.
+    /// </summary>
+    /// <remarks>
+    /// They are for reading only. Writes outside the working folder are decided as before, and the protected folders still win.
+    /// </remarks>
+    public Func<IReadOnlyList<string>> ReadableFolders { get; set; } = static () => [];
+
+    /// <summary>
     /// Gets or sets the commands that need the user's approval every time.
     /// </summary>
     public ForbiddenCommands Forbidden { get; set; } = ForbiddenCommands.BuiltIn;
@@ -314,7 +322,7 @@ public sealed class PermissionEngine
             return PermissionDecision.Allow;
         }
 
-        if (settings.Access == AccessLevel.Unrestricted || settings.Approvals == ApprovalMode.NeverAsk || GrantCovers(outside))
+        if (settings.Access == AccessLevel.Unrestricted || settings.Approvals == ApprovalMode.NeverAsk || GrantCovers(outside) || IsReadable(outside))
         {
             return PermissionDecision.Allow with { AllowOutside = true };
         }
@@ -352,7 +360,12 @@ public sealed class PermissionEngine
 
     private List<string> GrantedFolders()
     {
-        return [.. _grants.Keys.Where(IsFolderGrant).Select(key => key[FolderGrantPrefix.Length..])];
+        return [.. _grants.Keys.Where(IsFolderGrant).Select(key => key[FolderGrantPrefix.Length..]), .. ReadableFolders().Select(WorkspacePath.CanonicalRoot)];
+    }
+
+    private bool IsReadable(string fullPath)
+    {
+        return ReadableFolders().Any(folder => WorkspacePath.IsInside(WorkspacePath.CanonicalRoot(folder), fullPath));
     }
 
     private static bool IsFolderGrant(string key) => key.StartsWith(FolderGrantPrefix, StringComparison.Ordinal);
