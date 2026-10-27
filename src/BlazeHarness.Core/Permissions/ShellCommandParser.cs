@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -20,6 +21,7 @@ internal static partial class ShellCommandParser
     private const string PipedText = "Runs piped-in or encoded text as commands, which can't be checked beforehand.";
     private const string TooDeep = "Nests commands too deeply to check beforehand.";
 
+    private static readonly SearchValues<char> RunTimeCharacters = SearchValues.Create("{}*?[$`");
     private static readonly string[] Reserved = ["{", "}", "!", "if", "then", "else", "elif", "do", "while", "until"];
     private static readonly string[] PosixShells = ["sh", "bash", "zsh", "dash", "ksh", "fish", "ash"];
     private static readonly string[] PowerShells = ["pwsh", "powershell", "pwsh-preview"];
@@ -120,8 +122,9 @@ internal static partial class ShellCommandParser
 
     private static bool IsComputed(string program)
     {
-        return program.StartsWith("$'", StringComparison.Ordinal)
-            || ((program.StartsWith('$') || program.StartsWith('`')) && !program.Contains('/', StringComparison.Ordinal) && !program.Contains('\\', StringComparison.Ordinal));
+        // Braces, globs and variables in the program's own name (not its folder) are expanded by the shell, so the real program isn't known here.
+        var name = program[(program.LastIndexOfAny(['/', '\\']) + 1)..];
+        return program.StartsWith("$'", StringComparison.Ordinal) || name.AsSpan().IndexOfAny(RunTimeCharacters) >= 0;
     }
 
     private static int SkipWrapperOptions(List<string> tokens, int start, string wrapper, string[] valued)
@@ -163,10 +166,11 @@ internal static partial class ShellCommandParser
         }
         else if (program.Equals("cmd", StringComparison.OrdinalIgnoreCase))
         {
-            var index = arguments.FindIndex(a => CmdSwitches.Contains(a, StringComparer.OrdinalIgnoreCase));
+            // The command can follow the switch directly, as in cmd /c"dir".
+            var index = arguments.FindIndex(a => a.Length >= 2 && CmdSwitches.Contains(a[..2], StringComparer.OrdinalIgnoreCase));
             if (index >= 0)
             {
-                Rescan(string.Join(' ', arguments.Skip(index + 1)), depth, output);
+                Rescan(string.Join(' ', arguments.Skip(index + 1).Prepend(arguments[index][2..])), depth, output);
             }
         }
         else if (program.Equals("find", StringComparison.OrdinalIgnoreCase))
@@ -196,11 +200,12 @@ internal static partial class ShellCommandParser
         for (var i = 0; i < arguments.Count; i++)
         {
             var option = arguments[i];
-            if (option.Length < 2 || option[0] != '-')
+            if (option.Length < 2 || option[0] is not ('-' or '/'))
             {
                 continue;
             }
 
+            option = "-" + option[1..];
             if ("-encodedcommand".StartsWith(option, StringComparison.OrdinalIgnoreCase))
             {
                 output.Add(new CommandSegment(program, arguments, PipedText));

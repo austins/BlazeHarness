@@ -21,6 +21,22 @@ public sealed class RuleMatcherTests
     }
 
     [Fact]
+    public void ForCommand_RuleWithManyWildcardsOnALongCommand_StillDecides()
+    {
+        // Arrange
+        var command = "echo " + new string('a', 20_000) + "c";
+        PermissionRule[] rules = [Shell(PermissionVerdict.Deny, "*a*a*a*a*a*a*a*a*a*b")];
+
+        // Act
+        var miss = RuleMatcher.ForCommand(rules, command);
+        var hit = RuleMatcher.ForCommand(rules, command + "b");
+
+        // Assert
+        miss.Should().BeNull();
+        hit.Should().NotBeNull();
+    }
+
+    [Fact]
     public void ForCommand_AllowRule_NeedsEveryPartToMatch()
     {
         // Arrange

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Tools;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -10,6 +11,7 @@ namespace BlazeHarness.Core.Permissions;
 internal static class RuleMatcher
 {
     private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+    private static readonly ConcurrentDictionary<(string Pattern, bool PathStyle), Regex> Compiled = new();
 
     /// <summary>
     /// Find the rule that decides a shell call.
@@ -31,11 +33,11 @@ internal static class RuleMatcher
             bool hit;
             if (rule.Action == PermissionVerdict.Allow)
             {
-                hit = allKnown && pieces.TrueForAll(piece => Matches(regex, piece));
+                hit = allKnown && pieces.TrueForAll(piece => Matches(rule, regex, piece));
             }
             else
             {
-                hit = Matches(regex, text) || pieces.Exists(piece => Matches(regex, piece));
+                hit = Matches(rule, regex, text) || pieces.Exists(piece => Matches(rule, regex, piece));
             }
 
             if (hit)
@@ -67,7 +69,7 @@ internal static class RuleMatcher
             foreach (var rule in rules.Where(r => r.Target == RuleTarget.FilePath && r.Pattern.Length > 0))
             {
                 var regex = Compile(rule.Pattern, pathStyle: true);
-                if (candidates.Exists(candidate => Matches(regex, candidate)))
+                if (candidates.Exists(candidate => Matches(rule, regex, candidate)))
                 {
                     decided = Stronger(decided, rule);
                 }
@@ -93,7 +95,7 @@ internal static class RuleMatcher
     {
         var target = serverName + "/" + toolName;
         PermissionRule? decided = null;
-        foreach (var rule in rules.Where(r => r.Target == RuleTarget.McpTool && r.Pattern.Length > 0 && Matches(Compile(r.Pattern, pathStyle: false), target)))
+        foreach (var rule in rules.Where(r => r.Target == RuleTarget.McpTool && r.Pattern.Length > 0 && Matches(r, Compile(r.Pattern, pathStyle: false), target)))
         {
             decided = Stronger(decided, rule);
         }
@@ -123,7 +125,7 @@ internal static class RuleMatcher
         return candidates;
     }
 
-    private static bool Matches(Regex regex, string text)
+    private static bool Matches(PermissionRule rule, Regex regex, string text)
     {
         try
         {
@@ -131,11 +133,17 @@ internal static class RuleMatcher
         }
         catch (RegexMatchTimeoutException)
         {
-            return false;
+            // Failing closed: a rule that can't be evaluated still refuses or asks, but never allows.
+            return rule.Action != PermissionVerdict.Allow;
         }
     }
 
     private static Regex Compile(string pattern, bool pathStyle)
+    {
+        return Compiled.GetOrAdd((pattern, pathStyle), static key => Build(key.Pattern, key.PathStyle));
+    }
+
+    private static Regex Build(string pattern, bool pathStyle)
     {
         var text = pathStyle ? pattern.Replace('\\', '/') : pattern;
         var builder = new StringBuilder("^");
@@ -167,7 +175,8 @@ internal static class RuleMatcher
         }
 
         builder.Append('$');
-        var options = RegexOptions.CultureInvariant | RegexOptions.Singleline | (OperatingSystem.IsWindows() && pathStyle ? RegexOptions.IgnoreCase : RegexOptions.None);
+        // Linear-time matching, so a crafted command can't make a rule like *a*b*c* take exponential time.
+        var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant | RegexOptions.Singleline | (OperatingSystem.IsWindows() && pathStyle ? RegexOptions.IgnoreCase : RegexOptions.None);
         return new Regex(builder.ToString(), options, RegexTimeout);
     }
 }

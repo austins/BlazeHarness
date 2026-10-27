@@ -14,6 +14,8 @@ namespace BlazeHarness.Core.Permissions;
 /// </remarks>
 public sealed class ForbiddenCommands
 {
+    private const int MinAbbreviatedFlag = 5; // "--" plus three letters
+
     private static readonly Lazy<ForbiddenCommands> BuiltInList = new(LoadBuiltIn);
 
     private readonly List<ForbiddenRule> _rules;
@@ -127,8 +129,15 @@ public sealed class ForbiddenCommands
                     return argument.Length >= 2 && argument[0] == '-' && argument[1] != '-' && argument.Contains(flag[1], StringComparison.Ordinal);
                 }
 
-                return argument == flag || argument.StartsWith(flag + "=", StringComparison.Ordinal);
+                return argument == flag || argument.StartsWith(flag + "=", StringComparison.Ordinal) || IsAbbreviation(flag, argument);
         }
+    }
+
+    // GNU programs accept any unambiguous start of a long option, so --rec means --recursive. Without each program's option list, any start counts.
+    private static bool IsAbbreviation(string flag, string argument)
+    {
+        var name = argument.Split('=', 2)[0];
+        return flag.StartsWith("--", StringComparison.Ordinal) && name.Length >= MinAbbreviatedFlag && flag.StartsWith(name, StringComparison.Ordinal);
     }
 
     private sealed record RuleFile(IReadOnlyList<ForbiddenRule> Rules);

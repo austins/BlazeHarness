@@ -61,6 +61,16 @@ public sealed class ForbiddenCommandsTests
     [InlineData("for d in a b; do rm -rf $d; done")]
     [InlineData("RM=rm; $RM -rf build")]
     [InlineData("RM_FLAGS=1 rm -rf build")]
+    [InlineData("rm --rec build")]
+    [InlineData("rm --forc build")]
+    [InlineData("rm --recur=x build")]
+    [InlineData("{rm,-rf,.}")]
+    [InlineData("/bin/r[m] -rf .")]
+    [InlineData("/bin/r? -rf .")]
+    [InlineData("rm${IFS}-rf${IFS}.")]
+    [InlineData("pwsh /Command \"rm -rf .\"")]
+    [InlineData("pwsh /EncodedCommand AAAA")]
+    [InlineData("cmd /c\"rd /s build\"")]
     public void Find_RiskyCommand_IsFlagged(string command)
     {
         // Arrange
@@ -92,6 +102,10 @@ public sealed class ForbiddenCommandsTests
     [InlineData("npm test 2>&1 | tail -20")]
     [InlineData("Get-ChildItem -Recurse")]
     [InlineData("del notes.txt")]
+    [InlineData("rm --re x")]
+    [InlineData("$HOME/bin/tool run")]
+    [InlineData("cmd /c dir")]
+    [InlineData("pwsh /NoProfile -Command Get-Date")]
     public void Find_OrdinaryCommand_IsNotFlagged(string command)
     {
         // Arrange
