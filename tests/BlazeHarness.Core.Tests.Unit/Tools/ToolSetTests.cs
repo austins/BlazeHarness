@@ -2,19 +2,17 @@ using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.Time.Testing;
 using System.Text.Json;
 
-namespace BlazeHarness.Core.Tests.Integration.Tools;
+namespace BlazeHarness.Core.Tests.Unit.Tools;
 
-public sealed class ToolSetTests : IDisposable
+public sealed class ToolSetTests
 {
-    private readonly TempWorkspace _workspace = new();
-
-    public void Dispose() => _workspace.Dispose();
+    private readonly ToolContext _context = new(Path.GetTempPath());
 
     [Fact]
     public void Constructor_DuplicateNames_Throws()
     {
         // Act
-        var act = () => new ToolSet([new ReadFileTool(), new ReadFileTool()], _workspace.Context);
+        var act = () => new ToolSet([new ReadFileTool(), new ReadFileTool()], _context);
 
         // Assert
         act.Should().Throw<ArgumentException>().WithMessage("*read_file*");
@@ -24,7 +22,7 @@ public sealed class ToolSetTests : IDisposable
     public void With_ExtraTools_AreOfferedAfterTheExistingOnes()
     {
         // Arrange
-        var sut = new ToolSet([new ReadFileTool()], _workspace.Context);
+        var sut = new ToolSet([new ReadFileTool()], _context);
 
         // Act
         var more = sut.With([Named("extra_one"), Named("extra_two")]);
@@ -40,7 +38,7 @@ public sealed class ToolSetTests : IDisposable
     public void With_NameAlreadyTaken_KeepsTheExistingToolAndSkipsTheNewOne()
     {
         // Arrange
-        var sut = new ToolSet([new ReadFileTool()], _workspace.Context);
+        var sut = new ToolSet([new ReadFileTool()], _context);
 
         // Act
         var more = sut.With([Named("read_file"), Named("fresh"), Named("fresh")]);
@@ -54,7 +52,7 @@ public sealed class ToolSetTests : IDisposable
     public void With_NothingNew_ReturnsTheSameSet()
     {
         // Arrange
-        var sut = new ToolSet([new ReadFileTool()], _workspace.Context);
+        var sut = new ToolSet([new ReadFileTool()], _context);
 
         // Assert
         sut.With([]).Should().BeSameAs(sut);
@@ -64,7 +62,7 @@ public sealed class ToolSetTests : IDisposable
     public void Declarations_BuiltInTools_HaveNamesAndSchemas()
     {
         // Act
-        var sut = new ToolSet([new ReadFileTool(), new WriteFileTool(), new EditFileTool(), new ListFilesTool(), new SearchFilesTool()], _workspace.Context);
+        var sut = new ToolSet([new ReadFileTool(), new WriteFileTool(), new EditFileTool(), new ListFilesTool(), new SearchFilesTool()], _context);
 
         // Assert
         sut.Declarations.Select(d => d.Name).Should().Equal("read_file", "write_file", "edit_file", "list_files", "search_files");
@@ -108,7 +106,7 @@ public sealed class ToolSetTests : IDisposable
     public async Task ExecuteAsync_BadArguments_BecomesAnErrorResult()
     {
         // Arrange
-        var sut = new ToolSet([new ReadFileTool()], _workspace.Context);
+        var sut = new ToolSet([new ReadFileTool()], _context);
 
         // Act
         var missing = await sut.ExecuteAsync(sut.Find("read_file")!, "{}", TestContext.Current.CancellationToken);
@@ -123,7 +121,7 @@ public sealed class ToolSetTests : IDisposable
     public async Task ExecuteAsync_IoFailure_BecomesAnErrorResult()
     {
         // Arrange
-        var sut = new ToolSet([Tool(TimeSpan.FromSeconds(5), _ => throw new IOException("disk on fire"))], _workspace.Context);
+        var sut = new ToolSet([Tool(TimeSpan.FromSeconds(5), _ => throw new IOException("disk on fire"))], _context);
 
         // Act
         var result = await sut.ExecuteAsync(sut.Tools[0], "{}", TestContext.Current.CancellationToken);
@@ -138,7 +136,7 @@ public sealed class ToolSetTests : IDisposable
         // Arrange
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var time = new FakeTimeProvider();
-        var sut = new ToolSet([Hanging(TimeSpan.FromSeconds(5), started)], _workspace.Context, time);
+        var sut = new ToolSet([Hanging(TimeSpan.FromSeconds(5), started)], _context, time);
 
         // Act
         var run = sut.ExecuteAsync(sut.Tools[0], "{}", TestContext.Current.CancellationToken);
@@ -155,7 +153,7 @@ public sealed class ToolSetTests : IDisposable
     public async Task ExecuteAsync_CallerCancels_Throws()
     {
         // Arrange
-        var sut = new ToolSet([Hanging(TimeSpan.FromMinutes(1), started: null)], _workspace.Context);
+        var sut = new ToolSet([Hanging(TimeSpan.FromMinutes(1), started: null)], _context);
         var cancelled = new CancellationToken(canceled: true);
 
         // Act
@@ -169,7 +167,7 @@ public sealed class ToolSetTests : IDisposable
     public async Task ExecuteAsync_HugeOutput_IsLimited()
     {
         // Arrange
-        var sut = new ToolSet([Tool(TimeSpan.FromSeconds(5), _ => Task.FromResult(ToolResult.Ok(new string('x', ToolSet.MaxOutputCharacters * 2))))], _workspace.Context);
+        var sut = new ToolSet([Tool(TimeSpan.FromSeconds(5), _ => Task.FromResult(ToolResult.Ok(new string('x', ToolSet.MaxOutputCharacters * 2))))], _context);
 
         // Act
         var result = await sut.ExecuteAsync(sut.Tools[0], "{}", TestContext.Current.CancellationToken);
@@ -210,7 +208,7 @@ public sealed class ToolSetTests : IDisposable
             release.Wait(TestContext.Current.CancellationToken);
             return Task.FromResult(ToolResult.Ok("late"));
         });
-        var sut = new ToolSet([blocking], _workspace.Context);
+        var sut = new ToolSet([blocking], _context);
         var cancel = new CancellationTokenSource();
         try
         {

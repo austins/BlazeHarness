@@ -2,7 +2,7 @@ using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 
-namespace BlazeHarness.Core.Tests.Integration.Permissions;
+namespace BlazeHarness.Core.Tests.Unit.Permissions;
 
 public sealed class PermissionEngineMcpTests
 {
