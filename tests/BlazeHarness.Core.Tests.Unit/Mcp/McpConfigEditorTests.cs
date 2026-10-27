@@ -71,10 +71,13 @@ public sealed class McpConfigEditorTests
     }
 
     [Fact]
-    public void Merge_WholeFile_AddsNewServersAndKeepsTheRest()
+    public void Upsert_NewServer_IsAddedAndTheRestIsKept()
     {
+        // Arrange
+        var server = new McpServerConfig("c", McpTransport.Stdio, "npx", ["-y", "pkg"], new Dictionary<string, string> { ["K"] = "v" }, "/work", null, new Dictionary<string, string>(), false);
+
         // Act
-        var result = McpConfigEditor.Merge(Original, """{"mcpServers": {"c": {"command": "y", "args": ["--flag"]}}}""");
+        var result = McpConfigEditor.Upsert(Original, server);
 
         // Assert
         result.Error.Should().BeNull();
@@ -83,71 +86,99 @@ public sealed class McpConfigEditorTests
         var root = JsonNode.Parse(result.Text!)!;
         root["note"]!.GetValue<string>().Should().Be("keep");
         root["mcpServers"]!["a"]!["extra"]!["deep"]!.ToJsonString().Should().Be("[1,2]");
-        McpConfigParser.Parse(result.Text!).Servers.Select(s => s.Name).Should().Equal("a", "b", "c");
+        var servers = McpConfigParser.Parse(result.Text!).Servers;
+        servers.Select(s => s.Name).Should().Equal("a", "b", "c");
+        var c = servers[2];
+        c.Command.Should().Be("npx");
+        c.Cwd.Should().Be("/work");
+        c.Args.Should().Equal("-y", "pkg");
+        c.Env["K"].Should().Be("v");
     }
 
     [Fact]
-    public void Merge_SameName_ReplacesTheServer()
+    public void Upsert_ExistingServer_KeepsUnknownFieldsAndDisabled()
     {
+        // Arrange
+        var server = new McpServerConfig("a", McpTransport.Stdio, "other", [], new Dictionary<string, string>(), null, null, new Dictionary<string, string>(), false);
+
         // Act
-        var result = McpConfigEditor.Merge(Original, """{"servers": {"b": {"command": "other"}}}""");
+        var result = McpConfigEditor.Upsert(Original, server);
 
         // Assert
-        result.Replaced.Should().Equal("b");
+        result.Replaced.Should().Equal("a");
         result.Added.Should().BeEmpty();
-        var b = McpConfigParser.Parse(result.Text!).Servers.Single(s => s.Name == "b");
-        b.Command.Should().Be("other");
-    }
-
-    [Theory]
-    [InlineData("""{"c": {"command": "y"}}""")]
-    [InlineData("\"c\": {\"command\": \"y\"}")]
-    [InlineData("\"c\": {\"command\": \"y\"},")]
-    public void Merge_BareMapOfServers_IsAccepted(string snippet)
-    {
-        // Act
-        var result = McpConfigEditor.Merge(string.Empty, snippet);
-
-        // Assert
-        result.Added.Should().Equal("c");
-        McpConfigParser.Parse(result.Text!).Servers.Should().ContainSingle().Which.Command.Should().Be("y");
+        var a = JsonNode.Parse(result.Text!)!["mcpServers"]!["a"]!.AsObject();
+        a["command"]!.GetValue<string>().Should().Be("other");
+        a["extra"]!["deep"]!.ToJsonString().Should().Be("[1,2]");
+        a["disabled"]!.GetValue<bool>().Should().BeTrue();
     }
 
     [Fact]
-    public void Merge_FileWithoutAServerMap_CreatesOne()
+    public void Upsert_SwitchingToARemoteServer_DropsTheLocalFields()
     {
+        // Arrange
+        var server = new McpServerConfig("a", McpTransport.Sse, null, [], new Dictionary<string, string>(), null, "https://x.test/sse", new Dictionary<string, string> { ["Authorization"] = "Bearer x" }, false);
+
         // Act
-        var result = McpConfigEditor.Merge("""{"note": 1}""", """{"c": {"command": "y"}}""");
+        var result = McpConfigEditor.Upsert(Original, server);
+
+        // Assert
+        var a = JsonNode.Parse(result.Text!)!["mcpServers"]!["a"]!.AsObject();
+        a.ContainsKey("command").Should().BeFalse();
+        a["type"]!.GetValue<string>().Should().Be("sse");
+        var parsed = McpConfigParser.Parse(result.Text!).Servers.Single(s => s.Name == "a");
+        parsed.Transport.Should().Be(McpTransport.Sse);
+        parsed.Headers["Authorization"].Should().Be("Bearer x");
+    }
+
+    [Fact]
+    public void Upsert_FileWithoutAServerMap_CreatesOne()
+    {
+        // Arrange
+        var server = new McpServerConfig("c", McpTransport.Http, null, [], new Dictionary<string, string>(), null, "https://x.test", new Dictionary<string, string>(), false);
+
+        // Act
+        var result = McpConfigEditor.Upsert("""{"note": 1}""", server);
 
         // Assert
         JsonNode.Parse(result.Text!)!["mcpServers"]!["c"].Should().NotBeNull();
         JsonNode.Parse(result.Text!)!["note"]!.GetValue<int>().Should().Be(1);
     }
 
-    [Theory]
-    [InlineData("not json at all")]
-    [InlineData("{}")]
-    [InlineData("""{"c": 5}""")]
-    [InlineData("""{"command": "y"}""")]
-    [InlineData("[1]")]
-    public void Merge_SnippetWithoutServers_ReportsAnError(string snippet)
-    {
-        // Act
-        var result = McpConfigEditor.Merge(Original, snippet);
-
-        // Assert
-        result.Text.Should().BeNull();
-        result.Error.Should().NotBeNullOrWhiteSpace();
-    }
-
     [Fact]
-    public void Merge_FileThatIsNotJson_ReportsAnErrorInsteadOfOverwritingIt()
+    public void Upsert_FileThatIsNotJson_ReportsAnErrorInsteadOfOverwritingIt()
     {
+        // Arrange
+        var server = new McpServerConfig("c", McpTransport.Stdio, "y", [], new Dictionary<string, string>(), null, null, new Dictionary<string, string>(), false);
+
         // Act
-        var result = McpConfigEditor.Merge("{ broken", """{"c": {"command": "y"}}""");
+        var result = McpConfigEditor.Upsert("{ broken", server);
 
         // Assert
         result.Text.Should().BeNull();
         result.Error.Should().Contain("Fix the file first");
+    }
+
+    [Fact]
+    public void Remove_ExistingServer_TakesItOutAndKeepsTheRest()
+    {
+        // Act
+        var text = McpConfigEditor.Remove(Original, "a");
+
+        // Assert
+        McpConfigParser.Parse(text!).Servers.Select(s => s.Name).Should().Equal("b");
+        JsonNode.Parse(text!)!["note"]!.GetValue<string>().Should().Be("keep");
+    }
+
+    [Theory]
+    [InlineData("{ broken", "a")]
+    [InlineData("""{"mcpServers": {"a": {"command": "x"}}}""", "missing")]
+    public void Remove_NoSuchServerOrBadFile_ReturnsNull(string json, string server)
+    {
+        // Act
+        var text = McpConfigEditor.Remove(json, server);
+
+        // Assert
+        text.Should().BeNull();
     }
 }

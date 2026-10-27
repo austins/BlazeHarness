@@ -4,6 +4,7 @@
 @implements IDisposable
 @inject McpConfigFile File
 @inject McpManager Manager
+@inject McpServerEditor Editor
 @inject PermissionDefaults Defaults
 @inject ToastService Toasts
 
@@ -24,10 +25,18 @@
     }
 
     <section class="card stack" aria-labelledby="servers-heading">
-        <h2 id="servers-heading">Servers</h2>
-        @if (_statuses.Count == 0)
+        <div class="row row-spread">
+            <h2 id="servers-heading">Servers</h2>
+            <button type="button" class="btn" disabled="@(_draft is not null)" @onclick="StartNew">＋ Add server</button>
+        </div>
+        @if (_draft is { IsNew: true })
         {
-            <p class="muted">No servers yet. Add one below.</p>
+            <McpServerForm Draft="_draft" OnSaved="Saved" OnCancel="CancelEdit" />
+            <hr />
+        }
+        @if (_statuses.Count == 0 && _draft is null)
+        {
+            <p class="muted">No servers yet. Add one with the button above.</p>
         }
         @foreach (var status in _statuses)
         {
@@ -39,6 +48,10 @@
                     <span class="badge @StateBadge(status)">@StateText(status)</span>
                     <span class="muted">@TransportText(server)</span>
                 </div>
+                @if (_draft is { IsNew: false } editing && editing.Name == server.Name)
+                {
+                    <McpServerForm Draft="_draft" OnSaved="Saved" OnCancel="CancelEdit" />
+                }
                 @if (status.Error is { } error)
                 {
                     <p class="error-text">@error</p>
@@ -65,6 +78,8 @@
                         @(_busy.Contains(server.Name) ? "Connecting…" : "Test connection")
                     </button>
                     <button type="button" class="btn btn-sm" disabled="@(status.State is McpServerState.Stopped)" @onclick="() => StopAsync(server.Name)">Stop</button>
+                    <button type="button" class="btn btn-sm" disabled="@(_draft is not null)" @onclick="() => EditAsync(server)">Edit</button>
+                    <button type="button" class="btn btn-sm btn-ghost btn-danger" aria-label="Remove @server.Name" @onclick="() => _removing = server.Name">Remove</button>
                 </div>
                 @if (status.State is McpServerState.Connected)
                 {
@@ -91,21 +106,8 @@
         <p class="hint">Trusted servers skip the question for tools that say they only read. Everything else always asks first, unless a chat is set to Never ask.</p>
     </section>
 
-    <section class="card stack" aria-labelledby="import-heading">
-        <h2 id="import-heading">Add a server</h2>
-        <div class="field">
-            <label for="mcp-snippet">Paste its settings</label>
-            <textarea id="mcp-snippet" class="input mono" rows="6" spellcheck="false" @bind="_snippet" @bind:event="oninput"
-                      placeholder='{"mcpServers": {"name": {"command": "npx", "args": ["-y", "some-server"]}}}'></textarea>
-            <span class="hint">Use the same format as other tools: a whole file, or just the servers. A server with the same name is replaced.</span>
-        </div>
-        <div class="row">
-            <button type="button" class="btn" disabled="@string.IsNullOrWhiteSpace(_snippet)" @onclick="ImportAsync">＋ Add</button>
-        </div>
-    </section>
-
-    <section class="card stack" aria-labelledby="file-heading">
-        <h2 id="file-heading">The file</h2>
+    <details class="card stack" open="@(_problems.Count > 0)">
+        <summary class="label">Advanced: edit mcp.json</summary>
         <div class="field">
             <label for="mcp-text">mcp.json</label>
             <textarea id="mcp-text" class="input mono" rows="14" spellcheck="false" aria-invalid="@(_problems.Count > 0 ? "true" : null)" aria-describedby="@(_problems.Count > 0 ? "mcp-problems" : null)" @bind="_text" @bind:event="oninput"></textarea>
@@ -124,16 +126,27 @@
             <button type="button" class="btn btn-primary" disabled="@(!Dirty || _saving)" @onclick="SaveAsync">Save</button>
             <button type="button" class="btn" disabled="@(!Dirty)" @onclick="Revert">Revert</button>
         </div>
-    </section>
+    </details>
 </div>
+
+<Dialog Title="Remove server?" Open="_removing is not null" OnClose="() => _removing = null">
+    <ChildContent>
+        <p>This removes <strong>@_removing</strong> from the file and deletes its stored secrets.</p>
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn" @onclick="() => _removing = null">Keep</button>
+        <button type="button" class="btn btn-primary" @onclick="RemoveAsync">Remove</button>
+    </Footer>
+</Dialog>
 
 @code {
     private readonly HashSet<string> _busy = new(StringComparer.Ordinal);
     private IReadOnlyList<McpServerStatus> _statuses = [];
     private IReadOnlyList<string> _problems = [];
+    private McpServerDraft? _draft;
+    private string? _removing;
     private string _text = string.Empty;
     private string _loaded = string.Empty;
-    private string _snippet = string.Empty;
     private string? _status;
     private bool _statusIsError;
     private bool _saving;
@@ -248,35 +261,55 @@
         _statuses = Manager.Statuses();
     }
 
-    private async Task ImportAsync()
+    private void StartNew()
     {
-        var merged = McpConfigEditor.Merge(Dirty ? _text : File.Text, _snippet);
-        if (merged.Text is null)
+        _draft = McpServerEditor.NewDraft();
+        _status = null;
+    }
+
+    private async Task EditAsync(McpServerConfig server)
+    {
+        _draft = await Editor.OpenAsync(server);
+        _status = null;
+    }
+
+    private void CancelEdit() => _draft = null;
+
+    private void Saved()
+    {
+        var name = _draft?.Name.Trim();
+        var wasDirty = Dirty;
+        _draft = null;
+        _loaded = _text = File.Text;
+        _problems = [];
+        _statuses = Manager.Statuses();
+        Say(wasDirty ? $"Saved {name}. Unsaved changes in the file editor were discarded." : $"Saved {name}.");
+    }
+
+    private async Task RemoveAsync()
+    {
+        var name = _removing;
+        _removing = null;
+        if (name is null)
         {
-            Say(merged.Error ?? "The servers could not be added.", error: true);
             return;
         }
 
-        McpParseResult? saved = null;
-        if (!await Toasts.TrySaveAsync(async () => saved = await File.SaveAsync(merged.Text), FileFailure))
+        var removed = false;
+        if (!await Toasts.TrySaveAsync(async () => removed = await Editor.RemoveAsync(name), FileFailure))
         {
             return;
         }
 
-        if (saved!.Errors.Count > 0)
+        if (!removed)
         {
-            _text = merged.Text;
-            _problems = saved.Errors;
-            Say("The file has problems, so it was not saved. Fix them below, then save.", error: true);
+            Say($"Could not remove {name}. Fix the file first.", error: true);
             return;
         }
 
         _loaded = _text = File.Text;
-        _problems = [];
-        _snippet = string.Empty;
-        Say(merged.Replaced.Count == 0
-            ? $"Added {string.Join(", ", merged.Added)}."
-            : $"Added {string.Join(", ", merged.Added.Concat(merged.Replaced))}, replacing what was there under the same name.");
+        _statuses = Manager.Statuses();
+        Say($"Removed {name}.");
     }
 
     private async Task SaveAsync()

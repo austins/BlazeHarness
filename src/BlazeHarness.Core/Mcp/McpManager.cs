@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Secrets;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
@@ -23,6 +24,7 @@ public sealed partial class McpManager : IAsyncDisposable
     private readonly TimeProvider _time;
     private readonly TimeSpan _connectTimeout;
     private readonly PermissionDefaults? _permissions;
+    private readonly ISecretStore? _secrets;
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _reconcile = new(1, 1);
@@ -39,6 +41,7 @@ public sealed partial class McpManager : IAsyncDisposable
     /// <param name="time">The clock, used to decide when to retry a failed server; defaults to the system clock.</param>
     /// <param name="connectTimeout">How long a server may take to start; defaults to one minute, which leaves room for a first download.</param>
     /// <param name="permissions">Where trust in a server is kept, so it can be withdrawn when the server's settings change; when null, trust is left alone.</param>
+    /// <param name="secrets">Where the secrets of a server's environment and headers are kept; when null, only environment variables fill in a reference.</param>
     public McpManager(
         McpConfigFile config,
         IMcpConnector connector,
@@ -46,7 +49,8 @@ public sealed partial class McpManager : IAsyncDisposable
         Func<string, string?>? environment = null,
         TimeProvider? time = null,
         TimeSpan? connectTimeout = null,
-        PermissionDefaults? permissions = null)
+        PermissionDefaults? permissions = null,
+        ISecretStore? secrets = null)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(connector);
@@ -58,6 +62,7 @@ public sealed partial class McpManager : IAsyncDisposable
         _time = time ?? TimeProvider.System;
         _connectTimeout = connectTimeout ?? TimeSpan.FromMinutes(1);
         _permissions = permissions;
+        _secrets = secrets;
         _known = _config.Parsed.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
         _config.Changed += OnConfigChanged;
     }
@@ -359,7 +364,19 @@ public sealed partial class McpManager : IAsyncDisposable
 
         RaiseChanged();
 
-        if (!config.TryExpand(_environment, out var expanded, out var problem))
+        Func<string, string?> lookup;
+        try
+        {
+            lookup = await LookupAsync(config, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogSecretsFailed(ex.GetType().Name, config.Name);
+            Fail(entry, "The secret store could not be read.");
+            return;
+        }
+
+        if (!config.TryExpand(lookup, out var expanded, out var problem))
         {
             Fail(entry, problem);
             return;
@@ -512,6 +529,26 @@ public sealed partial class McpManager : IAsyncDisposable
         }
     }
 
+    private async Task<Func<string, string?>> LookupAsync(McpServerConfig config, CancellationToken cancellationToken)
+    {
+        if (_secrets is null)
+        {
+            return _environment;
+        }
+
+        // A variable that is set in the environment wins over the secret store.
+        Dictionary<string, string> found = new(StringComparer.Ordinal);
+        foreach (var variable in McpSecretVariables.Referenced(config).Where(v => _environment(v) is null))
+        {
+            if (await _secrets.GetAsync(McpSecretVariables.StoreKey(variable), cancellationToken).ConfigureAwait(false) is { } value)
+            {
+                found[variable] = value;
+            }
+        }
+
+        return name => _environment(name) ?? found.GetValueOrDefault(name);
+    }
+
     private void OnConfigChanged(object? sender, EventArgs e)
     {
         _ = ReconcileAsync();
@@ -521,6 +558,9 @@ public sealed partial class McpManager : IAsyncDisposable
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not connect to the MCP server {Server}.")]
     private partial void LogConnectFailed(Exception ex, string server);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not read the secrets of the MCP server {Server}: {ExceptionType}.")]
+    private partial void LogSecretsFailed(string exceptionType, string server);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "The connection to the MCP server {Server} ended with an error.")]
     private partial void LogConnectionEnded(Exception ex, string server);

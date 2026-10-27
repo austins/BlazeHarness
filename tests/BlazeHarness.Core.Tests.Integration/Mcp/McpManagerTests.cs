@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Secrets;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -189,6 +190,42 @@ public sealed class McpManagerTests : IAsyncLifetime
         seen!.Env["KEY"].Should().Be("s3cret");
         _file.Text.Should().Contain("${ALPHA_KEY}").And.NotContain("s3cret");
         _sut.Statuses().Single().Config.Env["KEY"].Should().Be("${ALPHA_KEY}");
+    }
+
+    [Fact]
+    public async Task ToolsAsync_ServersOwnSecretReference_IsFilledFromTheSecretStore()
+    {
+        // Arrange
+        using var secrets = new FileSecretStore(Path.Combine(_temp.Root, "secrets.json"));
+        await secrets.SetAsync("mcp:MCP_ALPHA_KEY", "stored", TestContext.Current.CancellationToken);
+        await _file.SaveAsync("""{"mcpServers": {"alpha": {"command": "a", "env": {"KEY": "${MCP_ALPHA_KEY}"}}}}""", TestContext.Current.CancellationToken);
+        await using var sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, ConnectTimeout, _permissions, secrets);
+        McpServerConfig? seen = null;
+        _connector.ConnectAsync(Arg.Do<McpServerConfig>(c => seen = c), Arg.Any<CancellationToken>()).Returns(_ => Connection());
+
+        // Act
+        await sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
+
+        // Assert
+        seen!.Env["KEY"].Should().Be("stored");
+    }
+
+    [Fact]
+    public async Task ToolsAsync_AnotherServersSecretReference_IsNotFilledFromTheSecretStore()
+    {
+        // Arrange
+        using var secrets = new FileSecretStore(Path.Combine(_temp.Root, "secrets.json"));
+        await secrets.SetAsync("mcp:MCP_BETA_KEY", "stored", TestContext.Current.CancellationToken);
+        await _file.SaveAsync("""{"mcpServers": {"alpha": {"command": "a", "env": {"KEY": "${MCP_BETA_KEY}"}}}}""", TestContext.Current.CancellationToken);
+        await using var sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, ConnectTimeout, _permissions, secrets);
+
+        // Act
+        var tools = await sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
+
+        // Assert
+        tools.Should().BeEmpty();
+        sut.Statuses().Single().Error.Should().Contain("MCP_BETA_KEY");
+        await _connector.DidNotReceive().ConnectAsync(Arg.Any<McpServerConfig>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

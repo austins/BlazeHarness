@@ -53,31 +53,19 @@ public static class McpConfigEditor
     }
 
     /// <summary>
-    /// Add the servers of a pasted snippet to the text of the file.
+    /// Add a server to the text of the file, or change the one with the same name.
     /// </summary>
     /// <remarks>
-    /// The snippet may be a whole <c>mcp.json</c> (with <c>mcpServers</c> or <c>servers</c>), or just a map of server names to their settings,
-    /// with or without the outer braces. A server with a name the file already uses replaces that server.
+    /// A server that is already in the file keeps the fields this editor doesn't know, such as <c>disabled</c>. Fields that don't apply to
+    /// the server's transport are removed.
     /// </remarks>
     /// <param name="json">The file's text, which may be empty.</param>
-    /// <param name="snippet">The pasted text.</param>
-    /// <returns>The new text and the names that were added and replaced, or an error to show the user.</returns>
-    public static McpMergeResult Merge(string json, string snippet)
+    /// <param name="server">The server's settings, with values as they are to be written.</param>
+    /// <returns>The new text and whether the server was added or replaced, or an error to show the user.</returns>
+    public static McpMergeResult Upsert(string json, McpServerConfig server)
     {
         ArgumentNullException.ThrowIfNull(json);
-        ArgumentNullException.ThrowIfNull(snippet);
-
-        var pasted = ParseObject(snippet) ?? ParseObject("{" + snippet.Trim().TrimEnd(',') + "}");
-        if (pasted is null)
-        {
-            return McpMergeResult.Failed("The pasted text is not valid JSON.");
-        }
-
-        var incoming = (pasted["mcpServers"] ?? pasted["servers"]) as JsonObject ?? pasted;
-        if (incoming.Count == 0 || incoming.Any(pair => pair.Value is not JsonObject))
-        {
-            return McpMergeResult.Failed("The pasted text has no servers. Each server needs a name and an object with its settings.");
-        }
+        ArgumentNullException.ThrowIfNull(server);
 
         JsonObject top;
         if (string.IsNullOrWhiteSpace(json))
@@ -90,7 +78,7 @@ public static class McpConfigEditor
         }
         else
         {
-            return McpMergeResult.Failed("The file is not valid JSON, so the servers can't be added to it. Fix the file first.");
+            return McpMergeResult.Failed("The file is not valid JSON, so the server can't be saved to it. Fix the file first.");
         }
 
         if ((top["mcpServers"] ?? top["servers"]) is not JsonObject target)
@@ -99,15 +87,92 @@ public static class McpConfigEditor
             top["mcpServers"] = target;
         }
 
-        List<string> added = [];
-        List<string> replaced = [];
-        foreach (var (name, server) in incoming.ToList())
+        var found = target[server.Name] is JsonObject;
+        var entry = target[server.Name] as JsonObject ?? [];
+        if (server.Transport == McpTransport.Stdio)
         {
-            (target.ContainsKey(name) ? replaced : added).Add(name);
-            target[name] = server!.DeepClone();
+            entry.Remove("type");
+            entry.Remove("url");
+            entry.Remove("headers");
+            entry["command"] = server.Command;
+            SetList(entry, "args", server.Args);
+            SetMap(entry, "env", server.Env);
+            SetText(entry, "cwd", server.Cwd);
+        }
+        else
+        {
+            entry.Remove("command");
+            entry.Remove("args");
+            entry.Remove("env");
+            entry.Remove("cwd");
+            entry["type"] = server.Transport == McpTransport.Sse ? "sse" : "http";
+            entry["url"] = server.Url;
+            SetMap(entry, "headers", server.Headers);
         }
 
-        return new McpMergeResult(top.ToJsonString(Indented), added, replaced, null);
+        target[server.Name] = entry;
+        return new McpMergeResult(top.ToJsonString(Indented), found ? [] : [server.Name], found ? [server.Name] : [], null);
+    }
+
+    /// <summary>
+    /// Take a server out of the text of the file.
+    /// </summary>
+    /// <param name="json">The file's text.</param>
+    /// <param name="server">The name of the server.</param>
+    /// <returns>The new text, or null when the text is not valid or has no such server.</returns>
+    public static string? Remove(string json, string server)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        ArgumentNullException.ThrowIfNull(server);
+
+        if (ParseObject(json) is not { } top || ((top["mcpServers"] ?? top["servers"]) as JsonObject) is not { } servers || !servers.Remove(server))
+        {
+            return null;
+        }
+
+        return top.ToJsonString(Indented);
+    }
+
+    private static void SetText(JsonObject entry, string key, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            entry.Remove(key);
+        }
+        else
+        {
+            entry[key] = value;
+        }
+    }
+
+    private static void SetList(JsonObject entry, string key, IReadOnlyList<string> values)
+    {
+        if (values.Count == 0)
+        {
+            entry.Remove(key);
+        }
+        else
+        {
+            entry[key] = new JsonArray([.. values.Select(v => (JsonNode?)JsonValue.Create(v))]);
+        }
+    }
+
+    private static void SetMap(JsonObject entry, string key, IReadOnlyDictionary<string, string> values)
+    {
+        if (values.Count == 0)
+        {
+            entry.Remove(key);
+        }
+        else
+        {
+            var map = new JsonObject();
+            foreach (var (name, value) in values)
+            {
+                map[name] = value;
+            }
+
+            entry[key] = map;
+        }
     }
 
     private static JsonObject? ParseObject(string json)

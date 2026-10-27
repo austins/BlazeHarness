@@ -47,6 +47,7 @@ builder.Services.AddSingleton<IShellSandbox>(sp => new MxcShellSandbox(() => sp.
 builder.Services.AddSingleton(sp => new McpConfigFile(paths.McpFile, sp.GetRequiredService<ILogger<McpConfigFile>>(), time: sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<IMcpConnector, SdkMcpConnector>();
 builder.Services.AddSingleton<McpManager>();
+builder.Services.AddSingleton<McpServerEditor>();
 builder.Services.AddSingleton(sp => new SkillCatalog(paths, sp.GetRequiredService<JsonFileStore<AppConfig>>(), sp.GetRequiredService<ILogger<SkillCatalog>>(), time: sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<SessionStore>(),

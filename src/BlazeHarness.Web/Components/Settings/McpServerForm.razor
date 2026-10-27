@@ -1,0 +1,142 @@
+@using BlazeHarness.Core.Mcp
+@using System.Collections.ObjectModel
+@inject McpServerEditor Editor
+
+<form class="stack" @onsubmit="SaveAsync" autocomplete="off" novalidate aria-label="@(Draft.IsNew ? "Add a server" : "Edit " + Draft.Name)">
+    <h3>@(Draft.IsNew ? "Add a server" : "Edit " + Draft.Name)</h3>
+
+    <div class="form-grid">
+        <div class="field">
+            <label for="mcp-name">Name</label>
+            <input id="mcp-name" class="input mono" @bind="Draft.Name" @bind:event="oninput" disabled="@(!Draft.IsNew)" placeholder="e.g. github" />
+            <span class="hint">Letters, digits, - and _. It prefixes the names of the server's tools.</span>
+        </div>
+        <div class="field">
+            <label for="mcp-transport">Kind</label>
+            <select id="mcp-transport" class="select" @bind="Draft.Transport">
+                <option value="@McpTransport.Stdio">Local program</option>
+                <option value="@McpTransport.Http">Remote (HTTP)</option>
+                <option value="@McpTransport.Sse">Remote (SSE)</option>
+            </select>
+        </div>
+    </div>
+
+    @if (Draft.Transport == McpTransport.Stdio)
+    {
+        <div class="form-grid">
+            <div class="field">
+                <label for="mcp-command">Command</label>
+                <input id="mcp-command" class="input mono" @bind="Draft.Command" @bind:event="oninput" placeholder="npx" spellcheck="false" />
+            </div>
+            <div class="field">
+                <label for="mcp-cwd">Working folder <span class="muted">(optional)</span></label>
+                <input id="mcp-cwd" class="input mono" @bind="Draft.Cwd" @bind:event="oninput" spellcheck="false" />
+            </div>
+        </div>
+        <div class="field">
+            <label for="mcp-args">Arguments <span class="muted">(one per line)</span></label>
+            <textarea id="mcp-args" class="input mono" rows="3" @bind="Draft.ArgsText" @bind:event="oninput" spellcheck="false" placeholder="@ArgsPlaceholder"></textarea>
+        </div>
+        @Entries(Draft.Env, "Environment variables", "Add variable", "Variable name")
+    }
+    else
+    {
+        <div class="field">
+            <label for="mcp-url">Address</label>
+            <input id="mcp-url" class="input mono" @bind="Draft.Url" @bind:event="oninput" inputmode="url" spellcheck="false" placeholder="https://example.com/mcp" />
+        </div>
+        @Entries(Draft.Headers, "Headers", "Add header", "Header name")
+    }
+
+    <p class="hint">
+        Mark a value as secret to keep it in @Editor.SecretStoreName@(Editor.SecretStoreIsSecure ? "" : ", which is not encrypted,") instead of in the file.
+        The file then holds a <code class="mono">${MCP_…}</code> reference. A variable of that name set in the environment takes its place.
+    </p>
+
+    @if (_problems.Count > 0)
+    {
+        <div class="alert alert-error" role="alert">
+            <strong>Fix these before saving:</strong>
+            <ul>@foreach (var problem in _problems) { <li>@problem</li> }</ul>
+        </div>
+    }
+
+    <div class="row">
+        <button type="submit" class="btn btn-primary" disabled="@_saving">Save server</button>
+        <button type="button" class="btn btn-ghost" @onclick="OnCancel">Cancel</button>
+    </div>
+</form>
+
+@code {
+    private const string ArgsPlaceholder = "-y\n@modelcontextprotocol/server-github";
+
+    private IReadOnlyList<string> _problems = [];
+    private bool _saving;
+
+    /// <summary>
+    /// Gets or sets the settings being edited.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public McpServerDraft Draft { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets the callback for the server being saved.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnSaved { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user giving up.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private RenderFragment Entries(Collection<McpDraftEntry> entries, string title, string addLabel, string nameLabel) => __builder =>
+    {
+        <div class="stack">
+            <div class="row row-spread">
+                <span class="label">@title</span>
+                <button type="button" class="btn btn-sm" @onclick="() => entries.Add(new McpDraftEntry())">＋ @addLabel</button>
+            </div>
+            @foreach (var entry in entries)
+            {
+                <div class="input-group entry-row" @key="entry">
+                    <input class="input mono" aria-label="@nameLabel" placeholder="Name" spellcheck="false" @bind="entry.Name" @bind:event="oninput" />
+                    @if (entry.Secret)
+                    {
+                        <SecretInput Value="@entry.Value" ValueChanged="v => entry.Value = v" HasStoredKey="entry.HasStoredSecret" Placeholder="Secret value" />
+                    }
+                    else
+                    {
+                        <input class="input mono" aria-label="Value" placeholder="Value" spellcheck="false" @bind="entry.Value" @bind:event="oninput" />
+                    }
+                    <label class="check"><input type="checkbox" checked="@entry.Secret" @onchange="e => ToggleSecret(entry, (bool)e.Value!)" /> <span>Secret</span></label>
+                    <button type="button" class="btn btn-ghost btn-danger" aria-label="Remove @addLabel.Replace("Add ", string.Empty, StringComparison.Ordinal)" @onclick="() => entries.Remove(entry)"><Icon Name="close" /></button>
+                </div>
+            }
+        </div>
+    };
+
+    private static void ToggleSecret(McpDraftEntry entry, bool secret) => entry.Secret = secret;
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try
+        {
+            _problems = await Editor.SaveAsync(Draft);
+            if (_problems.Count == 0)
+            {
+                await OnSaved.InvokeAsync();
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            _problems = ["The server could not be saved because the file or the secret store could not be written."];
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

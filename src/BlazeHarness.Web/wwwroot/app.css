@@ -288,6 +288,10 @@ kbd {
 .input:disabled, .select:disabled { opacity: 0.55; }
 .input-group { display: flex; gap: var(--space-2); }
 .input-group .input { flex: 1; }
+.entry-row { align-items: center; }
+.entry-row > .input { flex: 1 1 0; min-width: 0; }
+.entry-row > .secret-field { flex: 1.5 1 0; min-width: 0; }
+.entry-row .check { white-space: nowrap; }
 .check { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer; }
 .check input { accent-color: var(--accent); width: 1rem; height: 1rem; }
 .error-text { color: var(--danger); font-size: var(--text-xs); }

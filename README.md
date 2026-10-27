@@ -38,7 +38,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 * Persistent history in plain, human-readable files, with context compaction for long conversations. By default the model writes the summary; Settings > Context can switch to deterministic extraction (no model request), which lists the requests, changed and read files, and commands, and relies on `search_chat` for detail.
 * Diffs, syntax highlighting, and find in the chat, with smooth scrolling in very long chats.
 * Export and import of sessions.
-* MCP servers, added from a standard `mcp.json` and enabled globally or per session.
+* MCP servers, added and edited in a form (secrets go in the OS keychain) or in a standard `mcp.json`, and enabled globally or per session.
 * Skills, loaded on demand from `SKILL.md` folders in `~/.blazeharness/skills`, `~/.agents/skills`, and a folder's own `.agents/skills`.
 
 ## Planned and ideas
@@ -53,7 +53,7 @@ Not built yet, and not promised:
 * Subagents that work in their own context and return a summary.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
-* Smaller additions: a command palette, a richer MCP editor with per-tool toggles, dynamic MCP tool loading, a sandbox network allow-list, message search across all folders, a duplicate-provider action, and a per-folder `.mcp.json`.
+* Smaller additions: a command palette, per-tool MCP toggles, dynamic MCP tool loading, a sandbox network allow-list, message search across all folders, a duplicate-provider action, and a per-folder `.mcp.json`.
 
 ## Not goals
 
