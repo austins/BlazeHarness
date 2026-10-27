@@ -1,5 +1,6 @@
 @using System.Globalization
 @using System.Text.Json
+@using BlazeHarness.Core.Mcp
 @using BlazeHarness.Core.Permissions
 @using BlazeHarness.Web.Hosting
 
@@ -7,7 +8,15 @@
     <button type="button" class="tool-head" aria-expanded="@(Open ? "true" : "false")" aria-controls="@_bodyId" @onclick="Toggle">
         <Icon Name="@(Open ? "chevron-down" : "chevron-right")" />
         <Icon Name="wrench" />
-        <span class="tool-name mono">@Call.Name</span>
+        @if (McpToolNames.TrySplit(Call.Name, out var server, out var remote))
+        {
+            <span class="tool-name mono">@remote</span>
+            <span class="badge" title="A tool from the MCP server @server. It runs outside the sandbox.">@server</span>
+        }
+        else
+        {
+            <span class="tool-name mono">@Call.Name</span>
+        }
         @if (Call.Summary.Length > 0)
         {
             <span class="tool-summary mono">@Call.Summary</span>

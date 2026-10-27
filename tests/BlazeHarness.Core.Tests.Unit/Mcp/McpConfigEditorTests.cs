@@ -69,4 +69,85 @@ public sealed class McpConfigEditorTests
         // Assert
         text.Should().BeNull();
     }
+
+    [Fact]
+    public void Merge_WholeFile_AddsNewServersAndKeepsTheRest()
+    {
+        // Act
+        var result = McpConfigEditor.Merge(Original, """{"mcpServers": {"c": {"command": "y", "args": ["--flag"]}}}""");
+
+        // Assert
+        result.Error.Should().BeNull();
+        result.Added.Should().Equal("c");
+        result.Replaced.Should().BeEmpty();
+        var root = JsonNode.Parse(result.Text!)!;
+        root["note"]!.GetValue<string>().Should().Be("keep");
+        root["mcpServers"]!["a"]!["extra"]!["deep"]!.ToJsonString().Should().Be("[1,2]");
+        McpConfigParser.Parse(result.Text!).Servers.Select(s => s.Name).Should().Equal("a", "b", "c");
+    }
+
+    [Fact]
+    public void Merge_SameName_ReplacesTheServer()
+    {
+        // Act
+        var result = McpConfigEditor.Merge(Original, """{"servers": {"b": {"command": "other"}}}""");
+
+        // Assert
+        result.Replaced.Should().Equal("b");
+        result.Added.Should().BeEmpty();
+        var b = McpConfigParser.Parse(result.Text!).Servers.Single(s => s.Name == "b");
+        b.Command.Should().Be("other");
+    }
+
+    [Theory]
+    [InlineData("""{"c": {"command": "y"}}""")]
+    [InlineData("\"c\": {\"command\": \"y\"}")]
+    [InlineData("\"c\": {\"command\": \"y\"},")]
+    public void Merge_BareMapOfServers_IsAccepted(string snippet)
+    {
+        // Act
+        var result = McpConfigEditor.Merge(string.Empty, snippet);
+
+        // Assert
+        result.Added.Should().Equal("c");
+        McpConfigParser.Parse(result.Text!).Servers.Should().ContainSingle().Which.Command.Should().Be("y");
+    }
+
+    [Fact]
+    public void Merge_FileWithoutAServerMap_CreatesOne()
+    {
+        // Act
+        var result = McpConfigEditor.Merge("""{"note": 1}""", """{"c": {"command": "y"}}""");
+
+        // Assert
+        JsonNode.Parse(result.Text!)!["mcpServers"]!["c"].Should().NotBeNull();
+        JsonNode.Parse(result.Text!)!["note"]!.GetValue<int>().Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData("not json at all")]
+    [InlineData("{}")]
+    [InlineData("""{"c": 5}""")]
+    [InlineData("""{"command": "y"}""")]
+    [InlineData("[1]")]
+    public void Merge_SnippetWithoutServers_ReportsAnError(string snippet)
+    {
+        // Act
+        var result = McpConfigEditor.Merge(Original, snippet);
+
+        // Assert
+        result.Text.Should().BeNull();
+        result.Error.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public void Merge_FileThatIsNotJson_ReportsAnErrorInsteadOfOverwritingIt()
+    {
+        // Act
+        var result = McpConfigEditor.Merge("{ broken", """{"c": {"command": "y"}}""");
+
+        // Assert
+        result.Text.Should().BeNull();
+        result.Error.Should().Contain("Fix the file first");
+    }
 }

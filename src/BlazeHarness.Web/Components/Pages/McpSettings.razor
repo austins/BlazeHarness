@@ -1,0 +1,301 @@
+@page "/settings/mcp"
+@using BlazeHarness.Core.Mcp
+@using BlazeHarness.Core.Permissions
+@implements IDisposable
+@inject McpConfigFile File
+@inject McpManager Manager
+@inject PermissionDefaults Defaults
+
+<PageTitle>MCP servers · BlazeHarness</PageTitle>
+
+<div class="page">
+    <header class="page-header">
+        <h1>MCP servers</h1>
+        <p class="muted">Servers that give the model more tools. They are listed in <code class="mono">@File.FilePath</code>, and each chat can turn them on or off for itself.</p>
+    </header>
+
+    <div class="alert alert-warning" role="note">
+        <Icon Name="alert" />
+        <span>Adding a server is like installing software. A local server runs a program on this computer with your permissions, outside the sandbox, and a remote one receives what the model sends it. Only add servers you trust.</span>
+    </div>
+
+    @if (_status is not null)
+    {
+        <div class="alert @(_statusIsError ? "alert-error" : "alert-success")" role="status">@_status</div>
+    }
+
+    <section class="card stack" aria-labelledby="servers-heading">
+        <h2 id="servers-heading">Servers</h2>
+        @if (_statuses.Count == 0)
+        {
+            <p class="muted">No servers yet. Add one below.</p>
+        }
+        @foreach (var status in _statuses)
+        {
+            var server = status.Config;
+            var literals = McpSecrets.LiteralsIn(server);
+            <div class="stack" role="group" aria-label="@server.Name">
+                <div class="row">
+                    <strong>@server.Name</strong>
+                    <span class="badge @StateBadge(status)">@StateText(status)</span>
+                    <span class="muted">@TransportText(server)</span>
+                </div>
+                @if (status.Error is { } error)
+                {
+                    <p class="error-text">@error</p>
+                }
+                @if (literals.Count > 0)
+                {
+                    <p class="alert alert-warning" role="note">
+                        <Icon Name="alert" />
+                        <span>This server has what looks like a secret written into the file: @string.Join(", ", literals). Use a <code class="mono">${NAME}</code> reference to an environment variable instead, so the secret stays out of the file.</span>
+                    </p>
+                }
+                <div class="row">
+                    <label class="check">
+                        <input type="checkbox" checked="@(!server.Disabled)" @onchange="e => SetEnabledAsync(server.Name, (bool)e.Value!)" />
+                        <span>On for new chats</span>
+                    </label>
+                    <label class="check">
+                        <input type="checkbox" checked="@Defaults.IsMcpServerTrusted(server.Name)" @onchange="e => SetTrustedAsync(server.Name, (bool)e.Value!)" />
+                        <span>Trust its read-only tools</span>
+                    </label>
+                </div>
+                <div class="row">
+                    <button type="button" class="btn btn-sm" disabled="@_busy.Contains(server.Name)" @onclick="() => TestAsync(server.Name)">
+                        @(_busy.Contains(server.Name) ? "Connecting…" : "Test connection")
+                    </button>
+                    <button type="button" class="btn btn-sm" disabled="@(status.State is McpServerState.Stopped)" @onclick="() => StopAsync(server.Name)">Stop</button>
+                </div>
+                @if (status.State is McpServerState.Connected)
+                {
+                    <p class="hint">
+                        @(status.Tools.Count == 1 ? "1 tool" : $"{status.Tools.Count} tools"),
+                        about @TokenEstimate(status) tokens of the prompt when it is on.
+                    </p>
+                    @if (status.Tools.Count > 0)
+                    {
+                        <ul class="stack">
+                            @foreach (var tool in status.Tools)
+                            {
+                                <li><code class="mono">@tool.Name</code> <span class="muted">@FirstLine(tool.Description)</span></li>
+                            }
+                        </ul>
+                    }
+                }
+            </div>
+            @if (!ReferenceEquals(status, _statuses[^1]))
+            {
+                <hr />
+            }
+        }
+        <p class="hint">Trusted servers skip the question for tools that say they only read. Everything else always asks first, unless a chat is set to Never ask.</p>
+    </section>
+
+    <section class="card stack" aria-labelledby="import-heading">
+        <h2 id="import-heading">Add a server</h2>
+        <div class="field">
+            <label for="mcp-snippet">Paste its settings</label>
+            <textarea id="mcp-snippet" class="input mono" rows="6" spellcheck="false" @bind="_snippet" @bind:event="oninput"
+                      placeholder='{"mcpServers": {"name": {"command": "npx", "args": ["-y", "some-server"]}}}'></textarea>
+            <span class="hint">Use the same format as other tools: a whole file, or just the servers. A server with the same name is replaced.</span>
+        </div>
+        <div class="row">
+            <button type="button" class="btn" disabled="@string.IsNullOrWhiteSpace(_snippet)" @onclick="ImportAsync">＋ Add</button>
+        </div>
+    </section>
+
+    <section class="card stack" aria-labelledby="file-heading">
+        <h2 id="file-heading">The file</h2>
+        <div class="field">
+            <label for="mcp-text">mcp.json</label>
+            <textarea id="mcp-text" class="input mono" rows="14" spellcheck="false" @bind="_text" @bind:event="oninput"></textarea>
+            <span class="hint">Changes made outside BlazeHarness show up here too. Turning a server on or off for a chat that is already open changes its tools, which starts that chat's prompt cache over.</span>
+        </div>
+        @foreach (var problem in _problems)
+        {
+            <p class="error-text">@problem</p>
+        }
+        <div class="row">
+            <button type="button" class="btn btn-primary" disabled="@(!Dirty || _saving)" @onclick="SaveAsync">Save</button>
+            <button type="button" class="btn" disabled="@(!Dirty)" @onclick="Revert">Revert</button>
+        </div>
+    </section>
+</div>
+
+@code {
+    private readonly HashSet<string> _busy = new(StringComparer.Ordinal);
+    private IReadOnlyList<McpServerStatus> _statuses = [];
+    private IReadOnlyList<string> _problems = [];
+    private string _text = string.Empty;
+    private string _loaded = string.Empty;
+    private string _snippet = string.Empty;
+    private string? _status;
+    private bool _statusIsError;
+    private bool _saving;
+
+    private bool Dirty => !string.Equals(_text, _loaded, StringComparison.Ordinal);
+
+    public void Dispose()
+    {
+        File.Changed -= OnFileChanged;
+        Manager.Changed -= OnManagerChanged;
+    }
+
+    protected override void OnInitialized()
+    {
+        _loaded = _text = File.Text;
+        _statuses = Manager.Statuses();
+        File.Changed += OnFileChanged;
+        Manager.Changed += OnManagerChanged;
+    }
+
+    private static string StateText(McpServerStatus status) => status.State switch
+    {
+        McpServerState.Connected => "Connected",
+        McpServerState.Connecting => "Connecting",
+        McpServerState.Failed => "Failed",
+        _ => status.Config.Disabled ? "Off" : "Not started",
+    };
+
+    private static string StateBadge(McpServerStatus status) => status.State switch
+    {
+        McpServerState.Connected => "badge-success",
+        McpServerState.Failed => "badge-warning",
+        McpServerState.Connecting => "badge-accent",
+        _ => string.Empty,
+    };
+
+    private static string TransportText(McpServerConfig server) => server.Transport switch
+    {
+        McpTransport.Stdio => $"Runs {server.Command}",
+        _ => server.Url ?? string.Empty,
+    };
+
+    private static int TokenEstimate(McpServerStatus status) => (status.PromptCharacters + 3) / 4;
+
+    private static string FirstLine(string? description)
+    {
+        var line = description?.Split('\n', 2)[0].Trim() ?? string.Empty;
+        return line.Length > 120 ? line[..120] + "…" : line;
+    }
+
+    private void OnFileChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (!Dirty)
+            {
+                _loaded = _text = File.Text;
+            }
+
+            _statuses = Manager.Statuses();
+            StateHasChanged();
+        });
+    }
+
+    private void OnManagerChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            _statuses = Manager.Statuses();
+            StateHasChanged();
+        });
+    }
+
+    private void Say(string message, bool error = false)
+    {
+        _status = message;
+        _statusIsError = error;
+    }
+
+    private async Task SetEnabledAsync(string name, bool enabled)
+    {
+        if (!await File.SetDisabledAsync(name, !enabled))
+        {
+            Say($"Could not change {name}. Fix the file first.", error: true);
+        }
+    }
+
+    private async Task SetTrustedAsync(string name, bool trusted)
+    {
+        await Defaults.SetMcpServerTrustedAsync(name, trusted);
+    }
+
+    private async Task TestAsync(string name)
+    {
+        _busy.Add(name);
+        _status = null;
+        try
+        {
+            await Manager.ReconnectAsync(name);
+        }
+        finally
+        {
+            _busy.Remove(name);
+            _statuses = Manager.Statuses();
+        }
+    }
+
+    private async Task StopAsync(string name)
+    {
+        await Manager.StopAsync(name);
+        _statuses = Manager.Statuses();
+    }
+
+    private async Task ImportAsync()
+    {
+        var merged = McpConfigEditor.Merge(Dirty ? _text : File.Text, _snippet);
+        if (merged.Text is null)
+        {
+            Say(merged.Error ?? "The servers could not be added.", error: true);
+            return;
+        }
+
+        var saved = await File.SaveAsync(merged.Text);
+        if (saved.Errors.Count > 0)
+        {
+            _text = merged.Text;
+            _problems = saved.Errors;
+            Say("The file has problems, so it was not saved. Fix them below, then save.", error: true);
+            return;
+        }
+
+        _loaded = _text = File.Text;
+        _problems = [];
+        _snippet = string.Empty;
+        Say(merged.Replaced.Count == 0
+            ? $"Added {string.Join(", ", merged.Added)}."
+            : $"Added {string.Join(", ", merged.Added.Concat(merged.Replaced))}, replacing what was there under the same name.");
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try
+        {
+            var result = await File.SaveAsync(_text);
+            _problems = result.Errors;
+            if (result.Errors.Count == 0)
+            {
+                _loaded = _text = File.Text;
+                Say("Saved.");
+            }
+            else
+            {
+                Say("The file has problems, so it was not saved.", error: true);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Revert()
+    {
+        _text = _loaded;
+        _problems = [];
+        _status = null;
+    }
+}

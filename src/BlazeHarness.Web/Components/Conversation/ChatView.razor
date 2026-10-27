@@ -32,6 +32,10 @@ else
                 <Icon Name="file" />
                 <span class="chat-context-name">Session files</span>
                 <PermissionPicker Settings="CurrentPermissions" HasFolder="false" OnChange="ChangePermissionsAsync" />
+                @if (_openId is { } mcpId)
+                {
+                    <McpPicker SessionId="@mcpId" />
+                }
                 @if (_info is not null)
                 {
                     <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
@@ -63,6 +67,10 @@ else
                     </details>
                 }
                 <PermissionPicker Settings="CurrentPermissions" OnChange="ChangePermissionsAsync" />
+                @if (_openId is { } mcpId)
+                {
+                    <McpPicker SessionId="@mcpId" />
+                }
                 @if (_info is not null)
                 {
                     <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
