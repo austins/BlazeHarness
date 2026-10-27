@@ -54,7 +54,7 @@ public sealed class PermissionEngineTests : IDisposable
     }
 
     [Fact]
-    public void Evaluate_ReadOutsideTheFolder_AsksAndKeysByFolder()
+    public void Evaluate_ReadFileOutsideTheFolder_AsksAndKeysByThatFile()
     {
         // Act
         var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
@@ -62,22 +62,49 @@ public sealed class PermissionEngineTests : IDisposable
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Ask);
         decision.AllowOutside.Should().BeTrue();
-        decision.GrantKey.Should().Be("dir:" + WorkspacePath.CanonicalRoot(_elsewhere));
+        decision.GrantKey.Should().Be("file:" + Path.Combine(WorkspacePath.CanonicalRoot(_elsewhere), "note.txt"));
     }
 
     [Fact]
-    public void Evaluate_ReadOutsideAfterGrant_AllowsThatFolderOnly()
+    public void Evaluate_ReadFileOutsideAfterGrant_AllowsThatFileOnly()
     {
         // Arrange
         var first = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
         _sut.Remember(first.GrantKey!);
 
         // Act
-        var again = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "other.txt") });
-        var elsewhere = Evaluate(new ReadFileTool(), new { path = Path.GetTempPath() });
+        var again = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
+        var sibling = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "other.txt") });
 
         // Assert
         again.Should().Be(PermissionDecision.Allow with { AllowOutside = true });
+        sibling.Verdict.Should().Be(PermissionVerdict.Ask);
+    }
+
+    [Fact]
+    public void Evaluate_ReadFolderOutside_AsksAndKeysByFolder()
+    {
+        // Act
+        var decision = Evaluate(new ListFilesTool(), new { path = _elsewhere });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Ask);
+        decision.GrantKey.Should().Be("dir:" + WorkspacePath.CanonicalRoot(_elsewhere));
+    }
+
+    [Fact]
+    public void Evaluate_ReadFolderOutsideAfterGrant_AllowsThatFolderOnly()
+    {
+        // Arrange
+        var first = Evaluate(new ListFilesTool(), new { path = _elsewhere });
+        _sut.Remember(first.GrantKey!);
+
+        // Act
+        var inside = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "other.txt") });
+        var elsewhere = Evaluate(new ListFilesTool(), new { path = Path.GetTempPath() });
+
+        // Assert
+        inside.Should().Be(PermissionDecision.Allow with { AllowOutside = true });
         elsewhere.Verdict.Should().Be(PermissionVerdict.Ask);
     }
 
@@ -335,7 +362,22 @@ public sealed class PermissionEngineTests : IDisposable
     }
 
     [Fact]
-    public void Evaluate_ShellAfterAnApprovedRead_CarriesTheApprovedFolder()
+    public void Evaluate_ShellAfterAnApprovedFolderRead_CarriesTheApprovedFolder()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        var read = Evaluate(new ListFilesTool(), new { path = _elsewhere });
+        _sut.Remember(read.GrantKey!);
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "cat note.txt" });
+
+        // Assert
+        decision.ShellReadFolders.Should().ContainSingle().Which.Should().Be(WorkspacePath.CanonicalRoot(_elsewhere));
+    }
+
+    [Fact]
+    public void Evaluate_ShellAfterAnApprovedFileRead_CarriesNoFolder()
     {
         // Arrange
         _sut.Sandbox = Available;
@@ -346,7 +388,7 @@ public sealed class PermissionEngineTests : IDisposable
         var decision = Evaluate(NewShell(), new { command = "cat note.txt" });
 
         // Assert
-        decision.ShellReadFolders.Should().ContainSingle().Which.Should().Be(WorkspacePath.CanonicalRoot(_elsewhere));
+        decision.ShellReadFolders.Should().BeEmpty();
     }
 
     [Fact]
@@ -397,6 +439,21 @@ public sealed class PermissionEngineTests : IDisposable
         decision.Reason.Should().Contain("every time");
         decision.GrantKey.Should().BeNull();
         decision.Shell.Should().Be(ShellMode.Writable);
+    }
+
+    [Fact]
+    public void Evaluate_ForbiddenShellCommandWithAllowRule_StillAsks()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        _sut.Rules = () => [new PermissionRule(RuleTarget.ShellCommand, PermissionVerdict.Allow, "rm *")];
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "rm -rf build" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Ask);
+        decision.GrantKey.Should().BeNull();
     }
 
     [Fact]

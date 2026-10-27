@@ -179,6 +179,20 @@ public sealed class PermissionEngineMcpTests
     }
 
     [Fact]
+    public void Evaluate_AllowRuleInAReadOnlySession_StillAsks()
+    {
+        // Arrange
+        _sut.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst);
+        _sut.Rules = () => [new PermissionRule(RuleTarget.McpTool, PermissionVerdict.Allow, "files/*")];
+
+        // Act
+        var decision = Evaluate(Tool("files", "read"));
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Ask);
+    }
+
+    [Fact]
     public void Evaluate_ShellAndFileRules_DoNotApplyToMcpTools()
     {
         // Arrange

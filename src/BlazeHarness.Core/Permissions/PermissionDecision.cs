@@ -10,6 +10,7 @@ namespace BlazeHarness.Core.Permissions;
 /// <param name="GrantKey">For <see cref="PermissionVerdict.Ask"/> the key that remembers an approval for the rest of the session, or null when it can only be given once.</param>
 /// <param name="AllowOutside">True when the call uses a path outside the working folder and must run with a context that accepts it.</param>
 /// <param name="Shell">For a shell command, how far it may reach.</param>
+/// <param name="Sticky">True when an allow rule must not turn this <see cref="PermissionVerdict.Ask"/> into an allow, because the question is a safety rule.</param>
 /// <param name="ShellReadFolders">For a shell command, the folders outside the working folder it may also read, from earlier approvals.</param>
 public sealed record PermissionDecision(
     PermissionVerdict Verdict,
@@ -17,7 +18,8 @@ public sealed record PermissionDecision(
     string? GrantKey = null,
     bool AllowOutside = false,
     ShellMode Shell = ShellMode.Writable,
-    IReadOnlyList<string>? ShellReadFolders = null)
+    IReadOnlyList<string>? ShellReadFolders = null,
+    bool Sticky = false)
 {
     /// <summary>
     /// Gets a decision that lets the call run.

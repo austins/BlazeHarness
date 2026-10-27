@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tools;
@@ -33,6 +34,9 @@ namespace BlazeHarness.Core.Permissions;
 /// </remarks>
 public sealed class PermissionEngine
 {
+    private const string FolderGrantPrefix = "dir:";
+    private const string FileGrantPrefix = "file:";
+
     private readonly object _gate = new();
     private readonly ConcurrentDictionary<string, byte> _grants = new(StringComparer.Ordinal);
     private PermissionSettings _settings = PermissionSettings.Default;
@@ -165,7 +169,7 @@ public sealed class PermissionEngine
             };
         }
 
-        return decision.Verdict == PermissionVerdict.Ask ? PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell } : decision;
+        return decision is { Verdict: PermissionVerdict.Ask, Sticky: false } ? PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell } : decision;
     }
 
     private static JsonDocument Parse(string json)
@@ -186,8 +190,6 @@ public sealed class PermissionEngine
             ? value.GetString()
             : null;
     }
-
-    private static string FolderOf(string fullPath) => Directory.Exists(fullPath) ? fullPath : Path.GetDirectoryName(fullPath) ?? fullPath;
 
     private PermissionDecision ApplyRules(ITool tool, JsonElement arguments, ToolContext context, PermissionDecision decision)
     {
@@ -229,7 +231,7 @@ public sealed class PermissionEngine
         {
             return settings.Approvals == ApprovalMode.NeverAsk
                 ? new PermissionDecision(PermissionVerdict.Deny, "This session is Read only, and an MCP tool can change things the harness can't see. Say what you wanted to do, and the user can change the access level.")
-                : AskMcp(tool);
+                : AskMcp(tool) with { Sticky = true };
         }
 
         if (settings.Approvals == ApprovalMode.NeverAsk)
@@ -270,7 +272,7 @@ public sealed class PermissionEngine
         var mode = settings.Access == AccessLevel.ReadOnly ? ShellMode.ReadOnly : ShellMode.Writable;
         if (Forbidden.Find(Text(arguments, "command") ?? string.Empty) is { } forbidden)
         {
-            return new PermissionDecision(PermissionVerdict.Ask, $"{forbidden.Risk} This kind of command needs your approval every time.", GrantKey: null, Shell: mode);
+            return new PermissionDecision(PermissionVerdict.Ask, $"{forbidden.Risk} This kind of command needs your approval every time.", GrantKey: null, Shell: mode, Sticky: true);
         }
 
         return settings.Approvals == ApprovalMode.AskFirst
@@ -319,7 +321,7 @@ public sealed class PermissionEngine
         return new PermissionDecision(
             PermissionVerdict.Ask,
             string.Create(CultureInfo.InvariantCulture, $"Reads '{outside}', which is outside the working folder."),
-            "dir:" + FolderOf(outside),
+            (Directory.Exists(outside) ? FolderGrantPrefix : FileGrantPrefix) + outside,
             AllowOutside: true);
     }
 
@@ -349,11 +351,26 @@ public sealed class PermissionEngine
 
     private List<string> GrantedFolders()
     {
-        return [.. _grants.Keys.Where(key => key.StartsWith("dir:", StringComparison.Ordinal)).Select(key => key["dir:".Length..])];
+        return [.. _grants.Keys.Where(IsFolderGrant).Select(key => key[FolderGrantPrefix.Length..])];
     }
+
+    private static bool IsFolderGrant(string key) => key.StartsWith(FolderGrantPrefix, StringComparison.Ordinal);
 
     private bool GrantCovers(string fullPath)
     {
-        return _grants.Keys.Any(key => key.StartsWith("dir:", StringComparison.Ordinal) && WorkspacePath.IsInside(key["dir:".Length..], fullPath));
+        foreach (var key in _grants.Keys)
+        {
+            if (key.StartsWith(FolderGrantPrefix, StringComparison.Ordinal) && WorkspacePath.IsInside(key[FolderGrantPrefix.Length..], fullPath))
+            {
+                return true;
+            }
+
+            if (key.StartsWith(FileGrantPrefix, StringComparison.Ordinal) && FolderPaths.Comparer.Equals(key[FileGrantPrefix.Length..], fullPath))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
