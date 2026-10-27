@@ -37,12 +37,52 @@
         </label>
         <p class="hint">Turn this off to hide both options. A chat that already has one of them then behaves as if it did not. Protected folders such as your SSH keys stay blocked either way.</p>
     </section>
+
+    <section class="card stack" aria-labelledby="rules-heading">
+        <h2 id="rules-heading">Rules</h2>
+        <p class="hint">
+            A rule that refuses always wins. Otherwise the last matching rule decides. An allow rule skips the question but never gets a call out of the sandbox or into a protected folder.
+            Use * for any text and ? for one character. In a path, * stays inside one folder and ** crosses folders.
+        </p>
+        @if (_rules.Count == 0)
+        {
+            <p class="muted">No rules yet.</p>
+        }
+        @for (var i = 0; i < _rules.Count; i++)
+        {
+            var index = i;
+            var rule = _rules[i];
+            <div class="row">
+                <span>@TargetLabel(rule.Target)</span>
+                <span>@ActionLabel(rule.Action)</span>
+                <code class="mono">@rule.Pattern</code>
+                <button type="button" class="btn btn-sm" aria-label="Remove rule @rule.Pattern" @onclick="() => RemoveRuleAsync(index)">Remove</button>
+            </div>
+        }
+        <div class="row">
+            <select class="select" aria-label="Rule applies to" @bind="_newTarget">
+                <option value="@RuleTarget.ShellCommand">Shell command</option>
+                <option value="@RuleTarget.FilePath">File path</option>
+            </select>
+            <select class="select" aria-label="Rule action" @bind="_newAction">
+                <option value="@PermissionVerdict.Deny">Refuse</option>
+                <option value="@PermissionVerdict.Ask">Ask</option>
+                <option value="@PermissionVerdict.Allow">Allow</option>
+            </select>
+            <input class="input mono" aria-label="Rule pattern" placeholder="@(_newTarget == RuleTarget.ShellCommand ? "git push*" : "**/.env")" @bind="_newPattern" @bind:event="oninput" @onkeydown="OnPatternKeyAsync" />
+            <button type="button" class="btn" disabled="@string.IsNullOrWhiteSpace(_newPattern)" @onclick="AddRuleAsync">＋ Add rule</button>
+        </div>
+    </section>
 </div>
 
 @code {
     private AccessLevel _access;
     private ApprovalMode _approvals;
     private bool _allowBypass;
+    private List<PermissionRule> _rules = [];
+    private RuleTarget _newTarget;
+    private PermissionVerdict _newAction = PermissionVerdict.Deny;
+    private string _newPattern = string.Empty;
 
     protected override void OnInitialized()
     {
@@ -50,6 +90,36 @@
         _access = current.Access;
         _approvals = current.Approvals;
         _allowBypass = Defaults.AllowBypass;
+        _rules = [.. Defaults.Rules];
+    }
+
+    private static string TargetLabel(RuleTarget target) => target == RuleTarget.ShellCommand ? "Shell command" : "File path";
+
+    private static string ActionLabel(PermissionVerdict action) => action switch
+    {
+        PermissionVerdict.Deny => "Refuse",
+        PermissionVerdict.Ask => "Ask",
+        _ => "Allow",
+    };
+
+    private Task OnPatternKeyAsync(KeyboardEventArgs e) => e.Key == "Enter" ? AddRuleAsync() : Task.CompletedTask;
+
+    private Task AddRuleAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newPattern))
+        {
+            return Task.CompletedTask;
+        }
+
+        _rules.Add(new PermissionRule(_newTarget, _newAction, _newPattern.Trim()));
+        _newPattern = string.Empty;
+        return Defaults.SaveRulesAsync(_rules);
+    }
+
+    private Task RemoveRuleAsync(int index)
+    {
+        _rules.RemoveAt(index);
+        return Defaults.SaveRulesAsync(_rules);
     }
 
     private Task OnAccessChangedAsync(ChangeEventArgs e)

@@ -489,6 +489,7 @@ public sealed partial class SessionService : IDisposable
         if (_defaults is { } defaults)
         {
             session.Permissions.BypassAllowed = () => defaults.AllowBypass;
+            session.Permissions.Rules = () => defaults.Rules;
         }
 
         var wasRunning = false;

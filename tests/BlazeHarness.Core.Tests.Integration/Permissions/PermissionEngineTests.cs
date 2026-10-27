@@ -452,6 +452,105 @@ public sealed class PermissionEngineTests : IDisposable
         decision.Verdict.Should().Be(PermissionVerdict.Allow);
     }
 
+    [Fact]
+    public void Evaluate_RefuseRuleOnACommand_DeniesEvenWhenUnrestricted()
+    {
+        // Arrange
+        _sut.Settings = new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk);
+        _sut.Rules = () => [new PermissionRule(RuleTarget.ShellCommand, PermissionVerdict.Deny, "git push*")];
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "git push origin main" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Deny);
+    }
+
+    [Fact]
+    public void Evaluate_AskRuleOnACommand_AsksUnderAutoApproveAndCannotBeRemembered()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        _sut.Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.AutoApprove);
+        _sut.Rules = () => [new PermissionRule(RuleTarget.ShellCommand, PermissionVerdict.Ask, "git push*")];
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "git push" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Ask);
+        decision.GrantKey.Should().BeNull();
+    }
+
+    [Fact]
+    public void Evaluate_AllowRuleOnACommand_SkipsTheQuestionButStaysSandboxed()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        _sut.Rules = () => [new PermissionRule(RuleTarget.ShellCommand, PermissionVerdict.Allow, "git status*")];
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "git status" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Allow);
+        decision.Shell.Should().Be(ShellMode.Writable);
+    }
+
+    [Fact]
+    public void Evaluate_AllowRuleWithoutASandbox_StillDenies()
+    {
+        // Arrange
+        _sut.Rules = () => [new PermissionRule(RuleTarget.ShellCommand, PermissionVerdict.Allow, "*")];
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "ls" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Deny);
+    }
+
+    [Fact]
+    public void Evaluate_AllowRuleOnAProtectedPath_StillDenies()
+    {
+        // Arrange
+        _sut.Sensitive = new SensitivePaths([_elsewhere]);
+        _sut.Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Allow, "**")];
+
+        // Act
+        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Deny);
+    }
+
+    [Fact]
+    public void Evaluate_AllowRuleOnAFileOutsideTheFolder_SkipsTheQuestionToRead()
+    {
+        // Arrange
+        _sut.Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Allow, _elsewhere.Replace('\\', '/') + "/**")];
+
+        // Act
+        var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Allow);
+        decision.AllowOutside.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Evaluate_RefuseRuleOnAFilePath_DeniesAReadInsideTheFolder()
+    {
+        // Arrange
+        _sut.Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Deny, "a.txt")];
+
+        // Act
+        var decision = Evaluate(new ReadFileTool(), new { path = "a.txt" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Deny);
+    }
+
     private static ShellTool NewShell() => new(
         ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false),
         new NoShellSandbox("none"),

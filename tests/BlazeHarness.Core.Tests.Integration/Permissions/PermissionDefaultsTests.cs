@@ -74,4 +74,31 @@ public sealed class PermissionDefaultsTests : IDisposable
         // Assert
         settings.Should().Be(PermissionSettings.Default);
     }
+
+    [Fact]
+    public async Task SaveRulesAsync_Rules_AreKeptInOrderWithoutEmptyPatterns()
+    {
+        // Arrange
+        var deny = new PermissionRule(RuleTarget.ShellCommand, PermissionVerdict.Deny, "  git push*  ");
+        var empty = new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Ask, "  ");
+        var allow = new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Allow, "docs/**");
+
+        // Act
+        await _sut.SaveRulesAsync([deny, empty, allow], TestContext.Current.CancellationToken);
+
+        // Assert
+        _sut.Rules.Should().Equal(deny with { Pattern = "git push*" }, allow);
+    }
+
+    [Fact]
+    public async Task SaveRulesAsync_Rules_SurviveReadingTheFileAgain()
+    {
+        // Arrange
+        var rule = new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Ask, "**/.env");
+        await _sut.SaveRulesAsync([rule], TestContext.Current.CancellationToken);
+        var json = await File.ReadAllTextAsync(Path.Combine(_dir, "config.json"), TestContext.Current.CancellationToken);
+
+        // Assert
+        json.Should().Contain("\"filePath\"").And.Contain("\"ask\"");
+    }
 }

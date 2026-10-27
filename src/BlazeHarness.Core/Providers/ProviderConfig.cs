@@ -357,6 +357,11 @@ public sealed record AppConfig
     public ApprovalMode DefaultApprovals { get; init; } = ApprovalMode.AskFirst;
 
     /// <summary>
+    /// Gets the rules the user wrote to allow, ask about or refuse tool calls.
+    /// </summary>
+    public IReadOnlyList<PermissionRule> PermissionRules { get; init; } = [];
+
+    /// <summary>
     /// Gets a value indicating whether the Unrestricted and Never-ask options are hidden.
     /// </summary>
     public bool DisableBypassModes { get; init; }

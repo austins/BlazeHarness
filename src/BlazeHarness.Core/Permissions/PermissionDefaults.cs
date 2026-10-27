@@ -44,6 +44,11 @@ public sealed class PermissionDefaults
     public bool AllowBypass => !_config.Current.DisableBypassModes;
 
     /// <summary>
+    /// Gets the rules the user wrote, in the order they apply.
+    /// </summary>
+    public IReadOnlyList<PermissionRule> Rules => _config.Current.PermissionRules;
+
+    /// <summary>
     /// Get the settings a new chat starts with.
     /// </summary>
     /// <param name="hasFolder">True when the chat works in a folder the user opened, and false for a chat that only has its own files.</param>
@@ -52,6 +57,22 @@ public sealed class PermissionDefaults
     {
         var settings = Current;
         return hasFolder ? settings : settings with { Access = AccessLevel.ReadOnly };
+    }
+
+    /// <summary>
+    /// Save the rules, replacing the old ones.
+    /// </summary>
+    /// <param name="rules">The rules in the order they apply. Rules with an empty pattern are dropped.</param>
+    /// <param name="cancellationToken">A token to cancel the write.</param>
+    /// <returns>A task that completes once the rules are saved.</returns>
+    public Task SaveRulesAsync(IEnumerable<PermissionRule> rules, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        var kept = rules
+            .Where(rule => !string.IsNullOrWhiteSpace(rule.Pattern))
+            .Select(rule => rule with { Pattern = rule.Pattern.Trim() })
+            .ToList();
+        return _config.UpdateAsync(config => config with { PermissionRules = kept }, cancellationToken);
     }
 
     /// <summary>

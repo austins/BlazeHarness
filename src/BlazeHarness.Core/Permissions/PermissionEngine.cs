@@ -77,6 +77,11 @@ public sealed class PermissionEngine
     public ForbiddenCommands Forbidden { get; set; } = ForbiddenCommands.BuiltIn;
 
     /// <summary>
+    /// Gets or sets where the user's allow, ask and deny rules come from, which is asked on every call so edits apply at once.
+    /// </summary>
+    public Func<IReadOnlyList<PermissionRule>> Rules { get; set; } = static () => [];
+
+    /// <summary>
     /// Gets or sets whether shell commands can run inside an OS sandbox that enforces the access level.
     /// </summary>
     public SandboxStatus Sandbox { get; set; } = SandboxStatus.Unavailable("No sandbox is set up.");
@@ -100,6 +105,7 @@ public sealed class PermissionEngine
         var decision = tool.RunsCommands
             ? EvaluateCommand(arguments, settings)
             : EvaluatePaths(tool, arguments, settings, context);
+        decision = ApplyRules(tool, arguments, context, decision);
         if (decision is { Verdict: PermissionVerdict.Ask, GrantKey: { } key } && _grants.ContainsKey(key))
         {
             decision = PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell };
@@ -118,6 +124,31 @@ public sealed class PermissionEngine
     {
         ArgumentException.ThrowIfNullOrEmpty(grantKey);
         _grants[grantKey] = 0;
+    }
+
+    private static PermissionDecision ApplyRule(PermissionRule rule, PermissionDecision decision)
+    {
+        if (rule.Action == PermissionVerdict.Deny)
+        {
+            return new PermissionDecision(PermissionVerdict.Deny, $"A rule you set refuses this ({rule.Pattern}).");
+        }
+
+        if (decision.Verdict == PermissionVerdict.Deny)
+        {
+            return decision;
+        }
+
+        if (rule.Action == PermissionVerdict.Ask)
+        {
+            return decision with
+            {
+                Verdict = PermissionVerdict.Ask,
+                Reason = $"A rule you set asks before this ({rule.Pattern}).",
+                GrantKey = null,
+            };
+        }
+
+        return decision.Verdict == PermissionVerdict.Ask ? PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell } : decision;
     }
 
     private static JsonDocument Parse(string json)
@@ -140,6 +171,36 @@ public sealed class PermissionEngine
     }
 
     private static string FolderOf(string fullPath) => Directory.Exists(fullPath) ? fullPath : Path.GetDirectoryName(fullPath) ?? fullPath;
+
+    private PermissionDecision ApplyRules(ITool tool, JsonElement arguments, ToolContext context, PermissionDecision decision)
+    {
+        var rules = Rules();
+        if (rules.Count == 0)
+        {
+            return decision;
+        }
+
+        PermissionRule? rule;
+        if (tool.RunsCommands)
+        {
+            rule = RuleMatcher.ForCommand(rules, Text(arguments, "command") ?? string.Empty);
+        }
+        else
+        {
+            var paths = new List<string>();
+            foreach (var name in tool.PathArguments)
+            {
+                if (WorkspacePath.TryLocate(context.Root, Text(arguments, name), out var full))
+                {
+                    paths.Add(full);
+                }
+            }
+
+            rule = RuleMatcher.ForPaths(rules, paths, context.Root);
+        }
+
+        return rule is null ? decision : ApplyRule(rule, decision);
+    }
 
     private PermissionDecision EvaluateCommand(JsonElement arguments, PermissionSettings settings)
     {
