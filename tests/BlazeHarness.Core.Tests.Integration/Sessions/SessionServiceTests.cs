@@ -145,8 +145,8 @@ public sealed class SessionServiceTests : IDisposable
         var session = await sut.OpenAsync(info.Id);
 
         // Assert
-        session!.Permissions.Sensitive.IsProtected(_paths.ConfigFile).Should().BeTrue();
-        session.Permissions.Sensitive.IsProtected(Path.Combine(_paths.SessionDirectory(info.Id), "outputs", "a.txt")).Should().BeFalse();
+        session!.Permissions.Sensitive().IsProtected(_paths.ConfigFile).Should().BeTrue();
+        session.Permissions.Sensitive().IsProtected(Path.Combine(_paths.SessionDirectory(info.Id), "outputs", "a.txt")).Should().BeFalse();
     }
 
     [Fact]
@@ -725,7 +725,7 @@ public sealed class SessionServiceTests : IDisposable
     {
         var config = new JsonFileStore<AppConfig>(Path.Combine(_home, "config.json"), new LoggerFake<SessionServiceTests>(), watch: false);
         _disposables.Add(config);
-        var defaults = new PermissionDefaults(config);
+        var defaults = new PermissionDefaults(config, _paths);
         await defaults.SaveAsync(settings, allowBypass, TestContext.Current.CancellationToken);
         return defaults;
     }

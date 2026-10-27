@@ -362,6 +362,11 @@ public sealed record AppConfig
     public IReadOnlyList<PermissionRule> PermissionRules { get; init; } = [];
 
     /// <summary>
+    /// Gets the folders no tool may touch, or null to use the built-in list.
+    /// </summary>
+    public IReadOnlyList<string>? ProtectedFolders { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the Unrestricted and Never-ask options are hidden.
     /// </summary>
     public bool DisableBypassModes { get; init; }

@@ -187,7 +187,7 @@ public sealed class PermissionEngineTests : IDisposable
     {
         // Arrange
         _sut.Settings = new PermissionSettings(access, approvals);
-        _sut.Sensitive = new SensitivePaths([_elsewhere]);
+        _sut.Sensitive = () => new SensitivePaths([_elsewhere]);
 
         // Act
         var read = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
@@ -203,7 +203,7 @@ public sealed class PermissionEngineTests : IDisposable
     {
         // Arrange
         Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "innocent"), _elsewhere);
-        _sut.Sensitive = new SensitivePaths([_elsewhere]);
+        _sut.Sensitive = () => new SensitivePaths([_elsewhere]);
 
         // Act
         var decision = Evaluate(new ReadFileTool(), new { path = "innocent/note.txt" });
@@ -514,7 +514,7 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_AllowRuleOnAProtectedPath_StillDenies()
     {
         // Arrange
-        _sut.Sensitive = new SensitivePaths([_elsewhere]);
+        _sut.Sensitive = () => new SensitivePaths([_elsewhere]);
         _sut.Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Allow, "**")];
 
         // Act

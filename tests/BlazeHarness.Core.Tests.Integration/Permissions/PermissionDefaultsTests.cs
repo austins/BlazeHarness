@@ -13,7 +13,7 @@ public sealed class PermissionDefaultsTests : IDisposable
     public PermissionDefaultsTests()
     {
         _config = new JsonFileStore<AppConfig>(Path.Combine(_dir, "config.json"), new LoggerFake<PermissionDefaultsTests>(), watch: false);
-        _sut = new PermissionDefaults(_config);
+        _sut = new PermissionDefaults(_config, new AppPaths(Path.Combine(_dir, "app"), _dir));
     }
 
     public void Dispose()
@@ -23,6 +23,45 @@ public sealed class PermissionDefaultsTests : IDisposable
         {
             Directory.Delete(_dir, recursive: true);
         }
+    }
+
+    [Fact]
+    public void ProtectedFolders_NothingSaved_IsTheBuiltInList()
+    {
+        // Assert
+        _sut.UsesDefaultProtectedFolders.Should().BeTrue();
+        _sut.ProtectedFolders.Should().Contain(Path.Combine(_dir, ".ssh"));
+    }
+
+    [Fact]
+    public async Task SaveProtectedFoldersAsync_AList_ReplacesTheBuiltInListButKeepsTheAppFolder()
+    {
+        // Arrange
+        var mine = Path.Combine(_dir, "mine");
+
+        // Act
+        await _sut.SaveProtectedFoldersAsync([mine, "  ", mine], TestContext.Current.CancellationToken);
+
+        // Assert
+        _sut.UsesDefaultProtectedFolders.Should().BeFalse();
+        _sut.ProtectedFolders.Should().Equal(mine);
+        var sensitive = _sut.Sensitive();
+        sensitive.IsProtected(Path.Combine(mine, "a.txt")).Should().BeTrue();
+        sensitive.IsProtected(Path.Combine(_dir, ".ssh", "id_rsa")).Should().BeFalse();
+        sensitive.IsProtected(Path.Combine(_dir, "app", "config.json")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SaveProtectedFoldersAsync_Null_GoesBackToTheBuiltInList()
+    {
+        // Arrange
+        await _sut.SaveProtectedFoldersAsync([], TestContext.Current.CancellationToken);
+
+        // Act
+        await _sut.SaveProtectedFoldersAsync(null, TestContext.Current.CancellationToken);
+
+        // Assert
+        _sut.UsesDefaultProtectedFolders.Should().BeTrue();
     }
 
     [Theory]

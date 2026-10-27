@@ -13,15 +13,19 @@ namespace BlazeHarness.Core.Permissions;
 public sealed class PermissionDefaults
 {
     private readonly JsonFileStore<AppConfig> _config;
+    private readonly AppPaths _paths;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PermissionDefaults"/> class.
     /// </summary>
     /// <param name="config">The store of the app configuration file.</param>
-    public PermissionDefaults(JsonFileStore<AppConfig> config)
+    /// <param name="paths">The app's folders.</param>
+    public PermissionDefaults(JsonFileStore<AppConfig> config, AppPaths paths)
     {
         ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(paths);
         _config = config;
+        _paths = paths;
     }
 
     /// <summary>
@@ -49,6 +53,26 @@ public sealed class PermissionDefaults
     public IReadOnlyList<PermissionRule> Rules => _config.Current.PermissionRules;
 
     /// <summary>
+    /// Gets the folders no tool may touch, besides the app's own folder, which is always protected.
+    /// </summary>
+    public IReadOnlyList<string> ProtectedFolders => _config.Current.ProtectedFolders ?? SensitivePaths.DefaultFolders(_paths);
+
+    /// <summary>
+    /// Gets a value indicating whether the protected folders are the built-in list.
+    /// </summary>
+    public bool UsesDefaultProtectedFolders => _config.Current.ProtectedFolders is null;
+
+    /// <summary>
+    /// Get the protected folders as they apply now.
+    /// </summary>
+    /// <param name="currentSession">The id of the session that is running, whose own directory stays usable, or null.</param>
+    /// <returns>The protected folders.</returns>
+    public SensitivePaths Sensitive(string? currentSession = null)
+    {
+        return SensitivePaths.Default(_paths, currentSession, ProtectedFolders);
+    }
+
+    /// <summary>
     /// Get the settings a new chat starts with.
     /// </summary>
     /// <param name="hasFolder">True when the chat works in a folder the user opened, and false for a chat that only has its own files.</param>
@@ -73,6 +97,22 @@ public sealed class PermissionDefaults
             .Select(rule => rule with { Pattern = rule.Pattern.Trim() })
             .ToList();
         return _config.UpdateAsync(config => config with { PermissionRules = kept }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Save the protected folders.
+    /// </summary>
+    /// <param name="folders">The folders to protect, or null to go back to the built-in list. Blank entries and duplicates are dropped.</param>
+    /// <param name="cancellationToken">A token to cancel the write.</param>
+    /// <returns>A task that completes once the folders are saved.</returns>
+    public Task SaveProtectedFoldersAsync(IEnumerable<string>? folders, CancellationToken cancellationToken = default)
+    {
+        List<string>? kept = folders?
+            .Where(folder => !string.IsNullOrWhiteSpace(folder))
+            .Select(folder => folder.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        return _config.UpdateAsync(config => config with { ProtectedFolders = kept }, cancellationToken);
     }
 
     /// <summary>

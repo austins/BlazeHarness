@@ -8,7 +8,7 @@ namespace BlazeHarness.Core.Tests.Integration.Sandbox;
 /// </summary>
 internal static class SandboxSupport
 {
-    private static readonly Lazy<bool> Available = new(() => new MxcShellSandbox(SensitivePaths.None).Status.IsAvailable);
+    private static readonly Lazy<bool> Available = new(() => new MxcShellSandbox(() => SensitivePaths.None).Status.IsAvailable);
 
     public static bool IsAvailable => Available.Value;
 

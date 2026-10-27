@@ -37,12 +37,11 @@ public sealed class SensitivePaths
     public string? Exempt { get; }
 
     /// <summary>
-    /// Build the default list: credential stores, browser profiles and the app's own folder.
+    /// Get the folders that are protected unless the user changes the list: credential stores and browser profiles.
     /// </summary>
     /// <param name="paths">The app's folders.</param>
-    /// <param name="currentSession">The id of the session that is running, whose own directory stays usable, or null.</param>
-    /// <returns>The default protected folders.</returns>
-    public static SensitivePaths Default(AppPaths paths, string? currentSession = null)
+    /// <returns>The full paths of the folders. The app's own folder is not in it, because it is always protected.</returns>
+    public static IReadOnlyList<string> DefaultFolders(AppPaths paths)
     {
         ArgumentNullException.ThrowIfNull(paths);
         var home = paths.UserHome;
@@ -65,7 +64,6 @@ public sealed class SensitivePaths
             Path.Combine(home, "Library", "Application Support", "Google", "Chrome"),
             Path.Combine(home, "Library", "Application Support", "Firefox"),
             Path.Combine(home, "Library", "Keychains"),
-            paths.Home,
         ];
 
         if (!string.IsNullOrEmpty(roaming))
@@ -80,6 +78,20 @@ public sealed class SensitivePaths
             folders.Add(Path.Combine(local, "Microsoft", "Edge", "User Data"));
         }
 
+        return folders;
+    }
+
+    /// <summary>
+    /// Build the list: the folders the user chose or the defaults, and the app's own folder.
+    /// </summary>
+    /// <param name="paths">The app's folders.</param>
+    /// <param name="currentSession">The id of the session that is running, whose own directory stays usable, or null.</param>
+    /// <param name="chosen">The folders the user chose to protect, or null for <see cref="DefaultFolders"/>.</param>
+    /// <returns>The protected folders.</returns>
+    public static SensitivePaths Default(AppPaths paths, string? currentSession = null, IEnumerable<string>? chosen = null)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        List<string> folders = [.. chosen ?? DefaultFolders(paths), paths.Home];
         return new SensitivePaths(folders, currentSession is null ? null : paths.SessionDirectory(currentSession));
     }
 

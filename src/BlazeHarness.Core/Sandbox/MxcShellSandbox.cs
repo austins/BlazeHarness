@@ -16,14 +16,14 @@ public sealed class MxcShellSandbox : IShellSandbox
 {
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(15);
 
-    private readonly SensitivePaths _sensitive;
+    private readonly Func<SensitivePaths> _sensitive;
     private readonly Lazy<SandboxStatus> _status;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MxcShellSandbox"/> class.
     /// </summary>
-    /// <param name="sensitive">Folders that stay out of reach even when they are inside the working folder.</param>
-    public MxcShellSandbox(SensitivePaths sensitive)
+    /// <param name="sensitive">Gets the folders that stay out of reach even when they are inside the working folder, read at each launch so a change applies at once.</param>
+    public MxcShellSandbox(Func<SensitivePaths> sensitive)
     {
         ArgumentNullException.ThrowIfNull(sensitive);
         _sensitive = sensitive;
@@ -142,7 +142,7 @@ public sealed class MxcShellSandbox : IShellSandbox
         var platform = SandboxPolicy.CurrentPlatform();
         Directory.CreateDirectory(Path.Combine(launch.ScratchDirectory, "home"));
         Directory.CreateDirectory(Path.Combine(launch.ScratchDirectory, "tmp"));
-        var policy = SandboxPolicy.Create(launch, platform, HostEnvironment(), _sensitive.Folders);
+        var policy = SandboxPolicy.Create(launch, platform, HostEnvironment(), _sensitive().Folders);
 
         var filesystem = new FilesystemPolicy();
         filesystem.ReadwritePaths.AddRange(policy.ReadWrite);

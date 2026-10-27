@@ -38,6 +38,29 @@
         <p class="hint">Turn this off to hide both options. A chat that already has one of them then behaves as if it did not. Protected folders such as your SSH keys stay blocked either way.</p>
     </section>
 
+    <section class="card stack" aria-labelledby="protected-heading">
+        <h2 id="protected-heading">Protected folders</h2>
+        <p class="hint">No tool can read or write these, in any chat, even Unrestricted. BlazeHarness's own folder is always protected and is not listed.</p>
+        @if (_protected.Count == 0)
+        {
+            <p class="muted">No folders are protected.</p>
+        }
+        @for (var i = 0; i < _protected.Count; i++)
+        {
+            var index = i;
+            var folder = _protected[i];
+            <div class="row">
+                <code class="mono">@folder</code>
+                <button type="button" class="btn btn-sm" aria-label="Stop protecting @folder" @onclick="() => RemoveProtectedAsync(index)">Remove</button>
+            </div>
+        }
+        <div class="row">
+            <input class="input mono" aria-label="Folder to protect" placeholder="@_protectedExample" @bind="_newProtected" @bind:event="oninput" @onkeydown="OnProtectedKeyAsync" />
+            <button type="button" class="btn" disabled="@(!Path.IsPathFullyQualified(_newProtected.Trim()))" @onclick="AddProtectedAsync">＋ Add folder</button>
+            <button type="button" class="btn" disabled="@Defaults.UsesDefaultProtectedFolders" @onclick="ResetProtectedAsync">Reset to the built-in list</button>
+        </div>
+    </section>
+
     <section class="card stack" aria-labelledby="rules-heading">
         <h2 id="rules-heading">Rules</h2>
         <p class="hint">
@@ -80,6 +103,9 @@
     private ApprovalMode _approvals;
     private bool _allowBypass;
     private List<PermissionRule> _rules = [];
+    private List<string> _protected = [];
+    private string _newProtected = string.Empty;
+    private string _protectedExample = "~/.config/my-tool";
     private RuleTarget _newTarget;
     private PermissionVerdict _newAction = PermissionVerdict.Deny;
     private string _newPattern = string.Empty;
@@ -91,6 +117,8 @@
         _approvals = current.Approvals;
         _allowBypass = Defaults.AllowBypass;
         _rules = [.. Defaults.Rules];
+        _protected = [.. Defaults.ProtectedFolders];
+        _protectedExample = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "my-tool");
     }
 
     private static string TargetLabel(RuleTarget target) => target == RuleTarget.ShellCommand ? "Shell command" : "File path";
@@ -120,6 +148,37 @@
     {
         _rules.RemoveAt(index);
         return Defaults.SaveRulesAsync(_rules);
+    }
+
+    private Task OnProtectedKeyAsync(KeyboardEventArgs e) => e.Key == "Enter" ? AddProtectedAsync() : Task.CompletedTask;
+
+    private Task AddProtectedAsync()
+    {
+        var folder = _newProtected.Trim();
+        if (folder.Length == 0 || !Path.IsPathFullyQualified(folder))
+        {
+            return Task.CompletedTask;
+        }
+
+        if (!_protected.Contains(folder, StringComparer.Ordinal))
+        {
+            _protected.Add(folder);
+        }
+
+        _newProtected = string.Empty;
+        return Defaults.SaveProtectedFoldersAsync(_protected);
+    }
+
+    private Task RemoveProtectedAsync(int index)
+    {
+        _protected.RemoveAt(index);
+        return Defaults.SaveProtectedFoldersAsync(_protected);
+    }
+
+    private async Task ResetProtectedAsync()
+    {
+        await Defaults.SaveProtectedFoldersAsync(null);
+        _protected = [.. Defaults.ProtectedFolders];
     }
 
     private Task OnAccessChangedAsync(ChangeEventArgs e)

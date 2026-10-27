@@ -69,7 +69,7 @@ public sealed class PermissionEngine
     /// <summary>
     /// Gets or sets the folders no call may touch.
     /// </summary>
-    public SensitivePaths Sensitive { get; set; } = SensitivePaths.None;
+    public Func<SensitivePaths> Sensitive { get; set; } = () => SensitivePaths.None;
 
     /// <summary>
     /// Gets or sets the commands that need the user's approval every time.
@@ -245,7 +245,7 @@ public sealed class PermissionEngine
             }
         }
 
-        if (paths.Find(Sensitive.IsProtected) is { } protectedPath)
+        if (paths.Find(Sensitive().IsProtected) is { } protectedPath)
         {
             return new PermissionDecision(PermissionVerdict.Deny, $"The path '{protectedPath}' holds credentials or settings that tools may not use.");
         }

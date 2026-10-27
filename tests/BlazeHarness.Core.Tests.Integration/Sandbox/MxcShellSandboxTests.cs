@@ -121,7 +121,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         var sensitive = new SensitivePaths([Path.Combine(_workspace.Root, ".keys")]);
 
         // Act
-        var result = await RunAsync("cat .keys/token.txt; echo x > .keys/other.txt", ShellMode.Writable, new MxcShellSandbox(sensitive));
+        var result = await RunAsync("cat .keys/token.txt; echo x > .keys/other.txt", ShellMode.Writable, new MxcShellSandbox(() => sensitive));
 
         // Assert
         result.Output.Should().Contain("No such file").And.NotContain("key-material");
@@ -208,7 +208,7 @@ public sealed class MxcShellSandboxTests : IDisposable
     private async Task<ToolResult> RunAsync(string command, ShellMode mode, IShellSandbox? sandbox = null, int timeoutSeconds = 30, IReadOnlyList<string>? readFolders = null)
     {
         var shell = ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false);
-        var tool = new ShellTool(shell, sandbox ?? new MxcShellSandbox(SensitivePaths.None), _scratch);
+        var tool = new ShellTool(shell, sandbox ?? new MxcShellSandbox(() => SensitivePaths.None), _scratch);
         return await tool.ExecuteAsync(
             TempWorkspace.Args(new { command, timeout_seconds = timeoutSeconds }),
             _workspace.Context.WithShell(mode).WithShellReadFolders(readFolders ?? []),

@@ -484,7 +484,7 @@ public sealed partial class SessionService : IDisposable
         {
             Attachments = new SessionAttachments(_store.AttachmentsDirectory(id)),
         };
-        session.Permissions.Sensitive = SensitivePaths.Default(_store.Paths, id);
+        session.Permissions.Sensitive = () => _defaults?.Sensitive(id) ?? SensitivePaths.Default(_store.Paths, id);
         session.Permissions.Sandbox = _sandbox.Status;
         if (_defaults is { } defaults)
         {
