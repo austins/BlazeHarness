@@ -10,12 +10,12 @@
     --border-strong: light-dark(#c4c9d2, #444a55);
     --fg: light-dark(#1b1d21, #e8e9ec);
     --fg-muted: light-dark(#5b6270, #9aa1ad);
-    --accent: light-dark(#d9480f, #ff8a4c);
+    --accent: light-dark(#c2410c, #ff8a4c);
     --accent-fg: light-dark(#ffffff, #1a0e05);
     --accent-soft: light-dark(#fff0e8, #3a2415);
     --danger: light-dark(#c92a2a, #ff7b7b);
     --danger-soft: light-dark(#fdecec, #3b1c1c);
-    --success: light-dark(#2b8a3e, #6fcf86);
+    --success: light-dark(#237a35, #6fcf86);
     --success-soft: light-dark(#e8f6ec, #17301f);
     --warning-soft: light-dark(#fff4d6, #3a3015);
     --focus: light-dark(#1c7ed6, #74b9ff);
@@ -255,7 +255,7 @@ kbd {
 .btn:hover:not(:disabled) { background: var(--bg-hover); }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
-.btn-primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+.btn-primary:hover:not(:disabled) { background: var(--accent); filter: brightness(0.92); }
 .btn-ghost { background: transparent; border-color: transparent; }
 .btn-danger { color: var(--danger); }
 .btn-danger:hover:not(:disabled) { background: var(--danger-soft); }
@@ -411,6 +411,7 @@ details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600
 .chat-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .chat-thread { max-width: 52rem; margin-inline: auto; padding: var(--space-5) var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
 .chat-empty { text-align: center; padding-block: 12vh var(--space-5); }
+.chat-examples { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin-top: var(--space-4); }
 .chat-empty h1 { font-size: var(--text-xl); margin: 0 0 var(--space-2); }
 .chat-jump { display: none; position: absolute; inset-inline: 0; margin-inline: auto; width: max-content; bottom: 8.5rem; box-shadow: var(--shadow-sm); }
 .chat[data-pinned="false"] .chat-jump { display: inline-flex; }

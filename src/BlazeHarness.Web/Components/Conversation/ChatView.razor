@@ -109,6 +109,12 @@ else
                     <div class="chat-empty">
                         <h1>What can I help with?</h1>
                         <p class="muted">Pick a model below and send a message. Press Enter to send and Shift+Enter for a new line.</p>
+                        <div class="chat-examples" role="group" aria-label="Example messages">
+                            @foreach (var example in ContextPath is null ? GeneralExamples : FolderExamples)
+                            {
+                                <button type="button" class="btn btn-sm" @onclick="() => UseExampleAsync(example)">@example</button>
+                            }
+                        </div>
                     </div>
                 }
 
@@ -196,6 +202,22 @@ else
         : _session?.Permissions.Settings ?? _info?.Permissions ?? PermissionSettings.Default;
 
     private ProjectContext? Project => _openId is null ? _newProject : _session?.Project;
+
+    private static readonly string[] GeneralExamples =
+    [
+        "Explain how HTTP caching works.",
+        "Help me plan a week of meals.",
+        "Compare SQLite and PostgreSQL for a small app.",
+    ];
+
+    private static readonly string[] FolderExamples =
+    [
+        "Give me an overview of this project.",
+        "Find where errors are handled.",
+        "Suggest tests that are missing.",
+    ];
+
+    private Task UseExampleAsync(string text) => JS.InvokeVoidAsync("bhUi.fillComposer", text).AsTask();
 
     private string? ContextPath => _openId is null ? Folders.Find(FolderPath)?.Path : _info?.FolderPath;
 

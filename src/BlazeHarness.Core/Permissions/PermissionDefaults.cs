@@ -117,7 +117,7 @@ public sealed class PermissionDefaults
     /// <summary>
     /// Save the protected folders.
     /// </summary>
-    /// <param name="folders">The folders to protect, or null to go back to the built-in list. Blank entries and duplicates are dropped.</param>
+    /// <param name="folders">The folders to protect, or null to go back to the built-in list. Blank entries, relative paths and duplicates are dropped.</param>
     /// <param name="cancellationToken">A token to cancel the write.</param>
     /// <returns>A task that completes once the folders are saved.</returns>
     public Task SaveProtectedFoldersAsync(IEnumerable<string>? folders, CancellationToken cancellationToken = default)
@@ -125,6 +125,7 @@ public sealed class PermissionDefaults
         List<string>? kept = folders?
             .Where(folder => !string.IsNullOrWhiteSpace(folder))
             .Select(folder => folder.Trim())
+            .Where(Path.IsPathFullyQualified)
             .Distinct(StringComparer.Ordinal)
             .ToList();
         return _config.UpdateAsync(config => config with { ProtectedFolders = kept }, cancellationToken);

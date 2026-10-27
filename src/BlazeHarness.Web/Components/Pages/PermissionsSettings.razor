@@ -51,14 +51,18 @@
             var folder = _protected[i];
             <div class="row">
                 <code class="mono">@folder</code>
-                <button type="button" class="btn btn-sm" aria-label="Stop protecting @folder" @onclick="() => RemoveProtectedAsync(index)">Remove</button>
+                <button type="button" class="btn btn-sm" aria-label="Remove @folder from the protected folders" @onclick="() => RemoveProtectedAsync(index)">Remove</button>
             </div>
         }
         <div class="row">
-            <input class="input mono" aria-label="Folder to protect" placeholder="@_protectedExample" @bind="_newProtected" @bind:event="oninput" @onkeydown="OnProtectedKeyAsync" />
+            <input class="input mono" aria-label="Folder to protect" aria-invalid="@(ProtectedInvalid ? "true" : null)" aria-describedby="@(ProtectedInvalid ? "protected-error" : null)" placeholder="@_protectedExample" @bind="_newProtected" @bind:event="oninput" @onkeydown="OnProtectedKeyAsync" />
             <button type="button" class="btn" disabled="@(!Path.IsPathFullyQualified(_newProtected.Trim()))" @onclick="AddProtectedAsync">＋ Add folder</button>
             <button type="button" class="btn" disabled="@Defaults.UsesDefaultProtectedFolders" @onclick="ResetProtectedAsync">Reset to the built-in list</button>
         </div>
+        @if (ProtectedInvalid)
+        {
+            <p id="protected-error" class="error-text">Enter the full path of the folder, starting from the root.</p>
+        }
     </section>
 
     <section class="card stack" aria-labelledby="rules-heading">
@@ -107,6 +111,8 @@
     private List<PermissionRule> _rules = [];
     private List<string> _protected = [];
     private string _newProtected = string.Empty;
+    private bool ProtectedInvalid => _newProtected.Trim().Length > 0 && !Path.IsPathFullyQualified(_newProtected.Trim());
+
     private string _protectedExample = "~/.config/my-tool";
     private RuleTarget _newTarget;
     private PermissionVerdict _newAction = PermissionVerdict.Deny;

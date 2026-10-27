@@ -1,4 +1,6 @@
 // Small helpers for UI primitives that need the DOM.
+const openers = [];
+
 window.bhUi = {
     isNarrow: () => window.matchMedia("(max-width: 48rem)").matches,
     focusSelect: (input) => {
@@ -13,9 +15,26 @@ window.bhUi = {
             target.focus();
         }
     },
+    // A dialog is removed from the page when it closes, so the browser can't return focus to what opened it.
     showModal: (dialog) => {
         if (dialog && !dialog.open) {
+            openers.push(document.activeElement);
             dialog.showModal();
+        }
+    },
+    fillComposer: (text) => {
+        const input = document.querySelector(".composer-input");
+        if (input) {
+            input.value = text;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.focus();
+            input.setSelectionRange(text.length, text.length);
+        }
+    },
+    restoreFocus: () => {
+        const opener = openers.pop();
+        if (opener instanceof HTMLElement && opener.isConnected) {
+            opener.focus();
         }
     },
 };

@@ -3,6 +3,8 @@
 @using BlazeHarness.Core.Permissions
 @using BlazeHarness.Web.Hosting
 @inject MarkdownRenderer Markdown
+@inject IJSRuntime JS
+@inject ToastService Toasts
 
 <article class="msg" data-entry="@Entry.Id" data-role="@(Entry.Role == ChatRole.User ? "user" : "assistant")" data-status="@Entry.Status.ToString().ToLowerInvariant()" data-editing="@(Editing ? "true" : null)">
     @if (ShowLabel && !string.IsNullOrEmpty(Entry.Label))
@@ -73,6 +75,11 @@
     }
 
     <footer class="msg-meta">
+        @if (Entry.Text.Length > 0 && Entry.Status != EntryStatus.Streaming)
+        {
+            <button type="button" class="btn btn-ghost btn-sm btn-icon msg-edit" aria-label="Copy this message" title="Copy message" @onclick="CopyAsync"><Icon Name="copy" /></button>
+        }
+
         @if (CanEdit && Entry.Role == ChatRole.User)
         {
             <button type="button" class="btn btn-ghost btn-sm btn-icon msg-edit" aria-label="Edit and resend this message" title="Edit and resend" @onclick="() => OnEdit.InvokeAsync(Entry)"><Icon Name="pencil" /></button>
@@ -130,6 +137,12 @@
     public EventCallback<(string CallId, ApprovalChoice Choice)> OnDecide { get; set; }
 
     private StreamingMarkdown? _streaming;
+
+    private async Task CopyAsync()
+    {
+        var copied = await JS.InvokeAsync<bool>("bhChat.copyText", Entry.Text);
+        Toasts.Show(copied ? "Message copied." : "The message could not be copied.", copied ? ToastKind.Success : ToastKind.Error);
+    }
 
     private string AssistantHtml()
     {

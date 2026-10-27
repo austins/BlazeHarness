@@ -45,9 +45,10 @@
             _shown = true;
             await JS.InvokeVoidAsync("bhUi.showModal", _dialog);
         }
-        else if (!Open)
+        else if (!Open && _shown)
         {
             _shown = false;
+            await JS.InvokeVoidAsync("bhUi.restoreFocus");
         }
     }
 

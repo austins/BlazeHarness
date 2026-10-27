@@ -17,11 +17,12 @@
                    value="@Format(Math.Clamp(value, Range.Min, Range.SliderMax))" @oninput="OnInput"
                    aria-label="@Range.Label slider" />
             <input type="number" class="input num" min="@Format(Range.Min)" max="@(Range.Max < int.MaxValue ? Format(Range.Max) : null)"
-                   step="@Format(Range.Step)" value="@Format(value)" @onchange="OnInput" aria-label="@Range.Label" />
+                   step="@Format(Range.Step)" value="@Format(value)" @onchange="OnInput" aria-label="@Range.Label"
+                   aria-invalid="@(OutOfRange(value) ? "true" : null)" />
             <button type="button" class="btn btn-ghost btn-sm" @onclick="Reset"
                     title="@(Inherited is null ? "Use the server default" : "Inherit the default value")">Reset</button>
         </div>
-        @if (double.IsNaN(value) || value < Range.Min || value > Range.Max)
+        @if (OutOfRange(value))
         {
             <span class="alert alert-error" role="alert">@Range.Label must be between @Format(Range.Min) and @Format(Range.Max).</span>
         }
@@ -33,6 +34,8 @@
 </div>
 
 @code {
+    private bool OutOfRange(double value) => double.IsNaN(value) || value < Range.Min || value > Range.Max;
+
     [Parameter, EditorRequired]
     public SamplingRange Range { get; set; } = null!;
 

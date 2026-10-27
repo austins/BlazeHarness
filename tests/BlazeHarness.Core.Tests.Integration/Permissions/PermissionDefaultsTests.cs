@@ -58,13 +58,13 @@ public sealed class PermissionDefaultsTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveProtectedFoldersAsync_AList_ReplacesTheBuiltInListButKeepsTheAppFolder()
+    public async Task SaveProtectedFoldersAsync_AList_ReplacesTheBuiltInListKeepsTheAppFolderAndDropsRelativePaths()
     {
         // Arrange
         var mine = Path.Combine(_dir, "mine");
 
         // Act
-        await _sut.SaveProtectedFoldersAsync([mine, "  ", mine], TestContext.Current.CancellationToken);
+        await _sut.SaveProtectedFoldersAsync([mine, "  ", mine, "relative/dir"], TestContext.Current.CancellationToken);
 
         // Assert
         _sut.UsesDefaultProtectedFolders.Should().BeFalse();

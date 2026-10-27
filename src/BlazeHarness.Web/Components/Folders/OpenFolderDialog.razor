@@ -8,7 +8,7 @@
         <div class="field">
             <label for="folder-path">Folder path</label>
             <div class="row folder-path-row">
-                <input id="folder-path" class="input mono" @bind="_path" @bind:event="oninput" @onkeydown="OnPathKey"
+                <input id="folder-path" class="input mono" aria-invalid="@(_error is null ? null : "true")" aria-describedby="@(_error is null ? null : "folder-error")" @bind="_path" @bind:event="oninput" @onkeydown="OnPathKey"
                        spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Type or paste a path, such as ~/code/my-app" />
                 <button type="button" class="btn" @onclick="GoAsync">Go</button>
             </div>
@@ -16,7 +16,7 @@
 
         @if (_error is not null)
         {
-            <div class="alert alert-error" role="alert">@_error</div>
+            <div id="folder-error" class="alert alert-error" role="alert">@_error</div>
         }
 
         <div class="row" role="group" aria-label="Places">

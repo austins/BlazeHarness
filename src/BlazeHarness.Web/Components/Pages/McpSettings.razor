@@ -109,12 +109,17 @@
         <h2 id="file-heading">The file</h2>
         <div class="field">
             <label for="mcp-text">mcp.json</label>
-            <textarea id="mcp-text" class="input mono" rows="14" spellcheck="false" @bind="_text" @bind:event="oninput"></textarea>
+            <textarea id="mcp-text" class="input mono" rows="14" spellcheck="false" aria-invalid="@(_problems.Count > 0 ? "true" : null)" aria-describedby="@(_problems.Count > 0 ? "mcp-problems" : null)" @bind="_text" @bind:event="oninput"></textarea>
             <span class="hint">Changes made outside BlazeHarness show up here too. Turning a server on or off for a chat that is already open changes its tools, which starts that chat's prompt cache over.</span>
         </div>
-        @foreach (var problem in _problems)
+        @if (_problems.Count > 0)
         {
-            <p class="error-text">@problem</p>
+            <div id="mcp-problems" role="alert">
+                @foreach (var problem in _problems)
+                {
+                    <p class="error-text">@problem</p>
+                }
+            </div>
         }
         <div class="row">
             <button type="button" class="btn btn-primary" disabled="@(!Dirty || _saving)" @onclick="SaveAsync">Save</button>

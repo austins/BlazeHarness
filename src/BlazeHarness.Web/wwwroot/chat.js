@@ -85,6 +85,14 @@ window.bhChat = {
             root.bhToBottom();
         }
     },
+    copyText: async (text) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+            return false;
+        }
+    },
     // Copy buttons on code blocks are rendered with the message, so one listener covers them all.
     initCopy: () => {
         document.addEventListener("click", async (e) => {
