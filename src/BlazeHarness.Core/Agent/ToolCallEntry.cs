@@ -118,7 +118,7 @@ public sealed class ToolCallEntry
     public static string Unfinished(ToolCallStatus status)
     {
         return status == ToolCallStatus.Interrupted
-            ? "The app stopped before this call finished, so it may or may not have run."
-            : "The user stopped the run before this call finished, so it may or may not have run.";
+            ? "The app stopped before this call finished, so it may or may not have run. Check the current state before doing it again."
+            : "The user stopped the run before this call finished, so it may or may not have run. Check the current state before doing it again.";
     }
 }

@@ -225,7 +225,38 @@ public sealed class ChatSessionTests
         await sut.EditAsync(sut.Entries[2].Id, "b2", Fast);
 
         // Assert
-        sut.History.Select(m => m.Text).Should().Equal("a", "b2", "fixed");
+        sut.History.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.User, ChatRole.Assistant);
+        sut.History.Select(m => m.Text).Should().Equal("a", "(No reply was produced.)", "b2", "fixed");
+    }
+
+    [Fact]
+    public async Task SendAsync_AfterAReplyThatFailedWithNoText_NeverSendsTwoUserMessagesInARow()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([], new InvalidOperationException("boom")).Enqueue([ScriptedChatClient.Text("ok")]);
+        using var sut = CreateSession(client);
+        await sut.SendAsync("a", Fast);
+
+        // Act
+        await sut.SendAsync("b", Fast);
+
+        // Assert
+        client.Requests[^1].Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.User);
+    }
+
+    [Fact]
+    public async Task RetryAsync_AfterAReplyThatFailedWithNoText_LeavesNoPlaceholderBehind()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([], new InvalidOperationException("boom")).Enqueue([ScriptedChatClient.Text("ok")]);
+        using var sut = CreateSession(client);
+        await sut.SendAsync("a", Fast);
+
+        // Act
+        await sut.RetryAsync(Fast);
+
+        // Assert
+        sut.History.Select(m => m.Text).Should().Equal("a", "ok");
     }
 
     [Fact]

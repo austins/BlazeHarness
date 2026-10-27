@@ -233,6 +233,10 @@ public sealed partial class ChatSession
         lock (_gate)
         {
             _history.AddRange(reply.Working.Skip(reply.Before));
+            if (entry.Text.Length == 0 && entry.ToolCalls.Count == 0)
+            {
+                _history.Add(new ChatMessage(ChatRole.Assistant, EmptyReplyText));
+            }
         }
 
         var endedAt = _time.GetUtcNow();

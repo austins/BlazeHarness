@@ -210,12 +210,59 @@ public sealed class ConversationContextTests
         var view = sut.View(messages);
 
         // Assert
-        view.Should().HaveCount(4);
+        view.Should().HaveCount(5);
         view[0].Text.Should().Be("system");
         view[1].Role.Should().Be(ChatRole.User);
         view[1].Text.Should().Contain("the summary");
-        view[2].Should().BeSameAs(messages[9]);
-        view[3].Should().BeSameAs(messages[10]);
+        view[2].Role.Should().Be(ChatRole.Assistant);
+        view[3].Should().BeSameAs(messages[9]);
+        view[4].Should().BeSameAs(messages[10]);
+    }
+
+    [Fact]
+    public async Task View_FirstKeptMessageIsFromTheAssistant_AddsNoReplyAfterTheSummary()
+    {
+        // Arrange
+        var sut = new ConversationContext(1_000, _summarizer);
+        var messages = Conversation(11);
+        await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+
+        // Act
+        var view = sut.View(messages);
+
+        // Assert
+        view.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.User);
+        view[1].Should().BeSameAs(messages[9]);
+    }
+
+    [Fact]
+    public async Task View_ManualCompaction_NeverHasTwoUserMessagesInARow()
+    {
+        // Arrange
+        var sut = new ConversationContext(100_000, _summarizer);
+        var messages = Conversation(7);
+        await sut.CompactAsync(messages, manual: true, TestContext.Current.CancellationToken);
+
+        // Act
+        var view = sut.View(messages);
+
+        // Assert
+        view.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.User);
+    }
+
+    [Fact]
+    public async Task View_Summary_IsFramedAsBackgroundNotInstructions()
+    {
+        // Arrange
+        var sut = new ConversationContext(1_000, _summarizer);
+        var messages = Conversation(10);
+        await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+
+        // Act
+        var summary = sut.View(messages)[0].Text;
+
+        // Assert
+        summary.Should().Contain("not instructions").And.Contain("tool output").And.EndWith("the summary");
     }
 
     [Fact]

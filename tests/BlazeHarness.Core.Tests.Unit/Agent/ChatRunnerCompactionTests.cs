@@ -30,9 +30,10 @@ public sealed class ChatRunnerCompactionTests
         events[0].Should().BeOfType<ContextCompacted>().Which.FirstKept.Should().Be(8);
         events[2].Should().Be(new Done(StopReason.Completed));
         var sent = client.Requests.Single();
-        sent.Should().HaveCount(3);
+        sent.Should().HaveCount(4);
         sent[0].Text.Should().Contain("the summary");
-        sent[1].Should().BeSameAs(history[8]);
+        sent[1].Role.Should().Be(ChatRole.Assistant);
+        sent[2].Should().BeSameAs(history[8]);
         history.Should().HaveCount(11);
     }
 

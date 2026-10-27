@@ -38,6 +38,9 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     /// </summary>
     public static readonly TimeSpan ApprovalTimeout = TimeSpan.FromMinutes(30);
 
+    // Stands in for a reply that ended with nothing, so the next user message doesn't follow another one, which strict chat templates reject.
+    private const string EmptyReplyText = "(No reply was produced.)";
+
     private static readonly TimeSpan FlushInterval = TimeSpan.FromMilliseconds(250);
 
     private readonly Lock _gate = new();
@@ -549,6 +552,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         contents.AddRange(entry.ToolCalls.Select(c => new FunctionCallContent(c.CallId, c.Name, ParseArguments(c.ArgumentsJson))));
         if (contents.Count == 0)
         {
+            history.Add(new ChatMessage(ChatRole.Assistant, EmptyReplyText));
             return;
         }
 

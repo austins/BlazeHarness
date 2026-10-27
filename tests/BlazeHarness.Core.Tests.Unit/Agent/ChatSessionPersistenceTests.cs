@@ -225,6 +225,26 @@ public sealed class ChatSessionPersistenceTests
     }
 
     [Fact]
+    public void Restore_ReplyCutOffBeforeAnyText_KeepsAReplyBetweenTheUserMessages()
+    {
+        // Arrange
+        var at = DateTimeOffset.UnixEpoch;
+        var reply = Guid.NewGuid();
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+
+        // Act
+        sut.Restore(
+        [
+            new UserMessageEvent(at, Guid.NewGuid(), "a"),
+            new AssistantStartEvent(at, reply, "P1 · fast"),
+            new UserMessageEvent(at, Guid.NewGuid(), "b"),
+        ]);
+
+        // Assert
+        sut.History.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.User);
+    }
+
+    [Fact]
     public async Task EditAsync_SavesARewindThenTheNewMessage()
     {
         // Arrange

@@ -63,9 +63,9 @@ public sealed class ChatSessionCompactionTests
 
         // Assert
         var sent = client.Requests[^1];
-        sent.Select(m => m.Text).Should().HaveCount(4);
+        sent.Select(m => m.Text).Should().HaveCount(5);
         sent[0].Text.Should().Contain("sum");
-        sent.Skip(1).Select(m => m.Text).Should().Equal("two", "b", "three");
+        sent.Skip(2).Select(m => m.Text).Should().Equal("two", "b", "three");
         sut.History.Should().HaveCount(6);
     }
 
@@ -160,7 +160,7 @@ public sealed class ChatSessionCompactionTests
         sut.Entries.Select(e => e.Compaction is not null ? "marker" : e.Text).Should().Equal("one", "a", "marker", "two", "b", "three", "c");
         sut.Entries[2].Compaction!.Summary.Should().Be("sum");
         client.Requests.Single()[0].Text.Should().Contain("sum");
-        client.Requests.Single().Should().HaveCount(4);
+        client.Requests.Single().Should().HaveCount(5);
     }
 
     [Fact]
@@ -179,7 +179,7 @@ public sealed class ChatSessionCompactionTests
         // Assert
         sut.Entries.Select(e => e.Compaction is not null ? "marker" : e.Text).Should().Equal("one", "a", "marker", "two", "b", "three", "c");
         client.Requests[^1][0].Text.Should().Contain("sum");
-        client.Requests[^1].Select(m => m.Text).Skip(1).Should().Equal("two", "b", "three");
+        client.Requests[^1].Select(m => m.Text).Skip(2).Should().Equal("two", "b", "three");
     }
 
     [Fact]
