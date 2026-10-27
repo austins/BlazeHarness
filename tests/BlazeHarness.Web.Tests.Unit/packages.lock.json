@@ -88,6 +88,11 @@
         "resolved": "5.1.1",
         "contentHash": "rpYtIczkzGpf+EkZgDr9CClTdemhsrwA/W5hMoPjLkRFnXzH44zDLoovXeKtmxb1ykXK9aJVODSpiJml8CTw2g=="
       },
+      "ColorCode.Core": {
+        "type": "Transitive",
+        "resolved": "2.0.15",
+        "contentHash": "hHU8nzyapaQJUjeGp/T2SRDPLWbNCpCS67SDwSvF2pLMbq3Xe1PUGG8MUM63C3bG9tz9WrI7Rdd/VaTfHh/7qQ=="
+      },
       "Markdig": {
         "type": "Transitive",
         "resolved": "1.5.0",
@@ -271,6 +276,7 @@
         "type": "Project",
         "dependencies": {
           "BlazeHarness.Core": "[1.0.0, )",
+          "ColorCode.Core": "[2.0.15, )",
           "Markdig": "[1.5.0, )"
         }
       }

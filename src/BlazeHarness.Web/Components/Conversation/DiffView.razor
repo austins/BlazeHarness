@@ -1,0 +1,32 @@
+@using BlazeHarness.Core.Diff
+
+<div class="diff" role="group" aria-label="Changes">
+    @foreach (var line in Lines)
+    {
+        <div class="diff-line" data-kind="@Kind(line)">
+            <span class="diff-sign" aria-hidden="true">@Sign(line)</span>
+            <span class="diff-text">@line.Text</span>
+            @if (line.Kind != DiffKind.Same)
+            {
+                <span class="visually-hidden">@(line.Kind == DiffKind.Added ? "Added" : "Removed")</span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Gets or sets the lines to show.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<DiffLine> Lines { get; set; } = default!;
+
+    private static string Kind(DiffLine line) => line.Kind.ToString().ToLowerInvariant();
+
+    private static string Sign(DiffLine line) => line.Kind switch
+    {
+        DiffKind.Added => "+",
+        DiffKind.Removed => "−",
+        _ => " ",
+    };
+}

@@ -187,4 +187,34 @@ public sealed class MarkdownRendererTests
         results[599].Should().Contain("text 599");
         _sut.ToCachedHtml("text 0").Should().Contain("text 0");
     }
+
+    [Fact]
+    public void ToHtml_FencedCodeInKnownLanguage_IsColoredAndKeepsCopyButton()
+    {
+        // Act
+        var html = _sut.ToHtml("```csharp\nclass A { }\n```");
+
+        // Assert
+        html.Should().Contain("<code class=\"language-csharp\">").And.Contain("tok-keyword").And.Contain("data-copy");
+    }
+
+    [Fact]
+    public void ToHtml_FencedCodeInUnknownLanguage_IsShownAsPlainText()
+    {
+        // Act
+        var html = _sut.ToHtml("```rust\nfn main() { 1 < 2 }\n```");
+
+        // Assert
+        html.Should().Contain("fn main() { 1 &lt; 2 }").And.NotContain("tok-");
+    }
+
+    [Fact]
+    public void ToHtml_FencedCodeWithMarkup_CannotInjectElements()
+    {
+        // Act
+        var html = _sut.ToHtml("```html\n<img src=x onerror=alert(1)>\n```");
+
+        // Assert
+        html.Should().NotContain("<img");
+    }
 }

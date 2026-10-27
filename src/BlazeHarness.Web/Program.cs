@@ -12,6 +12,9 @@ using BlazeHarness.Web.Components;
 using BlazeHarness.Web.Hosting;
 using BlazeHarness.Web.Services;
 
+// Code colors are matched with patterns from a library, against text a model wrote, so a slow match must give up.
+AppContext.SetData("REGEX_DEFAULT_MATCH_TIMEOUT", TimeSpan.FromSeconds(2));
+
 var builder = WebApplication.CreateBuilder(args);
 
 HostLauncher.ConfigureKestrel(builder, HostLauncher.ConfiguredPort(args));

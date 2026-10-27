@@ -1,5 +1,6 @@
 @using System.Globalization
 @using System.Text.Json
+@using BlazeHarness.Core.Diff
 @using BlazeHarness.Core.Mcp
 @using BlazeHarness.Core.Permissions
 @using BlazeHarness.Web.Hosting
@@ -68,7 +69,16 @@
     @if (Open)
     {
         <div class="tool-body" id="@_bodyId">
-            @foreach (var (name, value) in Arguments())
+            @{
+                var diff = EditDiff();
+            }
+
+            @if (diff is not null)
+            {
+                <DiffView Lines="diff" />
+            }
+
+            @foreach (var (name, value) in Arguments(diff is not null))
             {
                 <div class="tool-arg">
                     <span class="tool-arg-name">@name</span>
@@ -175,7 +185,30 @@
         _expanded = !Open;
     }
 
-    private List<(string Name, string Value)> Arguments()
+    private IReadOnlyList<DiffLine>? EditDiff()
+    {
+        if (Call.Name != "edit_file")
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(Call.ArgumentsJson);
+            var root = document.RootElement;
+            return root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("old_string", out var oldText) && oldText.ValueKind == JsonValueKind.String
+                && root.TryGetProperty("new_string", out var newText) && newText.ValueKind == JsonValueKind.String
+                    ? LineDiff.Compare(oldText.GetString()!, newText.GetString()!)
+                    : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private List<(string Name, string Value)> Arguments(bool hideEditText)
     {
         var list = new List<(string, string)>();
         try
@@ -188,6 +221,11 @@
 
             foreach (var property in document.RootElement.EnumerateObject())
             {
+                if (hideEditText && property.Name is "old_string" or "new_string")
+                {
+                    continue;
+                }
+
                 var value = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() ?? string.Empty : property.Value.GetRawText();
                 list.Add((property.Name, Shorten(value, ArgumentPreviewLength)));
             }
