@@ -16,6 +16,8 @@ using BlazeHarness.Web.Services;
 // Code colors are matched with patterns from a library, against text a model wrote, so a slow match must give up.
 AppContext.SetData("REGEX_DEFAULT_MATCH_TIMEOUT", TimeSpan.FromSeconds(2));
 
+const int MaxHubMessageBytes = 4 * 1024 * 1024;
+
 var builder = WebApplication.CreateBuilder(args);
 
 HostLauncher.ConfigureKestrel(builder, HostLauncher.ConfiguredPort(args));
@@ -57,7 +59,7 @@ builder.Services.AddHttpClient(ChatClientSource.HttpClientName, client => client
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
-    .AddHubOptions(options => options.MaximumReceiveMessageSize = 4 * 1024 * 1024);
+    .AddHubOptions(options => options.MaximumReceiveMessageSize = MaxHubMessageBytes);
 
 await using var app = builder.Build();
 

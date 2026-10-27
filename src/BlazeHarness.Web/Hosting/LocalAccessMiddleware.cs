@@ -15,6 +15,14 @@ public sealed class LocalAccessMiddleware(RequestDelegate next, LaunchCredential
     public const string LaunchPath = "/launch";
 
     /// <summary>
+    /// The policy for app pages: own scripts only, own origin for the circuit's WebSocket, no framing.
+    /// Inline styles stay allowed because Blazor and the markdown output set style attributes.
+    /// </summary>
+    public const string PageContentSecurityPolicy =
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; "
+        + "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
+    /// <summary>
     /// Allow or reject a request.
     /// </summary>
     /// <param name="context">The current request.</param>
@@ -47,7 +55,13 @@ public sealed class LocalAccessMiddleware(RequestDelegate next, LaunchCredential
             return;
         }
 
-        context.Response.Headers["Referrer-Policy"] = "no-referrer";
+        var headers = context.Response.Headers;
+        headers["Referrer-Policy"] = "no-referrer";
+        headers.XContentTypeOptions = "nosniff";
+        headers.XFrameOptions = "DENY";
+#pragma warning disable S7039 // style-src needs unsafe-inline; scripts stay locked to self.
+        headers.ContentSecurityPolicy = PageContentSecurityPolicy;
+#pragma warning restore S7039
 
         if (context.Request.Path.Equals(LaunchPath, StringComparison.OrdinalIgnoreCase) && HttpMethods.IsGet(context.Request.Method))
         {

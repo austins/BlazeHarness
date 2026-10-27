@@ -36,6 +36,23 @@ public sealed class LocalAccessMiddlewareTests
         context.Response.StatusCode.Should().Be(200);
     }
 
+    [Fact]
+    public async Task InvokeAsync_ValidRequest_SetsSecurityHeaders()
+    {
+        // Arrange
+        var context = CreateContext("127.0.0.1:5555", cookie: _credentials.SessionSecret);
+
+        // Act
+        await _sut.InvokeAsync(context);
+
+        // Assert
+        var headers = context.Response.Headers;
+        headers.ContentSecurityPolicy.ToString().Should().Be(LocalAccessMiddleware.PageContentSecurityPolicy).And.Contain("frame-ancestors 'none'");
+        headers.XContentTypeOptions.ToString().Should().Be("nosniff");
+        headers.XFrameOptions.ToString().Should().Be("DENY");
+        headers["Referrer-Policy"].ToString().Should().Be("no-referrer");
+    }
+
     [Theory]
     [InlineData("evil.com")]
     [InlineData("127.0.0.1:9999")]
