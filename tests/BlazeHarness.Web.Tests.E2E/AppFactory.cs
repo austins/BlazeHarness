@@ -24,5 +24,7 @@ public sealed class AppFactory : WebApplicationFactory<Program>
         builder.UseStaticWebAssets();
         builder.UseEnvironment(Environments.Staging);
         builder.UseSetting(AppPaths.HomeSettingKey, _home);
+        // Program starts the launcher, which would open the developer's default browser without this.
+        builder.UseSetting(HostLauncher.NoBrowserSettingKey, "1");
     }
 }
