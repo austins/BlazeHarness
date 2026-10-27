@@ -1,0 +1,112 @@
+@page "/settings/skills"
+@using BlazeHarness.Core
+@using BlazeHarness.Core.Skills
+@implements IDisposable
+@inject SkillCatalog Catalog
+@inject AppPaths Paths
+
+<PageTitle>Skills · BlazeHarness</PageTitle>
+
+<div class="page">
+    <header class="page-header">
+        <h1>Skills</h1>
+        <p class="muted">A skill is a folder with a <code class="mono">SKILL.md</code> file that tells the model how to do one kind of work. The model sees each skill's name and description, and loads the rest only when it needs it. Each chat can turn skills on or off for itself.</p>
+    </header>
+
+    <div class="alert alert-warning" role="note">
+        <Icon Name="alert" />
+        <span>A skill is text the model follows, and it may come with scripts. It never gives the model more permissions, and running anything still asks first. Only install skills you trust.</span>
+    </div>
+
+    <section class="card stack" aria-labelledby="skills-heading">
+        <h2 id="skills-heading">Installed skills</h2>
+        @if (_resolution.Skills.Count == 0)
+        {
+            <p class="muted">No skills yet. Put a folder with a <code class="mono">SKILL.md</code> in one of the places below.</p>
+        }
+        @foreach (var skill in _resolution.Skills)
+        {
+            <div class="stack" role="group" aria-label="@skill.Name">
+                <div class="row">
+                    <strong>@skill.Name</strong>
+                    <span class="badge">@SourceText(skill.Source)</span>
+                </div>
+                <p>@skill.Description</p>
+                <p class="hint mono">@skill.Directory</p>
+                <label class="check">
+                    <input type="checkbox" checked="@(!Catalog.IsDisabledGlobally(skill.Name))" @onchange="e => SetEnabledAsync(skill.Name, (bool)e.Value!)" />
+                    <span>On for new chats</span>
+                </label>
+            </div>
+        }
+    </section>
+
+    @if (_resolution.Shadowed.Count > 0)
+    {
+        <section class="card stack" aria-labelledby="shadowed-heading">
+            <h2 id="shadowed-heading">Hidden by another skill with the same name</h2>
+            <ul class="stack">
+                @foreach (var skill in _resolution.Shadowed)
+                {
+                    <li><strong>@skill.Name</strong> <span class="muted">in</span> <span class="mono">@skill.Directory</span></li>
+                }
+            </ul>
+        </section>
+    }
+
+    @if (_resolution.Problems.Count > 0)
+    {
+        <section class="card stack" aria-labelledby="problems-heading">
+            <h2 id="problems-heading">Skills that could not be read</h2>
+            <ul class="stack">
+                @foreach (var problem in _resolution.Problems)
+                {
+                    <li class="error-text">@problem</li>
+                }
+            </ul>
+        </section>
+    }
+
+    <section class="card stack" aria-labelledby="places-heading">
+        <h2 id="places-heading">Where skills are read from</h2>
+        <ul class="stack">
+            <li><span class="mono">&lt;chat folder&gt;/.agents/skills</span> <span class="muted">for the chat's own folder. It wins over the others.</span></li>
+            <li><span class="mono">@Paths.SkillsDirectory</span> <span class="muted">for BlazeHarness.</span></li>
+            <li><span class="mono">@Paths.UserAgentsSkillsDirectory</span> <span class="muted">shared with other tools.</span></li>
+        </ul>
+        <p class="hint">Changes to the shared folders show up here by themselves. Skills in a chat's folder are read each time the chat sends a message.</p>
+    </section>
+</div>
+
+@code {
+    private SkillResolution _resolution = SkillResolution.Of();
+
+    public void Dispose()
+    {
+        Catalog.Changed -= OnCatalogChanged;
+    }
+
+    protected override void OnInitialized()
+    {
+        _resolution = Catalog.Resolve(null);
+        Catalog.Changed += OnCatalogChanged;
+    }
+
+    private static string SourceText(SkillSource source) => source switch
+    {
+        SkillSource.Project => "Chat folder",
+        SkillSource.App => "BlazeHarness",
+        _ => "Shared",
+    };
+
+    private Task SetEnabledAsync(string name, bool enabled) => Catalog.SetDisabledAsync(name, !enabled);
+
+    private void OnCatalogChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            _resolution = Catalog.Resolve(null);
+            StateHasChanged();
+        });
+    }
+}

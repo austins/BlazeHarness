@@ -205,6 +205,16 @@ public sealed partial class SessionService : IDisposable
     }
 
     /// <summary>
+    /// Get the skills a session can use, before any are turned off.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <returns>The skills of the session's folder and of the shared folders, or none when skills are not set up.</returns>
+    public SkillResolution AvailableSkills(string id)
+    {
+        return _skills?.Resolve(_store.Find(id)?.FolderPath) ?? SkillResolution.Of();
+    }
+
+    /// <summary>
     /// Get whether a skill is on for a session.
     /// </summary>
     /// <param name="id">The session id.</param>

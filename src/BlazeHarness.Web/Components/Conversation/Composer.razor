@@ -1,7 +1,10 @@
 @inject ProviderService Providers
 @inject IJSRuntime JS
+@inject SkillCatalog Catalog
+@inject SessionService Sessions
 @using BlazeHarness.Core.Attachments
 @using BlazeHarness.Core.Compaction
+@using BlazeHarness.Core.Skills
 
 @if (_models.Count == 0)
 {
@@ -38,6 +41,19 @@ else
             {
                 <div class="hint" role="status">The selected model can't view images, so they will be left out of what it sees.</div>
             }
+        }
+        @if (Suggestions() is { Count: > 0 } suggestions)
+        {
+            <ul class="composer-suggestions" aria-label="Skills">
+                @foreach (var skill in suggestions)
+                {
+                    <li>
+                        <button type="button" class="btn btn-ghost btn-sm" @onclick="() => ChooseSkillAsync(skill)">
+                            <strong>/@skill.Name</strong> <span class="muted">@ShortDescription(skill)</span>
+                        </button>
+                    </li>
+                }
+            </ul>
         }
         <textarea class="input composer-input" rows="1" @ref="_input" @bind="_text" @bind:event="oninput"
                   placeholder="Message the model" aria-label="Message"></textarea>
@@ -122,6 +138,12 @@ else
     /// </summary>
     [Parameter]
     public string? SessionId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the folder a new chat will work in, or null when it has none. It tells which skills to suggest.
+    /// </summary>
+    [Parameter]
+    public string? FolderPath { get; set; }
 
     /// <summary>
     /// Gets or sets the saved details of the open chat, whose model and thinking level are restored.
@@ -300,6 +322,27 @@ else
 
         ThinkingLevel? level = Enum.TryParse<ThinkingLevel>(_level, out var parsed) ? parsed : null;
         return new ChatTarget(choice.Provider, choice.Model, level);
+    }
+
+    private static string ShortDescription(SkillInfo skill) => skill.Description.Length <= 90 ? skill.Description : skill.Description[..89] + "…";
+
+    private List<SkillInfo>? Suggestions()
+    {
+        if (_text.Length == 0 || _text[0] != '/' || _text.Any(char.IsWhiteSpace))
+        {
+            return null;
+        }
+
+        var typed = _text[1..];
+        var available = SessionId is null ? Catalog.For(FolderPath, null).Skills : Sessions.AvailableSkills(SessionId).Skills.Where(s => Sessions.IsSkillEnabled(SessionId, s.Name)).ToList();
+        return [.. available.Where(skill => skill.Name.StartsWith(typed, StringComparison.Ordinal)).Take(8)];
+    }
+
+    private async Task ChooseSkillAsync(SkillInfo skill)
+    {
+        _text = $"/{skill.Name} ";
+        _resize = true;
+        await _input.FocusAsync();
     }
 
     private async Task SubmitAsync()

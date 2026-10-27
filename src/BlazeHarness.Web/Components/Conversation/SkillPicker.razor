@@ -1,0 +1,68 @@
+@using BlazeHarness.Core.Sessions
+@using BlazeHarness.Core.Skills
+@implements IDisposable
+@inject SkillCatalog Catalog
+@inject SessionService Sessions
+
+@if (_available.Skills.Count > 0)
+{
+    <details class="chat-context-files skill-picker">
+        <summary title="Skills this chat can load"><Icon Name="book" /> Skills <span class="badge">@_available.Skills.Count(IsOn) / @_available.Skills.Count</span></summary>
+        <ul>
+            @foreach (var skill in _available.Skills)
+            {
+                <li>
+                    <label class="check">
+                        <input type="checkbox" checked="@IsOn(skill)" @onchange="e => SetAsync(skill.Name, (bool)e.Value!)" />
+                        <span>@skill.Name</span>
+                    </label>
+                    <span class="hint" title="@skill.Description">@Short(skill.Description)</span>
+                </li>
+            }
+        </ul>
+        <p class="hint">A change applies from the next reply, and the model reads the whole prompt again. <a href="settings/skills">Manage skills</a></p>
+    </details>
+}
+
+@code {
+    private SkillResolution _available = SkillResolution.Of();
+
+    /// <summary>
+    /// Gets or sets the id of the chat whose skills are shown.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string SessionId { get; set; } = string.Empty;
+
+    public void Dispose()
+    {
+        Catalog.Changed -= OnCatalogChanged;
+    }
+
+    protected override void OnInitialized()
+    {
+        Catalog.Changed += OnCatalogChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        _available = Sessions.AvailableSkills(SessionId);
+    }
+
+    private static string Short(string description) => description.Length <= 80 ? description : description[..79] + "…";
+
+    private bool IsOn(SkillInfo skill) => Sessions.IsSkillEnabled(SessionId, skill.Name);
+
+    private async Task SetAsync(string name, bool enabled)
+    {
+        await Sessions.SetSkillAsync(SessionId, name, enabled);
+    }
+
+    private void OnCatalogChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            _available = Sessions.AvailableSkills(SessionId);
+            StateHasChanged();
+        });
+    }
+}

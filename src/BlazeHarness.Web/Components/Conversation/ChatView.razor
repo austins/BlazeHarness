@@ -35,6 +35,7 @@ else
                 @if (_openId is { } mcpId)
                 {
                     <McpPicker SessionId="@mcpId" />
+                    <SkillPicker SessionId="@mcpId" />
                 }
                 @if (_info is not null)
                 {
@@ -70,6 +71,7 @@ else
                 @if (_openId is { } mcpId)
                 {
                     <McpPicker SessionId="@mcpId" />
+                    <SkillPicker SessionId="@mcpId" />
                 }
                 @if (_info is not null)
                 {
@@ -119,7 +121,7 @@ else
 
         @if (!_loading)
         {
-            <Composer SessionId="@SessionId" Remembered="_info" Running="_session?.IsRunning ?? false" CanRetry="_session?.CanRetry ?? false" CanCompact="_session?.CanCompact ?? false" ContextOf="_session is null ? null : _session.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop" />
+            <Composer SessionId="@SessionId" FolderPath="@ContextPath" Remembered="_info" Running="_session?.IsRunning ?? false" CanRetry="_session?.CanRetry ?? false" CanCompact="_session?.CanCompact ?? false" ContextOf="_session is null ? null : _session.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop" />
         }
 
         <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />

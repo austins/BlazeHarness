@@ -7,6 +7,7 @@ using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Secrets;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Core.Skills;
 using BlazeHarness.Web.Components;
 using BlazeHarness.Web.Hosting;
 using BlazeHarness.Web.Services;
@@ -33,6 +34,7 @@ builder.Services.AddSingleton<IShellSandbox>(sp => new MxcShellSandbox(() => sp.
 builder.Services.AddSingleton(sp => new McpConfigFile(paths.McpFile, sp.GetRequiredService<ILogger<McpConfigFile>>()));
 builder.Services.AddSingleton<IMcpConnector, SdkMcpConnector>();
 builder.Services.AddSingleton<McpManager>();
+builder.Services.AddSingleton(sp => new SkillCatalog(paths, sp.GetRequiredService<JsonFileStore<AppConfig>>(), sp.GetRequiredService<ILogger<SkillCatalog>>()));
 builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<SessionStore>(),
     sp.GetRequiredService<ChatClientSource>().CreateAsync,
@@ -41,7 +43,8 @@ builder.Services.AddSingleton(sp => new SessionService(
     new ModelTitleGenerator(sp.GetRequiredService<ChatClientSource>().CreateAsync),
     sp.GetRequiredService<IShellSandbox>(),
     sp.GetRequiredService<PermissionDefaults>(),
-    sp.GetRequiredService<McpManager>()));
+    sp.GetRequiredService<McpManager>(),
+    sp.GetRequiredService<SkillCatalog>()));
 builder.Services.AddSingleton(sp => new FolderRegistry(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<LaunchCredentials>();
 builder.Services.AddHttpClient();
