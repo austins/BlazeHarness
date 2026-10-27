@@ -1,4 +1,4 @@
-namespace BlazeHarness.Tests;
+namespace BlazeHarness.Tests.Shared;
 
 public class LoggerFake : ILogger
 {

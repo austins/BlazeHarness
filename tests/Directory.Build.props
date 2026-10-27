@@ -29,8 +29,8 @@
 
     <ItemGroup>
         <Using Include="AwesomeAssertions"/>
-        <Using Include="BlazeHarness.Tests"/>
-        <Using Include="BlazeHarness.Tests.Agent"/>
+        <Using Include="BlazeHarness.Tests.Shared"/>
+        <Using Include="BlazeHarness.Tests.Shared.Agent"/>
         <Using Include="Microsoft.Extensions.Logging"/>
         <Using Include="NSubstitute"/>
         <Using Include="NSubstitute.ClearExtensions"/>

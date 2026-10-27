@@ -1,7 +1,7 @@
 using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
 
-namespace BlazeHarness.Tests.Agent;
+namespace BlazeHarness.Tests.Shared.Agent;
 
 /// <summary>A chat client that replays scripted replies, one per request, and records what it was sent.</summary>
 public sealed class ScriptedChatClient : IChatClient
