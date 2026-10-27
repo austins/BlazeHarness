@@ -15,6 +15,19 @@ public sealed class LineDiffTests
     }
 
     [Fact]
+    public void Compare_AfterALargerDiff_IsNotAffectedByLeftoverState()
+    {
+        // Arrange
+        LineDiff.Compare("a\nb\nc\nd\ne\nf", "f\ne\nd\nc\nb\na");
+
+        // Act
+        var lines = LineDiff.Compare("a\nb\nc", "a\nB\nc");
+
+        // Assert
+        Render(lines).Should().Be(" a|-b|+B| c");
+    }
+
+    [Fact]
     public void Compare_ChangedMiddleLine_MarksOneRemovedAndOneAdded()
     {
         // Act

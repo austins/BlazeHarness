@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace BlazeHarness.Core.Diff;
 
 /// <summary>
@@ -72,39 +74,48 @@ public static class LineDiff
 
         // common[i * width + j] is the length of the longest common subsequence of before[i..] and after[j..].
         var width = after.Length + 1;
-        var common = new int[(before.Length + 1) * width];
-        for (var i = before.Length - 1; i >= 0; i--)
+        var size = (before.Length + 1) * width;
+        var common = ArrayPool<int>.Shared.Rent(size);
+        Array.Clear(common, 0, size);
+        try
         {
-            for (var j = after.Length - 1; j >= 0; j--)
+            for (var i = before.Length - 1; i >= 0; i--)
             {
-                common[(i * width) + j] = before[i] == after[j]
-                    ? common[((i + 1) * width) + j + 1] + 1
-                    : Math.Max(common[((i + 1) * width) + j], common[(i * width) + j + 1]);
+                for (var j = after.Length - 1; j >= 0; j--)
+                {
+                    common[(i * width) + j] = before[i] == after[j]
+                        ? common[((i + 1) * width) + j + 1] + 1
+                        : Math.Max(common[((i + 1) * width) + j], common[(i * width) + j + 1]);
+                }
             }
-        }
 
-        var a = 0;
-        var b = 0;
-        while (a < before.Length && b < after.Length)
+            var a = 0;
+            var b = 0;
+            while (a < before.Length && b < after.Length)
+            {
+                if (before[a] == after[b])
+                {
+                    lines.Add(new DiffLine(DiffKind.Same, before[a]));
+                    a++;
+                    b++;
+                }
+                else if (common[((a + 1) * width) + b] >= common[(a * width) + b + 1])
+                {
+                    lines.Add(new DiffLine(DiffKind.Removed, before[a++]));
+                }
+                else
+                {
+                    lines.Add(new DiffLine(DiffKind.Added, after[b++]));
+                }
+            }
+
+            AddAll(lines, DiffKind.Removed, before[a..]);
+            AddAll(lines, DiffKind.Added, after[b..]);
+        }
+        finally
         {
-            if (before[a] == after[b])
-            {
-                lines.Add(new DiffLine(DiffKind.Same, before[a]));
-                a++;
-                b++;
-            }
-            else if (common[((a + 1) * width) + b] >= common[(a * width) + b + 1])
-            {
-                lines.Add(new DiffLine(DiffKind.Removed, before[a++]));
-            }
-            else
-            {
-                lines.Add(new DiffLine(DiffKind.Added, after[b++]));
-            }
+            ArrayPool<int>.Shared.Return(common);
         }
-
-        AddAll(lines, DiffKind.Removed, before[a..]);
-        AddAll(lines, DiffKind.Added, after[b..]);
     }
 
     private static void AddAll(List<DiffLine> lines, DiffKind kind, ReadOnlySpan<string> texts)

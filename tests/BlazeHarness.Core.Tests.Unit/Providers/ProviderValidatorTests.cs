@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Providers;
+using System.Text.Json;
 
 namespace BlazeHarness.Core.Tests.Unit.Providers;
 
@@ -33,6 +34,46 @@ public sealed class ProviderValidatorTests
 
         // Assert
         issues.Should().ContainSingle(i => i.Path == "baseUrl");
+    }
+
+    [Theory]
+    [InlineData("top k")]
+    [InlineData("a[0]")]
+    [InlineData("a\"b")]
+    [InlineData("$.a")]
+    public void Validate_ExtraKeyThatCannotBeAPath_ReportsIssue(string key)
+    {
+        // Arrange
+        var model = Valid.Models[0] with { SamplingParams = new SamplingParams { Extra = new Dictionary<string, JsonElement> { [key] = JsonDocument.Parse("1").RootElement } } };
+
+        // Act
+        var issues = ProviderValidator.Validate(Valid with { Models = [model] });
+
+        // Assert
+        issues.Should().ContainSingle(i => i.Path == "models[0].samplingParams.extra");
+    }
+
+    [Fact]
+    public void Validate_ExtraKeyWithDotsAndDashes_IsValid()
+    {
+        // Arrange
+        var model = Valid.Models[0] with { SamplingParams = new SamplingParams { Extra = new Dictionary<string, JsonElement> { ["chat_template_kwargs.enable-thinking"] = JsonDocument.Parse("true").RootElement } } };
+
+        // Act
+        var issues = ProviderValidator.Validate(Valid with { Models = [model] });
+
+        // Assert
+        issues.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Validate_ThinkingFieldWithASpace_ReportsIssue()
+    {
+        // Act
+        var issues = ProviderValidator.Validate(Valid with { ThinkingSend = new ThinkingSend { Mode = ThinkingSendMode.BodyField, Field = "think ing" } });
+
+        // Assert
+        issues.Should().ContainSingle(i => i.Path == "thinkingSend.field");
     }
 
     [Fact]

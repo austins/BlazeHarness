@@ -36,17 +36,17 @@ public sealed record ResolvedRequestParams(SamplingParams Sampling, JsonObject B
         var body = new JsonObject();
         if (sampling.TopK is { } topK)
         {
-            body["top_k"] = topK;
+            body[Wire("topK")] = topK;
         }
 
         if (sampling.MinP is { } minP)
         {
-            body["min_p"] = minP;
+            body[Wire("minP")] = minP;
         }
 
         if (sampling.RepetitionPenalty is { } repetition)
         {
-            body["repetition_penalty"] = repetition;
+            body[Wire("repetitionPenalty")] = repetition;
         }
 
         if (sampling.Extra is not null)
@@ -88,22 +88,22 @@ public sealed record ResolvedRequestParams(SamplingParams Sampling, JsonObject B
         var json = new JsonObject();
         if (Sampling.Temperature is { } temperature)
         {
-            json["temperature"] = temperature;
+            json[Wire("temperature")] = temperature;
         }
 
         if (Sampling.TopP is { } topP)
         {
-            json["top_p"] = topP;
+            json[Wire("topP")] = topP;
         }
 
         if (Sampling.PresencePenalty is { } presence)
         {
-            json["presence_penalty"] = presence;
+            json[Wire("presencePenalty")] = presence;
         }
 
         if (Sampling.FrequencyPenalty is { } frequency)
         {
-            json["frequency_penalty"] = frequency;
+            json[Wire("frequencyPenalty")] = frequency;
         }
 
         foreach (var (key, value) in BodyFields)
@@ -113,6 +113,8 @@ public sealed record ResolvedRequestParams(SamplingParams Sampling, JsonObject B
 
         return json;
     }
+
+    private static string Wire(string key) => SamplingRange.All.First(r => r.Key == key).WireName;
 
     private static JsonNode? ParseLiteral(string value)
     {

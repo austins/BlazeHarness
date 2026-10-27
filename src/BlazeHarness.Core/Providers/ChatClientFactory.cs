@@ -51,6 +51,21 @@ public static class ChatClientFactory
     }
 
     /// <summary>
+    /// Build the options for a short helper request, such as a title or a summary, that should not think.
+    /// </summary>
+    /// <param name="provider">The provider, which decides the wire format.</param>
+    /// <param name="model">The model, which supplies defaults.</param>
+    /// <param name="maxOutputTokens">The most the reply may use.</param>
+    /// <returns>Options that cap the output and turn thinking off when the model has an off level.</returns>
+    public static ChatOptions BuildHelperOptions(ProviderConfig provider, ModelConfig model, int maxOutputTokens)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        var level = model.Levels?.ContainsKey(ThinkingLevel.Off) == true ? ThinkingLevel.Off : (ThinkingLevel?)null;
+        return BuildOptions(provider, model with { MaxOutputTokens = maxOutputTokens }, level);
+    }
+
+    /// <summary>
     /// Build the options for one request.
     /// </summary>
     /// <remarks>

@@ -9,6 +9,8 @@ namespace BlazeHarness.Core.Providers;
 /// </summary>
 public static class ProviderValidator
 {
+    private const string InvalidPathMessage = "Use letters, digits, dashes and underscores, with dots to reach into an object; no spaces or brackets.";
+
     /// <summary>
     /// Validate a provider and its models.
     /// </summary>
@@ -41,6 +43,11 @@ public static class ProviderValidator
         if (provider.ThinkingSend is { Mode: ThinkingSendMode.BodyField, Field: null or "" })
         {
             issues.Add(new ValidationIssue("thinkingSend.field", "Name the body field that carries the thinking level."));
+        }
+
+        if (provider.ThinkingSend is { Mode: ThinkingSendMode.BodyField, Field: { } thinkingField } && thinkingField.Length > 0 && !IsBodyPath(thinkingField))
+        {
+            issues.Add(new ValidationIssue("thinkingSend.field", InvalidPathMessage));
         }
 
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -89,11 +96,24 @@ public static class ProviderValidator
         }
     }
 
+    private static bool IsBodyPath(string path)
+    {
+        return path.Trim().Length > 0 && !path.Any(c => char.IsControl(c) || char.IsWhiteSpace(c) || c is '[' or ']' or '"' or '\'' or '\\' or '$' or '*');
+    }
+
     private static void ValidateSampling(SamplingParams? sampling, string path, List<ValidationIssue> issues)
     {
         if (sampling is null)
         {
             return;
+        }
+
+        if (sampling.Extra is not null)
+        {
+            foreach (var key in sampling.Extra.Keys.Where(k => !IsBodyPath(k)))
+            {
+                issues.Add(new ValidationIssue($"{path}.extra", $"The field name \"{key}\" is not valid. {InvalidPathMessage}"));
+            }
         }
 
         foreach (var range in SamplingRange.All)

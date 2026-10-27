@@ -96,7 +96,7 @@ public sealed class ConversationContext
         var kept = messages.Skip(_leading + _keptFrom).ToList();
 
         // Strict chat templates reject two user messages in a row, so a reply sits between the summary and a kept user message.
-        if (kept is [{ Role.Value: "user" }, ..])
+        if (kept is [{ } head, ..] && head.Role == ChatRole.User)
         {
             view.Add(new ChatMessage(ChatRole.Assistant, SummaryAcknowledgement));
         }

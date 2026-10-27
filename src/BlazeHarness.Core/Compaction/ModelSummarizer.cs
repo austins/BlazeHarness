@@ -65,9 +65,8 @@ public sealed class ModelSummarizer : ISummarizer
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        var capped = target.Model with { MaxOutputTokens = target.Model.MaxOutputTokens > 0 ? Math.Min(target.Model.MaxOutputTokens, MaxSummaryTokens) : MaxSummaryTokens };
-        var level = target.Model.Levels?.ContainsKey(ThinkingLevel.Off) == true ? ThinkingLevel.Off : (ThinkingLevel?)null;
-        return new ModelSummarizer(client, ChatClientFactory.BuildOptions(target.Provider, capped, level), ContextBudget.Limit(target.Model));
+        var maxOutput = target.Model.MaxOutputTokens > 0 ? Math.Min(target.Model.MaxOutputTokens, MaxSummaryTokens) : MaxSummaryTokens;
+        return new ModelSummarizer(client, ChatClientFactory.BuildHelperOptions(target.Provider, target.Model, maxOutput), ContextBudget.Limit(target.Model));
     }
 
     /// <inheritdoc />
