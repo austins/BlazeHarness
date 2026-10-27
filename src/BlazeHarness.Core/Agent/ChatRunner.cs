@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
@@ -40,6 +41,7 @@ public static class ChatRunner
     /// <param name="approver">Asks the user before a call that needs approval runs.</param>
     /// <param name="permissions">Decides which calls run, ask or are refused. Null means the default settings.</param>
     /// <param name="maxRounds">The most times to call the model.</param>
+    /// <param name="context">Chooses what part of <paramref name="history"/> is sent and compacts it before a call when it has grown too large. Null sends all of it.</param>
     /// <param name="cancellationToken">A token that stops the run.</param>
     /// <returns>The events of the run.</returns>
     public static IAsyncEnumerable<AgentEvent> RunAsync(
@@ -50,13 +52,14 @@ public static class ChatRunner
         IToolApprover? approver = null,
         PermissionEngine? permissions = null,
         int maxRounds = DefaultMaxRounds,
+        ConversationContext? context = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(history);
         ArgumentOutOfRangeException.ThrowIfLessThan(maxRounds, 1);
 
-        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), maxRounds, cancellationToken);
+        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), maxRounds, context, cancellationToken);
     }
 
     private static async IAsyncEnumerable<AgentEvent> RunCoreAsync(
@@ -67,6 +70,7 @@ public static class ChatRunner
         IToolApprover? approver,
         PermissionEngine permissions,
         int maxRounds,
+        ConversationContext? context,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         if (tools is { Declarations.Count: > 0 })
@@ -76,17 +80,55 @@ public static class ChatRunner
 
         for (var round = 0; round < maxRounds; round++)
         {
+            if (context is not null && context.ShouldCompact(history))
+            {
+                ContextCompacted? compacted = null;
+                string? failure = null;
+                var stopped = false;
+                try
+                {
+                    compacted = await context.CompactAsync(history, manual: false, cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    stopped = true;
+                }
+                catch (Exception ex) when (ex is not OutOfMemoryException)
+                {
+                    failure = ex.Message;
+                    context.Suspend();
+                }
+
+                if (stopped)
+                {
+                    yield return new Done(StopReason.Cancelled);
+                    yield break;
+                }
+
+                if (compacted is not null)
+                {
+                    yield return compacted;
+                }
+                else if (failure is not null)
+                {
+                    yield return new ContextCompactionFailed(failure);
+                }
+            }
+
             if (round > 0)
             {
                 yield return new NewResponse();
             }
+
+            var requestMessages = context?.View(history) ?? history;
+            var requestCount = history.Count;
 
             var reply = new StringBuilder();
             var calls = new List<FunctionCallContent>();
             var reason = StopReason.Completed;
             string? error = null;
 
-            var stream = client.GetStreamingResponseAsync(history, options, cancellationToken);
+            var stream = client.GetStreamingResponseAsync(requestMessages, options, cancellationToken);
             await using var enumerator = stream.GetAsyncEnumerator(cancellationToken);
 
             while (true)
@@ -128,6 +170,7 @@ public static class ChatRunner
                             calls.Add(call);
                             break;
                         case UsageContent usage:
+                            context?.RecordUsage(usage.Details.InputTokenCount ?? 0, requestCount);
                             yield return new UsageReported(
                                 usage.Details.InputTokenCount ?? 0,
                                 usage.Details.OutputTokenCount ?? 0,

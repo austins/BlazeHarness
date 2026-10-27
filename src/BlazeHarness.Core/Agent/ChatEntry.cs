@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Compaction;
 using Microsoft.Extensions.AI;
 using System.Text;
 
@@ -130,6 +131,15 @@ public sealed class ChatEntry
     /// Gets or sets the token usage the server reported for the reply.
     /// </summary>
     public UsageReported? Usage { get; set; }
+
+    /// <summary>
+    /// Gets or sets what this entry stands for when it is a compaction marker, or null for a message.
+    /// </summary>
+    /// <remarks>
+    /// A marker sits between the messages that were summarized and the ones that are still sent as they were.
+    /// It is never part of the history sent to the model, and its text is empty.
+    /// </remarks>
+    public CompactionInfo? Compaction { get; set; }
 
     /// <summary>
     /// Gets or sets the length of the model-facing history before this message, so a retry or an edit can drop it.

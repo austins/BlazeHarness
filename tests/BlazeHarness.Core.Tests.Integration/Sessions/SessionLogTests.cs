@@ -48,6 +48,7 @@ public sealed class SessionLogTests : IDisposable
             new AssistantStartEvent(at, reply, "Local · fast"),
             new AssistantDeltaEvent(at, reply, "Hi", "thinking"),
             new AssistantEndEvent(at, reply, EntryStatus.Done, null, new UsageReported(12, 40, 3)),
+            new CompactionEvent(at, Guid.NewGuid(), reply, "Summary\nof \"it\"", 9000, 700),
             new RewindEvent(at, user),
         ];
 
@@ -57,7 +58,7 @@ public sealed class SessionLogTests : IDisposable
 
         // Assert
         read.Should().Equal(written);
-        (await File.ReadAllLinesAsync(_path, TestContext.Current.CancellationToken)).Should().HaveCount(5);
+        (await File.ReadAllLinesAsync(_path, TestContext.Current.CancellationToken)).Should().HaveCount(6);
     }
 
     [Fact]

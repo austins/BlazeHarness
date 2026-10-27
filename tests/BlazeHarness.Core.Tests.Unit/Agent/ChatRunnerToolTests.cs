@@ -379,7 +379,7 @@ public sealed class ChatRunnerToolTests
         PermissionEngine? permissions = null)
     {
         var events = new List<AgentEvent>();
-        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), tools, approver, permissions, maxRounds, cancellationToken))
+        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), tools, approver, permissions, maxRounds, cancellationToken: cancellationToken))
         {
             events.Add(e);
         }

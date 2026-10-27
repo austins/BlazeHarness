@@ -29,7 +29,7 @@ public sealed partial class ChatSession
 
         List<ChatMessage> working = [.. History];
         var before = working.Count;
-        var prompt = string.Join(Environment.NewLine, new[] { BasePrompt, Project?.ToPrompt() }.Where(p => !string.IsNullOrWhiteSpace(p)));
+        var prompt = SystemPromptText();
         if (prompt.Length > 0)
         {
             working.Insert(0, new ChatMessage(ChatRole.System, prompt));
@@ -46,7 +46,8 @@ public sealed partial class ChatSession
         {
             using var client = await _clientFactory(target, cancellation);
             var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level);
-            await foreach (var e in ChatRunner.RunAsync(client, working, options, Tools, this, Permissions, cancellationToken: cancellation))
+            var context = CreateContext(client, target, prompt.Length > 0 ? 1 : 0);
+            await foreach (var e in ChatRunner.RunAsync(client, working, options, Tools, this, Permissions, context: context, cancellationToken: cancellation))
             {
                 await ApplyAsync(reply, e);
                 RaiseChanged();
@@ -98,6 +99,12 @@ public sealed partial class ChatSession
                 break;
             case NewResponse:
                 await StartNextResponseAsync(reply);
+                break;
+            case ContextCompacted compacted:
+                await ApplyCompactionAsync(compacted);
+                break;
+            case ContextCompactionFailed failed:
+                LogCompactionFailed(failed.Message);
                 break;
             case ToolCallRequested requested:
                 if (entry.Status == EntryStatus.Streaming)

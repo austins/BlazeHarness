@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sessions;
@@ -207,6 +208,9 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
                         finished.Status = result.Status;
                         finished.Output = result.Output;
                         break;
+                    case CompactionEvent compaction when _entries.FindIndex(x => x.Id == compaction.FirstKeptEntryId) is var at and >= 0:
+                        _entries.Insert(at, NewMarker(compaction.EntryId, compaction.At, new CompactionInfo(compaction.Summary, compaction.TokensBefore, compaction.TokensAfter)));
+                        break;
                     case RewindEvent rewind:
                         var keep = rewind.ToEntryId == Guid.Empty ? -1 : _entries.FindIndex(x => x.Id == rewind.ToEntryId);
                         if (keep >= 0 || rewind.ToEntryId == Guid.Empty)
@@ -241,6 +245,8 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
                 AppendHistory(_history, entry, Attachments);
             }
 
+            RefreshCompaction();
+            _compactedAfter = _compaction is null ? null : _entries[^1];
             Publish();
         }
 
@@ -329,6 +335,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
                     _entries.RemoveAt(_entries.Count - 1);
                     _history.RemoveRange(failed.HistoryIndex, _history.Count - failed.HistoryIndex);
                     rewind.Add(new RewindEvent(_time.GetUtcNow(), _entries is [.., { Id: var kept }] ? kept : Guid.Empty));
+                    RefreshCompaction();
                 }
 
                 return true;
@@ -389,6 +396,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
                 user.HistoryIndex = _history.Count;
                 _entries.Add(user);
                 _history.Add(AttachmentMessage.Build(text, user.Attachments, Attachments));
+                RefreshCompaction();
                 return true;
             },
             () => [new RewindEvent(sentAt, keep), new UserMessageEvent(sentAt, user.Id, text, user.Attachments)]);
@@ -483,6 +491,11 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
 
     private static void AppendHistory(List<ChatMessage> history, ChatEntry entry, SessionAttachments? attachments)
     {
+        if (entry.Compaction is not null)
+        {
+            return;
+        }
+
         if (entry.Role != ChatRole.Assistant)
         {
             history.Add(AttachmentMessage.Build(entry.Text, entry.Attachments, attachments));
