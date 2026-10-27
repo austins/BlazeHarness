@@ -22,6 +22,9 @@ public enum FolderError
 
     /// <summary>The folder exists but the app is not allowed to read it.</summary>
     AccessDenied,
+
+    /// <summary>The folder is too broad or private to work in: the file system root, the user's home folder, or the app's own data folder.</summary>
+    NotAllowed,
 }
 
 /// <summary>

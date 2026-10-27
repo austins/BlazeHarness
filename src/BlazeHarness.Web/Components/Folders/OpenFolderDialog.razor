@@ -130,6 +130,7 @@
         FolderError.NotFound => "That folder doesn't exist.",
         FolderError.NotAFolder => "That is a file, not a folder.",
         FolderError.AccessDenied => "BlazeHarness isn't allowed to read that folder.",
+        FolderError.NotAllowed => "That folder is too broad to work in. Pick a project folder, not the root, your home folder or BlazeHarness's own data folder.",
         _ => string.Empty,
     };
 

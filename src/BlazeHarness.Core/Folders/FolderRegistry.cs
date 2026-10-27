@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Config;
+using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.Logging;
 
 namespace BlazeHarness.Core.Folders;
@@ -89,7 +90,13 @@ public sealed class FolderRegistry : IDisposable
         }
 
         var full = FolderPaths.ToFullPath(path, _paths.UserHome);
-        return full is null ? FolderError.NotAbsolute : CheckFullPath(full);
+        if (full is null)
+        {
+            return FolderError.NotAbsolute;
+        }
+
+        var error = CheckFullPath(full);
+        return error == FolderError.None && IsTooBroad(full) ? FolderError.NotAllowed : error;
     }
 
     /// <summary>
@@ -220,6 +227,15 @@ public sealed class FolderRegistry : IDisposable
     public void Dispose()
     {
         _store.Dispose();
+    }
+
+    // Working in the root or home would let every tool reach everything the user owns, and the app's own folder holds provider keys.
+    private bool IsTooBroad(string full)
+    {
+        var real = WorkspacePath.CanonicalRoot(full);
+        return FolderPaths.Comparer.Equals(real, Path.GetPathRoot(real))
+            || FolderPaths.Comparer.Equals(real, WorkspacePath.CanonicalRoot(_paths.UserHome))
+            || WorkspacePath.IsInside(WorkspacePath.CanonicalRoot(_paths.Home), real);
     }
 
     private static FolderError CheckFullPath(string full)

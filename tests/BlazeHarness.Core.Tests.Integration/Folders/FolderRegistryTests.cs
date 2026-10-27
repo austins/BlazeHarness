@@ -45,6 +45,53 @@ public sealed class FolderRegistryTests : IDisposable
     }
 
     [Fact]
+    public async Task OpenAsync_HomeFolderItself_IsRefused()
+    {
+        // Act
+        var result = await _sut.OpenAsync(_home, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().Be(new OpenFolderResult(null, FolderError.NotAllowed));
+        _sut.List().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task OpenAsync_TildeForTheHomeFolder_IsRefused()
+    {
+        // Act
+        var result = await _sut.OpenAsync("~", TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Error.Should().Be(FolderError.NotAllowed);
+    }
+
+    [Fact]
+    public async Task OpenAsync_FileSystemRoot_IsRefused()
+    {
+        // Act
+        var result = await _sut.OpenAsync(Path.GetPathRoot(_root), TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Error.Should().Be(FolderError.NotAllowed);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("keys")]
+    public async Task OpenAsync_AppDataFolderOrInsideIt_IsRefused(string inside)
+    {
+        // Arrange
+        var folder = Path.Combine(_paths.Home, inside);
+        Directory.CreateDirectory(folder);
+
+        // Act
+        var result = await _sut.OpenAsync(folder, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Error.Should().Be(FolderError.NotAllowed);
+    }
+
+    [Fact]
     public async Task OpenAsync_SameFolderTwiceWithATrailingSeparator_IsOneEntryOpenedAgain()
     {
         // Arrange

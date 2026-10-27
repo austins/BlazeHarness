@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Tools;
 using System.Text;
 
 namespace BlazeHarness.Core.Folders;
@@ -46,8 +47,10 @@ public sealed record ProjectContext(string FolderPath, IReadOnlyList<ProjectFile
         foreach (var file in files)
         {
             prompt.AppendLine();
-            prompt.Append("<agents-md path=\"").Append(file.Path).AppendLine("\">");
-            prompt.AppendLine(file.Content.TrimEnd());
+            prompt.Append("<agents-md path=\"").Append(file.Path.Replace("\"", "&quot;", StringComparison.Ordinal)).AppendLine("\">");
+
+            // A file must not be able to close its own block and pass text off as the app's own instructions.
+            prompt.AppendLine(file.Content.TrimEnd().Replace("</agents-md", "&lt;/agents-md", StringComparison.OrdinalIgnoreCase));
             prompt.AppendLine("</agents-md>");
         }
 
@@ -83,7 +86,7 @@ public static class ProjectContextLoader
 
         var folder = Path.GetFullPath(folderPath);
         var root = FindGitRoot(folder) ?? folder;
-        var boundary = FolderPaths.Normalize(root, string.Empty) ?? root;
+        var boundary = WorkspacePath.CanonicalRoot(root);
 
         var remaining = MaxBytes;
         List<ProjectFile> nearestFirst = [];
@@ -147,8 +150,8 @@ public static class ProjectContextLoader
                     return null;
                 }
 
-                var real = FolderPaths.Normalize(target.FullName, string.Empty);
-                return real is not null && IsInside(real, boundary) && HasContent(target) ? real : null;
+                var real = WorkspacePath.CanonicalRoot(target.FullName);
+                return WorkspacePath.IsInside(boundary, real) && HasContent(target) ? real : null;
             }
 
             return info.Exists && HasContent(info) ? path : null;
@@ -161,12 +164,6 @@ public static class ProjectContextLoader
 
     // A named pipe or device reports a length of zero, and opening a pipe would block forever, so only files with a size are read.
     private static bool HasContent(FileInfo file) => file.Length > 0;
-
-    private static bool IsInside(string path, string boundary)
-    {
-        var relative = Path.GetRelativePath(boundary, path);
-        return relative != ".." && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) && !Path.IsPathRooted(relative);
-    }
 
     private static async Task<(string Text, bool Truncated)> ReadAsync(string path, int limit, CancellationToken cancellationToken)
     {

@@ -1,3 +1,5 @@
+using BlazeHarness.Core.Tools;
+
 namespace BlazeHarness.Core.Folders;
 
 /// <summary>
@@ -5,8 +7,6 @@ namespace BlazeHarness.Core.Folders;
 /// </summary>
 public static class FolderPaths
 {
-    private const int MaxLinkDepth = 16;
-
     /// <summary>
     /// Gets the comparer for normalized paths: ignoring case where the usual file systems do (Windows and macOS).
     /// </summary>
@@ -58,7 +58,7 @@ public static class FolderPaths
     public static string? Normalize(string? path, string userHome)
     {
         var full = ToFullPath(path, userHome);
-        return full is null ? null : TrimTrailingSeparators(ResolveLinks(full, 0));
+        return full is null ? null : WorkspacePath.CanonicalRoot(full);
     }
 
     /// <summary>
@@ -77,41 +77,5 @@ public static class FolderPaths
     {
         var root = Path.GetPathRoot(path) ?? string.Empty;
         return path.Length > root.Length ? path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) : path;
-    }
-
-    private static string ResolveLinks(string full, int depth)
-    {
-        if (depth >= MaxLinkDepth)
-        {
-            return full;
-        }
-
-        var root = Path.GetPathRoot(full) ?? string.Empty;
-        var current = root;
-        var separators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
-        foreach (var segment in full[root.Length..].Split(separators, StringSplitOptions.RemoveEmptyEntries))
-        {
-            current = Path.Combine(current, segment);
-            var target = TryResolveLink(current);
-            if (target is not null)
-            {
-                current = ResolveLinks(target, depth + 1);
-            }
-        }
-
-        return current;
-    }
-
-    private static string? TryResolveLink(string path)
-    {
-        try
-        {
-            var info = new DirectoryInfo(path);
-            return info.LinkTarget is null ? null : info.ResolveLinkTarget(returnFinalTarget: true)?.FullName;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
     }
 }
