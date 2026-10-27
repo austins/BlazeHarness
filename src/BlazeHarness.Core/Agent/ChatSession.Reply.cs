@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using System.Text;
 
@@ -47,7 +48,8 @@ public sealed partial class ChatSession
             using var client = await _clientFactory(target, cancellation);
             var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level);
             var context = CreateContext(client, target, prompt.Length > 0 ? 1 : 0);
-            await foreach (var e in ChatRunner.RunAsync(client, working, options, Tools, this, Permissions, context: context, cancellationToken: cancellation))
+            var tools = await TurnToolsAsync(cancellation);
+            await foreach (var e in ChatRunner.RunAsync(client, working, options, tools, this, Permissions, context: context, cancellationToken: cancellation))
             {
                 await ApplyAsync(reply, e);
                 RaiseChanged();
@@ -66,6 +68,12 @@ public sealed partial class ChatSession
         {
             await CloseAsync(reply);
         }
+    }
+
+    private async Task<ToolSet?> TurnToolsAsync(CancellationToken cancellation)
+    {
+        var tools = Tools;
+        return tools is not null && ExtraTools is { } extra ? tools.With(await extra(cancellation)) : tools;
     }
 
     private async Task ApplyAsync(Reply reply, AgentEvent e)

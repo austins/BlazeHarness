@@ -45,6 +45,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     private IReadOnlyList<ChatEntry> _snapshot = [];
     private ProjectContext? _project;
     private ToolSet? _tools;
+    private Func<CancellationToken, Task<IReadOnlyList<ITool>>>? _extraTools;
     private SessionAttachments? _attachments;
     private string? _basePrompt;
     private Action? _stop;
@@ -148,6 +149,19 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     {
         get => Volatile.Read(ref _tools);
         set => Volatile.Write(ref _tools, value);
+    }
+
+    /// <summary>
+    /// Gets or sets where the tools that come and go between replies, such as MCP tools, are asked for.
+    /// </summary>
+    /// <remarks>
+    /// A reply asks once when it starts and keeps those tools until it ends, so the list the model sees never changes within a reply.
+    /// The tools are added to <see cref="Tools"/>, and are not offered when that is null.
+    /// </remarks>
+    public Func<CancellationToken, Task<IReadOnlyList<ITool>>>? ExtraTools
+    {
+        get => Volatile.Read(ref _extraTools);
+        set => Volatile.Write(ref _extraTools, value);
     }
 
     /// <summary>

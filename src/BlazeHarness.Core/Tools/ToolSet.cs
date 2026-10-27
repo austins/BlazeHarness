@@ -54,6 +54,18 @@ public sealed class ToolSet
     public IReadOnlyList<AITool> Declarations { get; }
 
     /// <summary>
+    /// Get a copy of this set with more tools added after the existing ones.
+    /// </summary>
+    /// <param name="extra">The tools to add. One whose name is already taken is skipped, so a built-in tool is never replaced.</param>
+    /// <returns>The new set, or this one when nothing was added.</returns>
+    public ToolSet With(IEnumerable<ITool> extra)
+    {
+        ArgumentNullException.ThrowIfNull(extra);
+        var added = extra.Where(tool => !_byName.ContainsKey(tool.Name)).DistinctBy(tool => tool.Name, StringComparer.Ordinal).ToList();
+        return added.Count == 0 ? this : new ToolSet([.. Tools, .. added], Context);
+    }
+
+    /// <summary>
     /// Cut text to at most <see cref="MaxOutputCharacters"/> characters, saying how much was left out.
     /// </summary>
     /// <param name="output">The text to limit.</param>

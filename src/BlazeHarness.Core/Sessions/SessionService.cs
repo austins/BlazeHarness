@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tools;
@@ -31,6 +32,7 @@ public sealed partial class SessionService : IDisposable
     private readonly ITitleGenerator? _titles;
     private readonly IShellSandbox _sandbox;
     private readonly PermissionDefaults? _defaults;
+    private readonly McpManager? _mcp;
     private readonly ILogger _log;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
@@ -47,6 +49,7 @@ public sealed partial class SessionService : IDisposable
     /// <param name="titles">Writes a title after the first exchange; without it a session keeps its placeholder title.</param>
     /// <param name="sandbox">Runs shell commands; without it commands only run in sessions with the Unrestricted access level.</param>
     /// <param name="defaults">The global permission choices; without it new chats start with the built-in settings and the risky options stay available.</param>
+    /// <param name="mcp">Provides the tools of MCP servers; without it sessions have no MCP tools.</param>
     public SessionService(
         SessionStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
@@ -54,7 +57,8 @@ public sealed partial class SessionService : IDisposable
         TimeProvider? time = null,
         ITitleGenerator? titles = null,
         IShellSandbox? sandbox = null,
-        PermissionDefaults? defaults = null)
+        PermissionDefaults? defaults = null,
+        McpManager? mcp = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
@@ -66,6 +70,7 @@ public sealed partial class SessionService : IDisposable
         _titles = titles;
         _sandbox = sandbox ?? new NoShellSandbox("No sandbox is set up.");
         _defaults = defaults;
+        _mcp = mcp;
         _log = loggers.CreateLogger<SessionService>();
     }
 
@@ -156,6 +161,42 @@ public sealed partial class SessionService : IDisposable
 
         await session.SetPermissionsAsync(settings).ConfigureAwait(false);
         await _store.UpdateAsync(id, s => StoreSettings(s, settings)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Get whether an MCP server is on for a session.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="server">The server.</param>
+    /// <returns>True when the session's tools include the server's tools: the session's own choice if it made one, else the server's global state.</returns>
+    public bool IsMcpServerEnabled(string id, McpServerConfig server)
+    {
+        ArgumentNullException.ThrowIfNull(server);
+        return McpManager.IsEnabled(server, _store.Find(id)?.McpServers);
+    }
+
+    /// <summary>
+    /// Turn an MCP server on or off for one session, or go back to its global state.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="serverName">The server's name in <c>mcp.json</c>.</param>
+    /// <param name="enabled">True or false to choose for this session, or null to follow the global state again.</param>
+    /// <returns>A task that completes once the choice is saved. It applies from the session's next reply.</returns>
+    public Task SetMcpServerAsync(string id, string serverName, bool? enabled)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(serverName);
+        return _store.UpdateAsync(
+            id,
+            s =>
+            {
+                var chosen = (s.McpServers ?? new Dictionary<string, bool>()).Where(pair => !string.Equals(pair.Key, serverName, StringComparison.Ordinal)).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+                if (enabled is { } value)
+                {
+                    chosen[serverName] = value;
+                }
+
+                return s with { McpServers = chosen.Count == 0 ? null : chosen };
+            });
     }
 
     /// <summary>
@@ -509,6 +550,20 @@ public sealed partial class SessionService : IDisposable
         {
             session.Permissions.BypassAllowed = () => defaults.AllowBypass;
             session.Permissions.Rules = () => defaults.Rules;
+        }
+
+        if (_mcp is { } mcp)
+        {
+            session.ExtraTools = async cancellation =>
+            {
+                var overrides = _store.Find(id)?.McpServers;
+                var wanted = mcp.Statuses().Where(status => McpManager.IsEnabled(status.Config, overrides)).Select(status => status.Config.Name);
+                return await mcp.ToolsAsync(wanted, cancellation).ConfigureAwait(false);
+            };
+            if (_defaults is { } trust)
+            {
+                session.Permissions.TrustedMcpServer = trust.IsMcpServerTrusted;
+            }
         }
 
         var wasRunning = false;

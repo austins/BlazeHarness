@@ -201,6 +201,64 @@ public sealed class ChatSessionToolTests
         sut.History.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant);
     }
 
+    [Fact]
+    public async Task SendAsync_ExtraTools_AreOfferedAndCalledForTheReply()
+    {
+        // Arrange
+        var extra = new FakeTool("server__lookup", isReadOnly: false);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "server__lookup")])
+            .Enqueue([ScriptedChatClient.Text("done")]);
+        using var sut = Create(client, new FakeTool("read", isReadOnly: true));
+        sut.ExtraTools = _ => Task.FromResult<IReadOnlyList<ITool>>([extra]);
+        sut.Permissions.Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.NeverAsk);
+
+        // Act
+        await sut.SendAsync("go", TestTargets.Create());
+
+        // Assert
+        client.Options[0]!.Tools!.Select(t => t.Name).Should().Equal("read", "server__lookup");
+        extra.Started.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task SendAsync_ExtraToolsAreAskedOncePerReply_NotOncePerRound()
+    {
+        // Arrange
+        var asked = 0;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read")])
+            .Enqueue([ScriptedChatClient.Call("c2", "read")])
+            .Enqueue([ScriptedChatClient.Text("done")]);
+        using var sut = Create(client, new FakeTool("read", isReadOnly: true));
+        sut.ExtraTools = _ =>
+        {
+            asked++;
+            return Task.FromResult<IReadOnlyList<ITool>>([]);
+        };
+
+        // Act
+        await sut.SendAsync("go", TestTargets.Create());
+        await sut.SendAsync("again", TestTargets.Create());
+
+        // Assert
+        asked.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task SendAsync_ExtraToolsWithoutBaseTools_AreNotOffered()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("hi")]);
+        using var sut = Create(client);
+        sut.Tools = null;
+        sut.ExtraTools = _ => Task.FromResult<IReadOnlyList<ITool>>([new FakeTool("extra", isReadOnly: true)]);
+
+        // Act
+        await sut.SendAsync("go", TestTargets.Create());
+
+        // Assert
+        client.Options[0]!.Tools.Should().BeNullOrEmpty();
+    }
+
     private static async Task WaitForStatus(ChatSession session, ToolCallStatus status)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);

@@ -20,6 +20,46 @@ public sealed class ToolSetTests : IDisposable
     }
 
     [Fact]
+    public void With_ExtraTools_AreOfferedAfterTheExistingOnes()
+    {
+        // Arrange
+        var sut = new ToolSet([new ReadFileTool()], _workspace.Context);
+
+        // Act
+        var more = sut.With([Named("extra_one"), Named("extra_two")]);
+
+        // Assert
+        more.Tools.Select(t => t.Name).Should().Equal("read_file", "extra_one", "extra_two");
+        more.Declarations.Should().HaveCount(3);
+        more.Context.Should().BeSameAs(sut.Context);
+        sut.Tools.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void With_NameAlreadyTaken_KeepsTheExistingToolAndSkipsTheNewOne()
+    {
+        // Arrange
+        var sut = new ToolSet([new ReadFileTool()], _workspace.Context);
+
+        // Act
+        var more = sut.With([Named("read_file"), Named("fresh"), Named("fresh")]);
+
+        // Assert
+        more.Tools.Select(t => t.Name).Should().Equal("read_file", "fresh");
+        more.Find("read_file").Should().BeOfType<ReadFileTool>();
+    }
+
+    [Fact]
+    public void With_NothingNew_ReturnsTheSameSet()
+    {
+        // Arrange
+        var sut = new ToolSet([new ReadFileTool()], _workspace.Context);
+
+        // Assert
+        sut.With([]).Should().BeSameAs(sut);
+    }
+
+    [Fact]
     public void Declarations_BuiltInTools_HaveNamesAndSchemas()
     {
         // Act
@@ -162,6 +202,15 @@ public sealed class ToolSetTests : IDisposable
         tool.Timeout.Returns(timeout);
         tool.Summarize(Arg.Any<JsonElement>()).Returns(string.Empty);
         tool.ExecuteAsync(Arg.Any<ToolArguments>(), Arg.Any<ToolContext>(), Arg.Any<CancellationToken>()).Returns(call => run(call.Arg<CancellationToken>()));
+        return tool;
+    }
+
+    private static ITool Named(string name)
+    {
+        var tool = Substitute.For<ITool>();
+        tool.Name.Returns(name);
+        tool.Description.Returns("A fake tool.");
+        tool.InputSchema.Returns("""{"type":"object"}""");
         return tool;
     }
 
