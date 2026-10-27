@@ -267,6 +267,8 @@
     private ModelEditModel? _tuning;
     private bool _hasStoredKey;
     private bool _testing;
+    private const string SaveFailure = "The provider settings could not be saved because the settings file or the key store could not be written.";
+
     private bool _saving;
     private bool _confirmDelete;
 
@@ -388,7 +390,8 @@
 
     private async Task MakeDefaultAsync(ModelEditModel model)
     {
-        if (await Service.SetDefaultAsync(_edit!.Id, model.Id))
+        var changed = false;
+        if (await Toasts.TrySaveAsync(async () => changed = await Service.SetDefaultAsync(_edit!.Id, model.Id), SaveFailure) && changed)
         {
             Toasts.Show($"{model.Id} is now the default model.", ToastKind.Success);
         }
@@ -409,7 +412,13 @@
                 _edit.Id = Service.NewId(_edit.DisplayName);
             }
 
-            _issues = await Service.SaveAsync(_edit.ToConfig(), _edit.NewApiKey);
+            IReadOnlyList<ValidationIssue> issues = [];
+            if (!await Toasts.TrySaveAsync(async () => issues = await Service.SaveAsync(_edit.ToConfig(), _edit.NewApiKey), SaveFailure))
+            {
+                return;
+            }
+
+            _issues = issues;
             if (_issues.Count > 0)
             {
                 return;
@@ -430,7 +439,11 @@
     {
         if (_edit is { IsNew: false })
         {
-            await Service.ClearKeyAsync(_edit.Id);
+            if (!await Toasts.TrySaveAsync(() => Service.ClearKeyAsync(_edit.Id), SaveFailure))
+            {
+                return;
+            }
+
             _edit.NewApiKey = string.Empty;
             await RefreshKeyAsync();
             Toasts.Show("Stored key removed.", ToastKind.Success);
@@ -443,7 +456,11 @@
         if (_edit is { IsNew: false })
         {
             var name = _edit.DisplayName;
-            await Service.RemoveAsync(_edit.Id);
+            if (!await Toasts.TrySaveAsync(() => Service.RemoveAsync(_edit.Id), SaveFailure))
+            {
+                return;
+            }
+
             _edit = null;
             ResetFeedback();
             Toasts.Show($"Removed {name}.", ToastKind.Success);
@@ -455,7 +472,7 @@
     private string? Invalid(string path) => _issues.Any(i => i.Path == path) ? "true" : null;
 
     private RenderFragment? Error(string path) => _issues.FirstOrDefault(i => i.Path == path) is { } issue
-        ? (builder => { builder.OpenElement(0, "span"); builder.AddAttribute(1, "class", "error-text"); builder.AddContent(2, issue.Message); builder.CloseElement(); })
+        ? @<span class="error-text">@issue.Message</span>
         : null;
 
     private IEnumerable<ValidationIssue> ModelIssues() => _issues.Where(i => i.Path.StartsWith("models[", StringComparison.Ordinal));

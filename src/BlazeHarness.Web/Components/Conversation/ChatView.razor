@@ -551,7 +551,7 @@ else
     {
         if (_openId is { } id)
         {
-            await Sessions.SetPermissionsAsync(id, settings);
+            await Toasts.TrySaveAsync(() => Sessions.SetPermissionsAsync(id, settings), "The permissions could not be saved because the chat's file could not be written.");
         }
         else
         {

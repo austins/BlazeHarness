@@ -4,6 +4,7 @@
 @implements IDisposable
 @inject SkillCatalog Catalog
 @inject AppPaths Paths
+@inject ToastService Toasts
 
 <PageTitle>Skills · BlazeHarness</PageTitle>
 
@@ -99,7 +100,7 @@
         _ => "Shared",
     };
 
-    private Task SetEnabledAsync(string name, bool enabled) => Catalog.SetDisabledAsync(name, !enabled);
+    private Task SetEnabledAsync(string name, bool enabled) => Toasts.TrySaveAsync(() => Catalog.SetDisabledAsync(name, !enabled), "The skill setting could not be saved because the settings file could not be written.");
 
     private void OnCatalogChanged(object? sender, EventArgs e)
     {

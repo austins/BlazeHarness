@@ -46,9 +46,9 @@
             <dt>Folders</dt>
             <dd>@Folders.List().Count</dd>
             <dt>MCP servers</dt>
-            <dd>@Mcp.Statuses().Count(s => s.State == McpServerState.Connected) connected of @Mcp.Statuses().Count</dd>
+            <dd>@_servers.Count(s => s.State == McpServerState.Connected) connected of @_servers.Count</dd>
             <dt>Skills</dt>
-            <dd>@Skills.Resolve(null).Skills.Count</dd>
+            <dd>@_skillCount</dd>
         </dl>
     </section>
 
@@ -73,11 +73,15 @@
     private const int TailLines = 200;
 
     private IReadOnlyList<string> _lines = [];
+    private IReadOnlyList<McpServerStatus> _servers = [];
+    private int _skillCount;
 
     private static string Version => typeof(Diagnostics).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "unknown";
 
     protected override async Task OnInitializedAsync()
     {
+        _servers = Mcp.Statuses();
+        _skillCount = Skills.Resolve(null).Skills.Count;
         await LoadAsync();
     }
 

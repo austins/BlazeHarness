@@ -1,6 +1,7 @@
 @page "/settings/permissions"
 @using BlazeHarness.Core.Permissions
 @inject PermissionDefaults Defaults
+@inject ToastService Toasts
 
 <PageTitle>Permissions · BlazeHarness</PageTitle>
 
@@ -120,13 +121,27 @@
 
     protected override void OnInitialized()
     {
+        Load();
+        _protectedExample = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "my-tool");
+    }
+
+    private void Load()
+    {
         var current = Defaults.Current;
         _access = current.Access;
         _approvals = current.Approvals;
         _allowBypass = Defaults.AllowBypass;
         _rules = [.. Defaults.Rules];
         _protected = [.. Defaults.ProtectedFolders];
-        _protectedExample = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "my-tool");
+    }
+
+    // The lists are edited before they are saved, so a failed save shows what is really stored again.
+    private async Task PersistAsync(Func<Task> save)
+    {
+        if (!await Toasts.TrySaveAsync(save, "The permission settings could not be saved because the settings file could not be written."))
+        {
+            Load();
+        }
     }
 
     private static string TargetLabel(RuleTarget target)
@@ -167,13 +182,13 @@
 
         _rules.Add(new PermissionRule(_newTarget, _newAction, _newPattern.Trim()));
         _newPattern = string.Empty;
-        return Defaults.SaveRulesAsync(_rules);
+        return PersistAsync(() => Defaults.SaveRulesAsync(_rules));
     }
 
     private Task RemoveRuleAsync(int index)
     {
         _rules.RemoveAt(index);
-        return Defaults.SaveRulesAsync(_rules);
+        return PersistAsync(() => Defaults.SaveRulesAsync(_rules));
     }
 
     private Task OnProtectedKeyAsync(KeyboardEventArgs e) => e.Key == "Enter" ? AddProtectedAsync() : Task.CompletedTask;
@@ -192,30 +207,40 @@
         }
 
         _newProtected = string.Empty;
-        return Defaults.SaveProtectedFoldersAsync(_protected);
+        return PersistAsync(() => Defaults.SaveProtectedFoldersAsync(_protected));
     }
 
     private Task RemoveProtectedAsync(int index)
     {
         _protected.RemoveAt(index);
-        return Defaults.SaveProtectedFoldersAsync(_protected);
+        return PersistAsync(() => Defaults.SaveProtectedFoldersAsync(_protected));
     }
 
     private async Task ResetProtectedAsync()
     {
-        await Defaults.SaveProtectedFoldersAsync(null);
+        await PersistAsync(() => Defaults.SaveProtectedFoldersAsync(null));
         _protected = [.. Defaults.ProtectedFolders];
     }
 
     private Task OnAccessChangedAsync(ChangeEventArgs e)
     {
-        _access = Enum.Parse<AccessLevel>((string)e.Value!);
+        if (!Enum.TryParse<AccessLevel>(e.Value as string, out var access) || !Enum.IsDefined(access))
+        {
+            return Task.CompletedTask;
+        }
+
+        _access = access;
         return SaveAsync();
     }
 
     private Task OnApprovalsChangedAsync(ChangeEventArgs e)
     {
-        _approvals = Enum.Parse<ApprovalMode>((string)e.Value!);
+        if (!Enum.TryParse<ApprovalMode>(e.Value as string, out var approvals) || !Enum.IsDefined(approvals))
+        {
+            return Task.CompletedTask;
+        }
+
+        _approvals = approvals;
         return SaveAsync();
     }
 
@@ -225,5 +250,5 @@
         return SaveAsync();
     }
 
-    private Task SaveAsync() => Defaults.SaveAsync(new PermissionSettings(_access, _approvals), _allowBypass);
+    private Task SaveAsync() => PersistAsync(() => Defaults.SaveAsync(new PermissionSettings(_access, _approvals), _allowBypass));
 }

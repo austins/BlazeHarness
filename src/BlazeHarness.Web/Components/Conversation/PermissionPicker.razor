@@ -3,6 +3,7 @@
 @inject IShellSandbox Sandbox
 @inject PermissionDefaults Defaults
 
+@* Changing the key makes Blazor build new selects, which shows the saved values again after a choice was cancelled. *@
 <select class="select" @key="@("access" + _version)" aria-label="Access level" title="What the model's tools may touch" value="@Settings.Access" @onchange="OnAccessChanged">
     <option value="@AccessLevel.ReadOnly">Read only</option>
     <option value="@AccessLevel.WriteInFolder">@(HasFolder ? "Write in folder" : "Write in session files")</option>
@@ -86,12 +87,16 @@
 
     private Task OnAccessChanged(ChangeEventArgs e)
     {
-        return Choose(Settings with { Access = Enum.Parse<AccessLevel>((string)e.Value!) });
+        return Enum.TryParse<AccessLevel>(e.Value as string, out var access) && Enum.IsDefined(access)
+            ? Choose(Settings with { Access = access })
+            : Task.CompletedTask;
     }
 
     private Task OnApprovalsChanged(ChangeEventArgs e)
     {
-        return Choose(Settings with { Approvals = Enum.Parse<ApprovalMode>((string)e.Value!) });
+        return Enum.TryParse<ApprovalMode>(e.Value as string, out var approvals) && Enum.IsDefined(approvals)
+            ? Choose(Settings with { Approvals = approvals })
+            : Task.CompletedTask;
     }
 
     private async Task Choose(PermissionSettings chosen)

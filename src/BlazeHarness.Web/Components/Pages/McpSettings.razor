@@ -6,6 +6,7 @@
 @inject McpConfigFile File
 @inject McpManager Manager
 @inject PermissionDefaults Defaults
+@inject ToastService Toasts
 
 <PageTitle>MCP servers · BlazeHarness</PageTitle>
 
@@ -179,6 +180,7 @@
     };
 
     private const int DescriptionLength = 120;
+    private const string FileFailure = "The MCP settings could not be saved because the file could not be written.";
 
     private static string FirstLine(string? description)
     {
@@ -225,7 +227,7 @@
 
     private async Task SetTrustedAsync(string name, bool trusted)
     {
-        await Defaults.SetMcpServerTrustedAsync(name, trusted);
+        await Toasts.TrySaveAsync(() => Defaults.SetMcpServerTrustedAsync(name, trusted), FileFailure);
     }
 
     private async Task TestAsync(string name)
@@ -258,8 +260,13 @@
             return;
         }
 
-        var saved = await File.SaveAsync(merged.Text);
-        if (saved.Errors.Count > 0)
+        McpParseResult? saved = null;
+        if (!await Toasts.TrySaveAsync(async () => saved = await File.SaveAsync(merged.Text), FileFailure))
+        {
+            return;
+        }
+
+        if (saved!.Errors.Count > 0)
         {
             _text = merged.Text;
             _problems = saved.Errors;
@@ -280,8 +287,13 @@
         _saving = true;
         try
         {
-            var result = await File.SaveAsync(_text);
-            _problems = result.Errors;
+            McpParseResult? result = null;
+            if (!await Toasts.TrySaveAsync(async () => result = await File.SaveAsync(_text), FileFailure))
+            {
+                return;
+            }
+
+            _problems = result!.Errors;
             if (result.Errors.Count == 0)
             {
                 _loaded = _text = File.Text;
