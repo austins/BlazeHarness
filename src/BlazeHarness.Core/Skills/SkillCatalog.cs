@@ -23,6 +23,7 @@ public sealed partial class SkillCatalog : IDisposable
     private readonly Dictionary<string, FileSystemWatcher> _watchers = new(StringComparer.Ordinal);
     private readonly Timer _debounce;
     private SkillScan[] _global = [];
+    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SkillCatalog"/> class.
@@ -72,6 +73,12 @@ public sealed partial class SkillCatalog : IDisposable
     {
         lock (_gate)
         {
+            // A debounced refresh that was already queued must not rewatch folders after disposal.
+            if (_disposed)
+            {
+                return;
+            }
+
             _global = [.. _globalFolders.Select(folder => SkillScanner.Scan(folder.Path, folder.Source))];
             AttachWatchers();
         }
@@ -148,6 +155,7 @@ public sealed partial class SkillCatalog : IDisposable
     {
         lock (_gate)
         {
+            _disposed = true;
             foreach (var watcher in _watchers.Values)
             {
                 watcher.Dispose();
@@ -194,7 +202,17 @@ public sealed partial class SkillCatalog : IDisposable
         }
     }
 
-    private void Schedule() => _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
+    private void Schedule()
+    {
+        try
+        {
+            _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
+        }
+        catch (ObjectDisposedException)
+        {
+            // A watcher event can still arrive just after disposal.
+        }
+    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not watch the skills folder {Path}.")]
     private partial void LogWatchFailed(Exception ex, string path);

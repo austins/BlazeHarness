@@ -98,6 +98,11 @@ public sealed partial class McpManager : IAsyncDisposable
         await entry.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            if (!IsCurrent(entry))
+            {
+                return null;
+            }
+
             await StopAsync(entry).ConfigureAwait(false);
             await ConnectCoreAsync(entry, config, cancellationToken).ConfigureAwait(false);
         }
@@ -226,7 +231,7 @@ public sealed partial class McpManager : IAsyncDisposable
                 try
                 {
                     await StopAsync(entry).ConfigureAwait(false);
-                    entry.Reset(current.TryGetValue(entry.Name, out var now) ? now : entry.Config);
+                    Reset(entry, current.TryGetValue(entry.Name, out var now) ? now : entry.Config);
                 }
                 finally
                 {
@@ -268,6 +273,24 @@ public sealed partial class McpManager : IAsyncDisposable
         }
     }
 
+    private bool IsCurrent(Entry entry)
+    {
+        lock (_gate)
+        {
+            return IsCurrentLocked(entry);
+        }
+    }
+
+    private bool IsCurrentLocked(Entry entry) => !_disposed && _entries.TryGetValue(entry.Name, out var live) && ReferenceEquals(live, entry);
+
+    private void Reset(Entry entry, McpServerConfig config)
+    {
+        lock (_gate)
+        {
+            entry.Reset(config);
+        }
+    }
+
     private Entry EntryFor(McpServerConfig config)
     {
         lock (_gate)
@@ -289,10 +312,16 @@ public sealed partial class McpManager : IAsyncDisposable
         await entry.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            // A server removed from mcp.json, or a disposed manager, must not start a process nobody will stop.
+            if (!IsCurrent(entry))
+            {
+                return;
+            }
+
             if (!config.SameAs(entry.Config))
             {
                 await StopAsync(entry).ConfigureAwait(false);
-                entry.Reset(config);
+                Reset(entry, config);
             }
 
             var retry = entry.State == McpServerState.Failed && _time.GetUtcNow() - entry.FailedAt >= RetryAfterFailure;
@@ -309,8 +338,12 @@ public sealed partial class McpManager : IAsyncDisposable
 
     private async Task ConnectCoreAsync(Entry entry, McpServerConfig config, CancellationToken cancellationToken)
     {
-        entry.Reset(config);
-        entry.State = McpServerState.Connecting;
+        lock (_gate)
+        {
+            entry.Reset(config);
+            entry.State = McpServerState.Connecting;
+        }
+
         RaiseChanged();
 
         if (!config.TryExpand(_environment, out var expanded, out var problem))
@@ -326,16 +359,35 @@ public sealed partial class McpManager : IAsyncDisposable
         {
             connection = await _connector.ConnectAsync(expanded, linked.Token).ConfigureAwait(false);
             var tools = await connection.ListToolsAsync(linked.Token).ConfigureAwait(false);
-            entry.Connection = connection;
-            entry.Tools = tools;
-            entry.State = McpServerState.Connected;
+            bool kept;
+            lock (_gate)
+            {
+                kept = IsCurrentLocked(entry);
+                if (kept)
+                {
+                    entry.Connection = connection;
+                    entry.Tools = tools;
+                    entry.State = McpServerState.Connected;
+                }
+            }
+
+            if (!kept)
+            {
+                await DisposeQuietlyAsync(connection).ConfigureAwait(false);
+                return;
+            }
+
             _ = WatchAsync(entry, connection);
             RaiseChanged();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             await DisposeQuietlyAsync(connection).ConfigureAwait(false);
-            entry.State = McpServerState.Stopped;
+            lock (_gate)
+            {
+                entry.State = McpServerState.Stopped;
+            }
+
             RaiseChanged();
             throw;
         }

@@ -45,6 +45,24 @@ public sealed class SkillCatalogTests : IDisposable
     }
 
     [Fact]
+#pragma warning disable IDISP016, IDISP017 // Using the catalog after disposal is the point of the test.
+    public void Refresh_AfterDispose_DoesNothing()
+    {
+        // Arrange
+        var sut = new SkillCatalog(_paths, _config, new LoggerFake<SkillCatalog>(), watch: false);
+        var raised = 0;
+        sut.Changed += (_, _) => raised++;
+        sut.Dispose();
+
+        // Act
+        sut.Refresh();
+
+        // Assert
+        raised.Should().Be(0);
+    }
+#pragma warning restore IDISP016, IDISP017
+
+    [Fact]
     public void Resolve_NoFolder_UsesTheGlobalSkillsOnly()
     {
         // Arrange

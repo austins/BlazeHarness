@@ -128,7 +128,39 @@ public sealed partial class McpConfigFile : IDisposable
         _lock.Dispose();
     }
 
-    private void Schedule() => _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
+    /// <summary>
+    /// Read the file again after an edit made outside the app, and raise <see cref="Changed"/> when its text differs.
+    /// </summary>
+    internal void OnExternalChange()
+    {
+        bool changed;
+        try
+        {
+            changed = Reload();
+        }
+        catch (ObjectDisposedException)
+        {
+            // A callback that was already queued when the file was disposed has nothing left to do, and must not fault a thread-pool thread.
+            return;
+        }
+
+        if (changed)
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private void Schedule()
+    {
+        try
+        {
+            _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
+        }
+        catch (ObjectDisposedException)
+        {
+            // A watcher event can still arrive just after disposal.
+        }
+    }
 
     private string? ReadText()
     {
@@ -143,7 +175,7 @@ public sealed partial class McpConfigFile : IDisposable
         }
     }
 
-    private void OnExternalChange()
+    private bool Reload()
     {
         _lock.Wait();
         try
@@ -151,17 +183,16 @@ public sealed partial class McpConfigFile : IDisposable
             var text = ReadText() ?? string.Empty;
             if (text == _current.Text)
             {
-                return;
+                return false;
             }
 
             Volatile.Write(ref _current, Snapshot.Of(text));
+            return true;
         }
         finally
         {
             _lock.Release();
         }
-
-        Changed?.Invoke(this, EventArgs.Empty);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not read {File}.")]

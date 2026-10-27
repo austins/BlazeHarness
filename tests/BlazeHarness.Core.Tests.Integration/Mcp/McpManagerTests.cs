@@ -290,6 +290,48 @@ public sealed class McpManagerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ConfigChange_ServerRemovedWhileConnecting_ClosesTheLateConnection()
+    {
+        // Arrange
+        var late = Connection(Tool("a"));
+        var connecting = new TaskCompletionSource<IMcpConnection>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _connector.ConnectAsync(Arg.Any<McpServerConfig>(), Arg.Any<CancellationToken>()).Returns(connecting.Task);
+        var pending = _sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
+        await WaitUntilAsync(() => _sut.Statuses().Single(s => s.Config.Name == "alpha").State == McpServerState.Connecting);
+        await _file.SaveAsync("""{"mcpServers": {"beta": {"command": "b"}}}""", TestContext.Current.CancellationToken);
+        var reconciling = _sut.ReconcileAsync();
+
+        // Act
+        connecting.SetResult(late);
+        var tools = await pending.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await reconciling.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        // Assert
+        tools.Should().BeEmpty();
+        await late.Received(1).DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DisposeAsync_WhileAServerIsConnecting_ClosesTheLateConnection()
+    {
+        // Arrange
+        var late = Connection(Tool("a"));
+        var connecting = new TaskCompletionSource<IMcpConnection>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _connector.ConnectAsync(Arg.Any<McpServerConfig>(), Arg.Any<CancellationToken>()).Returns(connecting.Task);
+        var pending = _sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
+        await WaitUntilAsync(() => _sut.Statuses().Single(s => s.Config.Name == "alpha").State == McpServerState.Connecting);
+        await _sut.DisposeAsync();
+
+        // Act
+        connecting.SetResult(late);
+        var tools = await pending.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        // Assert
+        tools.Should().BeEmpty();
+        await late.Received(1).DisposeAsync();
+    }
+
+    [Fact]
     public async Task ConfigChange_OnlyTheDisabledFlag_KeepsTheConnection()
     {
         // Arrange
@@ -397,6 +439,18 @@ public sealed class McpManagerTests : IAsyncLifetime
 
         // Assert
         enabled.Should().Be(expected);
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        // A state change is raised from the manager's own work, so yield to it instead of sleeping.
+        using var bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        bound.CancelAfter(TimeSpan.FromSeconds(30));
+        while (!condition())
+        {
+            bound.Token.ThrowIfCancellationRequested();
+            await Task.Yield();
+        }
     }
 
     private async Task<IMcpConnection> CancelsWhileConnecting(CancellationToken ct)
