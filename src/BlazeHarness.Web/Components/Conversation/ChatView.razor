@@ -42,6 +42,10 @@ else
                 {
                     <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
                 }
+                @if (_entries.Count > 0)
+                {
+                    <button type="button" class="btn btn-ghost btn-sm" data-shortcut="find" title="Find in this chat (Ctrl+F)" @onclick="OpenFind"><Icon Name="search" /> Find</button>
+                }
             </div>
         }
         else if (ContextPath is { } folderPath)
@@ -79,12 +83,21 @@ else
                 {
                     <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
                 }
+                @if (_entries.Count > 0)
+                {
+                    <button type="button" class="btn btn-ghost btn-sm" data-shortcut="find" title="Find in this chat (Ctrl+F)" @onclick="OpenFind"><Icon Name="search" /> Find</button>
+                }
 
                 @if (!Directory.Exists(folderPath))
                 {
                     <span class="chat-context-warning" role="status"><Icon Name="alert" /> Folder not found</span>
                 }
             </div>
+        }
+
+        @if (_finding)
+        {
+            <FindBar @ref="_findBar" Entries="_entries" OnShow="ShowMatchAsync" OnClose="CloseFindAsync" />
         }
 
         <div class="sr-only" role="status" aria-live="polite">@_announcement</div>
@@ -151,6 +164,10 @@ else
     private bool _watching;
     private bool _wasRunning;
     private int _windowStart;
+    private bool _finding;
+    private bool _focusFind;
+    private FindBar? _findBar;
+    private (Guid EntryId, string Query)? _highlight;
     private string _announcement = string.Empty;
     private ElementReference _root;
     private ElementReference _scroll;
@@ -244,6 +261,18 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_focusFind && _findBar is not null)
+        {
+            _focusFind = false;
+            await _findBar.FocusAsync();
+        }
+
+        if (_highlight is { } shown)
+        {
+            _highlight = null;
+            await JS.InvokeVoidAsync("bhChat.highlight", _scroll, shown.Query, shown.EntryId.ToString());
+        }
+
         if (!_missing && !_watching)
         {
             _watching = true;
@@ -283,6 +312,44 @@ else
         {
             _session.Changed -= OnChanged;
             _session = null;
+        }
+    }
+
+    private void OpenFind()
+    {
+        _finding = true;
+        _focusFind = true;
+    }
+
+    private async Task CloseFindAsync()
+    {
+        _finding = false;
+        _highlight = null;
+        await JS.InvokeVoidAsync("bhChat.clearHighlight");
+        await JS.InvokeVoidAsync("bhUi.skipToChat");
+    }
+
+    private async Task ShowMatchAsync((Guid EntryId, string Query) match)
+    {
+        if (match.EntryId == Guid.Empty)
+        {
+            await JS.InvokeVoidAsync("bhChat.clearHighlight");
+            return;
+        }
+
+        var index = -1;
+        for (var i = 0; i < _entries.Count && index < 0; i++)
+        {
+            if (_entries[i].Id == match.EntryId)
+            {
+                index = i;
+            }
+        }
+
+        if (index >= 0)
+        {
+            _windowStart = Math.Min(_windowStart, index);
+            _highlight = match;
         }
     }
 

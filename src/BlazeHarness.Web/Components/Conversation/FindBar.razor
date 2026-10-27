@@ -1,0 +1,121 @@
+@inject IJSRuntime JS
+
+<div class="find-bar" role="search" aria-label="Find in this chat">
+    <input type="search" class="input input-sm find-input" @ref="_input" placeholder="Find in this chat" aria-label="Find in this chat"
+           value="@_query" @oninput="OnInputAsync" @onkeydown="OnKeyAsync" />
+    <span class="find-count muted" role="status" aria-live="polite">@Summary</span>
+    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Previous match" title="Previous match (Shift+Enter)" disabled="@(_matches.Count == 0)" @onclick="PreviousAsync"><Icon Name="arrow-up" /></button>
+    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Next match" title="Next match (Enter)" disabled="@(_matches.Count == 0)" @onclick="NextAsync"><Icon Name="arrow-down" /></button>
+    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Close find" title="Close (Esc)" @onclick="CloseAsync"><Icon Name="close" /></button>
+</div>
+
+@code {
+    private ElementReference _input;
+    private string _query = string.Empty;
+    private IReadOnlyList<Guid> _matches = [];
+    private int _current;
+
+    /// <summary>
+    /// Gets or sets the messages of the open chat to search.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ChatEntry> Entries { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the callback for the user moving to a match, with the id of the message and the text searched for.
+    /// </summary>
+    [Parameter]
+    public EventCallback<(Guid EntryId, string Query)> OnShow { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user closing the find bar.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private string Summary
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_query))
+            {
+                return string.Empty;
+            }
+
+            return _matches.Count == 0 ? "No matches" : $"{_current + 1} of {_matches.Count}";
+        }
+    }
+
+    /// <summary>
+    /// Moves the keyboard focus to the search box and selects its text.
+    /// </summary>
+    /// <returns>A task that completes when the box has the focus.</returns>
+    public async Task FocusAsync()
+    {
+        await JS.InvokeVoidAsync("bhUi.focusSelect", _input);
+    }
+
+    protected override void OnParametersSet()
+    {
+        var currentId = _current < _matches.Count ? _matches[_current] : (Guid?)null;
+        _matches = ChatSearch.Find(Entries, _query);
+        var index = currentId is { } id ? _matches.ToList().IndexOf(id) : -1;
+        _current = index >= 0 ? index : Math.Min(_current, Math.Max(0, _matches.Count - 1));
+    }
+
+    private async Task OnInputAsync(ChangeEventArgs e)
+    {
+        _query = e.Value?.ToString() ?? string.Empty;
+        _matches = ChatSearch.Find(Entries, _query);
+        _current = 0;
+        await ShowCurrentAsync();
+    }
+
+    private async Task OnKeyAsync(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "Enter":
+                await (e.ShiftKey ? PreviousAsync() : NextAsync());
+                break;
+            case "Escape":
+                await CloseAsync();
+                break;
+        }
+    }
+
+    private async Task NextAsync()
+    {
+        if (_matches.Count > 0)
+        {
+            _current = (_current + 1) % _matches.Count;
+            await ShowCurrentAsync();
+        }
+    }
+
+    private async Task PreviousAsync()
+    {
+        if (_matches.Count > 0)
+        {
+            _current = (_current - 1 + _matches.Count) % _matches.Count;
+            await ShowCurrentAsync();
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task ShowCurrentAsync()
+    {
+        if (_matches.Count > 0)
+        {
+            await OnShow.InvokeAsync((_matches[_current], _query.Trim()));
+        }
+        else
+        {
+            await OnShow.InvokeAsync((Guid.Empty, string.Empty));
+        }
+    }
+}

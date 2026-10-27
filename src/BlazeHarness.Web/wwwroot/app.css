@@ -415,6 +415,10 @@ details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600
 .chat-jump { display: none; position: absolute; inset-inline: 0; margin-inline: auto; width: max-content; bottom: 8.5rem; box-shadow: var(--shadow-sm); }
 .chat[data-pinned="false"] .chat-jump { display: inline-flex; }
 
+.find-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--border); background: var(--bg-subtle); }
+.find-input { flex: 1; min-width: 0; max-width: 24rem; }
+.find-count { font-size: var(--text-sm); min-width: 5rem; }
+::highlight(bh-find) { background-color: var(--warning-soft); color: inherit; outline: 1px solid var(--border-strong); }
 .chat-earlier { align-self: center; }
 .msg { content-visibility: auto; contain-intrinsic-size: auto 6rem; display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 .msg[data-role="user"] { align-self: flex-end; max-width: 85%; background: var(--accent-soft); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3); }

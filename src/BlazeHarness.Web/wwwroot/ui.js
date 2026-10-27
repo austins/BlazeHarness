@@ -28,7 +28,10 @@ document.addEventListener("keydown", (event) => {
 
     const key = event.key.toLowerCase();
     let target = null;
-    if (key === "k" && !event.shiftKey) {
+    if (key === "f" && !event.shiftKey && document.activeElement && document.activeElement.closest(".chat")) {
+        // Only while the chat has focus; elsewhere the browser's own find stays.
+        target = document.querySelector("[data-shortcut=find]");
+    } else if (key === "k" && !event.shiftKey) {
         target = document.querySelector("[data-shortcut=search]");
     } else if (key === "o" && event.shiftKey) {
         target = document.querySelector("[data-shortcut=new-chat]");

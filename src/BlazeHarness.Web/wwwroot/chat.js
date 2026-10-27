@@ -38,6 +38,41 @@ window.bhChat = {
         root.bhToBottom = () => { pinned = true; root.dataset.pinned = "true"; toBottom(); };
         toBottom();
     },
+    // Finds the text in one message with the CSS Custom Highlight API, so nothing is injected into the page.
+    highlight: (scroll, query, entryId) => {
+        window.bhChat.clearHighlight();
+        const article = scroll && scroll.querySelector(`[data-entry="${CSS.escape(entryId)}"]`);
+        if (!article) {
+            return;
+        }
+
+        article.scrollIntoView({ block: "center" });
+        if (!window.CSS || !CSS.highlights || !query) {
+            return;
+        }
+
+        const needle = query.toLowerCase();
+        const ranges = [];
+        const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            const text = node.nodeValue.toLowerCase();
+            for (let at = text.indexOf(needle); at >= 0; at = text.indexOf(needle, at + needle.length)) {
+                const range = new Range();
+                range.setStart(node, at);
+                range.setEnd(node, at + needle.length);
+                ranges.push(range);
+            }
+        }
+
+        if (ranges.length > 0) {
+            CSS.highlights.set("bh-find", new Highlight(...ranges));
+        }
+    },
+    clearHighlight: () => {
+        if (window.CSS && CSS.highlights) {
+            CSS.highlights.delete("bh-find");
+        }
+    },
     // Sending a message always brings the reader back to the newest content.
     follow: (root) => {
         if (root && root.bhToBottom) {
