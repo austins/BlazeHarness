@@ -4,23 +4,33 @@ namespace BlazeHarness.Core.Tests.Integration.Secrets;
 
 public sealed class LibsecretStoreTests
 {
-    public static bool IsUnavailable { get; } = !LibsecretStore.IsAvailableAsync().GetAwaiter().GetResult();
+    private const string OptInVariable = "BLAZEHARNESS_TEST_KEYRING";
 
-    [Fact(Skip = "Secret Service not available.", SkipWhen = nameof(IsUnavailable))]
+    // Writes to the real user keyring, so it only runs when explicitly requested.
+    public static bool IsEnabled => Environment.GetEnvironmentVariable(OptInVariable) == "1";
+
+    [Fact(Skip = $"Set {OptInVariable}=1 to run against the real Secret Service.", SkipUnless = nameof(IsEnabled))]
     public async Task SetGetDelete_RoundTripsThroughSecretService()
     {
         // Arrange
-        using var sut = new LibsecretStore("blazeharness-test-" + Guid.NewGuid().ToString("N"));
         var ct = TestContext.Current.CancellationToken;
+        using var sut = new LibsecretStore("blazeharness-test-" + Guid.NewGuid().ToString("N"));
 
-        // Act
-        await sut.SetAsync("k", "p@ss \"word\"\nline2", ct);
-        var value = await sut.GetAsync("k", ct);
-        await sut.DeleteAsync("k", ct);
-        var after = await sut.GetAsync("k", ct);
+        try
+        {
+            // Act
+            await sut.SetAsync("k", "p@ss \"word\"\nline2", ct);
+            var value = await sut.GetAsync("k", ct);
+            await sut.DeleteAsync("k", ct);
+            var after = await sut.GetAsync("k", ct);
 
-        // Assert
-        value.Should().Be("p@ss \"word\"\nline2");
-        after.Should().BeNull();
+            // Assert
+            value.Should().Be("p@ss \"word\"\nline2");
+            after.Should().BeNull();
+        }
+        finally
+        {
+            await sut.DeleteAsync("k", ct);
+        }
     }
 }

@@ -8,6 +8,8 @@ public sealed class SearchFilesToolTests : IDisposable
     private readonly TempWorkspace _workspace = new();
     private readonly SearchFilesTool _sut = new();
 
+    public static bool IsWindows => OperatingSystem.IsWindows();
+
     public void Dispose() => _workspace.Dispose();
 
     [Fact]
@@ -97,27 +99,20 @@ public sealed class SearchFilesToolTests : IDisposable
         result.Output.Should().Be("src/real.txt:1: needle");
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public async Task ExecuteAsync_SymlinkedFile_IsNotFollowed()
     {
         // Arrange
-        var outside = Directory.CreateTempSubdirectory("bh-outside-");
-        try
-        {
-            var target = Path.Combine(outside.FullName, "secret.txt");
-            await File.WriteAllTextAsync(target, "needle\n", TestContext.Current.CancellationToken);
-            File.CreateSymbolicLink(Path.Combine(_workspace.Root, "link.txt"), target);
+        using var outside = new TempFolder("bh-outside-");
+        var target = Path.Combine(outside.Root, "secret.txt");
+        await File.WriteAllTextAsync(target, "needle\n", TestContext.Current.CancellationToken);
+        File.CreateSymbolicLink(Path.Combine(_workspace.Root, "link.txt"), target);
 
-            // Act
-            var result = await RunAsync(new { pattern = "needle" });
+        // Act
+        var result = await RunAsync(new { pattern = "needle" });
 
-            // Assert
-            result.Output.Should().Be("[No matches.]");
-        }
-        finally
-        {
-            outside.Delete(recursive: true);
-        }
+        // Assert
+        result.Output.Should().Be("[No matches.]");
     }
 
     [Fact]
@@ -194,9 +189,10 @@ public sealed class SearchFilesToolTests : IDisposable
     {
         // Arrange
         _workspace.Write("a.txt", new string('a', 60) + "!");
+        var sut = new SearchFilesTool(TimeSpan.FromMilliseconds(50));
 
         // Act
-        var result = await RunAsync(new { pattern = "^(a+)+$" });
+        var result = await sut.ExecuteAsync(TempWorkspace.Args(new { pattern = "^(a+)+$" }), _workspace.Context, TestContext.Current.CancellationToken);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -221,7 +217,7 @@ public sealed class SearchFilesToolTests : IDisposable
         _workspace.Write("a.txt", "needle\n");
 
         // Act
-        var result = await RunAsync(new { pattern = "needle" }).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        var result = await RunAsync(new { pattern = "needle" }).Bounded();
 
         // Assert
         result.Output.Should().Be("a.txt:1: needle");

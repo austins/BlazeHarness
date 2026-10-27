@@ -154,7 +154,7 @@ public sealed class McpConfigFileTests : IDisposable
 
         // Act
         await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
-        await changed.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await changed.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         // Assert
         sut.Parsed.Servers.Should().ContainSingle().Which.Name.Should().Be("files");
@@ -170,7 +170,7 @@ public sealed class McpConfigFileTests : IDisposable
 
         // Act
         await File.WriteAllTextAsync(_path, "{ nope", TestContext.Current.CancellationToken);
-        await changed.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await changed.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         // Assert
         sut.Parsed.Errors.Should().NotBeEmpty();

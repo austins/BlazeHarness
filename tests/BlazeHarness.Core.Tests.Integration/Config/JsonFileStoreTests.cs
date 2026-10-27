@@ -48,7 +48,7 @@ public sealed class JsonFileStoreTests : IDisposable
 
         // Act
         await File.WriteAllTextAsync(Path.Combine(_temp.Root, "doc.json"), """{"count": 99}""", TestContext.Current.CancellationToken);
-        var result = await changed.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        var result = await changed.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         // Assert
         result.Count.Should().Be(99);
@@ -84,7 +84,7 @@ public sealed class JsonFileStoreTests : IDisposable
         await File.WriteAllTextAsync(Path.Combine(_temp.Root, "reenter.json"), """{"count": 5}""", TestContext.Current.CancellationToken);
 
         // Act
-        await Task.Run(sut.OnExternalChange, TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await Task.Run(sut.OnExternalChange, TestContext.Current.CancellationToken).WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         // Assert
         sut.Current.Count.Should().Be(6);

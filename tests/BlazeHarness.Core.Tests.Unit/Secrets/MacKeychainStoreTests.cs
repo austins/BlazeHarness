@@ -16,6 +16,6 @@ public sealed class MacKeychainStoreTests
         var act = async () => await sut.SetAsync("k", value, TestContext.Current.CancellationToken);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await act.Should().ThrowAsync<ArgumentException>().WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
     }
 }

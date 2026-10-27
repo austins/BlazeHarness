@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Secrets;
+using System.Runtime.Versioning;
 
 namespace BlazeHarness.Core.Tests.Integration.Secrets;
 
@@ -74,15 +75,13 @@ public sealed class FileSecretStoreTests : IDisposable
     }
 
     [Fact(Skip = "Unix file modes only.", SkipWhen = nameof(IsWindows))]
+    [UnsupportedOSPlatform("windows")]
     public async Task SetAsync_OnUnix_FileIsOwnerOnly()
     {
         // Act
         await _sut.SetAsync("k", "v", TestContext.Current.CancellationToken);
 
         // Assert
-        if (!OperatingSystem.IsWindows())
-        {
-            File.GetUnixFileMode(Path.Combine(_temp.Root, "secrets.json")).Should().Be(UnixFileMode.UserRead | UnixFileMode.UserWrite);
-        }
+        File.GetUnixFileMode(Path.Combine(_temp.Root, "secrets.json")).Should().Be(UnixFileMode.UserRead | UnixFileMode.UserWrite);
     }
 }

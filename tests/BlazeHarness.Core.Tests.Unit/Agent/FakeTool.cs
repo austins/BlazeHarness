@@ -24,7 +24,7 @@ internal sealed class FakeTool : ITool
 
     public bool IsReadOnly { get; }
 
-    public TimeSpan Timeout => TimeSpan.FromSeconds(30);
+    public TimeSpan Timeout => TestTimeouts.Default;
 
     /// <summary>Gets the most calls that were running at once.</summary>
     public int MaxConcurrent { get; private set; }

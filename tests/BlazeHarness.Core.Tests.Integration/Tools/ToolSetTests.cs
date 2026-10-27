@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Tools;
+using Microsoft.Extensions.Time.Testing;
 using System.Text.Json;
 
 namespace BlazeHarness.Core.Tests.Integration.Tools;
@@ -135,10 +136,15 @@ public sealed class ToolSetTests : IDisposable
     public async Task ExecuteAsync_ToolRunsTooLong_IsStoppedWithATimeoutResult()
     {
         // Arrange
-        var sut = new ToolSet([Hanging(TimeSpan.FromMilliseconds(50))], _workspace.Context);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var time = new FakeTimeProvider();
+        var sut = new ToolSet([Hanging(TimeSpan.FromSeconds(5), started)], _workspace.Context, time);
 
         // Act
-        var result = await sut.ExecuteAsync(sut.Tools[0], "{}", TestContext.Current.CancellationToken);
+        var run = sut.ExecuteAsync(sut.Tools[0], "{}", TestContext.Current.CancellationToken);
+        await started.Task.Bounded();
+        time.Advance(TimeSpan.FromSeconds(6));
+        var result = await run.Bounded();
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -149,7 +155,7 @@ public sealed class ToolSetTests : IDisposable
     public async Task ExecuteAsync_CallerCancels_Throws()
     {
         // Arrange
-        var sut = new ToolSet([Hanging(TimeSpan.FromMinutes(1))], _workspace.Context);
+        var sut = new ToolSet([Hanging(TimeSpan.FromMinutes(1), started: null)], _workspace.Context);
         var cancelled = new CancellationToken(canceled: true);
 
         // Act
@@ -209,11 +215,11 @@ public sealed class ToolSetTests : IDisposable
         try
         {
             var call = sut.ExecuteAsync(sut.Tools[0], "{}", cancel.Token);
-            await started.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            await started.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
             // Act
             await cancel.CancelAsync();
-            var act = () => call.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            var act = () => call.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
             // Assert
             await act.Should().ThrowAsync<OperationCanceledException>();
@@ -248,11 +254,12 @@ public sealed class ToolSetTests : IDisposable
         return tool;
     }
 
-    private static ITool Hanging(TimeSpan timeout)
+    private static ITool Hanging(TimeSpan timeout, TaskCompletionSource? started)
     {
         return Tool(timeout, async token =>
         {
-            await Task.Delay(TimeSpan.FromMinutes(5), token);
+            started?.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, token);
             return ToolResult.Ok("never");
         });
     }

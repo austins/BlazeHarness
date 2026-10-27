@@ -34,7 +34,7 @@ public sealed class RenderThrottleTests
         }
 
         _time.Advance(Interval);
-        await rendered.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await rendered.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
         _time.Advance(Interval * 4);
 
         // Assert
@@ -85,12 +85,12 @@ public sealed class RenderThrottleTests
         // Act
         sut.Request();
         _time.Advance(Interval);
-        await first.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await first.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
         sut.Request();
         _time.Advance(Interval);
 
         // Assert
-        await second.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await second.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
         renders.Should().Be(2);
     }
 
@@ -147,11 +147,11 @@ public sealed class RenderThrottleTests
         // Act
         sut.Request();
         _time.Advance(Interval);
-        await failed.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
-        SpinWait.SpinUntil(() => _logger.Entries.Count > 0, TimeSpan.FromSeconds(30));
+        await failed.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
+        SpinWait.SpinUntil(() => _logger.Entries.Count > 0, TestTimeouts.Default);
         sut.Request();
         _time.Advance(Interval);
-        await second.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await second.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         // Assert
         _logger.Entries.Should().ContainSingle().Which.Exception.Should().BeOfType<InvalidOperationException>();

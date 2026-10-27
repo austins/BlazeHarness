@@ -205,21 +205,21 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         File.Delete(path);
 #pragma warning disable IDISP013 // The process is only disposed after the awaits that wait for it.
         using var mkfifo = System.Diagnostics.Process.Start("mkfifo", path);
-        await mkfifo.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await mkfifo.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         var target = TestTargets.Create();
         var send = Task.Run(() => sut.SendAsync("read", [file], target), TestContext.Current.CancellationToken);
 
         // Opening the write end only returns once the session has started reading the file.
         await using var writer = await Task.Run(() => new FileStream(path, FileMode.Open, FileAccess.Write), TestContext.Current.CancellationToken)
-            .WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            .WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 #pragma warning restore IDISP013
 
         // Act
         var status = await Task.Run(() => sut.GetContextStatus(target), TestContext.Current.CancellationToken)
-            .WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            .WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
         await writer.DisposeAsync();
-        await send.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await send.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         // Assert
         status.Should().NotBeNull();

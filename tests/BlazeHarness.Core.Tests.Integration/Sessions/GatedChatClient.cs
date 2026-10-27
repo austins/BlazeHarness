@@ -27,7 +27,7 @@ internal sealed class GatedChatClient : IChatClient
     {
         yield return new ChatResponseUpdate(ChatRole.Assistant, [new TextContent("Hel")]);
         _started.TrySetResult();
-        await _gate.Task.WaitAsync(cancellationToken);
+        await _gate.Task.WaitAsync(TestTimeouts.Default, cancellationToken);
         yield return new ChatResponseUpdate(ChatRole.Assistant, [new TextContent("lo")]);
     }
 

@@ -49,7 +49,7 @@ public sealed class ChatSessionToolTests
 
         // Act
         var answered = sut.Approve("c1", ApprovalChoice.AllowOnce);
-        await turn;
+        await turn.Bounded();
 
         // Assert
         answered.Should().BeTrue();
@@ -70,7 +70,7 @@ public sealed class ChatSessionToolTests
 
         // Act
         sut.Approve("c1", ApprovalChoice.Deny);
-        await turn;
+        await turn.Bounded();
 
         // Assert
         write.Started.Should().Be(0);
@@ -91,7 +91,7 @@ public sealed class ChatSessionToolTests
 
         // Act
         _time.Advance(ChatSession.ApprovalTimeout);
-        await turn;
+        await turn.Bounded();
 
         // Assert
         write.Started.Should().Be(0);
@@ -110,7 +110,7 @@ public sealed class ChatSessionToolTests
 
         // Act
         sut.Stop();
-        await turn;
+        await turn.Bounded();
 
         // Assert
         sut.Entries[1].ToolCalls.Single().Status.Should().Be(ToolCallStatus.Cancelled);
@@ -282,7 +282,7 @@ public sealed class ChatSessionToolTests
     private static async Task WaitForStatus(ChatSession session, ToolCallStatus status)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(10));
+        timeout.CancelAfter(TestTimeouts.Default);
         while (!session.Entries.Any(e => e.ToolCalls.Any(c => c.Status == status)))
         {
             await Task.Delay(5, timeout.Token);

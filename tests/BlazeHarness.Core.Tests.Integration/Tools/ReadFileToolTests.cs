@@ -178,7 +178,7 @@ public sealed class ReadFileToolTests : IDisposable
         _workspace.MakeFifo("pipe");
 
         // Act
-        var result = await RunAsync(new { path = "pipe" }).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        var result = await RunAsync(new { path = "pipe" }).WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(ToolResult.Ok("[pipe is empty.]"));

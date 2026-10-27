@@ -7,6 +7,8 @@ public sealed class SkillScannerTests : IDisposable
 {
     private readonly SkillFolders _folders = new();
 
+    public static bool IsWindows => OperatingSystem.IsWindows();
+
     public void Dispose() => _folders.Dispose();
 
     [Fact]
@@ -157,7 +159,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Problems.Should().ContainSingle().Which.Should().Contain("only the first");
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public void Scan_ProjectLinkLeavingTheFolder_IsSkipped()
     {
         // Arrange
@@ -175,7 +177,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Problems.Should().ContainSingle().Which.Should().Contain("links outside");
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public void Scan_LinkInsideTheProject_IsKept()
     {
         // Arrange
@@ -191,7 +193,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Skills.Should().ContainSingle().Which.Name.Should().Be("reused");
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public void Scan_LinkWithoutABoundary_IsFollowed()
     {
         // Arrange
@@ -207,7 +209,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Skills.Should().ContainSingle().Which.Name.Should().Be("shared");
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public void Scan_ProjectSkillsFolderIsALinkOutside_IsSkipped()
     {
         // Arrange
@@ -224,7 +226,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Problems.Should().ContainSingle().Which.Should().Contain("links outside");
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public void Scan_ProjectAgentsFolderIsALinkOutside_IsSkipped()
     {
         // Arrange

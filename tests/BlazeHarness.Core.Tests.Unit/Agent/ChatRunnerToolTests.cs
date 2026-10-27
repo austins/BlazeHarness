@@ -46,7 +46,7 @@ public sealed class ChatRunnerToolTests
                 bothStarted.SetResult();
             }
 
-            await bothStarted.Task.WaitAsync(TimeSpan.FromSeconds(10), ct);
+            await bothStarted.Task.WaitAsync(TestTimeouts.Default, ct);
             return ToolResult.Ok("ok");
         });
         using var client = new ScriptedChatClient(

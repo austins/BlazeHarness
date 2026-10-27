@@ -117,7 +117,7 @@ public sealed class ChatClientFactoryTests
             n => n == 1 ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK);
         var (provider, model) = CreateProvider(server.BaseUrl);
         using var http = new HttpClient();
-        using var client = ChatClientFactory.Create(provider, model.Id, "key", http);
+        using var client = ChatClientFactory.Create(provider, model.Id, "key", http, new NoDelayRetryPolicy(1));
 
         // Act
         var response = await client.GetStreamingResponseAsync(

@@ -104,8 +104,11 @@ public sealed class SdkMcpConnectionTests : IAsyncLifetime
         await _toClient.Writer.CompleteAsync();
 
         // Assert
-        var act = () => _sut.Closed.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
-        await act.Should().NotThrowAsync<TimeoutException>();
+        var closed = _sut.Closed;
+#pragma warning disable VSTHRD003 // The connection owns this task; the test only observes it.
+        await closed.Bounded();
+#pragma warning restore VSTHRD003
+        closed.IsCompletedSuccessfully.Should().BeTrue();
     }
 
     private static int Add(int a, int b) => a + b;

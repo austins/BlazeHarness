@@ -38,12 +38,12 @@ public sealed class ProcessRunnerTests : IDisposable
         // Act
         await _cts.CancelAsync();
         #pragma warning disable VSTHRD003 // The task was started by this test.
-        var act = async () => await run;
+        var act = async () => await run.Bounded();
 #pragma warning restore VSTHRD003
 
         // Assert
-        await act.Should().ThrowAsync<OperationCanceledException>().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
-        await victim.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await act.Should().ThrowAsync<OperationCanceledException>().WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
+        await victim.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
         victim.HasExited.Should().BeTrue();
     }
 }

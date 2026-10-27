@@ -39,7 +39,7 @@ public sealed class ModelTitleGeneratorTests
         var act = async () => await sut.GenerateAsync(Target(), "What is the weather?", "Sunny.", stop.Token);
 
         // Assert
-        await act.Should().ThrowAsync<OperationCanceledException>().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await act.Should().ThrowAsync<OperationCanceledException>().WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
     }
 
     [Fact]

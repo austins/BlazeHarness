@@ -203,7 +203,7 @@ public sealed class EditFileToolTests : IDisposable
         _workspace.MakeFifo("pipe");
 
         // Act
-        var result = await RunAsync(new { path = "pipe", old_string = "a", new_string = "b" }).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        var result = await RunAsync(new { path = "pipe", old_string = "a", new_string = "b" }).WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         // Assert
         result.IsError.Should().BeTrue();

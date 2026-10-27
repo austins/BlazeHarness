@@ -69,7 +69,8 @@ public sealed class AttachmentMessageTests : IDisposable
 
         // Assert
         message.Text.Should().Contain($"id {info.Id}").And.Contain("300 lines").And.Contain("read_attachment").And.StartWith("see\n\n");
-        message.Text.Should().NotContain("299");
+        // The id is random hex, so look for the line rather than the digits.
+        message.Text.Should().NotContain("\n299");
     }
 
     [Fact]

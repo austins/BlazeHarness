@@ -8,6 +8,8 @@ public sealed class ListFilesToolTests : IDisposable
     private readonly TempWorkspace _workspace = new();
     private readonly ListFilesTool _sut = new();
 
+    public static bool IsWindows => OperatingSystem.IsWindows();
+
     public void Dispose() => _workspace.Dispose();
 
     [Fact]
@@ -134,7 +136,7 @@ public sealed class ListFilesToolTests : IDisposable
         result.Output.Should().EndWith("[Showing the first 3 entries. Use a narrower path or pattern to see the rest.]");
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public async Task ExecuteAsync_SymlinkedFolder_IsListedButNotEntered()
     {
         // Arrange

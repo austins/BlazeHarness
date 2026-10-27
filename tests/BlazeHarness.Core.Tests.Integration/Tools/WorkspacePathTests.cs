@@ -9,6 +9,8 @@ public sealed class WorkspacePathTests : IDisposable
 
     public static bool CannotDenyAccess => OperatingSystem.IsWindows() || Environment.UserName == "root";
 
+    public static bool IsWindows => OperatingSystem.IsWindows();
+
     public void Dispose() => _workspace.Dispose();
 
     [Fact]
@@ -86,56 +88,42 @@ public sealed class WorkspacePathTests : IDisposable
         error.Should().Contain("not valid");
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public void TryResolve_SymlinkedFolderLeadingOut_IsRefused()
     {
         // Arrange
-        var outside = Directory.CreateTempSubdirectory("bh-outside-");
-        try
-        {
-            File.WriteAllText(Path.Combine(outside.FullName, "secret.txt"), "secret");
-            Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "link"), outside.FullName);
+        using var outside = new TempFolder("bh-outside-");
+        File.WriteAllText(Path.Combine(outside.Root, "secret.txt"), "secret");
+        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "link"), outside.Root);
 
-            // Act
-            var folder = _workspace.Context.TryResolve("link", out _, out _);
-            var file = _workspace.Context.TryResolve("link/secret.txt", out _, out _);
-            var missing = _workspace.Context.TryResolve("link/new.txt", out _, out _);
+        // Act
+        var folder = _workspace.Context.TryResolve("link", out _, out _);
+        var file = _workspace.Context.TryResolve("link/secret.txt", out _, out _);
+        var missing = _workspace.Context.TryResolve("link/new.txt", out _, out _);
 
-            // Assert
-            folder.Should().BeFalse();
-            file.Should().BeFalse();
-            missing.Should().BeFalse();
-        }
-        finally
-        {
-            outside.Delete(recursive: true);
-        }
+        // Assert
+        folder.Should().BeFalse();
+        file.Should().BeFalse();
+        missing.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public void TryResolve_SymlinkedFileLeadingOut_IsRefused()
     {
         // Arrange
-        var outside = Directory.CreateTempSubdirectory("bh-outside-");
-        try
-        {
-            var target = Path.Combine(outside.FullName, "secret.txt");
-            File.WriteAllText(target, "secret");
-            File.CreateSymbolicLink(Path.Combine(_workspace.Root, "link.txt"), target);
+        using var outside = new TempFolder("bh-outside-");
+        var target = Path.Combine(outside.Root, "secret.txt");
+        File.WriteAllText(target, "secret");
+        File.CreateSymbolicLink(Path.Combine(_workspace.Root, "link.txt"), target);
 
-            // Act
-            var ok = _workspace.Context.TryResolve("link.txt", out _, out _);
+        // Act
+        var ok = _workspace.Context.TryResolve("link.txt", out _, out _);
 
-            // Assert
-            ok.Should().BeFalse();
-        }
-        finally
-        {
-            outside.Delete(recursive: true);
-        }
+        // Assert
+        ok.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public void TryResolve_SymlinkStayingInside_IsAllowedAndResolved()
     {
         // Arrange
@@ -150,7 +138,7 @@ public sealed class WorkspacePathTests : IDisposable
         full.Should().Be(Path.Combine(_workspace.Root, "real", "file.txt"));
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public void TryResolve_DanglingSymlink_IsRefused()
     {
         // Arrange

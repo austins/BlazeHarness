@@ -10,6 +10,8 @@ public sealed class McpManagerTests : IAsyncLifetime
 {
     private const string Two = """{"mcpServers": {"alpha": {"command": "a"}, "beta": {"command": "b"}}}""";
 
+    private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(10);
+
     private readonly TempFolder _temp = new("bh-mcpm-");
     private readonly IMcpConnector _connector = Substitute.For<IMcpConnector>();
     private readonly FakeTimeProvider _time = new();
@@ -26,7 +28,7 @@ public sealed class McpManagerTests : IAsyncLifetime
         _file = new McpConfigFile(Path.Combine(_temp.Root, "mcp.json"), new LoggerFake<McpConfigFile>(), watch: false);
         _appConfig = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), new LoggerFake<McpManagerTests>(), watch: false);
         _permissions = new PermissionDefaults(_appConfig, new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root));
-        _sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, TimeSpan.FromSeconds(10), _permissions);
+        _sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, ConnectTimeout, _permissions);
     }
 
     public async ValueTask InitializeAsync() => await _file.SaveAsync(Two, TestContext.Current.CancellationToken);
@@ -127,12 +129,32 @@ public sealed class McpManagerTests : IAsyncLifetime
         // Act
         await _sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
         var beforeRetry = attempts;
-        _time.Advance(TimeSpan.FromSeconds(31));
+        _time.Advance(McpManager.RetryAfterFailure + TimeSpan.FromSeconds(1));
         await _sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
 
         // Assert
         beforeRetry.Should().Be(1);
         attempts.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task ToolsAsync_FailedServerBeforeTheRetryWindowEnds_IsNotRetried()
+    {
+        // Arrange
+        var attempts = 0;
+        _connector.ConnectAsync(Arg.Is<McpServerConfig>(c => c.Name == "alpha"), Arg.Any<CancellationToken>()).Returns<IMcpConnection>(_ =>
+        {
+            attempts++;
+            throw new McpConnectException("down");
+        });
+        await _sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
+
+        // Act
+        _time.Advance(McpManager.RetryAfterFailure - TimeSpan.FromSeconds(1));
+        await _sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
+
+        // Assert
+        attempts.Should().Be(1);
     }
 
     [Fact]
@@ -177,13 +199,13 @@ public sealed class McpManagerTests : IAsyncLifetime
 
         // Act
         var pending = _sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
-        await started.Task.WaitAsync(TestContext.Current.CancellationToken);
-        _time.Advance(TimeSpan.FromSeconds(11));
-        var tools = await pending;
+        await started.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
+        _time.Advance(ConnectTimeout + TimeSpan.FromSeconds(1));
+        var tools = await pending.Bounded();
 
         // Assert
         tools.Should().BeEmpty();
-        _sut.Statuses().Single(s => s.Config.Name == "alpha").Error.Should().Contain("10 seconds");
+        _sut.Statuses().Single(s => s.Config.Name == "alpha").Error.Should().Contain($"{ConnectTimeout.TotalSeconds:0} seconds");
     }
 
     [Fact]
@@ -341,8 +363,8 @@ public sealed class McpManagerTests : IAsyncLifetime
 
         // Act
         connecting.SetResult(late);
-        var tools = await pending.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
-        await reconciling.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        var tools = await pending.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
+        await reconciling.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         // Assert
         tools.Should().BeEmpty();
@@ -362,7 +384,7 @@ public sealed class McpManagerTests : IAsyncLifetime
 
         // Act
         connecting.SetResult(late);
-        var tools = await pending.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        var tools = await pending.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
 
         // Assert
         tools.Should().BeEmpty();
@@ -405,8 +427,8 @@ public sealed class McpManagerTests : IAsyncLifetime
 
         // Act
         closed.SetResult();
-        await changed.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
-        _time.Advance(TimeSpan.FromSeconds(31));
+        await changed.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
+        _time.Advance(McpManager.RetryAfterFailure + TimeSpan.FromSeconds(1));
         await _sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
 
         // Assert
@@ -483,7 +505,7 @@ public sealed class McpManagerTests : IAsyncLifetime
     {
         // A state change is raised from the manager's own work, so yield to it instead of sleeping.
         using var bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        bound.CancelAfter(TimeSpan.FromSeconds(30));
+        bound.CancelAfter(TestTimeouts.Default);
         while (!condition())
         {
             bound.Token.ThrowIfCancellationRequested();

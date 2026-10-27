@@ -216,9 +216,9 @@ public sealed class SessionServiceTests : IDisposable
 
         // Act
         var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
-        await client.Started.WaitAsync(ct);
+        await client.Started.WaitAsync(TestTimeouts.Default, ct);
         client.Release();
-        await turn;
+        await turn.Bounded();
 
         // Assert
         var reopened = await Create(client).OpenAsync(info.Id);
@@ -236,7 +236,7 @@ public sealed class SessionServiceTests : IDisposable
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
         var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
-        await client.Started.WaitAsync(ct);
+        await client.Started.WaitAsync(TestTimeouts.Default, ct);
 
         // Act
         var secondTab = await sut.OpenAsync(info.Id);
@@ -250,8 +250,8 @@ public sealed class SessionServiceTests : IDisposable
         };
         var seenWhileRunning = (secondTab.IsRunning, secondTab.Entries[1].Text);
         client.Release();
-        await finished.Task.WaitAsync(ct);
-        await turn;
+        await finished.Task.WaitAsync(TestTimeouts.Default, ct);
+        await turn.Bounded();
 
         // Assert
         seenWhileRunning.Should().Be((true, "Hel"));
@@ -268,12 +268,12 @@ public sealed class SessionServiceTests : IDisposable
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
         var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
-        await client.Started.WaitAsync(ct);
+        await client.Started.WaitAsync(TestTimeouts.Default, ct);
 
         // Act
         var deleted = await sut.DeleteAsync(info.Id);
         client.Release();
-        await turn;
+        await turn.Bounded();
 
         // Assert
         deleted.Should().BeFalse();
@@ -330,13 +330,13 @@ public sealed class SessionServiceTests : IDisposable
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
         var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
-        await client.Started.WaitAsync(ct);
+        await client.Started.WaitAsync(TestTimeouts.Default, ct);
         var session = (await sut.OpenAsync(info.Id))!;
 
         // Act
         await sut.EditAsync(info.Id, session.Entries[0].Id, "changed", Target("p1", "fast"));
         client.Release();
-        await turn;
+        await turn.Bounded();
 
         // Assert
         session.Entries[0].Text.Should().Be("hi");
@@ -399,9 +399,9 @@ public sealed class SessionServiceTests : IDisposable
 
         // Act
         var turn = sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
-        await client.Started.WaitAsync(ct);
+        await client.Started.WaitAsync(TestTimeouts.Default, ct);
         client.Release();
-        await turn;
+        await turn.Bounded();
 
         // Assert
         lock (seen)

@@ -50,7 +50,7 @@ public sealed class ModelSummarizerTests
         var act = async () => await sut.SummarizeAsync(null, [new ChatMessage(ChatRole.User, "hi")], stop.Token);
 
         // Assert
-        await act.Should().ThrowAsync<OperationCanceledException>().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await act.Should().ThrowAsync<OperationCanceledException>().WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public sealed class ModelSummarizerTests
         var act = async () => await sut.SummarizeAsync(null, [new ChatMessage(ChatRole.User, "hi")], stop.Token);
 
         // Assert
-        await act.Should().ThrowAsync<OperationCanceledException>().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await act.Should().ThrowAsync<OperationCanceledException>().WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
     }
 
     [Fact]

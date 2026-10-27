@@ -113,7 +113,7 @@ public sealed class ChatSessionPersistenceTests
         // Act
         await sut.SendAsync("two", TestTargets.Create());
         gate.SetResult(client);
-        await first;
+        await first.Bounded();
 
         // Assert
         sut.Entries.Select(e => e.Text).Should().Equal("one", "first");
@@ -133,7 +133,7 @@ public sealed class ChatSessionPersistenceTests
 
         // Act
         gate.SetResult(client);
-        await turn;
+        await turn.Bounded();
 
         // Assert
         before.Should().HaveCountLessThanOrEqualTo(2);

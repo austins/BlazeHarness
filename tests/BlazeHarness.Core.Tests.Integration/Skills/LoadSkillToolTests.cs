@@ -23,6 +23,8 @@ public sealed class LoadSkillToolTests : IDisposable
         _sut = new LoadSkillTool(new SkillSet([new SkillInfo("report", "Write reports.", _folder, SkillSource.App)]));
     }
 
+    public static bool IsWindows => OperatingSystem.IsWindows();
+
     public void Dispose() => _folders.Dispose();
 
     [Fact]
@@ -80,7 +82,7 @@ public sealed class LoadSkillToolTests : IDisposable
         result.Output.Should().NotContain("TOPSECRET");
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public async Task ExecuteAsync_PathThroughALinkOutside_IsAnError()
     {
         // Arrange
@@ -94,7 +96,7 @@ public sealed class LoadSkillToolTests : IDisposable
         result.Output.Should().NotContain("TOPSECRET");
     }
 
-    [Fact]
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public async Task ExecuteAsync_FolderLinkLoop_IsListedOnceAndDoesNotFail()
     {
         // Arrange

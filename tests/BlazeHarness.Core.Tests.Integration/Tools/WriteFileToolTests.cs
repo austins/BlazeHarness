@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Tools;
+using System.Runtime.Versioning;
 
 namespace BlazeHarness.Core.Tests.Integration.Tools;
 
@@ -6,6 +7,8 @@ public sealed class WriteFileToolTests : IDisposable
 {
     private readonly TempWorkspace _workspace = new();
     private readonly WriteFileTool _sut = new();
+
+    public static bool IsWindows => OperatingSystem.IsWindows();
 
     public void Dispose() => _workspace.Dispose();
 
@@ -85,14 +88,10 @@ public sealed class WriteFileToolTests : IDisposable
             .Should().Equal(0xEF, 0xBB, 0xBF, (byte)'b');
     }
 
-    [Fact]
+    [Fact(Skip = "Unix file modes only.", SkipWhen = nameof(IsWindows))]
+    [UnsupportedOSPlatform("windows")]
     public async Task ExecuteAsync_ExistingExecutable_KeepsItsPermissions()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         // Arrange
         var path = _workspace.Write("run.sh", "#!/bin/sh\n");
         File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
