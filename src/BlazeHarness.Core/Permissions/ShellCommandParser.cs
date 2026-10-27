@@ -36,6 +36,8 @@ internal static partial class ShellCommandParser
         ["builtin"] = NoOptionValues,
         ["exec"] = NoOptionValues,
         ["nohup"] = NoOptionValues,
+        ["busybox"] = NoOptionValues,
+        ["toybox"] = NoOptionValues,
         ["time"] = NoOptionValues,
         ["setsid"] = NoOptionValues,
         ["nice"] = ["-n"],
@@ -118,7 +120,8 @@ internal static partial class ShellCommandParser
 
     private static bool IsComputed(string program)
     {
-        return (program.StartsWith('$') || program.StartsWith('`')) && !program.Contains('/', StringComparison.Ordinal) && !program.Contains('\\', StringComparison.Ordinal);
+        return program.StartsWith("$'", StringComparison.Ordinal)
+            || ((program.StartsWith('$') || program.StartsWith('`')) && !program.Contains('/', StringComparison.Ordinal) && !program.Contains('\\', StringComparison.Ordinal));
     }
 
     private static int SkipWrapperOptions(List<string> tokens, int start, string wrapper, string[] valued)
@@ -426,6 +429,8 @@ internal static partial class ShellCommandParser
             {
                 case '(':
                     return ReadSubstitution(i);
+                case '\'':
+                    return ReadAnsiCQuoted(i);
                 case '{':
                     var close = text.IndexOf('}', i);
                     var stop = close < 0 ? text.Length : close + 1;
@@ -435,6 +440,22 @@ internal static partial class ShellCommandParser
                     Append('$');
                     return i + 1;
             }
+        }
+
+        private int ReadAnsiCQuoted(int i)
+        {
+            var j = i + 2;
+            while (j < text.Length && text[j] != '\'')
+            {
+                j += text[j] == '\\' ? 2 : 1;
+            }
+
+            var stop = Math.Min(j, text.Length);
+            var body = text[(i + 2)..Math.Min(stop, text.Length)];
+
+            // Escapes such as \x6d are decoded by the shell, so the real text isn't known here. Keep the raw form so it reads as computed.
+            Append(body.Contains('\\', StringComparison.Ordinal) ? text[i..Math.Min(stop + 1, text.Length)] : body);
+            return Math.Min(stop + 1, text.Length);
         }
 
         private int ReadSubstitution(int i)
