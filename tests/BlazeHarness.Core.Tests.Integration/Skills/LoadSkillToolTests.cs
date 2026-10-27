@@ -95,6 +95,34 @@ public sealed class LoadSkillToolTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_FolderLinkLoop_IsListedOnceAndDoesNotFail()
+    {
+        // Arrange
+        Directory.CreateSymbolicLink(Path.Combine(_folder, "templates", "again"), _folder);
+
+        // Act
+        var result = await RunAsync(new { name = "report" });
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Output.Should().Contain("- templates/weekly.md").And.NotContain("again/");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_InstructionsGrewPastTheLimit_IsAnError()
+    {
+        // Arrange
+        await File.WriteAllTextAsync(Path.Combine(_folder, SkillInfo.FileName), new string('x', (int)SkillScanner.MaxFileBytes + 1), TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await RunAsync(new { name = "report" });
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.Output.Should().Contain("larger than 256 KB");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_BinaryFileOrMissingFile_IsAnError()
     {
         // Arrange
@@ -174,6 +202,19 @@ public sealed class LoadSkillToolTests : IDisposable
 
         // Assert
         result.IsError.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_HiddenSkillNamedAfterAWordThatContainsIt_Loads()
+    {
+        // Arrange
+        var sut = ToolWith(started: new HashSet<string>(), guideBody: "Not manuals, but manual");
+
+        // Act
+        var result = await RunAsync(sut, new { name = "manual" });
+
+        // Assert
+        result.IsError.Should().BeFalse();
     }
 
     [Fact]

@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace BlazeHarness.Core.Skills;
 
@@ -172,8 +171,19 @@ public sealed class SkillSet
 
     private static bool Mentions(string body, string name)
     {
-        return Regex.IsMatch(body, $"(?<![a-z0-9-]){Regex.Escape(name)}(?![a-z0-9-])", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+        for (var at = body.IndexOf(name, StringComparison.Ordinal); at >= 0; at = body.IndexOf(name, at + 1, StringComparison.Ordinal))
+        {
+            var end = at + name.Length;
+            if ((at == 0 || !IsNameCharacter(body[at - 1])) && (end == body.Length || !IsNameCharacter(body[end])))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
+
+    private static bool IsNameCharacter(char c) => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '-';
 
     private static string Shorten(string description)
     {

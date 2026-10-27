@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Skills;
+using BlazeHarness.Core.Tests.Integration.Tools;
 
 namespace BlazeHarness.Core.Tests.Integration.Skills;
 
@@ -204,5 +205,58 @@ public sealed class SkillScannerTests : IDisposable
 
         // Assert
         scan.Skills.Should().ContainSingle().Which.Name.Should().Be("shared");
+    }
+
+    [Fact]
+    public void Scan_ProjectSkillsFolderIsALinkOutside_IsSkipped()
+    {
+        // Arrange
+        _folders.Add("elsewhere", "sneaky", "Outside the project.");
+        var project = Path.Combine(_folders.Root, "project");
+        Directory.CreateDirectory(Path.Combine(project, ".agents"));
+        Directory.CreateSymbolicLink(Path.Combine(project, ".agents", "skills"), Path.Combine(_folders.Root, "elsewhere"));
+
+        // Act
+        var scan = SkillScanner.Scan(Path.Combine(project, ".agents", "skills"), SkillSource.Project, project);
+
+        // Assert
+        scan.Skills.Should().BeEmpty();
+        scan.Problems.Should().ContainSingle().Which.Should().Contain("links outside");
+    }
+
+    [Fact]
+    public void Scan_ProjectAgentsFolderIsALinkOutside_IsSkipped()
+    {
+        // Arrange
+        _folders.Add("elsewhere/skills", "sneaky", "Outside the project.");
+        var project = Path.Combine(_folders.Root, "project");
+        Directory.CreateDirectory(project);
+        Directory.CreateSymbolicLink(Path.Combine(project, ".agents"), Path.Combine(_folders.Root, "elsewhere"));
+
+        // Act
+        var scan = SkillScanner.Scan(Path.Combine(project, ".agents", "skills"), SkillSource.Project, project);
+
+        // Assert
+        scan.Skills.Should().BeEmpty();
+        scan.Problems.Should().ContainSingle().Which.Should().Contain("links outside");
+    }
+
+    [Fact(Skip = "Named pipes are a Unix feature.", SkipUnless = nameof(TempWorkspace.CanMakeFifo), SkipType = typeof(TempWorkspace))]
+    public void Scan_SkillFileIsANamedPipe_IsSkippedWithoutReadingIt()
+    {
+        // Arrange
+        var folder = Path.Combine(_folders.Root, "skills", "pipe");
+        Directory.CreateDirectory(folder);
+        using (var mkfifo = System.Diagnostics.Process.Start("mkfifo", Path.Combine(folder, SkillInfo.FileName)))
+        {
+            mkfifo.WaitForExit();
+        }
+
+        // Act
+        var scan = SkillScanner.Scan(Path.Combine(_folders.Root, "skills"), SkillSource.App);
+
+        // Assert
+        scan.Skills.Should().BeEmpty();
+        scan.Problems.Should().ContainSingle().Which.Should().Contain("empty");
     }
 }

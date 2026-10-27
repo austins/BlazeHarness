@@ -57,6 +57,11 @@ public static partial class SkillScanner
             return SkillScan.Empty;
         }
 
+        if (boundary is not null && !WorkspacePath.IsInside(WorkspacePath.CanonicalRoot(boundary), WorkspacePath.CanonicalRoot(directory)))
+        {
+            return new SkillScan([], [$"{directory}: skipped because it links outside the project folder."]);
+        }
+
         List<SkillInfo> skills = [];
         List<string> problems = [];
         try
@@ -116,9 +121,17 @@ public static partial class SkillScanner
         string text;
         try
         {
-            if (new FileInfo(file).Length > MaxFileBytes)
+            var length = new FileInfo(file).Length;
+            if (length > MaxFileBytes)
             {
-                problem = "SKILL.md is larger than 256 KB.";
+                problem = $"SKILL.md is larger than {MaxFileBytes / 1024} KB.";
+                return null;
+            }
+
+            // A named pipe reports a length of zero and reading it can block forever.
+            if (length == 0)
+            {
+                problem = "SKILL.md is empty.";
                 return null;
             }
 

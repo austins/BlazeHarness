@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Tools;
 using System.Globalization;
+using System.IO.Enumeration;
 using System.Text;
 using System.Text.Json;
 
@@ -99,8 +100,15 @@ public sealed class LoadSkillTool : ITool
 
     private static ToolResult LoadInstructions(SkillInfo skill)
     {
-        var parsed = SkillFrontmatter.Parse(File.ReadAllText(skill.FilePath));
-        var body = parsed.Error is null ? parsed.Body : File.ReadAllText(skill.FilePath);
+        // The file may have grown since it was scanned.
+        if (new FileInfo(skill.FilePath).Length > SkillScanner.MaxFileBytes)
+        {
+            return ToolResult.Error($"The instructions of '{skill.Name}' are larger than {SkillScanner.MaxFileBytes / 1024} KB.");
+        }
+
+        var text = File.ReadAllText(skill.FilePath);
+        var parsed = SkillFrontmatter.Parse(text);
+        var body = parsed.Error is null ? parsed.Body : text;
         var cut = body.Length > MaxBodyCharacters;
         var result = new StringBuilder();
         result.AppendLine(CultureInfo.InvariantCulture, $"Skill: {skill.Name}");
@@ -136,7 +144,14 @@ public sealed class LoadSkillTool : ITool
 
     private static void AppendFiles(StringBuilder result, SkillInfo skill)
     {
-        var files = Directory.EnumerateFiles(skill.Directory, "*", SearchOption.AllDirectories)
+        // Links are listed as files but never followed into, so a link loop cannot make the walk fail.
+        var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = 0 };
+        var found = new FileSystemEnumerable<string>(skill.Directory, static (ref FileSystemEntry entry) => entry.ToFullPath(), options)
+        {
+            ShouldIncludePredicate = static (ref FileSystemEntry entry) => !entry.IsDirectory,
+            ShouldRecursePredicate = static (ref FileSystemEntry entry) => !entry.Attributes.HasFlag(FileAttributes.ReparsePoint),
+        };
+        var files = found
             .Select(file => WorkspacePath.Relative(skill.Directory, file))
             .Where(file => !string.Equals(file, SkillInfo.FileName, StringComparison.Ordinal))
             .Order(StringComparer.Ordinal)
