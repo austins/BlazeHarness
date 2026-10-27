@@ -8,7 +8,7 @@
 <nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="Main">
     <div class="sidebar-brand"><span class="logo" aria-hidden="true">🔥</span> BlazeHarness</div>
 
-    <NavLink class="btn btn-primary" href="" Match="NavLinkMatch.All"><Icon Name="plus" /> New chat</NavLink>
+    <NavLink class="btn btn-primary" href="" Match="NavLinkMatch.All" data-shortcut="new-chat" title="New chat (Ctrl+Shift+O)"><Icon Name="plus" /> New chat</NavLink>
 
     @{
         var all = Sessions.Store.List(Filter);
@@ -20,7 +20,7 @@
     @if (Sessions.Store.List().Count > 0)
     {
         <input type="search" class="input input-sm sidebar-search" placeholder="Search chats"
-               aria-label="Search chat titles" @bind="Filter" @bind:event="oninput" />
+               aria-label="Search chat titles" title="Search chats (Ctrl+K)" data-shortcut="search" @bind="Filter" @bind:event="oninput" />
     }
 
     <section class="sidebar-section" aria-labelledby="chats-heading">
@@ -116,7 +116,7 @@
 
     <div class="sidebar-footer">
         <div class="sidebar-links">
-            <NavLink class="nav-link" href="settings/providers"><Icon Name="settings" /> Providers</NavLink>
+            <NavLink class="nav-link" href="settings/providers" data-shortcut="settings" title="Settings (Ctrl+,)"><Icon Name="settings" /> Providers</NavLink>
             <NavLink class="nav-link" href="settings/permissions"><Icon Name="shield" /> Permissions</NavLink>
             <NavLink class="nav-link" href="settings/mcp"><Icon Name="plug" /> MCP servers</NavLink>
             <NavLink class="nav-link" href="settings/skills"><Icon Name="book" /> Skills</NavLink>

@@ -3,6 +3,8 @@
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
+<button type="button" class="skip-link" onclick="bhUi.skipToChat()">Skip to chat</button>
+
 <div class="app">
     <Sidebar Collapsed="_collapsed" />
     @if (!_collapsed)

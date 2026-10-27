@@ -7,9 +7,42 @@ window.bhUi = {
             input.select();
         }
     },
+    skipToChat: () => {
+        const target = document.querySelector(".composer-input") ?? document.querySelector("main");
+        if (target) {
+            target.focus();
+        }
+    },
     showModal: (dialog) => {
         if (dialog && !dialog.open) {
             dialog.showModal();
         }
     },
 };
+
+// Global shortcuts. Ctrl+K and Ctrl+Shift+O are ones browsers let a page take over.
+document.addEventListener("keydown", (event) => {
+    if (!(event.ctrlKey || event.metaKey) || event.altKey) {
+        return;
+    }
+
+    const key = event.key.toLowerCase();
+    let target = null;
+    if (key === "k" && !event.shiftKey) {
+        target = document.querySelector("[data-shortcut=search]");
+    } else if (key === "o" && event.shiftKey) {
+        target = document.querySelector("[data-shortcut=new-chat]");
+    } else if (key === "," && !event.shiftKey) {
+        target = document.querySelector("[data-shortcut=settings]");
+    }
+
+    if (target) {
+        event.preventDefault();
+        if (target.tagName === "INPUT") {
+            target.focus();
+            target.select();
+        } else {
+            target.click();
+        }
+    }
+});

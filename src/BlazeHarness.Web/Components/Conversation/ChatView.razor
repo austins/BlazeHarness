@@ -87,6 +87,8 @@ else
             </div>
         }
 
+        <div class="sr-only" role="status" aria-live="polite">@_announcement</div>
+
         <div class="chat-scroll" @ref="_scroll" tabindex="-1">
             <div class="chat-thread" role="log" aria-live="off">
                 @if (_entries.Count == 0)
@@ -139,6 +141,8 @@ else
     private bool _missing;
     private bool _loading;
     private bool _watching;
+    private bool _wasRunning;
+    private string _announcement = string.Empty;
     private ElementReference _root;
     private ElementReference _scroll;
 
@@ -194,6 +198,8 @@ else
 
         Detach();
         _editing = null;
+        _wasRunning = false;
+        _announcement = string.Empty;
         _openId = SessionId;
         _missing = false;
         _info = null;
@@ -272,6 +278,7 @@ else
     private void Refresh()
     {
         _entries = _session?.Entries ?? [];
+        Announce();
         if (_editing is not null && !_entries.Any(e => e.Id == _editing.Id))
         {
             _editing = null;
@@ -283,6 +290,25 @@ else
         }
 
         StateHasChanged();
+    }
+
+    private void Announce()
+    {
+        var running = _session?.IsRunning ?? false;
+        if (running == _wasRunning)
+        {
+            return;
+        }
+
+        _wasRunning = running;
+        if (running)
+        {
+            _announcement = "Reply started";
+        }
+        else
+        {
+            _announcement = _entries.Count > 0 && _entries[^1].Status == EntryStatus.Failed ? "Reply failed" : "Reply finished";
+        }
     }
 
     private void OnChanged(object? sender, EventArgs e)
