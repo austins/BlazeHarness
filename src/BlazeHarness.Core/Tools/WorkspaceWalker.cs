@@ -13,8 +13,8 @@ internal sealed record WalkEntry(string FullPath, string RelativePath, bool IsDi
 /// Walks the working folder for the listing and search tools.
 /// </summary>
 /// <remarks>
-/// Entries come in a stable order: each folder's files and folders sorted by name. <c>.git</c> is always skipped, and so is anything
-/// a <c>.gitignore</c> file between the working folder and the entry excludes. Links are listed but never followed.
+/// Entries come in a stable order: each folder's files and folders sorted by name. <c>.git</c> and the protected folders of the context
+/// are always skipped, and so is anything a <c>.gitignore</c> file between the working folder and the entry excludes. Links are listed but never followed.
 /// </remarks>
 internal static class WorkspaceWalker
 {
@@ -86,7 +86,7 @@ internal static class WorkspaceWalker
                 continue;
             }
 
-            if (IsIgnored(rules, child.FullName, isDirectory))
+            if (IsIgnored(rules, child.FullName, isDirectory) || (isDirectory && context.Sensitive.IsProtected(child.FullName)))
             {
                 continue;
             }

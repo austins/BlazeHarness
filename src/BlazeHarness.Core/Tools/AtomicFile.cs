@@ -17,7 +17,14 @@ internal static class AtomicFile
         var temp = Path.Combine(folder, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
         try
         {
-            File.WriteAllBytes(temp, bytes);
+            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                stream.Write(bytes);
+
+                // Without this a power cut after the rename can leave an empty file.
+                stream.Flush(flushToDisk: true);
+            }
+
             if (!OperatingSystem.IsWindows() && File.Exists(path))
             {
                 File.SetUnixFileMode(temp, File.GetUnixFileMode(path));

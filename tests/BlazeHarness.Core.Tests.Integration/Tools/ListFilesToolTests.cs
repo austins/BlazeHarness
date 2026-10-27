@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 
 namespace BlazeHarness.Core.Tests.Integration.Tools;
@@ -96,6 +97,21 @@ public sealed class ListFilesToolTests : IDisposable
 
         // Act
         var result = await RunAsync(new { recursive = true, include_ignored = true });
+
+        // Assert
+        Lines(result).Should().Equal("a.txt");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ProtectedFolder_IsNotListedOrEntered()
+    {
+        // Arrange
+        _workspace.Write("keys/id_rsa", "x");
+        _workspace.Write("a.txt", "x");
+        var context = _workspace.Context.WithSensitive(new SensitivePaths([Path.Combine(_workspace.Root, "keys")]));
+
+        // Act
+        var result = await _sut.ExecuteAsync(TempWorkspace.Args(new { recursive = true, include_ignored = true }), context, TestContext.Current.CancellationToken);
 
         // Assert
         Lines(result).Should().Equal("a.txt");

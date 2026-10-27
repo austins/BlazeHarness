@@ -118,7 +118,8 @@ public sealed class ToolSet
     /// Run one call, turning every failure the model can react to into an error result.
     /// </summary>
     /// <remarks>
-    /// The call stops after the tool's timeout, and its output is cut at <see cref="MaxOutputCharacters"/>.
+    /// The call stops after the tool's timeout, and its output is cut at <see cref="MaxOutputCharacters"/>. A tool that is stuck in blocking I/O
+    /// is left behind when the call stops, so a hung file system can't hang the chat.
     /// </remarks>
     /// <param name="tool">The tool to run.</param>
     /// <param name="argumentsJson">The call arguments as JSON text.</param>
@@ -134,7 +135,7 @@ public sealed class ToolSet
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
-            var result = await tool.ExecuteAsync(ToolArguments.Parse(argumentsJson), context ?? Context, linked.Token);
+            var result = await RunAbandonableAsync(tool, ToolArguments.Parse(argumentsJson), context ?? Context, linked.Token);
             return result with { Output = Limit(result.Output) };
         }
         catch (ToolArgumentException ex)
@@ -149,5 +150,11 @@ public sealed class ToolSet
         {
             return ToolResult.Error(ex.Message);
         }
+    }
+
+    // File tools do blocking I/O that a token can't interrupt, such as opening a pipe, so the call runs on its own thread and is left behind when it is stopped.
+    private static Task<ToolResult> RunAbandonableAsync(ITool tool, ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)
+    {
+        return Task.Run(() => tool.ExecuteAsync(arguments, context, cancellationToken), CancellationToken.None).WaitAsync(cancellationToken);
     }
 }

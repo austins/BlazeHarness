@@ -9,7 +9,16 @@ namespace BlazeHarness.Core.Tools;
 /// </summary>
 public sealed class ReadFileTool : ITool
 {
-    private const int DefaultLimit = 2000;
+    /// <summary>
+    /// The number of lines a call reads when it gives no limit.
+    /// </summary>
+    internal const int DefaultLimit = 2000;
+
+    /// <summary>
+    /// The most lines one call may ask for.
+    /// </summary>
+    internal const int MaxLimit = 10_000;
+
     private const int MaxLineCharacters = 2000;
     private const int CharacterBudget = ToolSet.MaxOutputCharacters - 500;
 
@@ -18,17 +27,17 @@ public sealed class ReadFileTool : ITool
 
     /// <inheritdoc />
     public string Description =>
-        "Read a text file inside the working folder. Returns up to 2000 lines at a time; for a longer file, " +
+        $"Read a text file inside the working folder. Returns up to {DefaultLimit} lines at a time; for a longer file, " +
         "pass offset (the first line to read, starting at 1) and limit to read it in pieces. Binary files can't be read.";
 
     /// <inheritdoc />
-    public string InputSchema => """
+    public string InputSchema => $$"""
         {
           "type": "object",
           "properties": {
             "path": { "type": "string", "description": "The file path, relative to the working folder." },
             "offset": { "type": "integer", "minimum": 1, "description": "The first line to read, starting at 1." },
-            "limit": { "type": "integer", "minimum": 1, "maximum": 10000, "description": "The most lines to read." }
+            "limit": { "type": "integer", "minimum": 1, "maximum": {{MaxLimit}}, "description": "The most lines to read." }
           },
           "required": ["path"]
         }
@@ -53,7 +62,7 @@ public sealed class ReadFileTool : ITool
         ArgumentNullException.ThrowIfNull(context);
 
         var offset = arguments.OptionalInt("offset", minimum: 1) ?? 1;
-        var limit = arguments.OptionalInt("limit", minimum: 1, maximum: 10_000) ?? DefaultLimit;
+        var limit = arguments.OptionalInt("limit", minimum: 1, maximum: MaxLimit) ?? DefaultLimit;
         if (!context.TryResolve(arguments.RequiredString("path"), out var full, out var error))
         {
             return Task.FromResult(ToolResult.Error(error));
@@ -69,6 +78,11 @@ public sealed class ReadFileTool : ITool
             return Task.FromResult(ToolResult.Error($"The file '{context.Relative(full)}' does not exist."));
         }
 
+        if (ToolSupport.IsEmpty(full))
+        {
+            return Task.FromResult(ToolResult.Ok($"[{context.Relative(full)} is empty.]"));
+        }
+
         return Task.FromResult(ToolSupport.LooksBinary(full)
             ? ToolResult.Error($"'{context.Relative(full)}' is a binary file ({new FileInfo(full).Length} bytes), which can't be read as text.")
             : ReadLines(context.Relative(full), full, offset, limit, cancellationToken));
@@ -77,13 +91,14 @@ public sealed class ReadFileTool : ITool
     internal static ToolResult ReadLines(string display, string full, int offset, int limit, CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(full, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        var lines = new CappedLineReader(reader, MaxLineCharacters);
         var shown = new StringBuilder();
         var total = 0;
         var firstShown = 0;
         var lastShown = 0;
         var count = 0;
         var budgetReached = false;
-        while (reader.ReadLine() is { } line)
+        while (lines.ReadLine() is { } line)
         {
             cancellationToken.ThrowIfCancellationRequested();
             total++;
@@ -92,7 +107,7 @@ public sealed class ReadFileTool : ITool
                 continue;
             }
 
-            var text = line.Length > MaxLineCharacters ? line[..MaxLineCharacters] + " [line cut]" : line;
+            var text = lines.DroppedCharacters > 0 ? line + " [line cut]" : line;
             if (count >= limit || (count > 0 && shown.Length + text.Length + 1 > CharacterBudget))
             {
                 budgetReached = true;

@@ -36,6 +36,17 @@ internal sealed class TempWorkspace : IDisposable
         return path;
     }
 
+    public static bool CanMakeFifo => !OperatingSystem.IsWindows();
+
+    public string MakeFifo(string relative)
+    {
+        var path = Path.Combine(Root, relative);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using var mkfifo = System.Diagnostics.Process.Start("mkfifo", path);
+        mkfifo.WaitForExit();
+        return path;
+    }
+
     public string Read(string relative) => File.ReadAllText(Path.Combine(Root, relative));
 
     public static ToolArguments Args(object arguments) => ToolArguments.Parse(JsonSerializer.Serialize(arguments));

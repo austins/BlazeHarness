@@ -158,6 +158,32 @@ public sealed class ReadFileToolTests : IDisposable
         result.Output.Should().Be("a\nb");
     }
 
+    [Fact]
+    public async Task ExecuteAsync_HugeSingleLine_IsCutInsteadOfBufferedWhole()
+    {
+        // Arrange
+        _workspace.Write("one-line.txt", new string('x', 3 * 1024 * 1024));
+
+        // Act
+        var result = await RunAsync(new { path = "one-line.txt" });
+
+        // Assert
+        result.Output.Should().Be(new string('x', 2000) + " [line cut]");
+    }
+
+    [Fact(Skip = "Named pipes are a Unix feature.", SkipUnless = nameof(TempWorkspace.CanMakeFifo), SkipType = typeof(TempWorkspace))]
+    public async Task ExecuteAsync_NamedPipe_IsNotOpened()
+    {
+        // Arrange
+        _workspace.MakeFifo("pipe");
+
+        // Act
+        var result = await RunAsync(new { path = "pipe" }).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().Be(ToolResult.Ok("[pipe is empty.]"));
+    }
+
     [Theory]
     [InlineData("missing.txt", "does not exist")]
     [InlineData("sub", "is a folder")]

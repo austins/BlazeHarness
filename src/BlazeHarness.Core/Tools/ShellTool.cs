@@ -130,9 +130,12 @@ public sealed class ShellTool : ITool
         try
         {
             using var reader = new StreamReader(stream, Encoding.UTF8);
-            while (await reader.ReadLineAsync().ConfigureAwait(false) is { } line)
+            var lines = new CappedLineReader(reader, ShellOutput.MaxLineCharacters);
+            while (await lines.ReadLineAsync().ConfigureAwait(false) is { } line)
             {
-                output.AppendLine(line);
+                output.AppendLine(lines.DroppedCharacters > 0
+                    ? string.Create(CultureInfo.InvariantCulture, $"{line} [{lines.DroppedCharacters} more characters of this line left out]")
+                    : line);
             }
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)

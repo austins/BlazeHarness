@@ -279,12 +279,12 @@ public static class ChatRunner
 
                 if (p.Tool!.IsReadOnly && decision.Verdict == PermissionVerdict.Allow)
                 {
-                    var contexts = new List<ToolContext> { ContextFor(tools, decision) };
+                    var contexts = new List<ToolContext> { ContextFor(tools, decision, permissions) };
                     while (index + contexts.Count < planned.Count
                         && planned[index + contexts.Count] is { CanRun: true, Tool.IsReadOnly: true } next
                         && permissions.Evaluate(next.Tool, next.Json, tools.Context) is { Verdict: PermissionVerdict.Allow } nextDecision)
                     {
-                        contexts.Add(ContextFor(tools, nextDecision));
+                        contexts.Add(ContextFor(tools, nextDecision, permissions));
                     }
 
                     var end = index + contexts.Count;
@@ -351,7 +351,7 @@ public static class ChatRunner
                 yield return new ToolCallRunning(p.Call.CallId);
                 try
                 {
-                    results[index] = await RunAsync(tools, p, ContextFor(tools, decision), cancellationToken);
+                    results[index] = await RunAsync(tools, p, ContextFor(tools, decision, permissions), cancellationToken);
                     statuses[index] = results[index]!.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -394,9 +394,9 @@ public static class ChatRunner
         return new ToolCallFinished(call.Call.CallId, call.Call.Name, result.Output, status);
     }
 
-    private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision)
+    private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision, PermissionEngine permissions)
     {
-        var context = decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context;
+        var context = (decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context).WithSensitive(permissions.Sensitive());
         if (decision.ShellReadFolders is { Count: > 0 } folders)
         {
             context = context.WithShellReadFolders(folders);

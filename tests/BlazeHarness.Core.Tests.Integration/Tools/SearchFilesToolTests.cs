@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 
 namespace BlazeHarness.Core.Tests.Integration.Tools;
@@ -147,6 +148,21 @@ public sealed class SearchFilesToolTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_ProtectedFolder_IsNotSearched()
+    {
+        // Arrange
+        _workspace.Write(".ssh/id_rsa", "PRIVATE KEY\n");
+        _workspace.Write("a.txt", "PRIVATE KEY\n");
+        var context = _workspace.Context.WithSensitive(new SensitivePaths([Path.Combine(_workspace.Root, ".ssh")]));
+
+        // Act
+        var result = await _sut.ExecuteAsync(TempWorkspace.Args(new { pattern = "PRIVATE KEY", include_ignored = true }), context, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Output.Should().Be("a.txt:1: PRIVATE KEY");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_LargeFile_IsSkippedWithANote()
     {
         // Arrange
@@ -195,6 +211,20 @@ public sealed class SearchFilesToolTests : IDisposable
 
         // Assert
         result.IsError.Should().BeTrue();
+    }
+
+    [Fact(Skip = "Named pipes are a Unix feature.", SkipUnless = nameof(TempWorkspace.CanMakeFifo), SkipType = typeof(TempWorkspace))]
+    public async Task ExecuteAsync_NamedPipe_IsSkippedWithoutBlocking()
+    {
+        // Arrange
+        _workspace.MakeFifo("pipe");
+        _workspace.Write("a.txt", "needle\n");
+
+        // Act
+        var result = await RunAsync(new { pattern = "needle" }).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Output.Should().Be("a.txt:1: needle");
     }
 
     private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), _workspace.Context, TestContext.Current.CancellationToken);

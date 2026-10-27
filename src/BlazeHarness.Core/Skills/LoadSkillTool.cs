@@ -42,14 +42,14 @@ public sealed class LoadSkillTool : ITool
         "To read one of those files, call again with the skill name and the file's path relative to the skill folder.";
 
     /// <inheritdoc />
-    public string InputSchema => """
+    public string InputSchema => $$"""
         {
           "type": "object",
           "properties": {
             "name": { "type": "string", "description": "The skill's name, as listed in the system prompt." },
             "path": { "type": "string", "description": "A file inside the skill folder to read instead of the instructions." },
             "offset": { "type": "integer", "minimum": 1, "description": "For a file: the first line to read, starting at 1." },
-            "limit": { "type": "integer", "minimum": 1, "maximum": 10000, "description": "For a file: the most lines to read." }
+            "limit": { "type": "integer", "minimum": 1, "maximum": {{ReadFileTool.MaxLimit}}, "description": "For a file: the most lines to read." }
           },
           "required": ["name"]
         }
@@ -77,7 +77,7 @@ public sealed class LoadSkillTool : ITool
         var name = arguments.RequiredString("name");
         var path = arguments.OptionalString("path");
         var offset = arguments.OptionalInt("offset", minimum: 1) ?? 1;
-        var limit = arguments.OptionalInt("limit", minimum: 1, maximum: 10_000) ?? 2000;
+        var limit = arguments.OptionalInt("limit", minimum: 1, maximum: ReadFileTool.MaxLimit) ?? ReadFileTool.DefaultLimit;
         var loadable = _skills.LoadableBy(_started);
         if (!loadable.Contains(name) || _skills.Skills.FirstOrDefault(skill => skill.Name == name) is not { } skill)
         {

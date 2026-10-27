@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Tools;
 /// </summary>
 /// <remarks>
 /// Supports comments, negation with <c>!</c>, folder-only rules ending in <c>/</c>, rules anchored by a slash,
-/// and the glob syntax of <see cref="Glob"/>. The last rule that matches decides.
+/// and the glob syntax of <see cref="Glob"/>. The last rule that matches decides. A rule that is not valid is skipped.
 /// </remarks>
 internal sealed class GitIgnore
 {
@@ -53,7 +53,14 @@ internal sealed class GitIgnore
             }
 
             var anchored = line.Contains('/', StringComparison.Ordinal);
-            result._rules.Add(new Rule(Glob.Compile(line.TrimStart('/'), anchored), negated, directoryOnly));
+            try
+            {
+                result._rules.Add(new Rule(Glob.Compile(line.TrimStart('/'), anchored), negated, directoryOnly));
+            }
+            catch (ArgumentException)
+            {
+                // Git ignores a rule it can't read too, so one bad rule must not hide the rest.
+            }
         }
 
         return result;

@@ -8,6 +8,7 @@ namespace BlazeHarness.Core.Tools;
 /// </summary>
 internal static class Glob
 {
+    // Linear-time matching, so a pattern of many wildcards from a call or a .gitignore file can't make a match slow.
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromSeconds(1);
 
     private static readonly bool IgnoreCase = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
@@ -20,6 +21,7 @@ internal static class Glob
     /// True to match from the start of the path. False to also match at any depth, so <c>*.cs</c> finds files in every folder.
     /// </param>
     /// <returns>The regular expression.</returns>
+    /// <exception cref="ArgumentException">The pattern is not valid, such as a set with its range reversed.</exception>
     public static Regex Compile(string pattern, bool anchored)
     {
         var regex = new StringBuilder(anchored ? "^" : "^(?:.*/)?");
@@ -38,6 +40,11 @@ internal static class Glob
                     if (i < pattern.Length && pattern[i] == '/')
                     {
                         i++;
+                        while (string.CompareOrdinal(pattern, i, "**/", 0, 3) == 0)
+                        {
+                            i += 3;
+                        }
+
                         regex.Append("(?:.*/)?");
                     }
                     else
@@ -74,7 +81,7 @@ internal static class Glob
         }
 
         regex.Append('$');
-        var options = RegexOptions.CultureInvariant | (IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
+        var options = RegexOptions.CultureInvariant | RegexOptions.NonBacktracking | (IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
         return new Regex(regex.ToString(), options, MatchTimeout);
     }
 

@@ -11,6 +11,8 @@ public sealed class WriteFileTool : ITool
 {
     private const int SampleBytes = 8192;
 
+    private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
+
     /// <inheritdoc />
     public string Name => "write_file";
 
@@ -66,7 +68,7 @@ public sealed class WriteFileTool : ITool
         var text = existed && !content.Contains('\r', StringComparison.Ordinal) && UsesCrlf(full)
             ? content.Replace("\n", "\r\n", StringComparison.Ordinal)
             : content;
-        var bytes = new UTF8Encoding(keepBom).GetBytes(text);
+        var bytes = Utf8WithoutBom.GetBytes(text);
         if (keepBom)
         {
             bytes = [.. Encoding.UTF8.GetPreamble(), .. bytes];

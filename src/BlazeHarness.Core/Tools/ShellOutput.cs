@@ -11,36 +11,41 @@ internal sealed class ShellOutput
     internal const int HeadLimit = 10_000;
     internal const int TailLimit = 19_000;
 
+    /// <summary>
+    /// The most characters kept of one line, so a command that prints a huge line without a break can't use up memory.
+    /// </summary>
+    internal const int MaxLineCharacters = TailLimit;
+
     private readonly Lock _gate = new();
     private readonly StringBuilder _head = new();
-    private readonly StringBuilder _tail = new();
+
+    // Whole lines, so dropping the oldest text never copies the rest; only the first line can be partly dropped.
+    private readonly Queue<string> _tail = new();
+    private int _tailLength;
+    private int _firstLineOffset;
     private long _omitted;
 
     public void AppendLine(string line)
     {
         lock (_gate)
         {
-            var text = line + "\n";
-            if (_head.Length < HeadLimit)
+            var room = HeadLimit - _head.Length;
+            if (room > line.Length)
             {
-                var room = HeadLimit - _head.Length;
-                if (text.Length <= room)
-                {
-                    _head.Append(text);
-                    return;
-                }
-
-                _head.Append(text, 0, room);
-                text = text[room..];
+                _head.Append(line).Append('\n');
+                return;
             }
 
-            _tail.Append(text);
-            if (_tail.Length > TailLimit)
+            var rest = line + "\n";
+            if (room > 0)
             {
-                var excess = _tail.Length - TailLimit;
-                _tail.Remove(0, excess);
-                _omitted += excess;
+                _head.Append(rest, 0, room);
+                rest = rest[room..];
             }
+
+            _tail.Enqueue(rest);
+            _tailLength += rest.Length;
+            DropOldest();
         }
     }
 
@@ -48,9 +53,44 @@ internal sealed class ShellOutput
     {
         lock (_gate)
         {
-            return _omitted == 0
-                ? _head.ToString() + _tail
-                : string.Create(CultureInfo.InvariantCulture, $"{_head}\n[{_omitted} characters left out]\n{_tail}");
+            var text = new StringBuilder(_head.Length + _tailLength + 64);
+            text.Append(_head);
+            if (_omitted > 0)
+            {
+                text.Append(CultureInfo.InvariantCulture, $"\n[{_omitted} characters left out]\n");
+            }
+
+            var offset = _firstLineOffset;
+            foreach (var line in _tail)
+            {
+                text.Append(line, offset, line.Length - offset);
+                offset = 0;
+            }
+
+            return text.ToString();
+        }
+    }
+
+    private void DropOldest()
+    {
+        while (_tailLength > TailLimit)
+        {
+            var excess = _tailLength - TailLimit;
+            var first = _tail.Peek();
+            var available = first.Length - _firstLineOffset;
+            if (available <= excess)
+            {
+                _tail.Dequeue();
+                _firstLineOffset = 0;
+                excess = available;
+            }
+            else
+            {
+                _firstLineOffset += excess;
+            }
+
+            _tailLength -= excess;
+            _omitted += excess;
         }
     }
 }

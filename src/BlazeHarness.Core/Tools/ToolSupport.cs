@@ -9,6 +9,14 @@ internal static class ToolSupport
 {
     private const int BinarySampleBytes = 8192;
 
+    private static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
+
+    private static ReadOnlySpan<byte> Utf16LittleEndianBom => [0xFF, 0xFE];
+
+    private static ReadOnlySpan<byte> Utf16BigEndianBom => [0xFE, 0xFF];
+
+    private static ReadOnlySpan<byte> Utf32BigEndianBom => [0x00, 0x00, 0xFE, 0xFF];
+
     /// <summary>
     /// Read a text property of a call's arguments for a summary.
     /// </summary>
@@ -25,24 +33,47 @@ internal static class ToolSupport
     }
 
     /// <summary>
+    /// Get whether a file has no content, as far as a tool can tell without opening it.
+    /// </summary>
+    /// <remarks>
+    /// A named pipe or device reports a length of zero, and opening a pipe blocks until something writes to it, which can be never.
+    /// So a file of length zero is never opened.
+    /// </remarks>
+    /// <param name="path">The full path of the file.</param>
+    /// <returns>True when the file reports a length of zero.</returns>
+    public static bool IsEmpty(string path) => new FileInfo(path).Length == 0;
+
+    /// <summary>
     /// Get whether the start of a file looks like binary data rather than text.
     /// </summary>
     /// <remarks>
     /// A file with a Unicode byte order mark is text, even though UTF-16 and UTF-32 text contains zero bytes.
+    /// A file that reports a length of zero is not opened and counts as text (see <see cref="IsEmpty"/>).
     /// </remarks>
     /// <param name="path">The full path of the file.</param>
     /// <returns>True when the file has a zero byte in its first 8 KiB and no byte order mark.</returns>
     public static bool LooksBinary(string path)
     {
-        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        var buffer = new byte[BinarySampleBytes];
-        var read = stream.Read(buffer, 0, buffer.Length);
-        if (HasUnicodeBom(buffer.AsSpan(0, read)))
+        if (IsEmpty(path))
         {
             return false;
         }
 
-        return buffer.AsSpan(0, read).Contains((byte)0);
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        var buffer = new byte[BinarySampleBytes];
+        var read = stream.Read(buffer, 0, buffer.Length);
+        return LooksBinary(buffer.AsSpan(0, read));
+    }
+
+    /// <summary>
+    /// Get whether the start of a file's bytes looks like binary data rather than text.
+    /// </summary>
+    /// <param name="bytes">The bytes of the file, or the start of them.</param>
+    /// <returns>True when there is a zero byte in the first 8 KiB and no byte order mark.</returns>
+    public static bool LooksBinary(ReadOnlySpan<byte> bytes)
+    {
+        var sample = bytes[..Math.Min(bytes.Length, BinarySampleBytes)];
+        return !HasUnicodeBom(sample) && sample.Contains((byte)0);
     }
 
     /// <summary>
@@ -52,9 +83,7 @@ internal static class ToolSupport
     /// <returns>True when a byte order mark is present.</returns>
     public static bool HasUnicodeBom(ReadOnlySpan<byte> bytes)
     {
-        return bytes.StartsWith(new byte[] { 0xEF, 0xBB, 0xBF })
-            || bytes.StartsWith(new byte[] { 0xFF, 0xFE })
-            || bytes.StartsWith(new byte[] { 0xFE, 0xFF });
+        return bytes.StartsWith(Utf8Bom) || bytes.StartsWith(Utf16LittleEndianBom) || bytes.StartsWith(Utf16BigEndianBom) || bytes.StartsWith(Utf32BigEndianBom);
     }
 
     /// <summary>

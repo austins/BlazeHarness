@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
 
 namespace BlazeHarness.Core.Tools;
@@ -16,12 +17,13 @@ public sealed class ToolContext
         Root = WorkspacePath.CanonicalRoot(folder);
     }
 
-    private ToolContext(string root, bool allowsOutside, ShellMode shell, IReadOnlyList<string> shellReadFolders)
+    private ToolContext(string root, bool allowsOutside, ShellMode shell, IReadOnlyList<string> shellReadFolders, SensitivePaths sensitive)
     {
         Root = root;
         AllowsOutside = allowsOutside;
         Shell = shell;
         ShellReadFolders = shellReadFolders;
+        Sensitive = sensitive;
     }
 
     /// <summary>
@@ -45,20 +47,28 @@ public sealed class ToolContext
     public IReadOnlyList<string> ShellReadFolders { get; } = [];
 
     /// <summary>
+    /// Gets the protected folders, which the listing and search tools skip while they walk the working folder.
+    /// </summary>
+    /// <remarks>
+    /// The permission check only sees the paths a call names, so a walk that starts in a folder above a protected one must skip it itself.
+    /// </remarks>
+    public SensitivePaths Sensitive { get; } = SensitivePaths.None;
+
+    /// <summary>
     /// Get a copy of this context that accepts paths outside the working folder.
     /// </summary>
     /// <remarks>
     /// Only for a call that has already passed the permission check.
     /// </remarks>
     /// <returns>A context with the same root that accepts any path.</returns>
-    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true, Shell, ShellReadFolders);
+    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true, Shell, ShellReadFolders, Sensitive);
 
     /// <summary>
     /// Get a copy of this context with a different shell mode.
     /// </summary>
     /// <param name="shell">How far a shell command may reach.</param>
     /// <returns>A context with the same root and path rules.</returns>
-    public ToolContext WithShell(ShellMode shell) => new(Root, AllowsOutside, shell, ShellReadFolders);
+    public ToolContext WithShell(ShellMode shell) => new(Root, AllowsOutside, shell, ShellReadFolders, Sensitive);
 
     /// <summary>
     /// Get a copy of this context with the folders a shell command may also read.
@@ -68,7 +78,18 @@ public sealed class ToolContext
     public ToolContext WithShellReadFolders(IReadOnlyList<string> folders)
     {
         ArgumentNullException.ThrowIfNull(folders);
-        return new(Root, AllowsOutside, Shell, folders);
+        return new(Root, AllowsOutside, Shell, folders, Sensitive);
+    }
+
+    /// <summary>
+    /// Get a copy of this context with the folders a walk must skip.
+    /// </summary>
+    /// <param name="sensitive">The protected folders.</param>
+    /// <returns>A context with the same root and path rules.</returns>
+    public ToolContext WithSensitive(SensitivePaths sensitive)
+    {
+        ArgumentNullException.ThrowIfNull(sensitive);
+        return new(Root, AllowsOutside, Shell, ShellReadFolders, sensitive);
     }
 
     /// <summary>

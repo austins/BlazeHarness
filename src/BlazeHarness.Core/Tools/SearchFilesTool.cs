@@ -12,7 +12,8 @@ public sealed class SearchFilesTool : ITool
 {
     private const int DefaultLimit = 100;
     private const int MaxLineCharacters = 300;
-    private const long MaxFileBytes = 2 * 1024 * 1024;
+    private const long MiB = 1024 * 1024;
+    private const long MaxFileBytes = 2 * MiB;
     private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(2);
 
     /// <inheritdoc />
@@ -21,7 +22,7 @@ public sealed class SearchFilesTool : ITool
     /// <inheritdoc />
     public string Description =>
         "Search the text files inside the working folder for a regular expression. Returns matching lines as path:line: text. " +
-        "Files that .gitignore excludes, binary files and files over 2 MiB are skipped. Use glob to limit which files are searched.";
+        $"Files that .gitignore excludes, binary files and files over {MaxFileBytes / MiB} MiB are skipped. Use glob to limit which files are searched.";
 
     /// <inheritdoc />
     public string InputSchema => """
@@ -148,13 +149,14 @@ public sealed class SearchFilesTool : ITool
     {
         try
         {
-            if (new FileInfo(path).Length > MaxFileBytes)
+            var length = new FileInfo(path).Length;
+            if (length > MaxFileBytes)
             {
                 skippedLarge++;
                 return false;
             }
 
-            return !ToolSupport.LooksBinary(path);
+            return length > 0 && !ToolSupport.LooksBinary(path);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

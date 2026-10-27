@@ -70,6 +70,7 @@ public sealed record ShellInfo(string Name, string Executable, bool IsPowerShell
     {
         return (pathVariable ?? string.Empty)
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(Path.IsPathFullyQualified)
             .Select(directory => Path.Combine(directory, fileName))
             .FirstOrDefault(File.Exists);
     }

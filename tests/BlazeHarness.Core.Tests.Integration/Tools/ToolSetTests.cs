@@ -192,6 +192,40 @@ public sealed class ToolSetTests : IDisposable
         result.Should().Be("src/a.cs");
     }
 
+    [Fact]
+    public async Task ExecuteAsync_ToolBlockedInSynchronousIo_IsAbandonedWhenTheCallerCancels()
+    {
+        // Arrange
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new ManualResetEventSlim();
+        var blocking = Tool(TimeSpan.FromMinutes(1), _ =>
+        {
+            started.SetResult();
+            release.Wait(TestContext.Current.CancellationToken);
+            return Task.FromResult(ToolResult.Ok("late"));
+        });
+        var sut = new ToolSet([blocking], _workspace.Context);
+        var cancel = new CancellationTokenSource();
+        try
+        {
+            var call = sut.ExecuteAsync(sut.Tools[0], "{}", cancel.Token);
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+            // Act
+            await cancel.CancelAsync();
+            var act = () => call.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+            // Assert
+            await act.Should().ThrowAsync<OperationCanceledException>();
+        }
+        finally
+        {
+            release.Set();
+            release.Dispose();
+            cancel.Dispose();
+        }
+    }
+
     private static ITool Tool(TimeSpan timeout, Func<CancellationToken, Task<ToolResult>> run)
     {
         var tool = Substitute.For<ITool>();

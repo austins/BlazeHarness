@@ -47,4 +47,25 @@ public sealed class ShellOutputTests
         // Assert
         _sut.ToString().Length.Should().BeLessThan(ToolSet.MaxOutputCharacters);
     }
+
+    [Fact]
+    public void ToString_ManyShortLines_TailIsExactlyTheLastCharacters()
+    {
+        // Arrange
+        var everything = new System.Text.StringBuilder();
+
+        // Act
+        for (var i = 0; i < 30_000; i++)
+        {
+            var line = "line " + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            _sut.AppendLine(line);
+            everything.Append(line).Append('\n');
+        }
+
+        // Assert
+        var text = _sut.ToString();
+        var all = everything.ToString();
+        text.Should().StartWith(all[..ShellOutput.HeadLimit]).And.EndWith(all[^ShellOutput.TailLimit..]);
+        text.Length.Should().BeLessThan(ShellOutput.HeadLimit + ShellOutput.TailLimit + 100);
+    }
 }

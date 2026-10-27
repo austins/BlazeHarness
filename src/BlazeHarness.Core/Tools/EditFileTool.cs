@@ -9,6 +9,8 @@ namespace BlazeHarness.Core.Tools;
 /// </summary>
 public sealed class EditFileTool : ITool
 {
+    private const long MaxFileBytes = 10 * 1024 * 1024;
+
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     /// <inheritdoc />
@@ -81,13 +83,25 @@ public sealed class EditFileTool : ITool
             return ToolResult.Error("old_string is empty. Use write_file to replace a whole file.");
         }
 
-        if (oldText == newText)
+        var from = oldText.Replace("\r\n", "\n", StringComparison.Ordinal);
+        var to = newText.Replace("\r\n", "\n", StringComparison.Ordinal);
+        if (from == to)
         {
             return ToolResult.Error("old_string and new_string are the same, so nothing would change.");
         }
 
+        if (ToolSupport.IsEmpty(full))
+        {
+            return ToolResult.Error($"'{display}' is empty, so old_string can't be in it. Use write_file to put text in it.");
+        }
+
+        if (new FileInfo(full).Length > MaxFileBytes)
+        {
+            return ToolResult.Error($"'{display}' is larger than {MaxFileBytes / (1024 * 1024)} MiB, which is too big to edit with this tool.");
+        }
+
         var bytes = File.ReadAllBytes(full);
-        if (ToolSupport.LooksBinary(full) || HasUtf16Or32Bom(bytes))
+        if (ToolSupport.LooksBinary(bytes) || HasUtf16Or32Bom(bytes))
         {
             return ToolResult.Error($"'{display}' is not a UTF-8 text file, so it can't be edited with this tool.");
         }
@@ -103,10 +117,9 @@ public sealed class EditFileTool : ITool
             return ToolResult.Error($"'{display}' is not valid UTF-8, so it can't be edited with this tool.");
         }
 
-        var crlf = text.Contains("\r\n", StringComparison.Ordinal);
+        // Only a file that uses CRLF throughout is converted back; a mixed file is edited as it is, so its other lines keep their endings.
+        var crlf = text.Contains("\r\n", StringComparison.Ordinal) && !HasBareLineFeed(text);
         var normalized = crlf ? text.Replace("\r\n", "\n", StringComparison.Ordinal) : text;
-        var from = oldText.Replace("\r\n", "\n", StringComparison.Ordinal);
-        var to = newText.Replace("\r\n", "\n", StringComparison.Ordinal);
 
         var count = CountOccurrences(normalized, from);
         if (count == 0)
@@ -130,6 +143,19 @@ public sealed class EditFileTool : ITool
         var output = new UTF8Encoding(false).GetBytes(edited);
         AtomicFile.Write(full, hasBom ? [.. Encoding.UTF8.GetPreamble(), .. output] : output);
         return ToolResult.Ok(string.Create(CultureInfo.InvariantCulture, $"Edited {display}: replaced {count} {(count == 1 ? "occurrence" : "occurrences")}."));
+    }
+
+    private static bool HasBareLineFeed(string text)
+    {
+        for (var index = text.IndexOf('\n', StringComparison.Ordinal); index >= 0; index = text.IndexOf('\n', index + 1))
+        {
+            if (index == 0 || text[index - 1] != '\r')
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool HasUtf16Or32Bom(byte[] bytes) => ToolSupport.HasUnicodeBom(bytes) && !bytes.AsSpan().StartsWith(Encoding.UTF8.GetPreamble());

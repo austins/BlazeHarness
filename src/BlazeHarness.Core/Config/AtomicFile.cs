@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace BlazeHarness.Core.Config;
 
 /// <summary>
@@ -5,6 +7,8 @@ namespace BlazeHarness.Core.Config;
 /// </summary>
 internal static class AtomicFile
 {
+    private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
+
     /// <summary>
     /// Write text to a file atomically, creating its folder when needed.
     /// </summary>
@@ -19,7 +23,17 @@ internal static class AtomicFile
         var temp = path + "." + Guid.NewGuid().ToString("N")[..8] + ".tmp";
         try
         {
-            await File.WriteAllTextAsync(temp, content, cancellationToken);
+            var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous);
+            await using (stream.ConfigureAwait(false))
+            {
+                await stream.WriteAsync(Utf8WithoutBom.GetBytes(content), cancellationToken);
+
+                // Without this a power cut after the rename can leave an empty file.
+#pragma warning disable CA1849 // FlushAsync can't ask the operating system to write to the disk.
+                stream.Flush(flushToDisk: true);
+#pragma warning restore CA1849
+            }
+
             File.Move(temp, path, overwrite: true);
         }
         catch

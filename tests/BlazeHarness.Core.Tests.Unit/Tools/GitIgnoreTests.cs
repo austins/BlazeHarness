@@ -43,6 +43,37 @@ public sealed class GitIgnoreTests
     }
 
     [Fact]
+    public void Parse_RuleWithAReversedRange_IsSkippedAndTheOthersStillApply()
+    {
+        // Arrange
+        var sut = GitIgnore.Parse("[z-a]x\n*.log\n");
+
+        // Act
+        var bad = sut.Check("qx", false);
+        var good = sut.Check("a.log", false);
+
+        // Assert
+        bad.Should().BeNull();
+        good.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Check_ManyRepeatedDoubleStars_StaysFastAndMatches()
+    {
+        // Arrange
+        var sut = GitIgnore.Parse(string.Concat(Enumerable.Repeat("**/", 40)) + "x.log\n");
+        var path = string.Join('/', Enumerable.Repeat("dir", 200)) + "/y.log";
+
+        // Act
+        var other = sut.Check(path, false);
+        var match = sut.Check(path.Replace("y.log", "x.log", StringComparison.Ordinal), false);
+
+        // Assert
+        other.Should().BeNull();
+        match.Should().BeTrue();
+    }
+
+    [Fact]
     public void Parse_WindowsLineEndingsAndBlankLines_AreHandled()
     {
         // Arrange

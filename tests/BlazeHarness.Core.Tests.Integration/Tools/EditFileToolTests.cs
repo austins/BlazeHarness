@@ -153,5 +153,62 @@ public sealed class EditFileToolTests : IDisposable
         result.Output.Should().Contain(message);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_SameTextExceptLineEndings_IsAnError()
+    {
+        // Arrange
+        _workspace.Write("a.txt", "a\nb\n");
+
+        // Act
+        var result = await RunAsync(new { path = "a.txt", old_string = "a\r\nb", new_string = "a\nb" });
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.Output.Should().Contain("the same");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_MixedLineEndings_KeepsTheOtherLinesAsTheyWere()
+    {
+        // Arrange
+        var path = _workspace.Write("mixed.txt", "one\r\ntwo\nthree\r\n");
+
+        // Act
+        var result = await RunAsync(new { path = "mixed.txt", old_string = "two", new_string = "2" });
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).Should().Be("one\r\n2\nthree\r\n");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_FileOverTheSizeLimit_IsRefusedAndLeftAlone()
+    {
+        // Arrange
+        var path = _workspace.Write("big.txt", new string('a', (10 * 1024 * 1024) + 1));
+
+        // Act
+        var result = await RunAsync(new { path = "big.txt", old_string = "a", new_string = "b" });
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.Output.Should().Contain("larger than 10 MiB");
+        new FileInfo(path).Length.Should().Be((10 * 1024 * 1024) + 1);
+    }
+
+    [Fact(Skip = "Named pipes are a Unix feature.", SkipUnless = nameof(TempWorkspace.CanMakeFifo), SkipType = typeof(TempWorkspace))]
+    public async Task ExecuteAsync_NamedPipe_IsRefusedWithoutBlocking()
+    {
+        // Arrange
+        _workspace.MakeFifo("pipe");
+
+        // Act
+        var result = await RunAsync(new { path = "pipe", old_string = "a", new_string = "b" }).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.Output.Should().Contain("is empty");
+    }
+
     private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), _workspace.Context, TestContext.Current.CancellationToken);
 }

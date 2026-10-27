@@ -25,17 +25,17 @@ public sealed class ReadAttachmentTool : ITool
 
     /// <inheritdoc />
     public string Description =>
-        "Read a text file the user attached to this chat, by its id. Returns up to 2000 lines at a time; for a longer file, " +
+        $"Read a text file the user attached to this chat, by its id. Returns up to {ReadFileTool.DefaultLimit} lines at a time; for a longer file, " +
         "pass offset (the first line to read, starting at 1) and limit to read it in pieces.";
 
     /// <inheritdoc />
-    public string InputSchema => """
+    public string InputSchema => $$"""
         {
           "type": "object",
           "properties": {
             "id": { "type": "string", "description": "The attachment id given in the message." },
             "offset": { "type": "integer", "minimum": 1, "description": "The first line to read, starting at 1." },
-            "limit": { "type": "integer", "minimum": 1, "maximum": 10000, "description": "The most lines to read." }
+            "limit": { "type": "integer", "minimum": 1, "maximum": {{ReadFileTool.MaxLimit}}, "description": "The most lines to read." }
           },
           "required": ["id"]
         }
@@ -60,7 +60,7 @@ public sealed class ReadAttachmentTool : ITool
         ArgumentNullException.ThrowIfNull(arguments);
 
         var offset = arguments.OptionalInt("offset", minimum: 1) ?? 1;
-        var limit = arguments.OptionalInt("limit", minimum: 1, maximum: 10_000) ?? 2000;
+        var limit = arguments.OptionalInt("limit", minimum: 1, maximum: ReadFileTool.MaxLimit) ?? ReadFileTool.DefaultLimit;
         var id = arguments.RequiredString("id");
         if (_attachments.Find(id) is not { } file)
         {
