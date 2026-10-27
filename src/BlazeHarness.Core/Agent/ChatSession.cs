@@ -1,5 +1,4 @@
 using BlazeHarness.Core.Attachments;
-using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sessions;
@@ -217,75 +216,24 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
 
         lock (_gate)
         {
-            if (_entries.Count > 0 || _stop is not null)
-            {
-                throw new InvalidOperationException("Only an empty session can be restored.");
-            }
+            EnsureRestorable();
+        }
 
-            foreach (var e in events)
-            {
-                switch (e)
-                {
-                    case UserMessageEvent user:
-                        _entries.Add(new ChatEntry(ChatRole.User, user.Text, user.EntryId) { Status = EntryStatus.Done, At = user.At, Attachments = user.Attachments ?? [] });
-                        break;
-                    case AssistantStartEvent start:
-                        _entries.Add(new ChatEntry(ChatRole.Assistant, id: start.EntryId) { Status = EntryStatus.Interrupted, Label = start.Label, At = start.At });
-                        break;
-                    case AssistantDeltaEvent delta when Find(delta.EntryId) is { } target:
-                        target.AppendText(delta.Text);
-                        target.AppendReasoning(delta.Reasoning);
-                        break;
-                    case AssistantEndEvent end when Find(end.EntryId) is { } target:
-                        target.Status = end.Status;
-                        target.Error = end.Error;
-                        target.Usage = end.Usage;
-                        target.At = end.At;
-                        break;
-                    case ToolCallEvent call when Find(call.EntryId) is { } target:
-                        target.AddToolCall(new ToolCallEntry(call.CallId, call.Name, call.ArgumentsJson, call.Summary));
-                        break;
-                    case ToolResultEvent result when Find(result.EntryId)?.ToolCalls.FirstOrDefault(c => c.CallId == result.CallId) is { } finished:
-                        finished.Status = result.Status;
-                        finished.Output = result.Output;
-                        break;
-                    case CompactionEvent compaction when _entries.FindIndex(x => x.Id == compaction.FirstKeptEntryId) is var at and >= 0:
-                        _entries.Insert(at, NewMarker(compaction.EntryId, compaction.At, new CompactionInfo(compaction.Summary, compaction.TokensBefore, compaction.TokensAfter)));
-                        break;
-                    case RewindEvent rewind:
-                        var keep = rewind.ToEntryId == Guid.Empty ? -1 : _entries.FindIndex(x => x.Id == rewind.ToEntryId);
-                        if (keep >= 0 || rewind.ToEntryId == Guid.Empty)
-                        {
-                            _entries.RemoveRange(keep + 1, _entries.Count - keep - 1);
-                        }
+        // Rebuilding the history reads the attached files, so it happens before the lock is taken.
+        var entries = SessionReplay.Replay(events);
+        MarkInterrupted(entries);
+        List<ChatMessage> history = [];
+        foreach (var entry in entries)
+        {
+            entry.HistoryIndex = history.Count;
+            AppendHistory(history, entry, Attachments);
+        }
 
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            for (var i = 0; i < _entries.Count; i++)
-            {
-                var entry = _entries[i];
-                var dangling = false;
-                foreach (var call in entry.ToolCalls.Where(c => !c.IsFinished))
-                {
-                    call.Status = ToolCallStatus.Interrupted;
-                    call.Output = ToolCallEntry.Unfinished(ToolCallStatus.Interrupted);
-                    dangling = true;
-                }
-
-                // The model still has to answer the results of the last reply's calls, so that reply was cut off too.
-                if (entry.Status == EntryStatus.Done && (dangling || (i == _entries.Count - 1 && entry.ToolCalls.Count > 0)))
-                {
-                    entry.Status = EntryStatus.Interrupted;
-                }
-
-                entry.HistoryIndex = _history.Count;
-                AppendHistory(_history, entry, Attachments);
-            }
-
+        lock (_gate)
+        {
+            EnsureRestorable();
+            _entries.AddRange(entries);
+            _history.AddRange(history);
             RefreshCompaction();
             _compactedAfter = _compaction is null ? null : _entries[^1];
             Publish();
@@ -312,7 +260,10 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     /// <param name="files">The files, already saved with <see cref="Attachments"/>.</param>
     /// <param name="target">The provider, model and level to use for this message.</param>
     /// <returns>A task that completes when the reply has ended; it does nothing when a reply is running or there is neither text nor a file.</returns>
-    /// <exception cref="ArgumentException">There are more than <see cref="SessionAttachments.MaxFilesPerMessage"/> files, or a file was not saved with this session.</exception>
+    /// <exception cref="ArgumentException">
+    /// There are more than <see cref="SessionAttachments.MaxFilesPerMessage"/> files, they add up to more than <see cref="SessionAttachments.MaxMessageBytes"/>,
+    /// or a file was not saved with this session.
+    /// </exception>
     public Task SendAsync(string text, IReadOnlyList<AttachmentInfo> files, ChatTarget target)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -323,12 +274,17 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
             throw new ArgumentException($"A message can have at most {SessionAttachments.MaxFilesPerMessage} files.", nameof(files));
         }
 
+        if (files.Sum(f => f.Size) > SessionAttachments.MaxMessageBytes)
+        {
+            throw new ArgumentException($"A message can have at most {SessionAttachments.MaxMessageBytes / (1024 * 1024)} MB of files.", nameof(files));
+        }
+
         if (files.Any(f => Attachments?.Find(f.Id) is null))
         {
             throw new ArgumentException("A file was not saved with this session.", nameof(files));
         }
 
-        if (string.IsNullOrWhiteSpace(text) && files.Count == 0)
+        if ((string.IsNullOrWhiteSpace(text) && files.Count == 0) || IsRunning)
         {
             return Task.CompletedTask;
         }
@@ -336,13 +292,16 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         var sentAt = _time.GetUtcNow();
         var sent = AttachmentPolicy.Plan(files, target.Model);
         var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt, Attachments = sent };
+
+        // Reading the files can be slow, so it happens before the lock that readers of the history wait on.
+        var message = AttachmentMessage.Build(text, sent, Attachments);
         return TurnAsync(
             target,
             () =>
             {
                 user.HistoryIndex = _history.Count;
                 _entries.Add(user);
-                _history.Add(AttachmentMessage.Build(text, sent, Attachments));
+                _history.Add(message);
                 return true;
             },
             () => [new UserMessageEvent(sentAt, user.Id, text, sent)]);
@@ -393,7 +352,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     {
         lock (_gate)
         {
-            return _stop is null && _entries.Find(e => e.Id == entryId) is { Role.Value: "user" };
+            return _stop is null && _entries.Find(e => e.Id == entryId) is { Role: var role } && role == ChatRole.User;
         }
     }
 
@@ -416,8 +375,22 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
             return Task.CompletedTask;
         }
 
+        IReadOnlyList<SentAttachment>? previous;
+        lock (_gate)
+        {
+            previous = _stop is null ? _entries.Find(e => e.Id == entryId && e.Role == ChatRole.User)?.Attachments : null;
+        }
+
+        if (previous is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        // The files were planned for the model the message first went to; this reply may go to another one.
         var sentAt = _time.GetUtcNow();
-        var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt };
+        var sent = AttachmentPolicy.Plan([.. previous.Select(a => a.File)], target.Model);
+        var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt, Attachments = sent };
+        var message = AttachmentMessage.Build(text, sent, Attachments);
         var keep = Guid.Empty;
         return TurnAsync(
             target,
@@ -431,16 +404,15 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
 
                 keep = index == 0 ? Guid.Empty : _entries[index - 1].Id;
                 var historyIndex = _entries[index].HistoryIndex;
-                user.Attachments = _entries[index].Attachments;
                 _entries.RemoveRange(index, _entries.Count - index);
                 _history.RemoveRange(historyIndex, _history.Count - historyIndex);
                 user.HistoryIndex = _history.Count;
                 _entries.Add(user);
-                _history.Add(AttachmentMessage.Build(text, user.Attachments, Attachments));
+                _history.Add(message);
                 RefreshCompaction();
                 return true;
             },
-            () => [new RewindEvent(sentAt, keep), new UserMessageEvent(sentAt, user.Id, text, user.Attachments)]);
+            () => [new RewindEvent(sentAt, keep), new UserMessageEvent(sentAt, user.Id, text, sent)]);
     }
 
     /// <summary>
@@ -592,7 +564,35 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         }
     }
 
-    private ChatEntry? Find(Guid id) => _entries.Find(e => e.Id == id);
+    private static void MarkInterrupted(List<ChatEntry> entries)
+    {
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            var dangling = false;
+            foreach (var call in entry.ToolCalls.Where(c => !c.IsFinished))
+            {
+                call.Status = ToolCallStatus.Interrupted;
+                call.Output = ToolCallEntry.Unfinished(ToolCallStatus.Interrupted);
+                dangling = true;
+            }
+
+            // The model still has to answer the results of the last reply's calls, so that reply was cut off too.
+            if (entry.Status == EntryStatus.Done && (dangling || (i == entries.Count - 1 && entry.ToolCalls.Count > 0)))
+            {
+                entry.Status = EntryStatus.Interrupted;
+            }
+        }
+    }
+
+    // Must be called with the gate held.
+    private void EnsureRestorable()
+    {
+        if (_entries.Count > 0 || _stop is not null)
+        {
+            throw new InvalidOperationException("Only an empty session can be restored.");
+        }
+    }
 
     private void Publish() => Volatile.Write(ref _snapshot, _entries.ToArray());
 

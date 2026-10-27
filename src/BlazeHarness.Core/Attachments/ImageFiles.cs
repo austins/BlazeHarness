@@ -13,6 +13,11 @@ public static class ImageFiles
     public const int HeadBytes = 512;
 
     /// <summary>
+    /// The number of bytes <see cref="SniffRaster"/> needs to recognize every format it knows.
+    /// </summary>
+    public const int SniffBytes = 12;
+
+    /// <summary>
     /// The largest image the chat shows from a folder, in bytes.
     /// </summary>
     public const long MaxDisplayBytes = 10L * 1024 * 1024;
@@ -24,12 +29,12 @@ public static class ImageFiles
     /// <returns>The media type and the matching file extension, or null when it is none of them.</returns>
     public static (string MediaType, string Extension)? SniffRaster(ReadOnlySpan<byte> head)
     {
-        if (head.StartsWith(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }))
+        if (head.StartsWith(PngSignature))
         {
             return ("image/png", ".png");
         }
 
-        if (head.StartsWith(new byte[] { 0xFF, 0xD8, 0xFF }))
+        if (head.StartsWith(JpegSignature))
         {
             return ("image/jpeg", ".jpg");
         }
@@ -39,7 +44,7 @@ public static class ImageFiles
             return ("image/gif", ".gif");
         }
 
-        return head.Length >= 12 && head.StartsWith("RIFF"u8) && head[8..].StartsWith("WEBP"u8) ? ("image/webp", ".webp") : null;
+        return head.Length >= SniffBytes && head.StartsWith("RIFF"u8) && head[8..].StartsWith("WEBP"u8) ? ("image/webp", ".webp") : null;
     }
 
     /// <summary>
@@ -54,7 +59,7 @@ public static class ImageFiles
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
 
-        byte[] buffer = new byte[HeadBytes];
+        Span<byte> buffer = stackalloc byte[HeadBytes];
         int read;
         try
         {
@@ -66,13 +71,13 @@ public static class ImageFiles
             return null;
         }
 
-        var head = buffer.AsSpan(0, read);
+        var head = buffer[..read];
         if (SniffRaster(head) is { } raster)
         {
             return raster.MediaType;
         }
 
-        if (head.Length >= 12 && head[4..].StartsWith("ftyp"u8) && (head[8..].StartsWith("avif"u8) || head[8..].StartsWith("avis"u8)))
+        if (head.Length >= SniffBytes && head[4..].StartsWith("ftyp"u8) && (head[8..].StartsWith("avif"u8) || head[8..].StartsWith("avis"u8)))
         {
             return "image/avif";
         }
@@ -80,4 +85,8 @@ public static class ImageFiles
         var isSvgName = string.Equals(Path.GetExtension(path), ".svg", StringComparison.OrdinalIgnoreCase);
         return isSvgName && Encoding.UTF8.GetString(head).Contains("<svg", StringComparison.OrdinalIgnoreCase) ? "image/svg+xml" : null;
     }
+
+    private static ReadOnlySpan<byte> PngSignature => [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+
+    private static ReadOnlySpan<byte> JpegSignature => [0xFF, 0xD8, 0xFF];
 }

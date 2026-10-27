@@ -116,11 +116,6 @@ public sealed partial class ChatSession
         }
     }
 
-    private static ChatEntry NewMarker(Guid id, DateTimeOffset at, CompactionInfo info)
-    {
-        return new ChatEntry(ChatRole.System, id: id) { Status = EntryStatus.Done, At = at, Compaction = info };
-    }
-
     private string SystemPromptText()
     {
         return string.Join(Environment.NewLine, new[] { BasePrompt, Project?.ToPrompt(), Tools is null ? null : Skills?.ToPrompt() }.Where(p => !string.IsNullOrWhiteSpace(p)));
@@ -161,7 +156,7 @@ public sealed partial class ChatSession
                 return false;
             }
 
-            var marker = NewMarker(Guid.NewGuid(), at, new CompactionInfo(compacted.Summary, compacted.TokensBefore, compacted.TokensAfter));
+            var marker = SessionReplay.NewMarker(Guid.NewGuid(), at, new CompactionInfo(compacted.Summary, compacted.TokensBefore, compacted.TokensAfter));
             _entries.Insert(_entries.IndexOf(kept), marker);
             _compactedAfter = _entries[^1];
             RefreshCompaction();

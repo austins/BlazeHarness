@@ -30,7 +30,6 @@ public sealed partial class SessionAttachments
     public const long MaxMessageBytes = 50L * 1024 * 1024;
 
     private const int MaxNameLength = 80;
-    private const int SniffBytes = 12;
 
     private readonly string _directory;
 
@@ -68,7 +67,7 @@ public sealed partial class SessionAttachments
         {
             var size = await CopyAsync(content, temp, name, cancellationToken);
             var sniffed = Sniff(temp);
-            var id = Guid.NewGuid().ToString("N")[..8];
+            var id = NewId();
             var lines = 0;
             if (sniffed is null)
             {
@@ -81,12 +80,12 @@ public sealed partial class SessionAttachments
                 sniffed = ("text/plain", string.Empty);
                 if (MediaTypeOf(name) != "text/plain")
                 {
-                    name += ".txt";
+                    name = WithExtension(name, ".txt");
                 }
             }
             else
             {
-                name = Path.ChangeExtension(name, sniffed.Value.Extension);
+                name = WithExtension(Path.GetFileNameWithoutExtension(name), sniffed.Value.Extension);
             }
 
             File.Move(temp, Path.Combine(_directory, $"{id}-{name}"));
@@ -118,6 +117,25 @@ public sealed partial class SessionAttachments
 
         var name = Path.GetFileName(path)[(id.Length + 1)..];
         return new AttachmentFile(path, name, MediaTypeOf(name));
+    }
+
+    // A short id can clash; Find would then return another file's name.
+    private string NewId()
+    {
+        string id;
+        do
+        {
+            id = Guid.NewGuid().ToString("N")[..8];
+        }
+        while (Find(id) is not null);
+
+        return id;
+    }
+
+    private static string WithExtension(string name, string extension)
+    {
+        var stem = name.Length + extension.Length > MaxNameLength ? name[..(MaxNameLength - extension.Length)] : name;
+        return stem + extension;
     }
 
     private static string CleanName(string? fileName)
@@ -165,7 +183,7 @@ public sealed partial class SessionAttachments
 
     private static (string MediaType, string Extension)? Sniff(string path)
     {
-        Span<byte> head = stackalloc byte[SniffBytes];
+        Span<byte> head = stackalloc byte[ImageFiles.SniffBytes];
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         head = head[..stream.Read(head)];
         return ImageFiles.SniffRaster(head);
