@@ -41,6 +41,12 @@
 - `Method_Scenario_Expected` names, `// Arrange` / `// Act` / `// Assert`, class under test in `_sut`.
 - Helpers used by more than one test project go in `tests/BlazeHarness.Tests.Shared` (`LoggerFake<T>`, `ScriptedChatClient`, `FakeOpenAiServer` on a Kestrel port 0, `TempFolder`, `TestTargets`, `TestTimeouts.Default` with `.Bounded()`, `FakeTimeProviderExtensions.AdvanceUntilAsync`, `ChatRunnerCollector`). Shared helpers use only the public API, and their namespaces match their folders. Every project sets `Parallelization(Mode = ParallelMode.All)` in its `AssemblyInfo.cs`, so all tests run in parallel.
   - `BlazeHarness.Web.Tests.Integration` holds endpoint and host tests that need real files (`Hosting/`).
+  - `BlazeHarness.Web.Tests.E2E` is a small Playwright (Chromium) smoke suite; run it alone with `dotnet test --project tests/BlazeHarness.Web.Tests.E2E`.
+    - The first run downloads Chromium (`Microsoft.Playwright.Program.Main(["install", "chromium"])`, once per run in `BrowserFixture`, cached under `~/.cache/ms-playwright`). If that fails, every test skips with the reason instead of failing.
+    - `TestBase` gives each test its own `AppFactory` (real Kestrel port, temp home through the `BLAZEHARNESS_HOME` setting, `FakeOpenAiServer` seeded as the provider in `config.json`) and its own browser context, so tests run in parallel without sharing state. The launch token is single-use, which is why the app is not shared.
+    - Sign in with `LaunchAsync()`: it reads the token from `Factory.Services` and opens `/launch?token=`. It waits for `data-circuit="ready"` on `.app`, set after the first interactive render, so clicks never hit a prerendered page.
+    - Use Playwright's auto-waiting and `Expect(...)` assertions (default bound 30 s). No `Task.Delay` or sleeps.
+    - The factory runs in the Development environment because the static asset handler of other environments looks for published files.
   - Tests that touch the real OS keyring or Keychain are opt-in: set `BLAZEHARNESS_TEST_KEYRING=1`.
   - Unit projects do no file I/O; anything that touches the file system belongs in the matching Integration project.
 - Mocks and fakes:

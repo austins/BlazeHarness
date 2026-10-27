@@ -15,7 +15,7 @@ namespace BlazeHarness.Tests.Shared.Providers;
 public sealed class FakeOpenAiServer : IDisposable
 {
     private readonly WebApplication _app;
-    private readonly Func<int, string[]?> _chunksForRequest;
+    private readonly Func<int, string, string[]?> _chunksForRequest;
     private readonly Func<int, HttpStatusCode> _statusForRequest;
     private readonly Lock _gate = new();
     private readonly List<string> _requestBodies = [];
@@ -27,6 +27,18 @@ public sealed class FakeOpenAiServer : IDisposable
     }
 
     public FakeOpenAiServer(Func<int, string[]?> chunksForRequest, Func<int, HttpStatusCode> statusForRequest)
+        : this((index, _) => chunksForRequest(index), statusForRequest)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="FakeOpenAiServer"/> class that picks its reply from the request body.</summary>
+    /// <param name="chunksForBody">Returns the chunks to stream for a request body, so a script does not depend on request order.</param>
+    public FakeOpenAiServer(Func<string, string[]?> chunksForBody)
+        : this((_, body) => chunksForBody(body), _ => HttpStatusCode.OK)
+    {
+    }
+
+    private FakeOpenAiServer(Func<int, string, string[]?> chunksForRequest, Func<int, HttpStatusCode> statusForRequest)
     {
         _chunksForRequest = chunksForRequest;
         _statusForRequest = statusForRequest;
@@ -83,7 +95,7 @@ public sealed class FakeOpenAiServer : IDisposable
         }
 
         context.Response.ContentType = "text/event-stream";
-        foreach (var chunk in _chunksForRequest(index) ?? [])
+        foreach (var chunk in _chunksForRequest(index, body) ?? [])
         {
             await context.Response.WriteAsync($"data: {chunk}\n\n", context.RequestAborted);
         }

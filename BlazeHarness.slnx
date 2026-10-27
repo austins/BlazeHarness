@@ -9,6 +9,7 @@
     <Project Path="tests/BlazeHarness.Core.Tests.Integration/BlazeHarness.Core.Tests.Integration.csproj" />
     <Project Path="tests/BlazeHarness.Core.Tests.Unit/BlazeHarness.Core.Tests.Unit.csproj" />
     <Project Path="tests/BlazeHarness.Tests.Shared/BlazeHarness.Tests.Shared.csproj" />
+    <Project Path="tests/BlazeHarness.Web.Tests.E2E/BlazeHarness.Web.Tests.E2E.csproj" />
     <Project Path="tests/BlazeHarness.Web.Tests.Integration/BlazeHarness.Web.Tests.Integration.csproj" />
     <Project Path="tests/BlazeHarness.Web.Tests.Unit/BlazeHarness.Web.Tests.Unit.csproj" />
   </Folder>
