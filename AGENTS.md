@@ -17,7 +17,7 @@
 - `BlazeHarness.Web` is Blazor Server with hand-written CSS and no npm. Singleton services own sessions and runs, not components.
 - All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher).
 - API keys live in `ISecretStore` (OS keychain, owner-only file fallback; the file and DPAPI stores share `FileBackedSecretStore`), never in `config.json`, session files or logs.
-- Every request, including `/_blazor`, passes `LocalAccessMiddleware` (exact Host, same-origin Origin, session cookie).
+- Every request, including `/_blazor`, passes `LocalAccessMiddleware` (exact Host, same-origin Origin, session cookie). It also sets the page security headers (CSP with `script-src 'self'`, nosniff, frame denial), so pages must not use inline scripts.
   Don't add endpoints or pipeline steps in front of it.
 - Keep the LLM request prefix stable (system prompt, then tools, then append-only history); no timestamps in the prefix.
 

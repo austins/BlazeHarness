@@ -1,4 +1,12 @@
 // Chat page helpers: keeping the newest message in view, and the message box.
+const nearBottomPx = 40;
+const nearTopPx = 160;
+const copiedResetMs = 1500;
+const maxComposerHeightPx = 240;
+const longPaste = { characters: 5000, lines: 100 };
+// Keep in step with PendingFile.PastedNamePrefix.
+const pastedNamePrefix = "pasted-text-";
+
 window.bhChat = {
     // Follow new content while the reader is at the bottom, and stop following once they scroll up.
     watch: (root, scroll) => {
@@ -6,23 +14,28 @@ window.bhChat = {
             return;
         }
 
-        const nearBottom = () => scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 40;
+        if (root.bhUnwatch) {
+            root.bhUnwatch();
+        }
+
+        const nearBottom = () => scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < nearBottomPx;
         const toBottom = () => { scroll.scrollTop = scroll.scrollHeight; };
         let pinned = true;
         // Older messages load when the reader scrolls near the top; the button's count tells a new batch from one already asked for.
         let requested = null;
         let anchor = null;
-        scroll.addEventListener("scroll", () => {
+        const onScroll = () => {
             pinned = nearBottom();
             root.dataset.pinned = String(pinned);
-            const earlier = scroll.scrollTop < 160 ? scroll.querySelector("[data-earlier]") : null;
+            const earlier = scroll.scrollTop < nearTopPx ? scroll.querySelector("[data-earlier]") : null;
             if (earlier && requested !== earlier.dataset.earlier) {
                 requested = earlier.dataset.earlier;
                 anchor = { height: scroll.scrollHeight, top: scroll.scrollTop };
                 earlier.click();
             }
-        }, { passive: true });
-        new MutationObserver(() => {
+        };
+        scroll.addEventListener("scroll", onScroll, { passive: true });
+        const observer = new MutationObserver(() => {
             // Browsers don't anchor at the very top, so keep the reader on the message they were reading.
             if (anchor && scroll.scrollHeight !== anchor.height) {
                 scroll.scrollTop = anchor.top + scroll.scrollHeight - anchor.height;
@@ -34,7 +47,13 @@ window.bhChat = {
             } else {
                 root.dataset.pinned = String(nearBottom());
             }
-        }).observe(scroll, { childList: true, subtree: true, characterData: true });
+        });
+        observer.observe(scroll, { childList: true, subtree: true, characterData: true });
+        root.bhUnwatch = () => {
+            observer.disconnect();
+            scroll.removeEventListener("scroll", onScroll);
+            delete root.bhUnwatch;
+        };
         root.bhToBottom = () => { pinned = true; root.dataset.pinned = "true"; toBottom(); };
         toBottom();
     },
@@ -65,7 +84,9 @@ window.bhChat = {
         }
 
         if (ranges.length > 0) {
-            CSS.highlights.set("bh-find", new Highlight(...ranges));
+            const highlight = new Highlight();
+            ranges.forEach((range) => highlight.add(range));
+            CSS.highlights.set("bh-find", highlight);
         }
     },
     clearHighlight: () => {
@@ -105,7 +126,7 @@ window.bhChat = {
             try {
                 await navigator.clipboard.writeText(code.querySelector("pre").innerText);
                 button.textContent = "Copied";
-                setTimeout(() => { button.textContent = "Copy"; }, 1500);
+                setTimeout(() => { button.textContent = "Copy"; }, copiedResetMs);
             } catch {
                 button.textContent = "Copy failed";
             }
@@ -152,11 +173,10 @@ window.bhChat = {
     resize: (input) => {
         if (input) {
             input.style.height = "auto";
-            input.style.height = Math.min(input.scrollHeight, 240) + "px";
+            input.style.height = Math.min(input.scrollHeight, maxComposerHeightPx) + "px";
             input.focus();
         }
     },
-    // Enter sends, Shift+Enter adds a line; the box grows with its text.
     pick: (button) => {
         const picker = button.closest("form")?.querySelector("input[type=file]");
         if (picker) {
@@ -186,12 +206,12 @@ window.bhChat = {
         picker.dispatchEvent(new Event("change", { bubbles: true }));
     },
 
+    // Enter sends, Shift+Enter adds a line; the box grows with its text.
     initComposer: (input, form) => {
         if (!input) {
             return;
         }
 
-        const longPaste = { characters: 5000, lines: 100 };
         let pastes = 0;
         input.addEventListener("paste", (e) => {
             const data = e.clipboardData;
@@ -209,7 +229,7 @@ window.bhChat = {
             if (text.length > longPaste.characters || text.split("\n").length > longPaste.lines) {
                 e.preventDefault();
                 pastes += 1;
-                window.bhChat.addFiles(form, [new File([text], `pasted-text-${pastes}.txt`, { type: "text/plain" })]);
+                window.bhChat.addFiles(form, [new File([text], `${pastedNamePrefix}${pastes}.txt`, { type: "text/plain" })]);
             }
         });
 

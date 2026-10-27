@@ -23,7 +23,7 @@
             @foreach (var place in _places)
             {
                 <button type="button" class="btn btn-sm" @onclick="() => BrowseAsync(place.Path)">
-                    <Icon Name="@(place.Name == "Home" ? "home" : "folder")" /> @place.Name
+                    <Icon Name="@(place.Path == Paths.UserHome ? "home" : "folder")" /> @place.Name
                 </button>
             }
         </div>

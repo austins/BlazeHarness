@@ -66,6 +66,8 @@ var reversed = new string(chars);</code></pre>
             <dd><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd></dd>
             <dt>Search chats</dt>
             <dd><kbd>Ctrl</kbd> + <kbd>K</kbd></dd>
+            <dt>Find in the chat</dt>
+            <dd><kbd>Ctrl</kbd> + <kbd>F</kbd></dd>
             <dt>Settings</dt>
             <dd><kbd>Ctrl</kbd> + <kbd>,</kbd></dd>
             <dt>Send the message</dt>
@@ -82,6 +84,7 @@ var reversed = new string(chars);</code></pre>
 
     private sealed record Step(string Key, string Label, string Percent);
 
+    // Keys and scales must match the steps in wwwroot/theme.js.
     private static readonly Step[] Steps =
     [
         new("small", "Small", "87.5%"),

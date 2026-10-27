@@ -12,6 +12,9 @@ public static class ExportEndpoints
     /// </summary>
     public const string Route = "/api/sessions/{sessionId}/export";
 
+    private const string JsonFormat = "json";
+    private const string MarkdownFormat = "md";
+
     /// <summary>
     /// Get the address of a chat export.
     /// </summary>
@@ -20,7 +23,7 @@ public static class ExportEndpoints
     /// <returns>The relative address the file is served at.</returns>
     public static string AddressOf(string sessionId, ExportFormat format)
     {
-        return $"api/sessions/{Uri.EscapeDataString(sessionId)}/export?format={(format == ExportFormat.Json ? "json" : "md")}";
+        return $"api/sessions/{Uri.EscapeDataString(sessionId)}/export?format={(format == ExportFormat.Json ? JsonFormat : MarkdownFormat)}";
     }
 
     /// <summary>
@@ -49,7 +52,7 @@ public static class ExportEndpoints
         ArgumentNullException.ThrowIfNull(sessions);
         ArgumentNullException.ThrowIfNull(context);
 
-        var file = await sessions.ExportAsync(sessionId, format == "json" ? ExportFormat.Json : ExportFormat.Markdown, cancellationToken).ConfigureAwait(false);
+        var file = await sessions.ExportAsync(sessionId, format == JsonFormat ? ExportFormat.Json : ExportFormat.Markdown, cancellationToken).ConfigureAwait(false);
         if (file is null)
         {
             return Results.NotFound();

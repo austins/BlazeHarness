@@ -13,11 +13,24 @@
     @{
         var all = Sessions.Store.List(Filter);
         var folders = Folders.List();
-        var chats = all.Where(s => !folders.Any(f => IsIn(s, f))).ToList();
+        var inFolder = folders.ToDictionary(f => f.Path, _ => new List<SessionInfo>(), FolderPaths.Comparer);
+        var chats = new List<SessionInfo>();
+        foreach (var session in all)
+        {
+            if (session.FolderPath is { } path && inFolder.TryGetValue(path, out var group))
+            {
+                group.Add(session);
+            }
+            else
+            {
+                chats.Add(session);
+            }
+        }
+
         var filtering = !string.IsNullOrWhiteSpace(Filter);
     }
 
-    @if (Sessions.Store.List().Count > 0)
+    @if (filtering || all.Count > 0)
     {
         <input type="search" class="input input-sm sidebar-search" placeholder="Search chats"
                aria-label="Search chat titles" title="Search chats (Ctrl+K)" data-shortcut="search" @bind="Filter" @bind:event="oninput" />
@@ -27,7 +40,7 @@
         <div class="sidebar-heading">
             <Icon Name="chat" /><span id="chats-heading">Chats</span>
             <label class="btn btn-ghost btn-sm btn-icon sidebar-heading-action import-chat" title="Import a chat from a JSON file">
-                <InputFile OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="Import a chat from a JSON file" />
+                <InputFile @ref="_importInput" OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="Import a chat from a JSON file" />
                 <Icon Name="arrow-down" />
             </label>
         </div>
@@ -56,7 +69,7 @@
             <ul class="folder-list">
                 @foreach (var folder in folders)
                 {
-                    var folderChats = all.Where(s => IsIn(s, folder)).ToList();
+                    var folderChats = inFolder[folder.Path];
                     if (filtering && folderChats.Count == 0)
                     {
                         continue;
@@ -152,6 +165,7 @@
     private bool _picking;
     private FolderInfo? _locating;
     private FolderInfo? _removing;
+    private InputFile? _importInput;
 
     private const long MaxImportBytes = 8 * 1024 * 1024;
 
@@ -193,6 +207,14 @@
         {
             Toasts.Show("The file could not be read.", ToastKind.Error);
         }
+        finally
+        {
+            // Lets the same file be chosen again after a failed import.
+            if (_importInput?.Element is { } input)
+            {
+                await JS.InvokeVoidAsync("bhChat.clearPicker", input);
+            }
+        }
     }
 
     public void Dispose()
@@ -214,11 +236,6 @@
             _dark = await JS.InvokeAsync<bool>("bhTheme.isDark");
             StateHasChanged();
         }
-    }
-
-    private static bool IsIn(SessionInfo session, FolderInfo folder)
-    {
-        return session.FolderPath is { } path && FolderPaths.Comparer.Equals(path, folder.Path);
     }
 
     private static string NewChatHref(FolderInfo folder)
