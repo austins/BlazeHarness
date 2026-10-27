@@ -500,6 +500,29 @@ public sealed class SessionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SendAsync_AfterTheTitleRequestFailed_DoesNotAskForATitleAgain()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hello"), ScriptedChatClient.Text("Again")]);
+        var titles = Substitute.For<ITitleGenerator>();
+        titles.GenerateAsync(Arg.Any<ChatTarget>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns<string?>(_ => throw new InvalidOperationException("boom"));
+        var sut = Create(client, titles);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        var target = TestTargets.Create("p1", "fast");
+        await sut.SendAsync(info.Id, "hi", target);
+        await sut.PendingTitleAsync(info.Id);
+
+        // Act
+        await sut.SendAsync(info.Id, "more", target);
+        await sut.PendingTitleAsync(info.Id);
+
+        // Assert
+        await titles.Received(1).GenerateAsync(Arg.Any<ChatTarget>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task SendAsync_WhenTheUserRenamesWhileTitling_KeepsTheUsersTitle()
     {
         // Arrange
