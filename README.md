@@ -41,14 +41,14 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 
 Not built yet, and not promised:
 
-* A touch-friendly layout for use from a phone or tablet. This needs a security review first, since the app is localhost-only by design.
+* A touch-friendly layout for use from a phone or tablet. The app is localhost-only by design, so that would need to be configurable.
 * Localization of the web UI, starting with English.
 * An in-app browser that the agent can use to open a running service, read the page, and take a screenshot.
 * An "Ask user" tool that lets the agent pause and ask you a question, with free text or choices.
 * Attachments as tool input, so a text-only model can pass an uploaded image to a vision tool.
 * A session history tool that lets the agent read earlier messages to recover detail that compaction dropped.
 * Subagents that work in their own context and return a summary.
-* Blazor AI components, once they are stable on the target .NET version.
+* Look into Blazor AI components, once they are stable on the target .NET version.
 * Smaller additions: a command palette, a richer MCP editor with per-tool toggles, dynamic MCP tool loading, a sandbox network allow-list, message search across sessions, a duplicate-provider action, and a per-folder `.mcp.json`.
 
 ## Not goals
