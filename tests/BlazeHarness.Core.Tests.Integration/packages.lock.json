@@ -320,6 +320,15 @@
           "Microsoft.Mxc.Sdk": "[1.0.1, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.14, )"
         }
+      },
+      "blazeharness.tests.shared": {
+        "type": "Project",
+        "dependencies": {
+          "AwesomeAssertions": "[9.6.0, )",
+          "BlazeHarness.Core": "[1.0.0, )",
+          "NSubstitute": "[6.2.0, )",
+          "xunit.v3.extensibility.core": "[4.0.2, )"
+        }
       }
     }
   }

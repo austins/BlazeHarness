@@ -5,7 +5,7 @@
         <OutputType>Exe</OutputType>
         <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
         <IsPackable>false</IsPackable>
-        <NoWarn>$(NoWarn);CS1591</NoWarn>
+        <NoWarn>$(NoWarn);CS1591;CA2000</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -23,12 +23,14 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="xunit.v3.core" Version="4.0.2"/>
+        <PackageReference Include="xunit.v3.core" Version="4.0.2" Condition="'$(IsTestSupport)' != 'true'"/>
+        <PackageReference Include="xunit.v3.extensibility.core" Version="4.0.2" Condition="'$(IsTestSupport)' == 'true'"/>
     </ItemGroup>
 
     <ItemGroup>
         <Using Include="AwesomeAssertions"/>
         <Using Include="BlazeHarness.Tests"/>
+        <Using Include="BlazeHarness.Tests.Agent"/>
         <Using Include="Microsoft.Extensions.Logging"/>
         <Using Include="NSubstitute"/>
         <Using Include="NSubstitute.ClearExtensions"/>
@@ -38,7 +40,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Include="$(MSBuildThisFileDirectory)LoggerFake.cs" Link="LoggerFake.cs"/>
-        <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" Link="AssemblyInfo.cs"/>
+        <ProjectReference Include="$(MSBuildThisFileDirectory)BlazeHarness.Tests.Shared/BlazeHarness.Tests.Shared.csproj" Condition="'$(IsTestSupport)' != 'true'"/>
     </ItemGroup>
 </Project>

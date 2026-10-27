@@ -1,12 +1,14 @@
 using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
 
-namespace BlazeHarness.Core.Tests.Unit.Agent;
+namespace BlazeHarness.Tests.Agent;
 
 /// <summary>A chat client that replays scripted replies, one per request, and records what it was sent.</summary>
-internal sealed class ScriptedChatClient : IChatClient
+public sealed class ScriptedChatClient : IChatClient
 {
     private readonly Queue<Script> _scripts = new();
+    private readonly List<IReadOnlyList<ChatMessage>> _requests = [];
+    private readonly List<ChatOptions?> _options = [];
 
     public ScriptedChatClient(
         IReadOnlyList<ChatResponseUpdate>? updates = null,
@@ -17,10 +19,10 @@ internal sealed class ScriptedChatClient : IChatClient
     }
 
     /// <summary>Gets the messages of each request, as they were when the request was made.</summary>
-    public List<IReadOnlyList<ChatMessage>> Requests { get; } = [];
+    public IReadOnlyList<IReadOnlyList<ChatMessage>> Requests => _requests;
 
     /// <summary>Gets the options of each request.</summary>
-    public List<ChatOptions?> Options { get; } = [];
+    public IReadOnlyList<ChatOptions?> Options => _options;
 
     public ScriptedChatClient Enqueue(
         IReadOnlyList<ChatResponseUpdate> updates,
@@ -49,8 +51,8 @@ internal sealed class ScriptedChatClient : IChatClient
         ChatOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        Requests.Add([.. messages]);
-        Options.Add(options);
+        _requests.Add([.. messages]);
+        _options.Add(options);
         var script = _scripts.Count > 0 ? _scripts.Dequeue() : new Script([], null, null);
 
         foreach (var update in script.Updates)

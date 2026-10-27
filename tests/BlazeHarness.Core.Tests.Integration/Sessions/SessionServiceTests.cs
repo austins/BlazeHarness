@@ -4,7 +4,6 @@ using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
-using BlazeHarness.Core.Tests.Unit.Agent;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 

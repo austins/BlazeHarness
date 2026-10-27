@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
+        <IsTestSupport>true</IsTestSupport>
+    </PropertyGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\BlazeHarness.Core\BlazeHarness.Core.csproj" />
+    </ItemGroup>
+</Project>

@@ -38,4 +38,5 @@
   `Secrets/ApiKeyResolverTests.cs` and uses namespace `BlazeHarness.Core.Tests.Unit.Secrets`. One test class per file.
 - xUnit v3 on Microsoft.Testing.Platform, NSubstitute, AwesomeAssertions (`.Should()`).
 - `Method_Scenario_Expected` names, `// Arrange` / `// Act` / `// Assert`, class under test in `_sut`.
+- Helpers used by more than one test project go in `tests/BlazeHarness.Tests.Shared` (`LoggerFake<T>`, `ScriptedChatClient`). Parallelism is set per project in its `AssemblyInfo.cs`: unit projects run all tests in parallel, the integration project uses the default.
 - Use `LoggerFake<T>` for loggers, and pass `TestContext.Current.CancellationToken` to async calls.

@@ -1,6 +1,6 @@
 namespace BlazeHarness.Tests;
 
-internal class LoggerFake : ILogger
+public class LoggerFake : ILogger
 {
     private readonly List<LogEntry> _entries = [];
     private readonly bool _logTrace;
@@ -53,10 +53,10 @@ internal class LoggerFake : ILogger
     }
 }
 
-internal sealed class LoggerFake<TCategoryName>(bool logTrace = false) : LoggerFake(logTrace, typeof(TCategoryName)),
+public sealed class LoggerFake<TCategoryName>(bool logTrace = false) : LoggerFake(logTrace, typeof(TCategoryName)),
     ILogger<TCategoryName>;
 
-internal sealed class LogEntry
+public sealed class LogEntry
 {
     public required LogLevel LogLevel { get; init; }
 
