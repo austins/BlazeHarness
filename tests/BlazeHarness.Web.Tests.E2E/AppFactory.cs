@@ -20,8 +20,9 @@ public sealed class AppFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        // Development, because the static asset runtime handler in other environments looks for files that only exist after a publish.
-        builder.UseEnvironment(Environments.Development);
+        // Static web assets are read from the project's manifest instead of published wwwroot files.
+        builder.UseStaticWebAssets();
+        builder.UseEnvironment(Environments.Staging);
         builder.UseSetting(AppPaths.HomeSettingKey, _home);
     }
 }
