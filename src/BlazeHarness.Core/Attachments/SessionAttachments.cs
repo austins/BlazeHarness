@@ -24,6 +24,11 @@ public sealed partial class SessionAttachments
     /// </summary>
     public const int MaxFilesPerMessage = 10;
 
+    /// <summary>
+    /// The most the files of one message can add up to, in bytes.
+    /// </summary>
+    public const long MaxMessageBytes = 50L * 1024 * 1024;
+
     private const int MaxNameLength = 80;
     private const int SniffBytes = 12;
 

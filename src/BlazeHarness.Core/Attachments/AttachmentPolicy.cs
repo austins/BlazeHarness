@@ -45,27 +45,44 @@ public static class AttachmentPolicy
     public static IReadOnlyList<SentAttachment> Plan(IReadOnlyList<AttachmentInfo> files, ModelConfig model)
     {
         ArgumentNullException.ThrowIfNull(files);
+
+        var deliveries = Deliveries([.. files.Select(file => (file.IsImage, file.Size))], model);
+        return [.. files.Select((file, index) => new SentAttachment(file, deliveries[index]))];
+    }
+
+    /// <summary>
+    /// Decide how each file reaches a model from its kind and size alone, which the composer uses before the files are saved.
+    /// </summary>
+    /// <remarks>
+    /// The rules are those of <see cref="Plan"/>.
+    /// </remarks>
+    /// <param name="files">Whether each file is an image, and its size in bytes, in the order they were attached.</param>
+    /// <param name="model">The model the message is sent to.</param>
+    /// <returns>The delivery of each file, in the same order.</returns>
+    public static IReadOnlyList<AttachmentDelivery> Deliveries(IReadOnlyList<(bool IsImage, long Size)> files, ModelConfig model)
+    {
+        ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(model);
 
         var left = (long)InlineTokenBudget(model);
-        List<SentAttachment> planned = [];
-        foreach (var file in files)
+        List<AttachmentDelivery> planned = [];
+        foreach (var (isImage, size) in files)
         {
-            if (file.IsImage)
+            if (isImage)
             {
-                planned.Add(new SentAttachment(file, AttachmentDelivery.Image));
+                planned.Add(AttachmentDelivery.Image);
                 continue;
             }
 
-            var tokens = EstimateTokens(file.Size);
+            var tokens = EstimateTokens(size);
             if (tokens <= left)
             {
                 left -= tokens;
-                planned.Add(new SentAttachment(file, AttachmentDelivery.Inline));
+                planned.Add(AttachmentDelivery.Inline);
             }
             else
             {
-                planned.Add(new SentAttachment(file, AttachmentDelivery.OnDemand));
+                planned.Add(AttachmentDelivery.OnDemand);
             }
         }
 

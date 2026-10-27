@@ -18,6 +18,16 @@ public sealed class AttachmentPolicyTests
     }
 
     [Fact]
+    public void Deliveries_MixedFiles_FollowTheSameRulesAsPlan()
+    {
+        // Act: the window allows about 3200 bytes of text.
+        var deliveries = AttachmentPolicy.Deliveries([(false, 2_000), (true, 9_000_000), (false, 2_000), (false, 100)], Small);
+
+        // Assert
+        deliveries.Should().Equal(AttachmentDelivery.Inline, AttachmentDelivery.Image, AttachmentDelivery.OnDemand, AttachmentDelivery.Inline);
+    }
+
+    [Fact]
     public void Plan_SmallText_IsInline()
     {
         // Act

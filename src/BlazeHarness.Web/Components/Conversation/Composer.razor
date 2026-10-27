@@ -2,6 +2,7 @@
 @inject IJSRuntime JS
 @inject SkillCatalog Catalog
 @inject SessionService Sessions
+@using System.Text
 @using BlazeHarness.Core.Attachments
 @using BlazeHarness.Core.Compaction
 @using BlazeHarness.Core.Skills
@@ -26,17 +27,28 @@ else
         }
         @if (_files.Count > 0)
         {
+            var deliveries = Deliveries();
             <ul class="composer-files" aria-label="Attached files">
-                @foreach (var file in _files)
+                @foreach (var (file, delivery) in _files.Zip(deliveries))
                 {
                     <li @key="file.Id" class="chip">
                         <Icon Name="@(file.IsImage ? "image" : "file")" />
                         <span class="chip-name" title="@file.Name">@file.Name</span>
                         <span class="chip-size">@FileSize.Format(file.Content.Length)</span>
+                        <span class="chip-hint">@HintFor(delivery)</span>
+                        @if (IsPasted(file))
+                        {
+                            <button type="button" class="btn btn-ghost btn-sm" aria-expanded="@(_previewing == file.Id ? "true" : "false")" @onclick="() => TogglePreview(file)">Preview</button>
+                            <button type="button" class="btn btn-ghost btn-sm" @onclick="() => InsertAsText(file)">Insert as text</button>
+                        }
                         <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@($"Remove {file.Name}")" @onclick="() => Remove(file)"><Icon Name="close" /></button>
                     </li>
                 }
             </ul>
+            @if (_files.Find(f => f.Id == _previewing) is { } previewed)
+            {
+                <pre class="composer-preview" aria-label="@($"Start of {previewed.Name}")">@Preview(previewed)</pre>
+            }
             @if (!ModelSeesImages && _files.Any(f => f.IsImage))
             {
                 <div class="hint" role="status">The selected model can't view images, so they will be left out of what it sees.</div>
@@ -127,7 +139,10 @@ else
     private string _text = string.Empty;
     private string _selected = string.Empty;
     private string _level = string.Empty;
+    private const int PreviewBytes = 2000;
+
     private readonly List<PendingFile> _files = [];
+    private Guid? _previewing;
     private ElementReference _form;
     private InputFile? _picker;
     private string? _note;
@@ -397,6 +412,12 @@ else
                 continue;
             }
 
+            if (_files.Sum(f => (long)f.Content.Length) + browserFile.Size > SessionAttachments.MaxMessageBytes)
+            {
+                _note = $"The files of a message can add up to at most {FileSize.Format(SessionAttachments.MaxMessageBytes)}.";
+                continue;
+            }
+
             _files.Add(await PendingFile.ReadAsync(browserFile));
         }
 
@@ -409,6 +430,40 @@ else
     private void Remove(PendingFile file)
     {
         _files.Remove(file);
+    }
+
+    private static bool IsPasted(PendingFile file) => file.Name.StartsWith("pasted-text-", StringComparison.Ordinal);
+
+    private static string Preview(PendingFile file)
+    {
+        var text = Encoding.UTF8.GetString(file.Content.Span[..Math.Min(file.Content.Length, PreviewBytes)]);
+        return file.Content.Length > PreviewBytes ? text + "…" : text;
+    }
+
+    private static string HintFor(AttachmentDelivery delivery) => delivery switch
+    {
+        AttachmentDelivery.Image => "Sent as an image",
+        AttachmentDelivery.Inline => "Added to the message",
+        _ => "Too long to add, the model reads it as needed",
+    };
+
+    private IReadOnlyList<AttachmentDelivery> Deliveries()
+    {
+        var choice = _models.Find(m => m.Key == _selected);
+        return choice is null ? [] : AttachmentPolicy.Deliveries([.. _files.Select(f => (f.IsImage, (long)f.Content.Length))], choice.Model);
+    }
+
+    private void TogglePreview(PendingFile file)
+    {
+        _previewing = _previewing == file.Id ? null : file.Id;
+    }
+
+    private void InsertAsText(PendingFile file)
+    {
+        var text = Encoding.UTF8.GetString(file.Content.Span);
+        _text = _text.Length == 0 || _text.EndsWith('\n') ? _text + text : _text + "\n" + text;
+        _files.Remove(file);
+        _resize = true;
     }
 
     private bool ModelSeesImages => _models.Find(m => m.Key == _selected) is { } choice && AttachmentPolicy.AcceptsImages(choice.Model);

@@ -402,6 +402,11 @@ else
 
     private async Task<string?> SendAsync(ComposerMessage message)
     {
+        if (message.Files.Sum(file => (long)file.Content.Length) > SessionAttachments.MaxMessageBytes)
+        {
+            return $"The files of a message can add up to at most {FileSize.Format(SessionAttachments.MaxMessageBytes)}.";
+        }
+
         await FollowAsync();
         var id = _openId;
         SessionInfo? created = null;

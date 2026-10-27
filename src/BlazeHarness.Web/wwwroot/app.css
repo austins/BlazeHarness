@@ -516,7 +516,8 @@ details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600
 a.chip { padding-inline-end: var(--space-2); color: inherit; text-decoration: none; }
 a.chip:hover { background: var(--bg-hover); }
 .chip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 16rem; }
-.chip-size { color: var(--fg-muted); font-size: var(--text-xs); flex: none; }
+.chip-size, .chip-hint { color: var(--fg-muted); font-size: var(--text-xs); flex: none; }
+.composer-preview { max-height: 8rem; overflow: auto; margin: 0 0 var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-subtle); font-size: var(--text-xs); white-space: pre-wrap; overflow-wrap: anywhere; }
 .tool-image { display: block; padding: var(--space-2) var(--space-3); border-block-start: 1px solid var(--border); }
 .md img.msg-image { margin-block: var(--space-2); }
 .msg-files { display: flex; flex-wrap: wrap; gap: var(--space-2); }
