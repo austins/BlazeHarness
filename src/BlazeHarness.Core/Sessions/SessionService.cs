@@ -26,6 +26,8 @@ public sealed partial class SessionService : IDisposable
 {
     private const int PlaceholderLength = 48;
 
+    private const int MaxTitleAttempts = 3;
+
     private readonly SessionStore _store;
     private readonly Func<ChatTarget, CancellationToken, Task<IChatClient>> _clientFactory;
     private readonly ILoggerFactory _loggers;
@@ -38,7 +40,7 @@ public sealed partial class SessionService : IDisposable
     private readonly ILogger _log;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, bool> _titleFailed = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, int> _titleFailures = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, ChatSession> _live = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _opening = new(1, 1);
 
@@ -626,7 +628,7 @@ public sealed partial class SessionService : IDisposable
     {
         var entries = session.Entries;
         if (_titles is null
-            || _titleFailed.ContainsKey(id)
+            || _titleFailures.GetValueOrDefault(id) >= MaxTitleAttempts
             || _store.Find(id) is not { TitleSource: TitleSource.Placeholder }
             || entries is not [var first, .., { Status: EntryStatus.Done } last]
             || first.Role != ChatRole.User
@@ -656,7 +658,7 @@ public sealed partial class SessionService : IDisposable
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
-                _titleFailed[id] = true;
+                _titleFailures.AddOrUpdate(id, 1, (_, count) => count + 1);
                 LogTitleFailed(ex);
             }
             finally
