@@ -24,6 +24,24 @@ public sealed record McpServerConfig(
     bool Disabled)
 {
     /// <summary>
+    /// Check whether another configuration starts the same server, comparing lists and maps by content.
+    /// </summary>
+    /// <param name="other">The configuration to compare with.</param>
+    /// <returns>True when the two would start or reach the same server in the same way.</returns>
+    public bool SameAs(McpServerConfig? other)
+    {
+        return other is not null
+            && Name == other.Name
+            && Transport == other.Transport
+            && Command == other.Command
+            && Cwd == other.Cwd
+            && Url == other.Url
+            && Args.SequenceEqual(other.Args)
+            && Env.Count == other.Env.Count && Env.All(p => other.Env.TryGetValue(p.Key, out var v) && v == p.Value)
+            && Headers.Count == other.Headers.Count && Headers.All(p => other.Headers.TryGetValue(p.Key, out var v) && v == p.Value);
+    }
+
+    /// <summary>
     /// Replace <c>${VAR}</c> and <c>${VAR:-default}</c> in the command, arguments, environment, folder, address and headers.
     /// </summary>
     /// <param name="lookup">Returns the value of a variable, or null when it is not set.</param>

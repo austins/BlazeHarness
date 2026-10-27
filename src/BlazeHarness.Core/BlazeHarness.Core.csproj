@@ -14,6 +14,7 @@
     <PackageReference Include="Microsoft.Mxc.Sdk" Version="1.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.14" />
+    <PackageReference Include="ModelContextProtocol.Core" Version="2.3.0" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
   </ItemGroup>
 </Project>

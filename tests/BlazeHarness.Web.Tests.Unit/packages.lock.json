@@ -157,6 +157,14 @@
         "resolved": "5.0.0",
         "contentHash": "dDoKi0PnDz31yAyETfRntsLArTlVAVzUzCIvvEDsDsucrl33Dl8pIJG06ePTJTI3tGpeyHS9Cq7Foc/s4EeKcg=="
       },
+      "ModelContextProtocol.Core": {
+        "type": "Transitive",
+        "resolved": "2.3.0",
+        "contentHash": "EDpbQholhVWoNumb0Ab3oGv9LmXOLgaD5ixEIUkrnzpnqD0TJCSHTJ5G71/J1KlrQ98aWDclWTPMffKTnCJoMw==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.11.0"
+        }
+      },
       "OpenAI": {
         "type": "Transitive",
         "resolved": "2.14.0",
@@ -246,6 +254,7 @@
         "dependencies": {
           "Microsoft.Extensions.AI.OpenAI": "[10.11.0, )",
           "Microsoft.Mxc.Sdk": "[1.0.1, )",
+          "ModelContextProtocol.Core": "[2.3.0, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.14, )"
         }
       },
