@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Sessions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
+using System.Runtime.Versioning;
 
 namespace BlazeHarness.Core.Tests.Integration.Sessions;
 
@@ -16,6 +17,8 @@ public sealed class SessionStoreTests : IDisposable
         _paths = new AppPaths(_home, _home);
         _sut = Create();
     }
+
+    public static bool CanRestrictDirectories => !OperatingSystem.IsWindows() && Environment.UserName != "root";
 
     public void Dispose()
     {
@@ -173,6 +176,30 @@ public sealed class SessionStoreTests : IDisposable
         // Assert
         _sut.Find(info.Id).Should().BeNull();
         Directory.GetDirectories(_paths.SessionsDirectory).Should().BeEmpty();
+    }
+
+    [Fact(Skip = "Needs POSIX directory permissions that the user is subject to.", SkipUnless = nameof(CanRestrictDirectories))]
+    [UnsupportedOSPlatform("windows")]
+    public async Task DeleteAsync_MoveFails_KeepsTheSessionListed()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var info = await _sut.CreateAsync(cancellationToken: ct);
+        File.SetUnixFileMode(_paths.SessionsDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+        try
+        {
+            // Act
+            var act = async () => await _sut.DeleteAsync(info.Id, ct);
+
+            // Assert
+            await act.Should().ThrowAsync<Exception>();
+            _sut.Find(info.Id).Should().NotBeNull();
+        }
+        finally
+        {
+            File.SetUnixFileMode(_paths.SessionsDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 
     [Fact]

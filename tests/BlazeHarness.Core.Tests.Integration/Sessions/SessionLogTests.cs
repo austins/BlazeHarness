@@ -61,6 +61,23 @@ public sealed class SessionLogTests : IDisposable
         (await File.ReadAllLinesAsync(_path, TestContext.Current.CancellationToken)).Should().HaveCount(6);
     }
 
+    [Theory]
+    [InlineData("{\"at\":\"2026-01-02T03:04:05+00:00\",\"text\":\"no type\"}")]
+    [InlineData("{\"type\":\"from-the-future\",\"at\":\"2026-01-02T03:04:05+00:00\"}")]
+    public async Task ReadAsync_LineWithMissingOrUnknownType_SkipsItAndKeepsTheRest(string line)
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        await _sut.AppendAsync([new UserMessageEvent(DateTimeOffset.UnixEpoch, id, "kept")], TestContext.Current.CancellationToken);
+        await File.AppendAllTextAsync(_path, line + "\n", TestContext.Current.CancellationToken);
+
+        // Act
+        var read = await _sut.ReadAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        read.Should().ContainSingle().Which.Should().BeOfType<UserMessageEvent>().Which.EntryId.Should().Be(id);
+    }
+
     [Fact]
     public async Task ReadAsync_TruncatedLastLine_SkipsItAndKeepsTheRest()
     {

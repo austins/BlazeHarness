@@ -37,9 +37,7 @@ public sealed class ModelTitleGenerator : ITitleGenerator
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        var capped = target.Model with { MaxOutputTokens = MaxOutputTokens };
-        var level = target.Model.Levels?.ContainsKey(ThinkingLevel.Off) == true ? ThinkingLevel.Off : (ThinkingLevel?)null;
-        var options = ChatClientFactory.BuildOptions(target.Provider, capped, level);
+        var options = ChatClientFactory.BuildHelperOptions(target.Provider, target.Model, MaxOutputTokens);
         List<ChatMessage> messages =
         [
             new(ChatRole.System, Instruction),

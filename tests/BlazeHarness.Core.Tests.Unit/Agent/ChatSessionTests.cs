@@ -60,7 +60,7 @@ public sealed class ChatSessionTests
     }
 
     [Fact]
-    public async Task SendAsync_ClientFactoryThrows_LogsAWarningWithTheReason()
+    public async Task SendAsync_ClientFactoryThrows_LogsAWarningWithTheExceptionButNotItsMessage()
     {
         // Arrange
         var logger = new LoggerFake<ChatSession>();
@@ -70,8 +70,11 @@ public sealed class ChatSessionTests
         await sut.SendAsync("hi", Fast);
 
         // Assert
-        logger.Entries.Should().ContainSingle().Which.Message.Should().Be("A reply failed: no key");
-        logger.Entries[0].LogLevel.Should().Be(LogLevel.Warning);
+        var entry = logger.Entries.Should().ContainSingle().Subject;
+        entry.Message.Should().Be("A reply failed.");
+        entry.Message.Should().NotContain("no key");
+        entry.Exception.Should().BeOfType<InvalidOperationException>();
+        entry.LogLevel.Should().Be(LogLevel.Warning);
     }
 
     [Fact]

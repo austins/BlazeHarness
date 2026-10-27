@@ -489,13 +489,14 @@ public sealed partial class SessionService : IDisposable
     /// <returns>False when the session is running and was left alone; true otherwise.</returns>
     public async Task<bool> DeleteAsync(string id)
     {
-        if (IsRunning(id))
+        if (_live.TryGetValue(id, out var session))
         {
-            return false;
-        }
+            if (!session.TryClose())
+            {
+                return false;
+            }
 
-        if (_live.TryRemove(id, out var session))
-        {
+            _live.TryRemove(id, out _);
             session.Dispose();
         }
 
@@ -597,13 +598,15 @@ public sealed partial class SessionService : IDisposable
                 Directory.CreateDirectory(root);
             }
 
+            if (session.Tools?.Context.Root == WorkspacePath.CanonicalRoot(root))
+            {
+                return;
+            }
+
             var shell = ShellInfo.DetectCurrent();
             var tools = BuiltInTools.Create(root, shell, session.Attachments, _sandbox, _store.ShellDirectory(id));
-            if (session.Tools?.Context.Root != tools.Context.Root)
-            {
-                session.Tools = tools;
-                session.BasePrompt = SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root);
-            }
+            session.Tools = tools;
+            session.BasePrompt = SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
@@ -623,7 +626,9 @@ public sealed partial class SessionService : IDisposable
         var entries = session.Entries;
         if (_titles is null
             || _store.Find(id) is not { TitleSource: TitleSource.Placeholder }
-            || entries is not [{ Role.Value: "user" } first, .., { Role.Value: "assistant", Status: EntryStatus.Done }]
+            || entries is not [var first, .., { Status: EntryStatus.Done } last]
+            || first.Role != ChatRole.User
+            || last.Role != ChatRole.Assistant
             || entries.FirstOrDefault(e => e.Role == ChatRole.Assistant && e.Text.Length > 0) is not { } reply)
         {
             return;
@@ -702,10 +707,11 @@ public sealed partial class SessionService : IDisposable
         }
 
         var wasRunning = false;
+        var activityGate = new Lock();
         session.Changed += (_, _) =>
         {
             bool flipped;
-            lock (session)
+            lock (activityGate)
             {
                 var running = session.IsRunning;
                 flipped = running != wasRunning;

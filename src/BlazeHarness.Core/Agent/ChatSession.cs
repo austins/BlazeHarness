@@ -58,6 +58,7 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     private SessionAttachments? _attachments;
     private string? _basePrompt;
     private Action? _stop;
+    private bool _closed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ChatSession"/> class.
@@ -221,7 +222,6 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
 
         // Rebuilding the history reads the attached files, so it happens before the lock is taken.
         var entries = SessionReplay.Replay(events);
-        MarkInterrupted(entries);
         List<ChatMessage> history = [];
         foreach (var entry in entries)
         {
@@ -476,12 +476,30 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         }
     }
 
+    /// <summary>
+    /// Close the session to new replies unless one is running; the check and the close happen together.
+    /// </summary>
+    /// <returns>False when a reply is running and the session was left open.</returns>
+    internal bool TryClose()
+    {
+        lock (_gate)
+        {
+            if (_stop is not null)
+            {
+                return false;
+            }
+
+            _closed = true;
+            return true;
+        }
+    }
+
     private async Task TurnAsync(ChatTarget target, Func<bool> change, Func<IReadOnlyList<SessionEvent>> leading)
     {
         using var run = new CancellationTokenSource();
         lock (_gate)
         {
-            if (_stop is not null || !change())
+            if (_stop is not null || _closed || !change())
             {
                 return;
             }
@@ -561,27 +579,6 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         finally
         {
             _approvals.TryRemove(callId, out _);
-        }
-    }
-
-    private static void MarkInterrupted(List<ChatEntry> entries)
-    {
-        for (var i = 0; i < entries.Count; i++)
-        {
-            var entry = entries[i];
-            var dangling = false;
-            foreach (var call in entry.ToolCalls.Where(c => !c.IsFinished))
-            {
-                call.Status = ToolCallStatus.Interrupted;
-                call.Output = ToolCallEntry.Unfinished(ToolCallStatus.Interrupted);
-                dangling = true;
-            }
-
-            // The model still has to answer the results of the last reply's calls, so that reply was cut off too.
-            if (entry.Status == EntryStatus.Done && (dangling || (i == entries.Count - 1 && entry.ToolCalls.Count > 0)))
-            {
-                entry.Status = EntryStatus.Interrupted;
-            }
         }
     }
 

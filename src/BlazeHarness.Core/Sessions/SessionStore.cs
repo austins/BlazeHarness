@@ -241,25 +241,32 @@ public sealed partial class SessionStore : IDisposable
     {
         var directory = _paths.SessionDirectory(id);
 
+        string? trash = null;
         await _lock.WaitAsync(cancellationToken);
         try
         {
-            _index.TryRemove(id, out _);
             if (_logs.TryRemove(id, out var log))
             {
                 log.Dispose();
             }
 
+            // Move before touching the index, so a failed move leaves the session listed.
             if (Directory.Exists(directory))
             {
-                var trash = Path.Combine(_paths.SessionsDirectory, TrashPrefix + Guid.NewGuid().ToString("N")[..8]);
+                trash = Path.Combine(_paths.SessionsDirectory, TrashPrefix + Guid.NewGuid().ToString("N")[..8]);
                 Directory.Move(directory, trash);
-                RemoveTrash(trash);
             }
+
+            _index.TryRemove(id, out _);
         }
         finally
         {
             _lock.Release();
+        }
+
+        if (trash is not null)
+        {
+            RemoveTrash(trash);
         }
 
         RaiseChanged();

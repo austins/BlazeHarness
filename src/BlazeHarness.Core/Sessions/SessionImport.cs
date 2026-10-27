@@ -57,10 +57,11 @@ public static class SessionImport
         }
 
         var title = document.Session.Title ?? string.Empty;
+        var cut = title.Length > MaxTitleLength && char.IsHighSurrogate(title[MaxTitleLength - 1]) ? MaxTitleLength - 1 : MaxTitleLength;
         session = new ImportedSession(
             new SessionInfo
             {
-                Title = title.Length > MaxTitleLength ? title[..MaxTitleLength] : title,
+                Title = title.Length > MaxTitleLength ? title[..cut] : title,
                 TitleSource = document.Session.TitleSource,
                 CreatedAt = document.Session.CreatedAt,
                 UpdatedAt = document.Session.UpdatedAt,
@@ -75,8 +76,11 @@ public static class SessionImport
 
     private static SessionEvent Sanitize(SessionEvent e) => e switch
     {
-        UserMessageEvent user => user with { Attachments = null },
-        ToolResultEvent result => result with { OutputFile = null },
+        UserMessageEvent user => user with { Text = user.Text ?? string.Empty, Attachments = null },
+        AssistantDeltaEvent delta => delta with { Text = delta.Text ?? string.Empty, Reasoning = delta.Reasoning ?? string.Empty },
+        ToolCallEvent call => call with { CallId = call.CallId ?? string.Empty, Name = call.Name ?? string.Empty, ArgumentsJson = call.ArgumentsJson ?? "{}", Summary = call.Summary ?? string.Empty },
+        ToolResultEvent result => result with { CallId = result.CallId ?? string.Empty, Output = result.Output ?? string.Empty, OutputFile = null },
+        CompactionEvent compaction => compaction with { Summary = compaction.Summary ?? string.Empty },
         _ => e,
     };
 }

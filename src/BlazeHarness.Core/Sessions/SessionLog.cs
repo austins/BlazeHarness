@@ -116,7 +116,7 @@ public sealed partial class SessionLog : ISessionLog, IDisposable
                         events.Add(e is ToolResultEvent { OutputFile: not null } stored ? await LoadOutputAsync(stored, cancellationToken) : e);
                     }
                 }
-                catch (JsonException ex)
+                catch (Exception ex) when (ex is JsonException or NotSupportedException)
                 {
                     LogSkippedLine(ex, Path.GetFileName(Path.GetDirectoryName(_path)), lineNumber);
                 }

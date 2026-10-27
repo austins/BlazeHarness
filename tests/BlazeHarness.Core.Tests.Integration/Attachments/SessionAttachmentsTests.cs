@@ -58,6 +58,26 @@ public sealed class SessionAttachmentsTests : IDisposable
     }
 
     [Fact]
+    public async Task SaveAsync_LongNameOfATextFileNamedAsAnImage_StaysWithinTheNameLimit()
+    {
+        // Act
+        var info = await SaveAsync(new string('n', 200) + ".png", "just words");
+
+        // Assert
+        info.Name.Should().HaveLength(80).And.EndWith(".txt");
+    }
+
+    [Fact]
+    public async Task SaveAsync_LongNameOfAnImageWithTheWrongExtension_StaysWithinTheNameLimit()
+    {
+        // Act
+        var info = await SaveAsync(new string('n', 200) + ".txt", PngHeader);
+
+        // Assert
+        info.Name.Should().HaveLength(80).And.EndWith(".png");
+    }
+
+    [Fact]
     public async Task SaveAsync_TextNamedAsAnImage_GetsATextExtension()
     {
         // Act

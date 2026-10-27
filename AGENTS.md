@@ -16,16 +16,17 @@
 - `BlazeHarness.Core` has no UI dependency. The agent loop emits an `IAsyncEnumerable<AgentEvent>`; the UI only consumes it.
 - `BlazeHarness.Web` is Blazor Server with hand-written CSS and no npm. Singleton services own sessions and runs, not components.
 - All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher).
-- API keys live in `ISecretStore` (OS keychain, owner-only file fallback), never in `config.json`, session files or logs.
+- API keys live in `ISecretStore` (OS keychain, owner-only file fallback; the file and DPAPI stores share `FileBackedSecretStore`), never in `config.json`, session files or logs.
 - Every request, including `/_blazor`, passes `LocalAccessMiddleware` (exact Host, same-origin Origin, session cookie).
   Don't add endpoints or pipeline steps in front of it.
 - Keep the LLM request prefix stable (system prompt, then tools, then append-only history); no timestamps in the prefix.
 
 ## Conventions
 
-- Log IDs and counts only, never message or file contents.
+- Log IDs and counts only, never message or file contents. Log an exception's type (and HTTP status), never its message: it can echo a prompt or reply.
+- One type per file, and the namespace matches the folder (enums, records and event types included).
 - Anything that reads the time takes a `TimeProvider` (registered once in `Program.cs`, never `DateTime.Now` or `TimeProvider.System` inline), so tests can use `FakeTimeProvider`.
-- Namespaces under `BlazeHarness.Core`: `Agent`, `Providers`, `Folders`, `Tools`, `Sessions`, `Compaction`, `Sandbox`, `Mcp`, `Skills`.
+- Namespaces under `BlazeHarness.Core`: `Agent`, `Providers`, `Folders`, `Tools`, `Sessions`, `Compaction`, `Sandbox`, `Mcp`, `Skills`, `Config` (`AppConfig`, `AtomicFile`, `JsonFileStore<T>`), `Secrets`.
 - Every public type and member needs XML docs (CS1591 is an error in `src/`): a `<summary>`, plus `<remarks>`, `<param>`,
   `<returns>` and `<exception>` where they add something. Use `<inheritdoc />` on interface implementations, and `<param>`
   on the type for positional records. Properties start with "Gets" or "Gets or sets". Method summaries use the imperative.

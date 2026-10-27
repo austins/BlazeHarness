@@ -83,7 +83,7 @@ public sealed partial class ChatSession
         (string Summary, int KeptFrom)? state;
         lock (_gate)
         {
-            if (_stop is not null || _history.Count < 2)
+            if (_stop is not null || _closed || _history.Count < 2)
             {
                 return false;
             }
@@ -168,6 +168,6 @@ public sealed partial class ChatSession
         return true;
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not compact the conversation, so it was sent in full: {Reason}")]
-    private partial void LogCompactionFailed(string reason);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not compact the conversation, so it was sent in full.")]
+    private partial void LogCompactionFailed();
 }

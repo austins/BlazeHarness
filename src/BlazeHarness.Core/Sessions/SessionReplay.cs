@@ -89,6 +89,27 @@ internal static class SessionReplay
             }
         }
 
+        MarkInterrupted(entries);
         return entries;
+    }
+
+    private static void MarkInterrupted(List<ChatEntry> entries)
+    {
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            var dangling = false;
+            foreach (var call in entry.ToolCalls.Where(c => !c.IsFinished))
+            {
+                call.Status = ToolCallStatus.Interrupted;
+                call.Output = ToolCallEntry.Unfinished(ToolCallStatus.Interrupted);
+                dangling = true;
+            }
+
+            if (entry.Status == EntryStatus.Done && (dangling || (i == entries.Count - 1 && entry.ToolCalls.Count > 0)))
+            {
+                entry.Status = EntryStatus.Interrupted;
+            }
+        }
     }
 }

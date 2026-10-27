@@ -18,8 +18,7 @@ public sealed record ChatTarget(ProviderConfig Provider, ModelConfig Model, Thin
     {
         get
         {
-            var name = string.IsNullOrWhiteSpace(Model.DisplayName) ? Model.Id : Model.DisplayName;
-            var label = Provider.DisplayName + " · " + name;
+            var label = Provider.DisplayName + " · " + Model.Name;
             return Level is { } level ? label + " · " + JsonNamingPolicy.CamelCase.ConvertName(level.ToString()) : label;
         }
     }

@@ -163,6 +163,81 @@ public sealed class ChatSessionAttachmentTests : IDisposable
         _log.Events.OfType<UserMessageEvent>().Last().Attachments.Should().ContainSingle();
     }
 
+    [Fact]
+    public async Task SendAsync_FilesAddUpToMoreThanTheMessageLimit_Throws()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        using var sut = Create(client);
+        var half = new AttachmentInfo("a", "a.txt", "text/plain", (SessionAttachments.MaxMessageBytes / 2) + 1, 1);
+        var other = half with { Id = "b", Name = "b.txt" };
+
+        // Act
+        var act = async () => await sut.SendAsync("x", [half, other], TestTargets.Create());
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*at most 50 MB*");
+        sut.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task EditAsync_ToAModelWithASmallerWindow_PlansTheFilesAgainForTheNewModel()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")]).Enqueue([ScriptedChatClient.Text("two")]);
+        using var sut = Create(client);
+        var file = await SaveAsync("big.txt", new string('x', 20_000));
+        await sut.SendAsync("first", [file], Target(1_000_000));
+
+        // Act
+        await sut.EditAsync(sut.Entries[0].Id, "second", Target(8000));
+
+        // Assert
+        sut.Entries[0].Attachments.Should().Equal(new SentAttachment(file, AttachmentDelivery.OnDemand));
+        client.Requests[1].Single(m => m.Role == ChatRole.User).Text.Should().Contain("read_attachment").And.NotContain("xxxxxxxxxx");
+        _log.Events.OfType<UserMessageEvent>().Last().Attachments.Should().Equal(new SentAttachment(file, AttachmentDelivery.OnDemand));
+    }
+
+    [Fact(Skip = "Needs a named pipe, which Windows cannot make with mkfifo.", SkipWhen = nameof(IsWindows))]
+    public async Task SendAsync_WhileAFileIsBeingRead_DoesNotBlockReadersOfTheSession()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        using var sut = Create(client);
+        var file = await SaveAsync("a.txt", "x");
+        var path = _attachments.Find(file.Id)!.Path;
+        File.Delete(path);
+#pragma warning disable IDISP013 // The process is only disposed after the awaits that wait for it.
+        using var mkfifo = System.Diagnostics.Process.Start("mkfifo", path);
+        await mkfifo.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        var target = TestTargets.Create();
+        var send = Task.Run(() => sut.SendAsync("read", [file], target), TestContext.Current.CancellationToken);
+
+        // Opening the write end only returns once the session has started reading the file.
+        await using var writer = await Task.Run(() => new FileStream(path, FileMode.Open, FileAccess.Write), TestContext.Current.CancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+#pragma warning restore IDISP013
+
+        // Act
+        var status = await Task.Run(() => sut.GetContextStatus(target), TestContext.Current.CancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await writer.DisposeAsync();
+        await send.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        // Assert
+        status.Should().NotBeNull();
+        sut.Entries.Should().HaveCount(2);
+    }
+
+    public static bool IsWindows => OperatingSystem.IsWindows();
+
+    private static ChatTarget Target(int contextWindow)
+    {
+        var model = new ModelConfig { Id = "m", ContextWindow = contextWindow, MaxOutputTokens = 1000 };
+        return new ChatTarget(new ProviderConfig { Id = "p", DisplayName = "P", BaseUrl = "http://localhost/v1", Models = [model] }, model, null);
+    }
+
     private ChatSession Create(ScriptedChatClient client)
     {
         return new ChatSession((_, _) => Task.FromResult<IChatClient>(client), _log)

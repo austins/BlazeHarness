@@ -60,6 +60,44 @@ public sealed class SessionImportTests
         session!.Info.Title.Should().HaveLength(200);
     }
 
+    [Fact]
+    public void TryParse_TitleCutInsideSurrogatePair_DoesNotSplitIt()
+    {
+        // Arrange
+        var title = new string('x', 199) + "😀tail";
+        var json = SessionExport.ToJson(SampleChat.Info(title), SampleChat.Events(), SampleChat.Time);
+
+        // Act
+        var ok = SessionImport.TryParse(json, out var session, out _);
+
+        // Assert
+        ok.Should().BeTrue();
+        session!.Info.Title.Should().Be(new string('x', 199));
+    }
+
+    [Fact]
+    public void TryParse_EventsWithNullFields_ReplacesThemWithEmptyValues()
+    {
+        // Arrange
+        var json = """
+            {"format":"blazeharness-chat","version":1,"session":{"title":"x"},"events":[
+            {"type":"user","at":"2026-01-02T03:04:05+00:00","entryId":"11111111-1111-1111-1111-111111111111","text":null},
+            {"type":"assistantStart","at":"2026-01-02T03:04:05+00:00","entryId":"22222222-2222-2222-2222-222222222222"},
+            {"type":"toolCall","at":"2026-01-02T03:04:05+00:00","entryId":"22222222-2222-2222-2222-222222222222","callId":null,"name":null,"argumentsJson":null,"summary":null}
+            ]}
+            """;
+
+        // Act
+        var ok = SessionImport.TryParse(json, out var session, out _);
+
+        // Assert
+        ok.Should().BeTrue();
+        session!.Events.OfType<UserMessageEvent>().Single().Text.Should().BeEmpty();
+        var call = session.Events.OfType<ToolCallEvent>().Single();
+        call.Name.Should().BeEmpty();
+        call.ArgumentsJson.Should().Be("{}");
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("not json")]

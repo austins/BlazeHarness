@@ -67,15 +67,7 @@ internal static class AttachmentMessage
         }
     }
 
-    private static bool IsImage(AIContent content) => content is DataContent { MediaType: var type } && type.StartsWith("image/", StringComparison.Ordinal);
-
-    private static string ReadText(string path)
-    {
-        using var reader = new StreamReader(path, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        return reader.ReadToEnd().TrimEnd('\n', '\r');
-    }
-
-    private static int LongestBacktickRun(string text)
+    internal static int LongestBacktickRun(string text)
     {
         var longest = 0;
         var run = 0;
@@ -86,5 +78,13 @@ internal static class AttachmentMessage
         }
 
         return longest;
+    }
+
+    private static bool IsImage(AIContent content) => content is DataContent { MediaType: var type } && type.StartsWith("image/", StringComparison.Ordinal);
+
+    private static string ReadText(string path)
+    {
+        using var reader = new StreamReader(path, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return reader.ReadToEnd().TrimEnd('\n', '\r');
     }
 }

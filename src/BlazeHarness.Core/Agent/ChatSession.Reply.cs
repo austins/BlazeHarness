@@ -65,7 +65,7 @@ public sealed partial class ChatSession
         {
             reply.Entry.Status = EntryStatus.Failed;
             reply.Entry.Error = ex.Message;
-            LogReplyFailed(ex.Message);
+            LogReplyFailed(ex);
         }
         finally
         {
@@ -109,7 +109,7 @@ public sealed partial class ChatSession
                 break;
             case AgentError error:
                 entry.Error = error.Message;
-                LogReplyFailed(error.Message);
+                LogReplyEnded();
                 break;
             case Done done:
                 entry.Status = done.Reason switch
@@ -125,8 +125,8 @@ public sealed partial class ChatSession
             case ContextCompacted compacted:
                 await ApplyCompactionAsync(compacted);
                 break;
-            case ContextCompactionFailed failed:
-                LogCompactionFailed(failed.Message);
+            case ContextCompactionFailed:
+                LogCompactionFailed();
                 break;
             case ToolCallRequested requested:
                 if (entry.Status == EntryStatus.Streaming)
@@ -277,14 +277,17 @@ public sealed partial class ChatSession
         {
             await _log.AppendAsync(events);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ObjectDisposedException)
         {
             LogSaveFailed(ex);
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "A reply failed: {Reason}")]
-    private partial void LogReplyFailed(string reason);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A reply failed.")]
+    private partial void LogReplyFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A reply ended with an error.")]
+    private partial void LogReplyEnded();
 
     private sealed class Reply(ChatEntry entry, ChatTarget target, List<ChatMessage> working, int before, long lastSave)
     {

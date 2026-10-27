@@ -365,6 +365,25 @@ public sealed class SessionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SendAsync_OnASessionThatWasDeleted_DoesNotStartAReply()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        var session = (await sut.OpenAsync(info.Id))!;
+        await sut.DeleteAsync(info.Id);
+
+        // Act
+        await session.SendAsync("late", [], Target("p1", "fast"));
+
+        // Assert
+        client.Requests.Should().BeEmpty();
+        session.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task ActivityChanged_ReplyStartsAndEnds_IsRaisedForBoth()
     {
         // Arrange
