@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 #pragma warning disable VSTHRD003 // The helper waits for the caller's task on purpose.
 
-namespace BlazeHarness.Tests.Shared;
+namespace BlazeHarness.Core.Tests.Integration;
 
 /// <summary>Helpers for driving code under test that waits on a <see cref="FakeTimeProvider"/>.</summary>
 public static class FakeTimeProviderExtensions

@@ -1,7 +1,7 @@
 using BlazeHarness.Core.Attachments;
 using System.Text;
 
-namespace BlazeHarness.Tests.Shared.Attachments;
+namespace BlazeHarness.Core.Tests.Integration.Attachments;
 
 /// <summary>Shortcuts for saving in-memory content as an attachment.</summary>
 public static class SessionAttachmentsExtensions

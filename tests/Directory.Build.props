@@ -31,7 +31,6 @@
         <Using Include="AwesomeAssertions"/>
         <Using Include="BlazeHarness.Tests.Shared"/>
         <Using Include="BlazeHarness.Tests.Shared.Agent"/>
-        <Using Include="BlazeHarness.Tests.Shared.Attachments"/>
         <Using Include="BlazeHarness.Tests.Shared.Providers"/>
         <Using Include="BlazeHarness.Tests.Shared.Sessions"/>
         <Using Include="Microsoft.Extensions.Logging"/>

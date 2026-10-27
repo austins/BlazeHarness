@@ -4,7 +4,7 @@ using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 
-namespace BlazeHarness.Tests.Shared.Agent;
+namespace BlazeHarness.Core.Tests.Unit.Agent;
 
 /// <summary>Runs the chat runner to the end and gathers its events.</summary>
 public static class ChatRunnerCollector
