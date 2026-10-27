@@ -9,6 +9,8 @@ namespace BlazeHarness.Core.Providers;
 /// </summary>
 public static class ProviderConnectionTester
 {
+    private const int MaxBodyBytes = 4 * 1024 * 1024;
+
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
 
     /// <summary>
@@ -35,14 +37,17 @@ public static class ProviderConnectionTester
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+        // Replace rather than append, like the real requests do, so a header never ends up with two values.
+        foreach (var (name, value) in provider.Headers ?? new Dictionary<string, string>())
+        {
+            request.Headers.Remove(name);
+            request.Headers.TryAddWithoutValidation(name, value);
+        }
+
         if (!string.IsNullOrEmpty(apiKey))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-        }
-
-        foreach (var (name, value) in provider.Headers ?? new Dictionary<string, string>())
-        {
-            request.Headers.TryAddWithoutValidation(name, value);
         }
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -56,16 +61,43 @@ public static class ProviderConnectionTester
                 return Fail(DescribeStatus(response.StatusCode));
             }
 
-            var body = await response.Content.ReadAsStringAsync(timeout.Token);
-            return ParseModels(body);
+            var body = await ReadCappedAsync(response.Content, timeout.Token);
+            return body is null ? Fail("The server's model list is too large to be an OpenAI-style answer.") : ParseModels(body);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return Fail("The server did not answer within 15 seconds. Check that it is running and the address is right.");
+            return Fail($"The server did not answer within {Timeout.TotalSeconds:0} seconds. Check that it is running and the address is right.");
         }
         catch (HttpRequestException ex)
         {
             return Fail($"Could not connect: {ex.Message}. Check that the server is running and the address is right.");
+        }
+    }
+
+    private static async Task<string?> ReadCappedAsync(HttpContent content, CancellationToken cancellationToken)
+    {
+        if (content.Headers.ContentLength > MaxBodyBytes)
+        {
+            return null;
+        }
+
+        var stream = await content.ReadAsStreamAsync(cancellationToken);
+        await using (stream.ConfigureAwait(false))
+        {
+            using var buffer = new MemoryStream();
+            var chunk = new byte[8192];
+            int read;
+            while ((read = await stream.ReadAsync(chunk, cancellationToken)) > 0)
+            {
+                if (buffer.Length + read > MaxBodyBytes)
+                {
+                    return null;
+                }
+
+                await buffer.WriteAsync(chunk.AsMemory(0, read), cancellationToken);
+            }
+
+            return System.Text.Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length);
         }
     }
 

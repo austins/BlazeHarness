@@ -118,9 +118,9 @@ public sealed class ProviderService
             return issues;
         }
 
-        if (!string.IsNullOrEmpty(newApiKey))
+        if (!string.IsNullOrWhiteSpace(newApiKey))
         {
-            await _secrets.SetAsync(SecretStoreFactory.KeyFor(provider), newApiKey, cancellationToken);
+            await _secrets.SetAsync(SecretStoreFactory.KeyFor(provider), newApiKey.Trim(), cancellationToken);
         }
 
         await _config.UpdateAsync(
@@ -138,7 +138,15 @@ public sealed class ProviderService
                 }
 
                 var next = current with { Providers = providers };
-                return next.DefaultProviderId is null ? next with { DefaultProviderId = provider.Id } : next;
+                if (next.DefaultProviderId is null)
+                {
+                    next = next with { DefaultProviderId = provider.Id, DefaultModelId = null };
+                }
+
+                // Keep the default model one the default provider still has.
+                return next.DefaultProviderId == provider.Id && provider.Models.All(m => m.Id != next.DefaultModelId)
+                    ? next with { DefaultModelId = provider.Models is [var first, ..] ? first.Id : null }
+                    : next;
             },
             cancellationToken);
 
@@ -154,7 +162,7 @@ public sealed class ProviderService
     /// <returns>A task that completes once the key is deleted.</returns>
     public async Task ClearKeyAsync(string providerId, CancellationToken cancellationToken = default)
     {
-        await _secrets.DeleteAsync("provider:" + providerId, cancellationToken);
+        await _secrets.DeleteAsync(SecretStoreFactory.KeyFor(providerId), cancellationToken);
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -169,7 +177,7 @@ public sealed class ProviderService
     /// <returns>A task that completes once the provider is removed.</returns>
     public async Task RemoveAsync(string providerId, CancellationToken cancellationToken = default)
     {
-        await _secrets.DeleteAsync("provider:" + providerId, cancellationToken);
+        await _secrets.DeleteAsync(SecretStoreFactory.KeyFor(providerId), cancellationToken);
         await _config.UpdateAsync(
             current =>
             {

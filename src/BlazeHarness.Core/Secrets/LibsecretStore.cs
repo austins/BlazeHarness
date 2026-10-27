@@ -11,6 +11,9 @@ public sealed class LibsecretStore(string serviceName = "blazeharness") : ISecre
 {
     private const string Tool = "secret-tool";
 
+    // A locked keyring can wait on a prompt forever; without this startup would hang.
+    private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(5);
+
     /// <inheritdoc />
     public string Name => "Secret Service (libsecret)";
 
@@ -29,6 +32,8 @@ public sealed class LibsecretStore(string serviceName = "blazeharness") : ISecre
             return false;
         }
 
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(ProbeTimeout);
         try
         {
             // A lookup of a key that cannot exist exits 1 with no output when the service works.
@@ -36,10 +41,14 @@ public sealed class LibsecretStore(string serviceName = "blazeharness") : ISecre
                 Tool,
                 ["lookup", "service", "blazeharness-probe", "account", "probe"],
                 null,
-                cancellationToken);
+                timeout.Token);
             return probe.ExitCode is 0 or 1 && string.IsNullOrWhiteSpace(probe.StdErr);
         }
         catch (System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return false;
         }

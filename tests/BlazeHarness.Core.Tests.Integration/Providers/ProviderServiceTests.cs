@@ -87,6 +87,30 @@ public sealed class ProviderServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SaveAsync_DefaultProviderLosesItsDefaultModel_PicksItsFirstModel()
+    {
+        // Arrange
+        await _sut.SaveAsync(Provider("ds", "m1"), null, TestContext.Current.CancellationToken);
+        await _sut.SetDefaultAsync("ds", "m1", TestContext.Current.CancellationToken);
+
+        // Act
+        await _sut.SaveAsync(Provider("ds", "m2"), null, TestContext.Current.CancellationToken);
+
+        // Assert
+        _sut.Config.DefaultModelId.Should().Be("m2");
+    }
+
+    [Fact]
+    public async Task SaveAsync_KeyWithSurroundingWhitespace_StoresItTrimmed()
+    {
+        // Act
+        await _sut.SaveAsync(Provider("ds", "m1"), " sk-1\n", TestContext.Current.CancellationToken);
+
+        // Assert
+        (await _secrets.GetAsync("provider:ds", TestContext.Current.CancellationToken)).Should().Be("sk-1");
+    }
+
+    [Fact]
     public async Task SaveAsync_RaisesChanged()
     {
         // Arrange

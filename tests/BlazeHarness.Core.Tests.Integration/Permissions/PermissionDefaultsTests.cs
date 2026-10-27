@@ -1,6 +1,5 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Permissions;
-using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Tools;
 
 namespace BlazeHarness.Core.Tests.Integration.Permissions;

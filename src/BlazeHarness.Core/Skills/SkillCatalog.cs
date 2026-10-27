@@ -1,5 +1,4 @@
 using BlazeHarness.Core.Config;
-using BlazeHarness.Core.Providers;
 using Microsoft.Extensions.Logging;
 
 namespace BlazeHarness.Core.Skills;

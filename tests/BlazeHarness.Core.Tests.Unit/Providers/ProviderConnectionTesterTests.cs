@@ -106,6 +106,36 @@ public sealed class ProviderConnectionTesterTests
     }
 
     [Fact]
+    public async Task TestAsync_AuthorizationHeaderConfigured_KeyReplacesIt()
+    {
+        // Arrange
+        using var handler = new StubHandler(_ => Json("""{"data":[]}"""));
+        using var client = new HttpClient(handler);
+        var provider = Provider with { Headers = new Dictionary<string, string> { ["Authorization"] = "Basic abc" } };
+
+        // Act
+        await ProviderConnectionTester.TestAsync(provider, "k", client, TestContext.Current.CancellationToken);
+
+        // Assert
+        handler.Requests[0].Headers.GetValues("Authorization").Should().ContainSingle().Which.Should().Be("Bearer k");
+    }
+
+    [Fact]
+    public async Task TestAsync_OversizedBody_FailsWithoutReadingItAll()
+    {
+        // Arrange
+        using var handler = new StubHandler(_ => Json(new string('x', 5 * 1024 * 1024)));
+        using var client = new HttpClient(handler);
+
+        // Act
+        var result = await ProviderConnectionTester.TestAsync(Provider, "k", client, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Message.Should().Contain("too large");
+    }
+
+    [Fact]
     public async Task TestAsync_InvalidBaseUrl_FailsWithoutRequest()
     {
         // Arrange

@@ -1,7 +1,6 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
-using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.Time.Testing;
 

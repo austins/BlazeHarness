@@ -45,6 +45,11 @@ public sealed class MacKeychainStore(string serviceName = "blazeharness") : ISec
     /// <inheritdoc />
     public async Task SetAsync(string key, string value, CancellationToken cancellationToken = default)
     {
+        if (value.AsSpan().ContainsAny('\r', '\n') || key.AsSpan().ContainsAny('\r', '\n'))
+        {
+            throw new ArgumentException("The key and value cannot contain line breaks.", nameof(value));
+        }
+
         var command = $"add-generic-password -U -s {Quote(serviceName)} -a {Quote(key)} -w {Quote(value)}\n";
         var result = await ProcessRunner.RunAsync(Tool, ["-i"], command, cancellationToken);
         if (result.ExitCode != 0)

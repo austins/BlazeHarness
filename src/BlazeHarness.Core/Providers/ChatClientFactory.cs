@@ -14,6 +14,9 @@ public static class ChatClientFactory
 {
     private const int MaxRetries = 4;
 
+    // The SDK insists on a credential even when the server needs none.
+    private const string PlaceholderApiKey = "not-needed";
+
     // Local models can take minutes to start answering a long prompt.
     private static readonly TimeSpan NetworkTimeout = TimeSpan.FromMinutes(10);
 
@@ -43,7 +46,7 @@ public static class ChatClientFactory
             options.AddPolicy(new HeadersPolicy(provider.Headers), PipelinePosition.PerCall);
         }
 
-        var credential = new ApiKeyCredential(string.IsNullOrEmpty(apiKey) ? "not-needed" : apiKey);
+        var credential = new ApiKeyCredential(string.IsNullOrEmpty(apiKey) ? PlaceholderApiKey : apiKey);
         return new ChatClient(modelId, credential, options).AsIChatClient();
     }
 

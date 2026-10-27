@@ -44,6 +44,16 @@ public static class SecretStoreFactory
     /// <returns>The key name, derived from the provider id.</returns>
     public static string KeyFor(ProviderConfig provider)
     {
-        return "provider:" + provider.Id;
+        return KeyFor(provider.Id);
+    }
+
+    /// <summary>
+    /// Get the secret store key that holds a provider's API key.
+    /// </summary>
+    /// <param name="providerId">The provider id.</param>
+    /// <returns>The key name.</returns>
+    public static string KeyFor(string providerId)
+    {
+        return "provider:" + providerId;
     }
 }
