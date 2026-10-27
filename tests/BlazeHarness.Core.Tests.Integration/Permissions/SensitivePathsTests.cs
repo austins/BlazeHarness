@@ -11,7 +11,14 @@ public sealed class SensitivePathsTests
     [InlineData(".aws/credentials")]
     [InlineData(".gnupg")]
     [InlineData(".microsoft/usersecrets/abc/secrets.json")]
-    public void IsProtected_CredentialFolderInHome_IsTrue(string relative)
+    [InlineData(".config/gh/hosts.yml")]
+    [InlineData(".config/gcloud/credentials.db")]
+    [InlineData(".password-store/mail.gpg")]
+    [InlineData(".local/share/keyrings/login.keyring")]
+    [InlineData(".netrc")]
+    [InlineData(".git-credentials")]
+    [InlineData(".npmrc")]
+    public void IsProtected_CredentialFolderOrFileInHome_IsTrue(string relative)
     {
         // Arrange
         var sut = SensitivePaths.Default(_paths);

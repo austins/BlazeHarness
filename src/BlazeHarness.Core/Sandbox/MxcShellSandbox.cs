@@ -100,23 +100,52 @@ public sealed class MxcShellSandbox : IShellSandbox
             return SandboxStatus.Unavailable("No shell was found to run commands in.");
         }
 
-        var folder = Path.Combine(Path.GetTempPath(), "blazeharness-probe-" + Guid.NewGuid().ToString("N"));
+        var id = Guid.NewGuid().ToString("N");
+        var folder = Path.Combine(Path.GetTempPath(), "blazeharness-probe-" + id);
+        var outside = Path.Combine(Path.GetTempPath(), "blazeharness-probe-outside-" + id);
         try
         {
             Directory.CreateDirectory(folder);
-            var launch = new ShellLaunch(shell, "exit 0", folder, ShellMode.Writable, folder, ProbeTimeout);
+            var launch = new ShellLaunch(shell, ProbeCommand(shell, outside), folder, ShellMode.Writable, folder, ProbeTimeout);
             var result = MxcContainer.Run(BuildRequest(launch));
-            return result is { ExitCode: 0, TimedOut: false }
-                ? new SandboxStatus(true, BackendName(), $"Commands run in a {BackendName()} sandbox that can only change the working folder. The network is not restricted.")
-                : SandboxStatus.Unavailable($"The {BackendName()} sandbox failed its self-test (exit code {result.ExitCode}). Commands can only run with the Unrestricted access level.");
+            if (result is not { ExitCode: 0, TimedOut: false })
+            {
+                return SandboxStatus.Unavailable($"The {BackendName()} sandbox failed its self-test (exit code {result.ExitCode}). Commands can only run with the Unrestricted access level.");
+            }
+
+            // Running isn't enough: the sandbox is only worth trusting if a write outside the working folder didn't land.
+            return File.Exists(outside)
+                ? SandboxStatus.Unavailable($"The {BackendName()} sandbox did not keep a command out of a folder it should not change. Commands can only run with the Unrestricted access level.")
+                : new SandboxStatus(true, BackendName(), $"Commands run in a {BackendName()} sandbox that can only change the working folder. The network is not restricted.");
         }
-        catch (Exception ex) when (ex is IOException or MxcException or DllNotFoundException or BadImageFormatException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
+            // Any failure to set up the backend, such as a missing native library entry point, means no sandbox. Never let it escape as an exception.
             return SandboxStatus.Unavailable($"The {BackendName()} sandbox can't start: {ex.Message} Commands can only run with the Unrestricted access level.");
         }
         finally
         {
             TryDelete(folder);
+            TryDeleteFile(outside);
+        }
+    }
+
+    private static string ProbeCommand(ShellInfo shell, string outside)
+    {
+        return shell.IsPowerShell
+            ? $"Set-Content -Path '{outside.Replace("'", "''", StringComparison.Ordinal)}' -Value x -ErrorAction SilentlyContinue; exit 0"
+            : $"echo x > '{outside.Replace("'", "'\\''", StringComparison.Ordinal)}' 2>/dev/null; exit 0";
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A probe file left in the temp directory is harmless.
         }
     }
 

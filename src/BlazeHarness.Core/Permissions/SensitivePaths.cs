@@ -37,10 +37,10 @@ public sealed class SensitivePaths
     public string? Exempt { get; }
 
     /// <summary>
-    /// Get the folders that are protected unless the user changes the list: credential stores and browser profiles.
+    /// Get the folders and files that are protected unless the user changes the list: credential stores and browser profiles.
     /// </summary>
     /// <param name="paths">The app's folders.</param>
-    /// <returns>The full paths of the folders. The app's own folder is not in it, because it is always protected.</returns>
+    /// <returns>The full paths. The app's own folder is not in it, because it is always protected.</returns>
     public static IReadOnlyList<string> DefaultFolders(AppPaths paths)
     {
         ArgumentNullException.ThrowIfNull(paths);
@@ -55,6 +55,13 @@ public sealed class SensitivePaths
             Path.Combine(home, ".gnupg"),
             Path.Combine(home, ".kube"),
             Path.Combine(home, ".docker"),
+            Path.Combine(home, ".config", "gh"),
+            Path.Combine(home, ".config", "gcloud"),
+            Path.Combine(home, ".password-store"),
+            Path.Combine(home, ".local", "share", "keyrings"),
+            Path.Combine(home, ".netrc"),
+            Path.Combine(home, ".git-credentials"),
+            Path.Combine(home, ".npmrc"),
             Path.Combine(home, ".microsoft", "usersecrets"),
             Path.Combine(home, ".mozilla"),
             Path.Combine(home, ".config", "google-chrome"),

@@ -55,6 +55,34 @@ public sealed class SandboxPolicyTests : IDisposable
     }
 
     [Fact]
+    public void Create_RelativeFolderOnThePath_IsNotMounted()
+    {
+        // Arrange
+        var relative = Path.GetRelativePath(Environment.CurrentDirectory, _toolBin);
+
+        // Act
+        var policy = Create(ShellMode.Writable, host: new Dictionary<string, string> { ["PATH"] = relative });
+
+        // Assert
+        policy.ReadOnly.Should().NotContain(Canonical(_toolBin));
+    }
+
+    [Fact]
+    public void Create_HomeFolderOrItsParentOnThePath_IsNotMounted()
+    {
+        // Arrange
+        var home = Directory.CreateDirectory(Path.Combine(_root, "users", "me")).FullName;
+        var bin = Directory.CreateDirectory(Path.Combine(home, ".local", "bin")).FullName;
+        var path = string.Join(Path.PathSeparator, home, Path.GetDirectoryName(home), bin);
+
+        // Act
+        var policy = Create(ShellMode.Writable, host: new Dictionary<string, string> { ["PATH"] = path, ["HOME"] = home });
+
+        // Assert
+        policy.ReadOnly.Should().Contain(Canonical(bin)).And.NotContain(Canonical(home)).And.NotContain(Canonical(Path.GetDirectoryName(home)!));
+    }
+
+    [Fact]
     public void Create_ApprovedReadFolders_AreReadOnly()
     {
         // Arrange

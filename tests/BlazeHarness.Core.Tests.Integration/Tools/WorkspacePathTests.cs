@@ -1,10 +1,13 @@
 using BlazeHarness.Core.Tools;
+using System.Runtime.Versioning;
 
 namespace BlazeHarness.Core.Tests.Integration.Tools;
 
 public sealed class WorkspacePathTests : IDisposable
 {
     private readonly TempWorkspace _workspace = new();
+
+    public static bool CannotDenyAccess => OperatingSystem.IsWindows() || Environment.UserName == "root";
 
     public void Dispose() => _workspace.Dispose();
 
@@ -185,6 +188,29 @@ public sealed class WorkspacePathTests : IDisposable
         // Assert
         ok.Should().BeTrue();
         full.Should().Be(Path.Combine(Path.GetDirectoryName(_workspace.Root)!, "elsewhere", "a.txt"));
+    }
+
+    [Fact(Skip = "Needs a Unix account that is not root.", SkipWhen = nameof(CannotDenyAccess))]
+    [UnsupportedOSPlatform("windows")]
+    public void TryLocate_FolderThatCannotBeSearched_DoesNotThrow()
+    {
+        // Arrange
+        var locked = Path.Combine(_workspace.Root, "locked");
+        Directory.CreateDirectory(Path.Combine(locked, "inner"));
+        File.SetUnixFileMode(locked, UnixFileMode.None);
+
+        try
+        {
+            // Act
+            var act = () => WorkspacePath.TryLocate(_workspace.Root, "locked/inner/a.txt", out _);
+
+            // Assert
+            act.Should().NotThrow();
+        }
+        finally
+        {
+            File.SetUnixFileMode(locked, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 
     [Fact]

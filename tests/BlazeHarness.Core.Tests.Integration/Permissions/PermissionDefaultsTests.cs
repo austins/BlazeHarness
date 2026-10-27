@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
+using BlazeHarness.Core.Tools;
 
 namespace BlazeHarness.Core.Tests.Integration.Permissions;
 
@@ -73,6 +74,25 @@ public sealed class PermissionDefaultsTests : IDisposable
         sensitive.IsProtected(Path.Combine(mine, "a.txt")).Should().BeTrue();
         sensitive.IsProtected(Path.Combine(_dir, ".ssh", "id_rsa")).Should().BeFalse();
         sensitive.IsProtected(Path.Combine(_dir, "app", "config.json")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Sensitive_AskedAgain_ReusesTheListUntilTheSavedFoldersChange()
+    {
+        // Arrange
+        var first = _sut.Sensitive("s1");
+
+        // Act
+        var again = _sut.Sensitive("s1");
+        var other = _sut.Sensitive("s2");
+        await _sut.SaveProtectedFoldersAsync([Path.Combine(_dir, "mine")], TestContext.Current.CancellationToken);
+        var changed = _sut.Sensitive("s1");
+
+        // Assert
+        again.Should().BeSameAs(first);
+        other.Should().NotBeSameAs(first);
+        changed.Should().NotBeSameAs(first);
+        changed.Folders.Should().Contain(WorkspacePath.CanonicalRoot(Path.Combine(_dir, "mine")));
     }
 
     [Fact]

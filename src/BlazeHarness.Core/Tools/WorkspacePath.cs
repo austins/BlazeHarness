@@ -147,20 +147,20 @@ public static class WorkspacePath
         {
             var next = Path.Combine(current, parts[i]);
             FileSystemInfo info = Directory.Exists(next) ? new DirectoryInfo(next) : new FileInfo(next);
-            if (info.LinkTarget is null)
-            {
-                current = next;
-                continue;
-            }
-
             FileSystemInfo? target;
             try
             {
+                if (info.LinkTarget is null)
+                {
+                    current = next;
+                    continue;
+                }
+
                 target = info.ResolveLinkTarget(returnFinalTarget: true);
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                // A loop of links, or a link that can't be read, is not a path to use.
+                // A loop of links, or a link or folder that can't be read, is not a path to use.
                 return null;
             }
 

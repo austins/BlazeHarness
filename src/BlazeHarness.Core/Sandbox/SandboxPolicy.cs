@@ -103,7 +103,7 @@ internal sealed class SandboxPolicy
         }
 
         var approved = (launch.ReadFolders ?? []).Where(Directory.Exists).Select(WorkspacePath.CanonicalRoot);
-        foreach (var path in approved.Concat(RuntimeFolders(platform, host)).Append(Path.GetDirectoryName(launch.Shell.Executable) ?? string.Empty).Concat(PathFolders(host)))
+        foreach (var path in approved.Concat(RuntimeFolders(platform, host)).Append(Path.GetDirectoryName(launch.Shell.Executable) ?? string.Empty).Concat(PathFolders(platform, host)))
         {
             if (path.Length > 0 && Directory.Exists(path) && !IsCovered(path, readOnly) && !IsCovered(path, readWrite))
             {
@@ -130,9 +130,13 @@ internal sealed class SandboxPolicy
         };
     }
 
-    private static IEnumerable<string> PathFolders(IReadOnlyDictionary<string, string> host)
+    private static IEnumerable<string> PathFolders(SandboxPlatform platform, IReadOnlyDictionary<string, string> host)
     {
-        return host.GetValueOrDefault("PATH", string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var home = host.GetValueOrDefault(platform == SandboxPlatform.Windows ? "USERPROFILE" : "HOME", string.Empty);
+        var entries = host.GetValueOrDefault("PATH", string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        // A relative entry means whatever folder the app runs in, and the home folder or a parent of it would expose files the protected list can't name.
+        return entries.Where(entry => Path.IsPathFullyQualified(entry) && (home.Length == 0 || !WorkspacePath.IsInside(WorkspacePath.CanonicalRoot(entry), WorkspacePath.CanonicalRoot(home))));
     }
 
     private static bool IsCovered(string path, List<string> allowed) => allowed.Exists(root => WorkspacePath.IsInside(root, path));

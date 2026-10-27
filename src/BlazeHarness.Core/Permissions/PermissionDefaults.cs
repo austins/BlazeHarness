@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Providers;
+using System.Collections.Concurrent;
 
 namespace BlazeHarness.Core.Permissions;
 
@@ -13,6 +14,7 @@ namespace BlazeHarness.Core.Permissions;
 public sealed class PermissionDefaults
 {
     private readonly JsonFileStore<AppConfig> _config;
+    private readonly ConcurrentDictionary<string, SensitiveCacheEntry> _sensitive = new(StringComparer.Ordinal);
     private readonly AppPaths _paths;
 
     /// <summary>
@@ -84,7 +86,17 @@ public sealed class PermissionDefaults
     /// <returns>The protected folders.</returns>
     public SensitivePaths Sensitive(string? currentSession = null)
     {
-        return SensitivePaths.Default(_paths, currentSession, ProtectedFolders);
+        // Building the list resolves every folder's links, and this is asked on each tool call, so keep it until the saved list changes.
+        var saved = _config.Current.ProtectedFolders;
+        var key = currentSession ?? string.Empty;
+        if (_sensitive.TryGetValue(key, out var cached) && ReferenceEquals(cached.Saved, saved))
+        {
+            return cached.Paths;
+        }
+
+        var built = SensitivePaths.Default(_paths, currentSession, saved ?? SensitivePaths.DefaultFolders(_paths));
+        _sensitive[key] = new SensitiveCacheEntry(saved, built);
+        return built;
     }
 
     /// <summary>
@@ -168,4 +180,6 @@ public sealed class PermissionDefaults
             },
             cancellationToken);
     }
+
+    private sealed record SensitiveCacheEntry(IReadOnlyList<string>? Saved, SensitivePaths Paths);
 }
