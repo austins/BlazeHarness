@@ -1,12 +1,14 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Skills;
+using Microsoft.Extensions.Time.Testing;
 
 namespace BlazeHarness.Core.Tests.Integration.Skills;
 
 public sealed class SkillCatalogTests : IDisposable
 {
     private readonly SkillFolders _folders = new();
+    private readonly FakeTimeProvider _time = new();
     private readonly AppPaths _paths;
     private readonly JsonFileStore<AppConfig> _config;
     private readonly SkillCatalog _sut;
@@ -15,7 +17,7 @@ public sealed class SkillCatalogTests : IDisposable
     {
         _paths = new AppPaths(Path.Combine(_folders.Root, "home"), Path.Combine(_folders.Root, "user"));
         _config = new JsonFileStore<AppConfig>(_paths.ConfigFile, new LoggerFake<SkillCatalogTests>(), watch: false);
-        _sut = new SkillCatalog(_paths, _config, new LoggerFake<SkillCatalog>(), watch: false);
+        _sut = new SkillCatalog(_paths, _config, new LoggerFake<SkillCatalog>(), watch: false, _time);
     }
 
     public void Dispose()
@@ -77,19 +79,53 @@ public sealed class SkillCatalogTests : IDisposable
     }
 
     [Fact]
-    public void Resolve_ProjectSkillAddedLater_IsFoundWithoutRefresh()
+    public void Resolve_ProjectSkillAddedLater_IsFoundAfterTheCacheExpires()
     {
         // Arrange
         var project = Path.Combine(_folders.Root, "project");
         Directory.CreateDirectory(project);
         _sut.Resolve(project).Skills.Should().BeEmpty();
         _folders.Add("project/.agents/skills", "late", "Added after the first look.");
+        _time.Advance(TimeSpan.FromSeconds(6));
 
         // Act
         var result = _sut.Resolve(project);
 
         // Assert
         result.Skills.Should().ContainSingle().Which.Name.Should().Be("late");
+    }
+
+    [Fact]
+    public void Resolve_ProjectAskedAgainSoon_ReusesTheEarlierScan()
+    {
+        // Arrange
+        var project = Path.Combine(_folders.Root, "project");
+        Directory.CreateDirectory(project);
+        _sut.Resolve(project);
+        _folders.Add("project/.agents/skills", "late", "Added after the first look.");
+        _time.Advance(TimeSpan.FromSeconds(1));
+
+        // Act
+        var result = _sut.Resolve(project);
+
+        // Assert
+        result.Skills.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Refresh_ProjectScanCached_IsDropped()
+    {
+        // Arrange
+        var project = Path.Combine(_folders.Root, "project");
+        Directory.CreateDirectory(project);
+        _sut.Resolve(project);
+        _folders.Add("project/.agents/skills", "late", "Added after the first look.");
+
+        // Act
+        _sut.Refresh();
+
+        // Assert
+        _sut.Resolve(project).Skills.Should().ContainSingle();
     }
 
     [Fact]

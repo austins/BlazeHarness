@@ -9,16 +9,22 @@ namespace BlazeHarness.Core.Skills;
 /// </summary>
 /// <remarks>
 /// The folders shared by all chats are scanned once and watched for edits. A chat folder's own
-/// <c>.agents/skills</c> is scanned each time it is asked for, because there can be many chat folders.
+/// <c>.agents/skills</c> is scanned when it is asked for and kept for a few seconds, because there can be many chat folders.
 /// </remarks>
 public sealed partial class SkillCatalog : IDisposable
 {
     private const int DebounceMilliseconds = 300;
 
+    // Short enough that an edit shows up on the next turn, long enough that one turn's several lookups scan once.
+    private const int ProjectCacheSeconds = 5;
+    private const int MaxCachedProjects = 64;
+
     private readonly (string Path, SkillSource Source)[] _globalFolders;
     private readonly JsonFileStore<AppConfig> _config;
     private readonly ILogger _logger;
     private readonly bool _watch;
+    private readonly TimeProvider _time;
+    private readonly Dictionary<string, (DateTimeOffset At, SkillScan Scan)> _projects = new(StringComparer.Ordinal);
     private readonly Lock _gate = new();
     private readonly Dictionary<string, FileSystemWatcher> _watchers = new(StringComparer.Ordinal);
     private readonly Timer _debounce;
@@ -32,7 +38,8 @@ public sealed partial class SkillCatalog : IDisposable
     /// <param name="config">The app settings, which hold the list of turned-off skills.</param>
     /// <param name="logger">The logger.</param>
     /// <param name="watch">Whether to watch the skill folders for edits.</param>
-    public SkillCatalog(AppPaths paths, JsonFileStore<AppConfig> config, ILogger<SkillCatalog> logger, bool watch = true)
+    /// <param name="time">The clock, used to expire the scans of chat folders; defaults to the system clock.</param>
+    public SkillCatalog(AppPaths paths, JsonFileStore<AppConfig> config, ILogger<SkillCatalog> logger, bool watch = true, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(config);
@@ -45,6 +52,7 @@ public sealed partial class SkillCatalog : IDisposable
         _config = config;
         _logger = logger;
         _watch = watch;
+        _time = time ?? TimeProvider.System;
         _debounce = new Timer(_ => Refresh());
         Refresh();
     }
@@ -80,6 +88,7 @@ public sealed partial class SkillCatalog : IDisposable
             }
 
             _global = [.. _globalFolders.Select(folder => SkillScanner.Scan(folder.Path, folder.Source))];
+            _projects.Clear();
             AttachWatchers();
         }
 
@@ -105,9 +114,7 @@ public sealed partial class SkillCatalog : IDisposable
             global = _global;
         }
 
-        var project = string.IsNullOrWhiteSpace(folderPath)
-            ? SkillScan.Empty
-            : SkillScanner.Scan(Path.Combine(folderPath, ".agents", "skills"), SkillSource.Project, folderPath);
+        var project = string.IsNullOrWhiteSpace(folderPath) ? SkillScan.Empty : ProjectScan(folderPath);
         return SkillResolution.Of([project, .. global]);
     }
 
@@ -165,6 +172,31 @@ public sealed partial class SkillCatalog : IDisposable
         }
 
         _debounce.Dispose();
+    }
+
+    private SkillScan ProjectScan(string folderPath)
+    {
+        var now = _time.GetUtcNow();
+        lock (_gate)
+        {
+            if (_projects.TryGetValue(folderPath, out var cached) && now - cached.At < TimeSpan.FromSeconds(ProjectCacheSeconds))
+            {
+                return cached.Scan;
+            }
+        }
+
+        var scan = SkillScanner.Scan(Path.Combine(folderPath, ".agents", "skills"), SkillSource.Project, folderPath);
+        lock (_gate)
+        {
+            if (_projects.Count >= MaxCachedProjects)
+            {
+                _projects.Clear();
+            }
+
+            _projects[folderPath] = (now, scan);
+        }
+
+        return scan;
     }
 
     private void AttachWatchers()
