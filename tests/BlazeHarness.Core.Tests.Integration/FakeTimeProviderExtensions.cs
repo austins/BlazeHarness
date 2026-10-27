@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace BlazeHarness.Core.Tests.Integration;
 
 /// <summary>Helpers for driving code under test that waits on a <see cref="FakeTimeProvider"/>.</summary>
-public static class FakeTimeProviderExtensions
+internal static class FakeTimeProviderExtensions
 {
     /// <summary>Advance the clock in steps until a task completes.</summary>
     /// <remarks>
