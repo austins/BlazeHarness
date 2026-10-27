@@ -96,6 +96,13 @@ public sealed partial class SessionStore : IDisposable
     public string ShellDirectory(string id) => Path.Combine(_paths.SessionDirectory(id), "shell");
 
     /// <summary>
+    /// Get the folder where a chat without a folder works: the model's working directory and the only place it may write there.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <returns>The folder path, which may not exist yet.</returns>
+    public string OutputsDirectory(string id) => Path.Combine(_paths.SessionDirectory(id), "outputs");
+
+    /// <summary>
     /// Get the folder a session keeps its attached files in.
     /// </summary>
     /// <param name="id">The session id.</param>

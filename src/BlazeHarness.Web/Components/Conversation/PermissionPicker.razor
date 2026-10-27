@@ -4,7 +4,7 @@
 
 <select class="select" @key="@("access" + _version)" aria-label="Access level" title="What the model's tools may touch" value="@Settings.Access" @onchange="OnAccessChanged">
     <option value="@AccessLevel.ReadOnly">Read only</option>
-    <option value="@AccessLevel.WriteInFolder">Write in folder</option>
+    <option value="@AccessLevel.WriteInFolder">@(HasFolder ? "Write in folder" : "Write in session files")</option>
     <option value="@AccessLevel.Unrestricted">Unrestricted</option>
 </select>
 <select class="select" @key="@("approvals" + _version)" aria-label="Approvals" title="When you are asked before a tool runs" value="@Settings.Approvals" @onchange="OnApprovalsChanged">
@@ -58,6 +58,12 @@
     /// </summary>
     [Parameter]
     public PermissionSettings Settings { get; set; } = PermissionSettings.Default;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the chat works in a folder the user opened, and not only in its own session files.
+    /// </summary>
+    [Parameter]
+    public bool HasFolder { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the callback for the user choosing settings, after confirming any that switch off a safeguard.

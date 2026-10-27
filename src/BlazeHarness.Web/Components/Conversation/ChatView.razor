@@ -24,7 +24,19 @@
 else
 {
     <section class="chat" data-pinned="true" @ref="_root" aria-label="Conversation">
-        @if (ContextPath is { } folderPath)
+        @if (ContextPath is null)
+        {
+            <div class="chat-context" title="Files this chat creates are kept with the chat">
+                <Icon Name="file" />
+                <span class="chat-context-name">Session files</span>
+                <PermissionPicker Settings="CurrentPermissions" HasFolder="false" OnChange="ChangePermissionsAsync" />
+                @if (_info is not null)
+                {
+                    <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
+                }
+            </div>
+        }
+        else if (ContextPath is { } folderPath)
         {
             <div class="chat-context" title="@folderPath">
                 <Icon Name="folder" />
@@ -127,9 +139,11 @@ else
     private ProjectContext? _newProject;
     private string? _newProjectFolder;
 
-    private PermissionSettings _newPermissions = PermissionSettings.Default;
+    private PermissionSettings? _newPermissions;
 
-    private PermissionSettings CurrentPermissions => _openId is null ? _newPermissions : _session?.Permissions.Settings ?? _info?.Permissions ?? PermissionSettings.Default;
+    private PermissionSettings CurrentPermissions => _openId is null
+        ? _newPermissions ?? PermissionSettings.DefaultFor(ContextPath is not null)
+        : _session?.Permissions.Settings ?? _info?.Permissions ?? PermissionSettings.Default;
 
     private ProjectContext? Project => _openId is null ? _newProject : _session?.Project;
 
@@ -271,10 +285,10 @@ else
             }
 
             id = created.Id;
-            if (_newPermissions != PermissionSettings.Default)
+            if (_newPermissions is { } chosen)
             {
-                await Sessions.SetPermissionsAsync(id, _newPermissions);
-                _newPermissions = PermissionSettings.Default;
+                await Sessions.SetPermissionsAsync(id, chosen);
+                _newPermissions = null;
             }
         }
 

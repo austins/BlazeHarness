@@ -553,7 +553,7 @@ public sealed class SessionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SendAsync_SessionWithoutAFolder_OffersOnlyTheAttachmentTool()
+    public async Task SendAsync_SessionWithoutAFolder_WorksInItsOutputsFolder()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
@@ -565,8 +565,29 @@ public sealed class SessionServiceTests : IDisposable
         await sut.SendAsync(info.Id, "hi", Target("p1", "fast"));
 
         // Assert
-        client.Options[0]!.Tools.Should().ContainSingle().Which.Name.Should().Be("read_attachment");
-        client.Requests[0][0].Role.Should().Be(ChatRole.User);
+        client.Options[0]!.Tools.Should().Contain(t => t.Name == "write_file").And.Contain(t => t.Name == "read_attachment");
+        var outputs = sut.Store.OutputsDirectory(info.Id);
+        Directory.Exists(outputs).Should().BeTrue();
+        client.Requests[0][0].Role.Should().Be(ChatRole.System);
+        client.Requests[0][0].Text.Should().Contain(Path.Combine("sessions", info.Id, "outputs"));
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithoutAFolder_StartsReadOnly()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([]);
+        var sut = Create(client);
+
+        // Act
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        var session = await sut.OpenAsync(info.Id);
+
+        // Assert
+        info.Permissions.Access.Should().Be(AccessLevel.ReadOnly);
+        session!.Permissions.Settings.Access.Should().Be(AccessLevel.ReadOnly);
+        sut.Store.Find(info.Id)!.Permissions.Approvals.Should().Be(ApprovalMode.AskFirst);
     }
 
     [Fact]
@@ -584,7 +605,7 @@ public sealed class SessionServiceTests : IDisposable
         await sut.SendAsync(info.Id, "summarize", [file!], Target("p1", "fast"));
 
         // Assert
-        client.Requests[0][0].Text.Should().Contain("summarize").And.Contain("some notes");
+        client.Requests[0].Should().Contain(m => m.Role == ChatRole.User && m.Text.Contains("summarize") && m.Text.Contains("some notes"));
         sut.FindAttachment(info.Id, file!.Id).Should().Match<AttachmentFile>(f => f.Name == "notes.txt");
         sut.Store.Find(info.Id)!.Title.Should().Be("summarize");
     }

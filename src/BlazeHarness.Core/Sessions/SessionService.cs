@@ -84,7 +84,13 @@ public sealed partial class SessionService : IDisposable
     public async Task<SessionInfo> CreateAsync(string? folderPath = null, CancellationToken cancellationToken = default)
     {
         var info = await _store.CreateAsync(folderPath, cancellationToken).ConfigureAwait(false);
+        if (folderPath is null)
+        {
+            info = await _store.UpdateAsync(info.Id, s => s with { Access = PermissionSettings.DefaultFor(hasFolder: false).Access }, cancellationToken: cancellationToken).ConfigureAwait(false) ?? info;
+        }
+
         var session = NewSession(info.Id);
+        session.Permissions.Settings = info.Permissions;
         _live[info.Id] = session;
         await ApplyFolderAsync(info.Id, session).ConfigureAwait(false);
         return info;
@@ -383,17 +389,22 @@ public sealed partial class SessionService : IDisposable
 
     private void ApplyTools(string id, ChatSession session, string? folderPath)
     {
-        if (folderPath is null || !Directory.Exists(folderPath))
+        if (folderPath is not null && !Directory.Exists(folderPath))
         {
-            session.Tools = session.Attachments is { } files ? BuiltInTools.ForAttachments(files) : null;
-            session.BasePrompt = null;
+            UseAttachmentsOnly(session);
             return;
         }
 
+        var root = folderPath ?? _store.OutputsDirectory(id);
         try
         {
+            if (folderPath is null)
+            {
+                Directory.CreateDirectory(root);
+            }
+
             var shell = ShellInfo.DetectCurrent();
-            var tools = BuiltInTools.Create(folderPath, shell, session.Attachments, _sandbox, _store.ShellDirectory(id));
+            var tools = BuiltInTools.Create(root, shell, session.Attachments, _sandbox, _store.ShellDirectory(id));
             if (session.Tools?.Context.Root != tools.Context.Root)
             {
                 session.Tools = tools;
@@ -402,10 +413,15 @@ public sealed partial class SessionService : IDisposable
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            LogToolsUnavailable(ex, folderPath);
-            session.Tools = session.Attachments is { } files ? BuiltInTools.ForAttachments(files) : null;
-            session.BasePrompt = null;
+            LogToolsUnavailable(ex, root);
+            UseAttachmentsOnly(session);
         }
+    }
+
+    private static void UseAttachmentsOnly(ChatSession session)
+    {
+        session.Tools = session.Attachments is { } files ? BuiltInTools.ForAttachments(files) : null;
+        session.BasePrompt = null;
     }
 
     private void StartTitle(string id, ChatSession session, ChatTarget target)
