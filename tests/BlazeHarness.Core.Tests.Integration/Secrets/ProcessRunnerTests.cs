@@ -59,9 +59,11 @@ public sealed class ProcessRunnerTests : IDisposable
         // Arrange
         var pidFile = Path.Combine(_temp.Root, "pid");
         var run = Task.Run(async () => await ProcessRunner.RunAsync("sh", ["-c", "echo $$ > \"$1.tmp\" && mv \"$1.tmp\" \"$1\" && exec sleep 300", "sh", pidFile], null, _cts.Token), TestContext.Current.CancellationToken);
+        using var pidWait = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        pidWait.CancelAfter(TestTimeouts.Default);
         while (!File.Exists(pidFile))
         {
-            await Task.Delay(10, TestContext.Current.CancellationToken);
+            await Task.Delay(10, pidWait.Token);
         }
 
         var pid = int.Parse((await File.ReadAllTextAsync(pidFile, TestContext.Current.CancellationToken)).Trim(), System.Globalization.CultureInfo.InvariantCulture);
