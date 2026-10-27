@@ -25,11 +25,21 @@ public static class HostLauncher
     /// </summary>
     /// <param name="args">The command line arguments; <c>--port N</c> wins over the environment variable.</param>
     /// <returns>The requested port, or 0 to let the OS pick a free one when none or an invalid one was given.</returns>
-    public static int ConfiguredPort(string[] args)
+    public static int ConfiguredPort(string[] args) => ConfiguredPort(args, Environment.GetEnvironmentVariable);
+
+    /// <summary>
+    /// Get the port the user asked for, reading the environment through the given function.
+    /// </summary>
+    /// <param name="args">The command line arguments; <c>--port N</c> wins over the environment variable.</param>
+    /// <param name="getEnvironmentVariable">Returns the value of an environment variable, or null when it is not set.</param>
+    /// <returns>The requested port, or 0 to let the OS pick a free one when none or an invalid one was given.</returns>
+    public static int ConfiguredPort(string[] args, Func<string, string?> getEnvironmentVariable)
     {
-        var fromEnvironment = Environment.GetEnvironmentVariable(PortEnvironmentVariable);
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(getEnvironmentVariable);
+
         var index = Array.IndexOf(args, "--port");
-        var text = index >= 0 && index + 1 < args.Length ? args[index + 1] : fromEnvironment;
+        var text = index >= 0 && index + 1 < args.Length ? args[index + 1] : getEnvironmentVariable(PortEnvironmentVariable);
         return int.TryParse(text, out var port) && port is >= 0 and <= 65535 ? port : 0;
     }
 
@@ -38,9 +48,20 @@ public static class HostLauncher
     /// </summary>
     /// <param name="args">The command line arguments; <c>--no-browser</c> turns it off.</param>
     /// <returns>False when <c>--no-browser</c> or <see cref="NoBrowserEnvironmentVariable"/> is set.</returns>
-    public static bool ShouldOpenBrowser(string[] args)
+    public static bool ShouldOpenBrowser(string[] args) => ShouldOpenBrowser(args, Environment.GetEnvironmentVariable);
+
+    /// <summary>
+    /// Decide whether to open the browser after startup, reading the environment through the given function.
+    /// </summary>
+    /// <param name="args">The command line arguments; <c>--no-browser</c> turns it off.</param>
+    /// <param name="getEnvironmentVariable">Returns the value of an environment variable, or null when it is not set.</param>
+    /// <returns>False when <c>--no-browser</c> or <see cref="NoBrowserEnvironmentVariable"/> is set.</returns>
+    public static bool ShouldOpenBrowser(string[] args, Func<string, string?> getEnvironmentVariable)
     {
-        return !args.Contains("--no-browser") && string.IsNullOrEmpty(Environment.GetEnvironmentVariable(NoBrowserEnvironmentVariable));
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(getEnvironmentVariable);
+
+        return !args.Contains("--no-browser") && string.IsNullOrEmpty(getEnvironmentVariable(NoBrowserEnvironmentVariable));
     }
 
     /// <summary>

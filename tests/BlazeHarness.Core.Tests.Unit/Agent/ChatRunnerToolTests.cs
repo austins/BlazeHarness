@@ -278,6 +278,61 @@ public sealed class ChatRunnerToolTests
     }
 
     [Fact]
+    public async Task RunAsync_AllowForSessionWithoutAGrantKey_IsNotRemembered()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false, pathArguments: ["path"]);
+        var approver = Approver(ApprovalChoice.AllowForSession);
+        var permissions = new PermissionEngine { Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Ask, "*")] };
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write", """{"path":"a.txt"}""")])
+            .Enqueue([ScriptedChatClient.Call("c2", "write", """{"path":"a.txt"}""")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(write), approver: approver, permissions: permissions);
+
+        // Assert
+        write.Started.Should().Be(2);
+        await approver.Received(2).RequestAsync(Arg.Is<ApprovalRequest>(r => !r.CanRemember), Arg.Any<CancellationToken>());
+        events.OfType<ToolAwaitingApproval>().Should().OnlyContain(e => !e.CanRemember);
+    }
+
+    [Fact]
+    public async Task RunAsync_DeniedOnce_StillAsksAgainForALaterCall()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        var approver = Approver(ApprovalChoice.Deny);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
+            .Enqueue([ScriptedChatClient.Call("c2", "write")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(write), approver: approver);
+
+        // Assert
+        write.Started.Should().Be(0);
+        await approver.Received(2).RequestAsync(Arg.Any<ApprovalRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunAsync_AllowedForTheSession_IsNotSharedWithAnotherEngine()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        var approver = Approver(ApprovalChoice.AllowForSession);
+        using var first = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")]).Enqueue([ScriptedChatClient.Text("fin")]);
+        using var second = new ScriptedChatClient([ScriptedChatClient.Call("c2", "write")]).Enqueue([ScriptedChatClient.Text("fin")]);
+
+        // Act
+        await ChatRunnerCollector.CollectAsync(first, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(write), approver: approver, permissions: new PermissionEngine());
+        await ChatRunnerCollector.CollectAsync(second, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(write), approver: approver, permissions: new PermissionEngine());
+
+        // Assert
+        await approver.Received(2).RequestAsync(Arg.Any<ApprovalRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task RunAsync_AllowedOnce_AsksAgainNextTime()
     {
         // Arrange

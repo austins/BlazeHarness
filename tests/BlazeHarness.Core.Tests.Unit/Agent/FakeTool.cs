@@ -9,8 +9,9 @@ internal sealed class FakeTool : ITool
     private readonly Func<ToolArguments, CancellationToken, Task<ToolResult>> _run;
     private int _running;
 
-    public FakeTool(string name, bool isReadOnly, Func<ToolArguments, CancellationToken, Task<ToolResult>>? run = null)
+    public FakeTool(string name, bool isReadOnly, Func<ToolArguments, CancellationToken, Task<ToolResult>>? run = null, IReadOnlyList<string>? pathArguments = null)
     {
+        PathArguments = pathArguments ?? [];
         Name = name;
         IsReadOnly = isReadOnly;
         _run = run ?? ((_, _) => Task.FromResult(ToolResult.Ok($"{name} done")));
@@ -23,6 +24,8 @@ internal sealed class FakeTool : ITool
     public string InputSchema => """{"type":"object","properties":{}}""";
 
     public bool IsReadOnly { get; }
+
+    public IReadOnlyList<string> PathArguments { get; }
 
     public TimeSpan Timeout => TestTimeouts.Default;
 

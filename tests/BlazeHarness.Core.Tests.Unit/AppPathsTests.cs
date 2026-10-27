@@ -23,8 +23,10 @@ public sealed class AppPathsTests
     }
 
     [Theory]
+    [InlineData(".")]
     [InlineData("..")]
     [InlineData("a/b")]
+    [InlineData("a\0b")]
     [InlineData("")]
     public void SessionDirectory_InvalidId_Throws(string id)
     {
