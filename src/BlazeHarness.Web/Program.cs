@@ -20,9 +20,9 @@ const int MaxHubMessageBytes = 4 * 1024 * 1024;
 
 var builder = WebApplication.CreateBuilder(args);
 
-HostLauncher.ConfigureKestrel(builder, HostLauncher.ConfiguredPort(args));
+HostLauncher.ConfigureKestrel(builder, HostLauncher.ConfiguredPort(args, builder.Configuration));
 
-var paths = AppPaths.FromEnvironment();
+var paths = AppPaths.FromConfiguration(builder.Configuration);
 builder.Services.AddSingleton<ILoggerProvider>(_ => new FileLoggerProvider(paths.LogsDirectory, TimeProvider.System));
 builder.Services.AddSingleton(paths);
 builder.Services.AddSingleton(TimeProvider.System);
@@ -84,3 +84,10 @@ app.MapRazorComponents<App>()
 _ = Task.Run(() => app.Services.GetRequiredService<IShellSandbox>().Status);
 
 await HostLauncher.RunAsync(app, args);
+
+/// <summary>
+/// The entry point, exposed so integration and end-to-end tests can host the app.
+/// </summary>
+#pragma warning disable S1118 // The compiler-generated entry point class cannot be made static.
+public partial class Program;
+#pragma warning restore S1118

@@ -11,35 +11,28 @@ namespace BlazeHarness.Web.Hosting;
 public static class HostLauncher
 {
     /// <summary>
-    /// The environment variable that pins the listening port.
+    /// The configuration key (and environment variable) that pins the listening port.
     /// </summary>
-    public const string PortEnvironmentVariable = "BLAZEHARNESS_PORT";
+    public const string PortSettingKey = "BLAZEHARNESS_PORT";
 
     /// <summary>
-    /// The environment variable that, when set to any value, stops the browser from opening automatically.
+    /// The configuration key (and environment variable) that, when set to any value, stops the browser from opening automatically.
     /// </summary>
-    public const string NoBrowserEnvironmentVariable = "BLAZEHARNESS_NO_BROWSER";
+    public const string NoBrowserSettingKey = "BLAZEHARNESS_NO_BROWSER";
 
     /// <summary>
     /// Get the port the user asked for.
     /// </summary>
-    /// <param name="args">The command line arguments; <c>--port N</c> wins over the environment variable.</param>
+    /// <param name="args">The command line arguments; <c>--port N</c> wins over the setting.</param>
+    /// <param name="configuration">The app configuration, which carries <see cref="PortSettingKey"/> (from the environment by default).</param>
     /// <returns>The requested port, or 0 to let the OS pick a free one when none or an invalid one was given.</returns>
-    public static int ConfiguredPort(string[] args) => ConfiguredPort(args, Environment.GetEnvironmentVariable);
-
-    /// <summary>
-    /// Get the port the user asked for, reading the environment through the given function.
-    /// </summary>
-    /// <param name="args">The command line arguments; <c>--port N</c> wins over the environment variable.</param>
-    /// <param name="getEnvironmentVariable">Returns the value of an environment variable, or null when it is not set.</param>
-    /// <returns>The requested port, or 0 to let the OS pick a free one when none or an invalid one was given.</returns>
-    public static int ConfiguredPort(string[] args, Func<string, string?> getEnvironmentVariable)
+    public static int ConfiguredPort(string[] args, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(args);
-        ArgumentNullException.ThrowIfNull(getEnvironmentVariable);
+        ArgumentNullException.ThrowIfNull(configuration);
 
         var index = Array.IndexOf(args, "--port");
-        var text = index >= 0 && index + 1 < args.Length ? args[index + 1] : getEnvironmentVariable(PortEnvironmentVariable);
+        var text = index >= 0 && index + 1 < args.Length ? args[index + 1] : configuration[PortSettingKey];
         return int.TryParse(text, out var port) && port is >= 0 and <= 65535 ? port : 0;
     }
 
@@ -47,21 +40,14 @@ public static class HostLauncher
     /// Decide whether to open the browser after startup.
     /// </summary>
     /// <param name="args">The command line arguments; <c>--no-browser</c> turns it off.</param>
-    /// <returns>False when <c>--no-browser</c> or <see cref="NoBrowserEnvironmentVariable"/> is set.</returns>
-    public static bool ShouldOpenBrowser(string[] args) => ShouldOpenBrowser(args, Environment.GetEnvironmentVariable);
-
-    /// <summary>
-    /// Decide whether to open the browser after startup, reading the environment through the given function.
-    /// </summary>
-    /// <param name="args">The command line arguments; <c>--no-browser</c> turns it off.</param>
-    /// <param name="getEnvironmentVariable">Returns the value of an environment variable, or null when it is not set.</param>
-    /// <returns>False when <c>--no-browser</c> or <see cref="NoBrowserEnvironmentVariable"/> is set.</returns>
-    public static bool ShouldOpenBrowser(string[] args, Func<string, string?> getEnvironmentVariable)
+    /// <param name="configuration">The app configuration, which carries <see cref="NoBrowserSettingKey"/> (from the environment by default).</param>
+    /// <returns>False when <c>--no-browser</c> or <see cref="NoBrowserSettingKey"/> is set.</returns>
+    public static bool ShouldOpenBrowser(string[] args, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(args);
-        ArgumentNullException.ThrowIfNull(getEnvironmentVariable);
+        ArgumentNullException.ThrowIfNull(configuration);
 
-        return !args.Contains("--no-browser") && string.IsNullOrEmpty(getEnvironmentVariable(NoBrowserEnvironmentVariable));
+        return !args.Contains("--no-browser") && string.IsNullOrEmpty(configuration[NoBrowserSettingKey]);
     }
 
     /// <summary>
@@ -82,7 +68,7 @@ public static class HostLauncher
         Console.WriteLine($"BlazeHarness is running at http://127.0.0.1:{port}");
         Console.WriteLine($"Open this link once to sign in: {launchUrl}");
 
-        if (ShouldOpenBrowser(args))
+        if (ShouldOpenBrowser(args, app.Configuration))
         {
             TryOpenBrowser(launchUrl);
         }

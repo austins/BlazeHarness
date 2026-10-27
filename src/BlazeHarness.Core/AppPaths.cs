@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+
 namespace BlazeHarness.Core;
 
 /// <summary>
@@ -6,9 +8,9 @@ namespace BlazeHarness.Core;
 public sealed class AppPaths
 {
     /// <summary>
-    /// The environment variable that overrides the data folder.
+    /// The configuration key that overrides the data folder. The default host configuration also reads it from the environment variable of the same name.
     /// </summary>
-    public const string HomeEnvironmentVariable = "BLAZEHARNESS_HOME";
+    public const string HomeSettingKey = "BLAZEHARNESS_HOME";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AppPaths"/> class.
@@ -77,13 +79,16 @@ public sealed class AppPaths
     public string LogsDirectory => Path.Combine(Home, "logs");
 
     /// <summary>
-    /// Resolve the paths for the current user, honoring the <see cref="HomeEnvironmentVariable"/> override.
+    /// Resolve the paths for the current user, honoring the <see cref="HomeSettingKey"/> override.
     /// </summary>
+    /// <param name="configuration">The app configuration, so each host instance can have its own data folder.</param>
     /// <returns>Paths rooted at <c>~/.blazeharness</c>, or at the overridden folder.</returns>
-    public static AppPaths FromEnvironment()
+    public static AppPaths FromConfiguration(IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+
         var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var overridden = Environment.GetEnvironmentVariable(HomeEnvironmentVariable);
+        var overridden = configuration[HomeSettingKey];
         var home = string.IsNullOrWhiteSpace(overridden) ? Path.Combine(userHome, ".blazeharness") : overridden;
         return new AppPaths(home, userHome);
     }

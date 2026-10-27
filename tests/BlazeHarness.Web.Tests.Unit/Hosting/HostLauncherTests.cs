@@ -1,4 +1,5 @@
 using BlazeHarness.Web.Hosting;
+using Microsoft.Extensions.Configuration;
 
 namespace BlazeHarness.Web.Tests.Unit.Hosting;
 
@@ -12,7 +13,7 @@ public sealed class HostLauncherTests
     public void ConfiguredPort_FromArgs_ParsesOrFallsBackToFreePort(string flag, string value, int expected)
     {
         // Act
-        var port = HostLauncher.ConfiguredPort([flag, value], _ => null);
+        var port = HostLauncher.ConfiguredPort([flag, value], Setting("x", null));
 
         // Assert
         port.Should().Be(expected);
@@ -22,7 +23,7 @@ public sealed class HostLauncherTests
     public void ConfiguredPort_OnlyEnvironment_UsesIt()
     {
         // Act
-        var port = HostLauncher.ConfiguredPort([], name => name == HostLauncher.PortEnvironmentVariable ? "9001" : null);
+        var port = HostLauncher.ConfiguredPort([], Setting(HostLauncher.PortSettingKey, "9001"));
 
         // Assert
         port.Should().Be(9001);
@@ -32,7 +33,7 @@ public sealed class HostLauncherTests
     public void ConfiguredPort_ArgAndEnvironment_ArgWins()
     {
         // Act
-        var port = HostLauncher.ConfiguredPort(["--port", "8123"], _ => "9001");
+        var port = HostLauncher.ConfiguredPort(["--port", "8123"], Setting(HostLauncher.PortSettingKey, "9001"));
 
         // Assert
         port.Should().Be(8123);
@@ -45,7 +46,7 @@ public sealed class HostLauncherTests
     public void ConfiguredPort_InvalidEnvironment_FallsBackToFreePort(string value)
     {
         // Act
-        var port = HostLauncher.ConfiguredPort([], _ => value);
+        var port = HostLauncher.ConfiguredPort([], Setting(HostLauncher.PortSettingKey, value));
 
         // Assert
         port.Should().Be(0);
@@ -55,7 +56,7 @@ public sealed class HostLauncherTests
     public void ConfiguredPort_PortFlagWithoutValue_FallsBackToTheEnvironment()
     {
         // Act
-        var port = HostLauncher.ConfiguredPort(["--port"], _ => "9001");
+        var port = HostLauncher.ConfiguredPort(["--port"], Setting(HostLauncher.PortSettingKey, "9001"));
 
         // Assert
         port.Should().Be(9001);
@@ -65,7 +66,7 @@ public sealed class HostLauncherTests
     public void ShouldOpenBrowser_Nothing_IsTrue()
     {
         // Act
-        var open = HostLauncher.ShouldOpenBrowser([], _ => null);
+        var open = HostLauncher.ShouldOpenBrowser([], Setting("x", null));
 
         // Assert
         open.Should().BeTrue();
@@ -75,7 +76,7 @@ public sealed class HostLauncherTests
     public void ShouldOpenBrowser_NoBrowserFlag_IsFalse()
     {
         // Act
-        var open = HostLauncher.ShouldOpenBrowser(["--no-browser"], _ => null);
+        var open = HostLauncher.ShouldOpenBrowser(["--no-browser"], Setting("x", null));
 
         // Assert
         open.Should().BeFalse();
@@ -85,7 +86,7 @@ public sealed class HostLauncherTests
     public void ShouldOpenBrowser_EnvironmentSet_IsFalse()
     {
         // Act
-        var open = HostLauncher.ShouldOpenBrowser([], name => name == HostLauncher.NoBrowserEnvironmentVariable ? "1" : null);
+        var open = HostLauncher.ShouldOpenBrowser([], Setting(HostLauncher.NoBrowserSettingKey, "1"));
 
         // Assert
         open.Should().BeFalse();
@@ -95,9 +96,16 @@ public sealed class HostLauncherTests
     public void ShouldOpenBrowser_EnvironmentEmpty_IsTrue()
     {
         // Act
-        var open = HostLauncher.ShouldOpenBrowser([], _ => string.Empty);
+        var open = HostLauncher.ShouldOpenBrowser([], Setting(HostLauncher.NoBrowserSettingKey, string.Empty));
 
         // Assert
         open.Should().BeTrue();
+    }
+
+    private static IConfiguration Setting(string key, string? value)
+    {
+        var configuration = Substitute.For<IConfiguration>();
+        configuration[key].Returns(value);
+        return configuration;
     }
 }

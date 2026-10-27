@@ -12,6 +12,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.11.0" />
     <PackageReference Include="Microsoft.Mxc.Sdk" Version="1.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.14" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.14" />
     <PackageReference Include="ModelContextProtocol.Core" Version="2.3.0" />

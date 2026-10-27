@@ -7,7 +7,7 @@
 - One test class: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit -- --filter-class "*ResolvedRequestParamsTests"`.
 - Run the app: `dotnet run --project src/BlazeHarness.Web`. It binds a free port on `127.0.0.1`, prints a one-time launch URL
   and opens the browser (`--no-browser` or `BLAZEHARNESS_NO_BROWSER=1` to skip, `--port` or `BLAZEHARNESS_PORT` to pin a port).
-- `BLAZEHARNESS_HOME` overrides `~/.blazeharness`; point it at a temp folder when experimenting.
+- `BLAZEHARNESS_HOME` overrides `~/.blazeharness`; point it at a temp folder when experimenting. It, `BLAZEHARNESS_PORT` and `BLAZEHARNESS_NO_BROWSER` are read as configuration keys (the default host configuration feeds them from the environment), so a test host can set them per instance without touching the process environment.
 - After changing packages, commit every updated `packages.lock.json`.
 
 ## Architecture

@@ -5,7 +5,7 @@
 
 <button type="button" class="skip-link" onclick="bhUi.skipToChat()">Skip to chat</button>
 
-<div class="app">
+<div class="app" data-circuit="@(_connected ? "ready" : "pending")">
     <Sidebar Collapsed="_collapsed" />
     @if (!_collapsed)
     {
@@ -33,6 +33,8 @@
 
 @code {
     private bool _collapsed;
+    // Lets end-to-end tests wait until the circuit is live, since prerendered buttons do nothing yet.
+    private bool _connected;
 
     public void Dispose()
     {
@@ -46,9 +48,10 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && await IsNarrowAsync())
+        if (firstRender)
         {
-            _collapsed = true;
+            _connected = true;
+            _collapsed = await IsNarrowAsync();
             StateHasChanged();
         }
     }

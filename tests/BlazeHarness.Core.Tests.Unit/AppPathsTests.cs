@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+
 namespace BlazeHarness.Core.Tests.Unit;
 
 public sealed class AppPathsTests
@@ -45,5 +47,36 @@ public sealed class AppPathsTests
 
         // Assert
         dir.Should().Be(Path.Combine(_sut.SessionsDirectory, "abc123"));
+    }
+
+    [Fact]
+    public void FromConfiguration_HomeSet_UsesIt()
+    {
+        // Arrange
+        var home = Path.Combine(Path.GetTempPath(), "bh-configured");
+        var configuration = Substitute.For<IConfiguration>();
+        configuration[AppPaths.HomeSettingKey].Returns(home);
+
+        // Act
+        var paths = AppPaths.FromConfiguration(configuration);
+
+        // Assert
+        paths.Home.Should().Be(home);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("  ")]
+    public void FromConfiguration_HomeMissingOrBlank_UsesDotFolderInUserHome(string? value)
+    {
+        // Arrange
+        var configuration = Substitute.For<IConfiguration>();
+        configuration[AppPaths.HomeSettingKey].Returns(value);
+
+        // Act
+        var paths = AppPaths.FromConfiguration(configuration);
+
+        // Assert
+        paths.Home.Should().Be(Path.Combine(paths.UserHome, ".blazeharness"));
     }
 }
