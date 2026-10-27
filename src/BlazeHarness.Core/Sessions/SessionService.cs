@@ -112,6 +112,70 @@ public sealed partial class SessionService : IDisposable
     }
 
     /// <summary>
+    /// Export a session as a file.
+    /// </summary>
+    /// <param name="id">The session id.</param>
+    /// <param name="format">The file format.</param>
+    /// <param name="cancellationToken">A token to cancel the read.</param>
+    /// <returns>The file, or null when there is no session with that id.</returns>
+    public async Task<ExportedFile?> ExportAsync(string id, ExportFormat format, CancellationToken cancellationToken = default)
+    {
+        if (_store.Find(id) is not { } info)
+        {
+            return null;
+        }
+
+        var events = await _store.GetLog(id).ReadAsync(cancellationToken).ConfigureAwait(false);
+        return SessionExport.Export(info, events, format, _time.GetUtcNow());
+    }
+
+    /// <summary>
+    /// Create a session from an exported chat file.
+    /// </summary>
+    /// <remarks>
+    /// The new session has no folder and starts with the default permissions for a chat without a folder,
+    /// whatever the file says, so a file can't grant access. The session can be moved to a folder afterwards.
+    /// </remarks>
+    /// <param name="json">The text of the exported file.</param>
+    /// <param name="cancellationToken">A token to cancel the write.</param>
+    /// <returns>The new session's metadata.</returns>
+    /// <exception cref="FormatException">The file is not a chat export this version can read; the message can be shown to the user.</exception>
+    public async Task<SessionInfo> ImportAsync(string json, CancellationToken cancellationToken = default)
+    {
+        if (!SessionImport.TryParse(json, out var imported, out var error) || imported is null)
+        {
+            throw new FormatException(error);
+        }
+
+        var created = await _store.CreateAsync(null, cancellationToken).ConfigureAwait(false);
+        var start = StartingPermissions(false);
+        try
+        {
+            await _store.GetLog(created.Id).AppendAsync(imported.Events, cancellationToken).ConfigureAwait(false);
+            return await _store.UpdateAsync(
+                created.Id,
+                s => StoreSettings(
+                    s with
+                    {
+                        Title = imported.Info.Title,
+                        TitleSource = imported.Info.TitleSource,
+                        CreatedAt = imported.Info.CreatedAt,
+                        ProviderId = imported.Info.ProviderId,
+                        ModelId = imported.Info.ModelId,
+                        Level = imported.Info.Level,
+                    },
+                    start),
+                touch: true,
+                cancellationToken: cancellationToken).ConfigureAwait(false) ?? created;
+        }
+        catch
+        {
+            await _store.DeleteAsync(created.Id, CancellationToken.None).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Open a session, restoring its messages from the log the first time.
     /// </summary>
     /// <param name="id">The session id.</param>

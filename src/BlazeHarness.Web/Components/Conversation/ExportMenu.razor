@@ -1,0 +1,19 @@
+@using BlazeHarness.Core.Sessions
+@using BlazeHarness.Web.Hosting
+
+<details class="chat-context-files export-menu">
+    <summary title="Save this chat as a file"><Icon Name="arrow-up" /> Export</summary>
+    <ul>
+        <li><a href="@ExportEndpoints.AddressOf(SessionId, ExportFormat.Markdown)" download>Markdown, to read</a></li>
+        <li><a href="@ExportEndpoints.AddressOf(SessionId, ExportFormat.Json)" download>JSON, to import again</a></li>
+    </ul>
+    <p class="hint">The file holds everything in the chat, including what tools printed, such as the contents of files they read. Check it for secrets before you share it. Attached files are not included.</p>
+</details>
+
+@code {
+    /// <summary>
+    /// Gets or sets the id of the chat to export.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string SessionId { get; set; } = string.Empty;
+}

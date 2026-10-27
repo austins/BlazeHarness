@@ -72,6 +72,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapAttachments();
+app.MapExport();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

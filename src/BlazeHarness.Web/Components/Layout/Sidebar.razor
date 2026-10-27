@@ -24,7 +24,13 @@
     }
 
     <section class="sidebar-section" aria-labelledby="chats-heading">
-        <div class="sidebar-heading"><Icon Name="chat" /><span id="chats-heading">Chats</span></div>
+        <div class="sidebar-heading">
+            <Icon Name="chat" /><span id="chats-heading">Chats</span>
+            <label class="btn btn-ghost btn-sm btn-icon sidebar-heading-action import-chat" title="Import a chat from a JSON file">
+                <InputFile OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="Import a chat from a JSON file" />
+                <Icon Name="arrow-down" />
+            </label>
+        </div>
         @if (chats.Count == 0)
         {
             <p class="sidebar-empty">@(filtering ? "No chats match." : "No chats yet.")</p>
@@ -146,6 +152,8 @@
     private FolderInfo? _locating;
     private FolderInfo? _removing;
 
+    private const long MaxImportBytes = 8 * 1024 * 1024;
+
     private string Filter { get; set; } = string.Empty;
 
     [Parameter]
@@ -156,6 +164,31 @@
         Sessions.Store.Changed += OnSessionsChanged;
         Sessions.ActivityChanged += OnSessionsChanged;
         Folders.Changed += OnSessionsChanged;
+    }
+
+    private async Task ImportAsync(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file.Size > MaxImportBytes)
+        {
+            Toasts.Show("That file is too large to be a chat export.", ToastKind.Error);
+            return;
+        }
+
+        try
+        {
+            using var reader = new StreamReader(file.OpenReadStream(MaxImportBytes));
+            var info = await Sessions.ImportAsync(await reader.ReadToEndAsync());
+            Navigation.NavigateTo($"chat/{info.Id}");
+        }
+        catch (FormatException ex)
+        {
+            Toasts.Show(ex.Message, ToastKind.Error);
+        }
+        catch (IOException)
+        {
+            Toasts.Show("The file could not be read.", ToastKind.Error);
+        }
     }
 
     public void Dispose()
