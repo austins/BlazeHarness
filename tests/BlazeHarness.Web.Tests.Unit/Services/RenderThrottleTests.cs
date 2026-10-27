@@ -1,15 +1,20 @@
 using BlazeHarness.Web.Services;
+using Microsoft.Extensions.Time.Testing;
 
 namespace BlazeHarness.Web.Tests.Unit.Services;
 
 public sealed class RenderThrottleTests
 {
+    private static readonly TimeSpan Interval = TimeSpan.FromMilliseconds(50);
+
+    private readonly FakeTimeProvider _time = new();
+
     [Fact]
     public async Task Request_ManyCallsInOneInterval_RendersOnce()
     {
         // Arrange
         var renders = 0;
-        var rendered = new TaskCompletionSource();
+        var rendered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var sut = new RenderThrottle(
             () =>
             {
@@ -17,7 +22,8 @@ public sealed class RenderThrottleTests
                 rendered.TrySetResult();
                 return Task.CompletedTask;
             },
-            TimeSpan.FromMilliseconds(30));
+            Interval,
+            _time);
 
         // Act
         for (var i = 0; i < 100; i++)
@@ -25,11 +31,35 @@ public sealed class RenderThrottleTests
             sut.Request();
         }
 
-        await rendered.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        await Task.Delay(100, TestContext.Current.CancellationToken);
+        _time.Advance(Interval);
+        await rendered.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        _time.Advance(Interval * 4);
 
         // Assert
         renders.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Request_BeforeTheIntervalPasses_DoesNotRender()
+    {
+        // Arrange
+        var renders = 0;
+        using var sut = new RenderThrottle(
+            () =>
+            {
+                Interlocked.Increment(ref renders);
+                return Task.CompletedTask;
+            },
+            Interval,
+            _time);
+
+        // Act
+        sut.Request();
+        _time.Advance(Interval - TimeSpan.FromMilliseconds(1));
+        await Task.Yield();
+
+        // Assert
+        renders.Should().Be(0);
     }
 
     [Fact]
@@ -37,26 +67,26 @@ public sealed class RenderThrottleTests
     {
         // Arrange
         var renders = 0;
-        var second = new TaskCompletionSource();
+        var first = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var second = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var sut = new RenderThrottle(
             () =>
             {
-                if (Interlocked.Increment(ref renders) == 2)
-                {
-                    second.TrySetResult();
-                }
-
+                (Interlocked.Increment(ref renders) == 1 ? first : second).TrySetResult();
                 return Task.CompletedTask;
             },
-            TimeSpan.FromMilliseconds(10));
+            Interval,
+            _time);
 
         // Act
         sut.Request();
-        await Task.Delay(100, TestContext.Current.CancellationToken);
+        _time.Advance(Interval);
+        await first.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
         sut.Request();
+        _time.Advance(Interval);
 
         // Assert
-        await second.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        await second.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
         renders.Should().Be(2);
     }
 
@@ -73,12 +103,14 @@ public sealed class RenderThrottleTests
                 Interlocked.Increment(ref renders);
                 return Task.CompletedTask;
             },
-            TimeSpan.FromMilliseconds(50)))
+            Interval,
+            _time))
         {
             sut.Request();
         }
 
-        await Task.Delay(150, TestContext.Current.CancellationToken);
+        _time.Advance(Interval * 4);
+        await Task.Yield();
 
         // Assert
         renders.Should().Be(0);

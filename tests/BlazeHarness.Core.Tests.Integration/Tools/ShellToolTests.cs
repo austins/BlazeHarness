@@ -79,14 +79,15 @@ public sealed class ShellToolTests : IDisposable
     {
         // Arrange
         var marker = Path.Combine(_workspace.Root, "survived.txt");
-        var command = $"(sleep 2; echo alive > '{marker}') & echo ready; wait";
+        var ready = Path.Combine(_workspace.Root, "ready.txt");
+        var command = $"(sleep 1; echo alive > '{marker}') & echo ready > '{ready}'; wait";
 
         // Act
-        var act = () => RunUntilCancelledAsync(command);
+        var act = () => RunUntilCancelledAsync(command, ready);
 
         // Assert
         await act.Should().ThrowAsync<OperationCanceledException>();
-        await Task.Delay(2500, TestContext.Current.CancellationToken);
+        await Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken);
         File.Exists(marker).Should().BeFalse();
     }
 
@@ -149,11 +150,16 @@ public sealed class ShellToolTests : IDisposable
         schema.RootElement.GetProperty("required")[0].GetString().Should().Be("command");
     }
 
-    private async Task<ToolResult> RunUntilCancelledAsync(string command)
+    private async Task<ToolResult> RunUntilCancelledAsync(string command, string readyFile)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         var run = _sut.ExecuteAsync(TempWorkspace.Args(new { command }), Context, cts.Token);
-        await Task.Delay(500, TestContext.Current.CancellationToken);
+        using var giveUp = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        while (!File.Exists(readyFile))
+        {
+            await Task.Delay(10, giveUp.Token);
+        }
+
         await cts.CancelAsync();
         return await run;
     }
