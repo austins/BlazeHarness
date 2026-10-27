@@ -22,6 +22,38 @@ public sealed class ProcessRunnerTests : IDisposable
     }
 
     [Fact(Skip = "Needs a POSIX shell.", SkipWhen = nameof(IsWindows))]
+    public async Task RunAsync_Completes_ReturnsExitCodeAndBothStreams()
+    {
+        // Act
+        var result = await ProcessRunner.RunAsync("sh", ["-c", "echo out; echo err >&2; exit 4"], null, TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        result.ExitCode.Should().Be(4);
+        result.StdOut.Trim().Should().Be("out");
+        result.StdErr.Trim().Should().Be("err");
+    }
+
+    [Fact(Skip = "Needs a POSIX shell.", SkipWhen = nameof(IsWindows))]
+    public async Task RunAsync_WithStdin_PassesItToTheProcess()
+    {
+        // Act
+        var result = await ProcessRunner.RunAsync("sh", ["-c", "cat"], "p@ss \"word\"\nline2", TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        result.StdOut.Should().Be("p@ss \"word\"\nline2");
+    }
+
+    [Fact(Skip = "Needs a POSIX shell.", SkipWhen = nameof(IsWindows))]
+    public async Task RunAsync_ArgumentsWithSpacesAndQuotes_ArePassedVerbatim()
+    {
+        // Act
+        var result = await ProcessRunner.RunAsync("sh", ["-c", "printf '%s' \"$1\"", "sh", "a b \"c\" $HOME"], null, TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        result.StdOut.Should().Be("a b \"c\" $HOME");
+    }
+
+    [Fact(Skip = "Needs a POSIX shell.", SkipWhen = nameof(IsWindows))]
     public async Task RunAsync_Cancelled_KillsTheProcess()
     {
         // Arrange
