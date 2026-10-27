@@ -43,6 +43,12 @@ public sealed class ToolArguments
     }
 
     /// <summary>
+    /// Get the arguments as JSON text, for tools that pass them on unchanged.
+    /// </summary>
+    /// <returns>The JSON object text; <c>{}</c> when there were no arguments.</returns>
+    public string ToJson() => _root.ValueKind == JsonValueKind.Object ? _root.GetRawText() : "{}";
+
+    /// <summary>
     /// Gets a required text argument.
     /// </summary>
     /// <param name="name">The argument name.</param>

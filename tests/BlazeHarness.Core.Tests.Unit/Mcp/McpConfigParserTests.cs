@@ -97,6 +97,7 @@ public sealed class McpConfigParserTests
     [InlineData("""{"mcpServers": {"bad name": {"command": "x"}}}""", "letters, digits")]
     [InlineData("""{"mcpServers": {"a/b": {"command": "x"}}}""", "letters, digits")]
     [InlineData("""{"mcpServers": {"a__b": {"command": "x"}}}""", "letters, digits")]
+    [InlineData("""{"mcpServers": {"a_": {"command": "x"}}}""", "letters, digits")]
     public void Parse_BadInput_ReportsOneErrorAndNoServers(string json, string message)
     {
         // Act

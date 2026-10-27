@@ -1,0 +1,483 @@
+using BlazeHarness.Core.Tools;
+using Microsoft.Extensions.Logging;
+using System.Globalization;
+
+namespace BlazeHarness.Core.Mcp;
+
+/// <summary>
+/// Keeps the connections to the MCP servers in <c>mcp.json</c>, which every chat shares.
+/// </summary>
+/// <remarks>
+/// Servers start the first time a chat that has them turned on needs their tools, not at startup.
+/// A server that changed in <c>mcp.json</c> is stopped, and starts again with its new settings when next needed.
+/// </remarks>
+public sealed partial class McpManager : IAsyncDisposable
+{
+    private static readonly TimeSpan RetryAfterFailure = TimeSpan.FromSeconds(30);
+
+    private readonly McpConfigFile _config;
+    private readonly IMcpConnector _connector;
+    private readonly ILogger _log;
+    private readonly Func<string, string?> _environment;
+    private readonly TimeProvider _time;
+    private readonly TimeSpan _connectTimeout;
+    private readonly Lock _gate = new();
+    private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim _reconcile = new(1, 1);
+    private bool _disposed;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="McpManager"/> class.
+    /// </summary>
+    /// <param name="config">The <c>mcp.json</c> file.</param>
+    /// <param name="connector">Connects to servers.</param>
+    /// <param name="log">The logger.</param>
+    /// <param name="environment">Looks up the variables that <c>${NAME}</c> references name; defaults to the process environment.</param>
+    /// <param name="time">The clock, used to decide when to retry a failed server; defaults to the system clock.</param>
+    /// <param name="connectTimeout">How long a server may take to start; defaults to one minute, which leaves room for a first download.</param>
+    public McpManager(
+        McpConfigFile config,
+        IMcpConnector connector,
+        ILogger<McpManager> log,
+        Func<string, string?>? environment = null,
+        TimeProvider? time = null,
+        TimeSpan? connectTimeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(connector);
+        ArgumentNullException.ThrowIfNull(log);
+        _config = config;
+        _connector = connector;
+        _log = log;
+        _environment = environment ?? Environment.GetEnvironmentVariable;
+        _time = time ?? TimeProvider.System;
+        _connectTimeout = connectTimeout ?? TimeSpan.FromMinutes(1);
+        _config.Changed += OnConfigChanged;
+    }
+
+    /// <summary>
+    /// Raised, on any thread, when a server's state or the configured servers changed.
+    /// </summary>
+    public event EventHandler? Changed;
+
+    /// <summary>
+    /// Get the state of every server in <c>mcp.json</c>, in file order.
+    /// </summary>
+    /// <returns>The servers, including the ones turned off.</returns>
+    public IReadOnlyList<McpServerStatus> Statuses()
+    {
+        return [.. _config.Parsed.Servers.Select(StatusOf)];
+    }
+
+    /// <summary>
+    /// Work out whether a chat has a server turned on: its own choice wins, else the server's global state.
+    /// </summary>
+    /// <param name="server">The server.</param>
+    /// <param name="overrides">The chat's choices by server name, or null.</param>
+    /// <returns>True when the chat uses the server.</returns>
+    public static bool IsEnabled(McpServerConfig server, IReadOnlyDictionary<string, bool>? overrides)
+    {
+        ArgumentNullException.ThrowIfNull(server);
+        return overrides is not null && overrides.TryGetValue(server.Name, out var chosen) ? chosen : !server.Disabled;
+    }
+
+    /// <summary>
+    /// Connect to a server now, stopping any earlier connection, as the "Test connection" button does.
+    /// </summary>
+    /// <param name="name">The server name.</param>
+    /// <param name="cancellationToken">A token to cancel the attempt.</param>
+    /// <returns>The state afterwards, which is <see cref="McpServerState.Failed"/> with the reason when it did not work; null when there is no such server.</returns>
+    public async Task<McpServerStatus?> ReconnectAsync(string name, CancellationToken cancellationToken = default)
+    {
+        if (_config.Parsed.Servers.FirstOrDefault(s => s.Name == name) is not { } config)
+        {
+            return null;
+        }
+
+        var entry = EntryFor(config);
+        await entry.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await StopAsync(entry).ConfigureAwait(false);
+            await ConnectCoreAsync(entry, config, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            entry.Gate.Release();
+        }
+
+        return StatusOf(config);
+    }
+
+    /// <summary>
+    /// Stop a server's connection, if it has one.
+    /// </summary>
+    /// <param name="name">The server name.</param>
+    /// <returns>A task that completes once the server has stopped.</returns>
+    public async Task StopAsync(string name)
+    {
+        Entry? entry;
+        lock (_gate)
+        {
+            _entries.TryGetValue(name, out entry);
+        }
+
+        if (entry is null)
+        {
+            return;
+        }
+
+        await entry.Gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await StopAsync(entry).ConfigureAwait(false);
+        }
+        finally
+        {
+            entry.Gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Get the tools of the given servers, starting the ones that are not running.
+    /// </summary>
+    /// <param name="servers">The names of the servers to use.</param>
+    /// <param name="cancellationToken">A token to cancel the wait.</param>
+    /// <returns>The tools, named so no two clash; servers that cannot start are left out, and say why in their status.</returns>
+    public async Task<IReadOnlyList<ITool>> ToolsAsync(IEnumerable<string> servers, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(servers);
+        var wanted = servers.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var configs = _config.Parsed.Servers.Where(s => wanted.Contains(s.Name)).OrderBy(s => s.Name, StringComparer.Ordinal).ToList();
+        await Task.WhenAll(configs.Select(c => EnsureConnectedAsync(c, cancellationToken))).ConfigureAwait(false);
+
+        var taken = new HashSet<string>(StringComparer.Ordinal);
+        List<ITool> tools = [];
+        foreach (var serverName in configs.Select(c => c.Name))
+        {
+            Entry? entry;
+            lock (_gate)
+            {
+                _entries.TryGetValue(serverName, out entry);
+            }
+
+            if (entry is not { State: McpServerState.Connected, Connection: { } connection })
+            {
+                continue;
+            }
+
+            foreach (var info in entry.Tools.OrderBy(t => t.Name, StringComparer.Ordinal))
+            {
+                tools.Add(new McpTool(McpToolNames.Build(serverName, info.Name, taken), serverName, info, connection));
+            }
+        }
+
+        return tools;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        List<Entry> entries;
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            entries = [.. _entries.Values];
+            _entries.Clear();
+        }
+
+        _config.Changed -= OnConfigChanged;
+        foreach (var entry in entries)
+        {
+            await CloseConnectionAsync(entry).ConfigureAwait(false);
+        }
+
+        _reconcile.Dispose();
+    }
+
+    /// <summary>
+    /// Stop the servers whose settings changed or that were removed from <c>mcp.json</c>.
+    /// </summary>
+    /// <returns>A task that completes once the changed servers have stopped.</returns>
+    internal async Task ReconcileAsync()
+    {
+        await _reconcile.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            var current = _config.Parsed.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
+            List<Entry> stale;
+            lock (_gate)
+            {
+                stale = [.. _entries.Values.Where(e => !current.TryGetValue(e.Name, out var now) || !now.SameAs(e.Config))];
+                foreach (var entry in stale.Where(e => !current.ContainsKey(e.Name)))
+                {
+                    _entries.Remove(entry.Name);
+                }
+            }
+
+            foreach (var entry in stale)
+            {
+                await entry.Gate.WaitAsync().ConfigureAwait(false);
+                try
+                {
+                    await StopAsync(entry).ConfigureAwait(false);
+                    entry.Reset(current.TryGetValue(entry.Name, out var now) ? now : entry.Config);
+                }
+                finally
+                {
+                    entry.Gate.Release();
+                }
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
+        finally
+        {
+            try
+            {
+                _reconcile.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+                // The manager was disposed while this ran.
+            }
+        }
+
+        RaiseChanged();
+    }
+
+    private static McpServerStatus Describe(McpServerConfig config, Entry? entry)
+    {
+        return entry is null || !config.SameAs(entry.Config)
+            ? new McpServerStatus(config, McpServerState.Stopped, null, [])
+            : new McpServerStatus(config, entry.State, entry.Error, entry.Tools);
+    }
+
+    private McpServerStatus StatusOf(McpServerConfig config)
+    {
+        lock (_gate)
+        {
+            return Describe(config, _entries.GetValueOrDefault(config.Name));
+        }
+    }
+
+    private Entry EntryFor(McpServerConfig config)
+    {
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (!_entries.TryGetValue(config.Name, out var entry))
+            {
+                entry = new Entry(config);
+                _entries[config.Name] = entry;
+            }
+
+            return entry;
+        }
+    }
+
+    private async Task EnsureConnectedAsync(McpServerConfig config, CancellationToken cancellationToken)
+    {
+        var entry = EntryFor(config);
+        await entry.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!config.SameAs(entry.Config))
+            {
+                await StopAsync(entry).ConfigureAwait(false);
+                entry.Reset(config);
+            }
+
+            var retry = entry.State == McpServerState.Failed && _time.GetUtcNow() - entry.FailedAt >= RetryAfterFailure;
+            if (entry.State == McpServerState.Stopped || retry)
+            {
+                await ConnectCoreAsync(entry, config, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            entry.Gate.Release();
+        }
+    }
+
+    private async Task ConnectCoreAsync(Entry entry, McpServerConfig config, CancellationToken cancellationToken)
+    {
+        entry.Reset(config);
+        entry.State = McpServerState.Connecting;
+        RaiseChanged();
+
+        if (!config.TryExpand(_environment, out var expanded, out var problem))
+        {
+            Fail(entry, problem);
+            return;
+        }
+
+        using var timeout = new CancellationTokenSource(_connectTimeout, _time);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+        IMcpConnection? connection = null;
+        try
+        {
+            connection = await _connector.ConnectAsync(expanded, linked.Token).ConfigureAwait(false);
+            var tools = await connection.ListToolsAsync(linked.Token).ConfigureAwait(false);
+            entry.Connection = connection;
+            entry.Tools = tools;
+            entry.State = McpServerState.Connected;
+            _ = WatchAsync(entry, connection);
+            RaiseChanged();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await DisposeQuietlyAsync(connection).ConfigureAwait(false);
+            entry.State = McpServerState.Stopped;
+            RaiseChanged();
+            throw;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            await DisposeQuietlyAsync(connection).ConfigureAwait(false);
+            LogConnectFailed(ex, config.Name);
+            Fail(entry, ex is OperationCanceledException
+                ? string.Create(CultureInfo.InvariantCulture, $"The server did not answer within {_connectTimeout.TotalSeconds:0} seconds.")
+                : ex.Message);
+        }
+    }
+
+    private async Task WatchAsync(Entry entry, IMcpConnection connection)
+    {
+        try
+        {
+#pragma warning disable VSTHRD003 // The connection's own signal that it ended.
+            await connection.Closed.ConfigureAwait(false);
+#pragma warning restore VSTHRD003
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            LogConnectionEnded(ex, entry.Name);
+        }
+
+        var ended = false;
+        lock (_gate)
+        {
+            if (ReferenceEquals(entry.Connection, connection))
+            {
+                entry.Connection = null;
+                entry.Tools = [];
+                entry.State = McpServerState.Failed;
+                entry.Error = "The server stopped.";
+                entry.FailedAt = _time.GetUtcNow();
+                ended = true;
+            }
+        }
+
+        if (ended)
+        {
+            RaiseChanged();
+        }
+    }
+
+    private void Fail(Entry entry, string error)
+    {
+        lock (_gate)
+        {
+            entry.State = McpServerState.Failed;
+            entry.Error = error;
+            entry.FailedAt = _time.GetUtcNow();
+        }
+
+        RaiseChanged();
+    }
+
+    private async Task StopAsync(Entry entry)
+    {
+        await CloseConnectionAsync(entry).ConfigureAwait(false);
+        lock (_gate)
+        {
+            entry.State = McpServerState.Stopped;
+            entry.Error = null;
+            entry.Tools = [];
+        }
+
+        RaiseChanged();
+    }
+
+    private Task CloseConnectionAsync(Entry entry)
+    {
+        IMcpConnection? connection;
+        lock (_gate)
+        {
+            connection = entry.Connection;
+            entry.Connection = null;
+        }
+
+        return DisposeQuietlyAsync(connection);
+    }
+
+    private async Task DisposeQuietlyAsync(IMcpConnection? connection)
+    {
+        if (connection is null)
+        {
+            return;
+        }
+
+        try
+        {
+#pragma warning disable IDISP007 // The manager owns the connections it opened.
+            await connection.DisposeAsync().ConfigureAwait(false);
+#pragma warning restore IDISP007
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            LogDisposeFailed(ex);
+        }
+    }
+
+    private void OnConfigChanged(object? sender, EventArgs e)
+    {
+        _ = ReconcileAsync();
+    }
+
+    private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not connect to the MCP server {Server}.")]
+    private partial void LogConnectFailed(Exception ex, string server);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "The connection to the MCP server {Server} ended with an error.")]
+    private partial void LogConnectionEnded(Exception ex, string server);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "An MCP connection did not close cleanly.")]
+    private partial void LogDisposeFailed(Exception ex);
+
+    private sealed class Entry(McpServerConfig config)
+    {
+        public SemaphoreSlim Gate { get; } = new(1, 1);
+
+        public string Name => Config.Name;
+
+        public McpServerConfig Config { get; private set; } = config;
+
+        public McpServerState State { get; set; }
+
+        public string? Error { get; set; }
+
+        public DateTimeOffset FailedAt { get; set; }
+
+        public IMcpConnection? Connection { get; set; }
+
+        public IReadOnlyList<McpToolInfo> Tools { get; set; } = [];
+
+        public void Reset(McpServerConfig next)
+        {
+            Config = next;
+            State = McpServerState.Stopped;
+            Error = null;
+            Tools = [];
+        }
+    }
+}
