@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Permissions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -67,6 +68,11 @@ public sealed record AppConfig
     /// Gets a value indicating whether the Unrestricted and Never-ask options are hidden.
     /// </summary>
     public bool DisableBypassModes { get; init; }
+
+    /// <summary>
+    /// Gets how the summary that replaces older messages is written; the model writes it by default.
+    /// </summary>
+    public CompactionMode Compaction { get; init; } = CompactionMode.Model;
 
     /// <summary>
     /// Gets properties this version does not know about, kept so a save does not drop them.

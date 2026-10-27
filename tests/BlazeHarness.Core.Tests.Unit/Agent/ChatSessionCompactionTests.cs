@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
 using Microsoft.Extensions.AI;
@@ -10,6 +11,7 @@ public sealed class ChatSessionCompactionTests
 {
     private readonly RecordingSessionLog _log = new();
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+    private int _clientsCreated;
 
     [Fact]
     public async Task CompactAsync_AfterTwoExchanges_PutsAMarkerBeforeTheLastUserMessageAndKeepsTheHistory()
@@ -27,6 +29,25 @@ public sealed class ChatSessionCompactionTests
         sut.Entries.Select(e => e.Compaction is not null ? "marker" : e.Text).Should().Equal("one", "a", "marker", "two", "b");
         sut.Entries[2].Compaction!.Summary.Should().Be("sum");
         sut.History.Should().HaveCount(4);
+    }
+
+    [Fact]
+    public async Task CompactAsync_ExtractiveMode_MakesNoModelRequestAndNeedsNoClient()
+    {
+        // Arrange
+        using var client = Exchanges();
+        using var sut = CreateExtractive(client);
+        await Send(sut, "one", "two");
+        var clientsBefore = _clientsCreated;
+
+        // Act
+        var compacted = await sut.CompactAsync(TestTargets.Create());
+
+        // Assert
+        compacted.Should().BeTrue();
+        _clientsCreated.Should().Be(clientsBefore);
+        client.Requests.Should().HaveCount(2);
+        sut.Entries[2].Compaction!.Summary.Should().Contain("[Opening asks]").And.Contain("- one");
     }
 
     [Fact]
@@ -301,4 +322,19 @@ public sealed class ChatSessionCompactionTests
 
     private ChatSession Create(ScriptedChatClient client) =>
         new((_, _) => Task.FromResult<IChatClient>(client), _log, _time);
+
+    private ChatSession CreateExtractive(ScriptedChatClient client)
+    {
+        return new ChatSession(
+            (_, _) =>
+            {
+                _clientsCreated++;
+                return Task.FromResult<IChatClient>(client);
+            },
+            _log,
+            _time)
+        {
+            CompactionModeSource = () => CompactionMode.Extractive,
+        };
+    }
 }

@@ -34,7 +34,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 * Approvals let you decide, per tool and per action, what runs without asking.
 * Shell sandboxing where the platform supports it, so commands can stay inside the folder you opened. Otherwise commands run directly, behind approvals.
 * Folders and sessions. Open a folder and run sessions inside it, grouped by folder. Sessions can also exist without a folder, for general chat.
-* Persistent history in plain, human-readable files, with context compaction for long conversations.
+* Persistent history in plain, human-readable files, with context compaction for long conversations. By default the model writes the summary; Settings > Context can switch to deterministic extraction (no model request), which lists the requests, changed and read files, and commands, and relies on `search_chat` for detail.
 * Diffs, syntax highlighting, and find in the chat, with smooth scrolling in very long chats.
 * Export and import of sessions.
 * MCP servers, added from a standard `mcp.json` and enabled globally or per session.

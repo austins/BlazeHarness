@@ -57,7 +57,8 @@ builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<IShellSandbox>(),
     sp.GetRequiredService<PermissionDefaults>(),
     sp.GetRequiredService<McpManager>(),
-    sp.GetRequiredService<SkillCatalog>()));
+    sp.GetRequiredService<SkillCatalog>(),
+    () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.Compaction));
 builder.Services.AddSingleton(sp => new FolderRegistry(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<LaunchCredentials>();
 builder.Services.AddHttpClient();

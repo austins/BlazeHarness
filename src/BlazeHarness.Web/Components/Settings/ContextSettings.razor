@@ -1,0 +1,32 @@
+@using BlazeHarness.Core.Compaction
+@using BlazeHarness.Core.Config
+@inject JsonFileStore<AppConfig> Config
+@inject ToastService Toasts
+
+<div class="page">
+    <header class="page-header">
+        <h1>Context</h1>
+        <p class="muted">What happens when a chat gets too long for the model. Changes apply to the next compaction.</p>
+    </header>
+
+    <section class="card stack" aria-labelledby="compaction-heading">
+        <h2 id="compaction-heading">Compaction</h2>
+        <label class="check">
+            <input type="checkbox" checked="@(Config.Current.Compaction == CompactionMode.Extractive)" @onchange="OnChangedAsync" />
+            <span>Compact without asking the model</span>
+        </label>
+        <p class="hint">
+            Off by default, so the model writes the summary. When on, the summary is built by code from the older messages: your requests, the files touched,
+            the latest commands and the latest steps, without tool output. It costs no tokens and is instant, and the same messages always give the same summary,
+            but it is less thorough than one the model writes. The agent can still look up what was left out with the search_chat tool.
+        </p>
+    </section>
+</div>
+
+@code {
+    private Task OnChangedAsync(ChangeEventArgs e)
+    {
+        var mode = e.Value is true ? CompactionMode.Extractive : CompactionMode.Model;
+        return Toasts.TrySaveAsync(() => Config.UpdateAsync(config => config with { Compaction = mode }), "The setting could not be saved because the settings file could not be written.");
+    }
+}

@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
@@ -38,6 +39,7 @@ public sealed partial class SessionService : IDisposable
     private readonly PermissionDefaults? _defaults;
     private readonly McpManager? _mcp;
     private readonly SkillCatalog? _skills;
+    private readonly Func<CompactionMode>? _compactionMode;
     private readonly ILogger _log;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
@@ -57,6 +59,7 @@ public sealed partial class SessionService : IDisposable
     /// <param name="defaults">The global permission choices; without it new chats start with the built-in settings and the risky options stay available.</param>
     /// <param name="mcp">Provides the tools of MCP servers; without it sessions have no MCP tools.</param>
     /// <param name="skills">Finds the skills a session can use; without it sessions have no skills.</param>
+    /// <param name="compactionMode">Tells how summaries are written each time a chat is compacted; without it the model writes them.</param>
     public SessionService(
         SessionStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
@@ -66,7 +69,8 @@ public sealed partial class SessionService : IDisposable
         IShellSandbox? sandbox = null,
         PermissionDefaults? defaults = null,
         McpManager? mcp = null,
-        SkillCatalog? skills = null)
+        SkillCatalog? skills = null,
+        Func<CompactionMode>? compactionMode = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
@@ -80,6 +84,7 @@ public sealed partial class SessionService : IDisposable
         _sandbox = sandbox ?? new NoShellSandbox("No sandbox is set up.");
         _defaults = defaults;
         _mcp = mcp;
+        _compactionMode = compactionMode;
         _log = loggers.CreateLogger<SessionService>();
     }
 
@@ -704,6 +709,7 @@ public sealed partial class SessionService : IDisposable
         var session = new ChatSession(_clientFactory, _store.GetLog(id), _time, _loggers.CreateLogger<ChatSession>())
         {
             Attachments = new SessionAttachments(_store.AttachmentsDirectory(id)),
+            CompactionModeSource = _compactionMode,
         };
         session.Permissions.Sensitive = () => _defaults?.Sensitive(id) ?? SensitivePaths.Default(_store.Paths, id);
         session.Permissions.Sandbox = _sandbox.Status;

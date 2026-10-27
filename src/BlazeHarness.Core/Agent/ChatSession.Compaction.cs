@@ -94,10 +94,21 @@ public sealed partial class ChatSession
         }
 
         RaiseChanged();
+        IChatClient? client = null;
         try
         {
-            using var client = await _clientFactory(target, run.Token);
-            var context = new ConversationContext(ContextBudget.Limit(target.Model), ModelSummarizer.For(client, target), 0, state?.Summary, state?.KeptFrom ?? 0);
+            ISummarizer summarizer;
+            if (UsesExtractiveCompaction)
+            {
+                summarizer = new ExtractiveSummarizer();
+            }
+            else
+            {
+                client = await _clientFactory(target, run.Token);
+                summarizer = ModelSummarizer.For(client, target);
+            }
+
+            var context = new ConversationContext(ContextBudget.Limit(target.Model), summarizer, 0, state?.Summary, state?.KeptFrom ?? 0);
             if (await context.CompactAsync(working, manual: true, run.Token) is not { } result)
             {
                 return false;
@@ -111,10 +122,13 @@ public sealed partial class ChatSession
         }
         finally
         {
+            client?.Dispose();
             Volatile.Write(ref _stop, null);
             RaiseChanged();
         }
     }
+
+    private bool UsesExtractiveCompaction => CompactionModeSource?.Invoke() == CompactionMode.Extractive;
 
     private string SystemPromptText()
     {
@@ -129,7 +143,7 @@ public sealed partial class ChatSession
             state = _compaction;
         }
 
-        return new ConversationContext(ContextBudget.Limit(target.Model), ModelSummarizer.For(client, target), leadingMessages, state?.Summary, state?.KeptFrom ?? 0);
+        return new ConversationContext(ContextBudget.Limit(target.Model), UsesExtractiveCompaction ? new ExtractiveSummarizer() : ModelSummarizer.For(client, target), leadingMessages, state?.Summary, state?.KeptFrom ?? 0);
     }
 
     // Must be called with the gate held, after the entries or the history changed.

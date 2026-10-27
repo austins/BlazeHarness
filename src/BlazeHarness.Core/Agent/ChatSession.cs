@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sessions;
@@ -190,6 +191,11 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         get => Volatile.Read(ref _extraTools);
         set => Volatile.Write(ref _extraTools, value);
     }
+
+    /// <summary>
+    /// Gets or sets where the way summaries are written is asked for each time a conversation is compacted, or null to always use the model.
+    /// </summary>
+    public Func<CompactionMode>? CompactionModeSource { get; set; }
 
     /// <summary>
     /// Gets a value indicating whether a reply is being produced.

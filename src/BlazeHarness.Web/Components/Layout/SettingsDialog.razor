@@ -27,6 +27,9 @@
                 case SettingsSection.Skills:
                     <SkillsSettings />
                     break;
+                case SettingsSection.Context:
+                    <ContextSettings />
+                    break;
                 case SettingsSection.Appearance:
                     <AppearanceSettings />
                     break;
@@ -47,6 +50,7 @@
         (SettingsSection.Permissions, "Permissions", "shield"),
         (SettingsSection.Mcp, "MCP servers", "plug"),
         (SettingsSection.Skills, "Skills", "book"),
+        (SettingsSection.Context, "Context", "compress"),
         (SettingsSection.Appearance, "Appearance", "text-size"),
         (SettingsSection.Diagnostics, "Diagnostics", "wrench"),
     ];

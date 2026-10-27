@@ -26,6 +26,11 @@ public enum SettingsSection
     Skills,
 
     /// <summary>
+    /// How a chat that grows too long is compacted.
+    /// </summary>
+    Context,
+
+    /// <summary>
     /// The text size.
     /// </summary>
     Appearance,
