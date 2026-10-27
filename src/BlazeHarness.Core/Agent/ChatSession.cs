@@ -33,6 +33,11 @@ namespace BlazeHarness.Core.Agent;
 /// </remarks>
 public sealed partial class ChatSession : IDisposable, IToolApprover
 {
+    /// <summary>
+    /// How long a tool call waits for an answer before it is denied, so a turn nobody is watching ends by itself.
+    /// </summary>
+    public static readonly TimeSpan ApprovalTimeout = TimeSpan.FromMinutes(30);
+
     private static readonly TimeSpan FlushInterval = TimeSpan.FromMilliseconds(250);
 
     private readonly Lock _gate = new();
@@ -571,6 +576,8 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
         var waiting = new TaskCompletionSource<ApprovalChoice>(TaskCreationOptions.RunContinuationsAsynchronously);
         _approvals[callId] = waiting;
         using var registration = cancellationToken.Register(() => waiting.TrySetCanceled(cancellationToken));
+        using var expiry = new CancellationTokenSource(ApprovalTimeout, _time);
+        using var expiryRegistration = expiry.Token.Register(() => waiting.TrySetResult(ApprovalChoice.Deny));
         try
         {
             return await waiting.Task;

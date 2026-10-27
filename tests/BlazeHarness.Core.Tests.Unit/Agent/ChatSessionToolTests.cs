@@ -80,6 +80,27 @@ public sealed class ChatSessionToolTests
     }
 
     [Fact]
+    public async Task SendAsync_ApprovalNeverAnswered_DeniesTheCallAfterTheTimeout()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
+            .Enqueue([ScriptedChatClient.Text("ok")]);
+        using var sut = Create(client, write);
+        var turn = sut.SendAsync("go", TestTargets.Create());
+        await WaitForStatus(sut, ToolCallStatus.AwaitingApproval);
+
+        // Act
+        _time.Advance(ChatSession.ApprovalTimeout);
+        await turn;
+
+        // Assert
+        write.Started.Should().Be(0);
+        sut.Entries[1].ToolCalls.Single().Status.Should().Be(ToolCallStatus.Denied);
+        sut.IsRunning.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Stop_WhileAwaitingApproval_CancelsTheCallAndTheReply()
     {
         // Arrange
