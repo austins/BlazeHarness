@@ -99,10 +99,15 @@ else
                     </div>
                 }
 
-                @{
-                    string? previousLabel = null;
+                @if (_windowStart > 0)
+                {
+                    <button type="button" class="btn btn-sm chat-earlier" data-earlier="@_windowStart" @onclick="ShowEarlier">Show earlier messages (@_windowStart)</button>
                 }
-                @foreach (var entry in _entries)
+
+                @{
+                    string? previousLabel = _windowStart > 0 ? _entries[_windowStart - 1].Label : null;
+                }
+                @foreach (var entry in _entries.Skip(_windowStart))
                 {
                     if (entry.Compaction is { } compaction)
                     {
@@ -133,6 +138,9 @@ else
 }
 
 @code {
+    private const int InitialWindow = 60;
+    private const int EarlierBatch = 40;
+
     private RenderThrottle _throttle = null!;
     private IReadOnlyList<ChatEntry> _entries = [];
     private ChatSession? _session;
@@ -142,6 +150,7 @@ else
     private bool _loading;
     private bool _watching;
     private bool _wasRunning;
+    private int _windowStart;
     private string _announcement = string.Empty;
     private ElementReference _root;
     private ElementReference _scroll;
@@ -204,6 +213,7 @@ else
         _missing = false;
         _info = null;
         _entries = [];
+        _windowStart = 0;
         if (SessionId is null)
         {
             return;
@@ -228,6 +238,7 @@ else
         }
 
         Attach(session);
+        _windowStart = Math.Max(0, _entries.Count - InitialWindow);
         _info = Sessions.Store.Find(SessionId);
     }
 
@@ -275,9 +286,15 @@ else
         }
     }
 
+    private void ShowEarlier()
+    {
+        _windowStart = Math.Max(0, _windowStart - EarlierBatch);
+    }
+
     private void Refresh()
     {
         _entries = _session?.Entries ?? [];
+        _windowStart = Math.Min(_windowStart, _entries.Count);
         Announce();
         if (_editing is not null && !_entries.Any(e => e.Id == _editing.Id))
         {

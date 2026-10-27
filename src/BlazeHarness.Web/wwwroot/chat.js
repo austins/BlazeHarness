@@ -9,11 +9,26 @@ window.bhChat = {
         const nearBottom = () => scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 40;
         const toBottom = () => { scroll.scrollTop = scroll.scrollHeight; };
         let pinned = true;
+        // Older messages load when the reader scrolls near the top; the button's count tells a new batch from one already asked for.
+        let requested = null;
+        let anchor = null;
         scroll.addEventListener("scroll", () => {
             pinned = nearBottom();
             root.dataset.pinned = String(pinned);
+            const earlier = scroll.scrollTop < 160 ? scroll.querySelector("[data-earlier]") : null;
+            if (earlier && requested !== earlier.dataset.earlier) {
+                requested = earlier.dataset.earlier;
+                anchor = { height: scroll.scrollHeight, top: scroll.scrollTop };
+                earlier.click();
+            }
         }, { passive: true });
         new MutationObserver(() => {
+            // Browsers don't anchor at the very top, so keep the reader on the message they were reading.
+            if (anchor && scroll.scrollHeight !== anchor.height) {
+                scroll.scrollTop = anchor.top + scroll.scrollHeight - anchor.height;
+                anchor = null;
+            }
+
             if (pinned) {
                 toBottom();
             } else {
