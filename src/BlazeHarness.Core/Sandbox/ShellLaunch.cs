@@ -11,4 +11,12 @@ namespace BlazeHarness.Core.Sandbox;
 /// <param name="Mode">How far the command may reach.</param>
 /// <param name="ScratchDirectory">A folder the command may always write to, which holds its home and temporary files. It is created when needed.</param>
 /// <param name="Timeout">How long the command may run before the sandbox stops it.</param>
-public sealed record ShellLaunch(ShellInfo Shell, string Command, string WorkingDirectory, ShellMode Mode, string ScratchDirectory, TimeSpan Timeout);
+/// <param name="ReadFolders">Folders outside the working folder that the command may also read, because the user approved them.</param>
+public sealed record ShellLaunch(
+    ShellInfo Shell,
+    string Command,
+    string WorkingDirectory,
+    ShellMode Mode,
+    string ScratchDirectory,
+    TimeSpan Timeout,
+    IReadOnlyList<string>? ReadFolders = null);

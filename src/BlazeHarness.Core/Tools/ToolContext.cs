@@ -16,11 +16,12 @@ public sealed class ToolContext
         Root = WorkspacePath.CanonicalRoot(folder);
     }
 
-    private ToolContext(string root, bool allowsOutside, ShellMode shell)
+    private ToolContext(string root, bool allowsOutside, ShellMode shell, IReadOnlyList<string> shellReadFolders)
     {
         Root = root;
         AllowsOutside = allowsOutside;
         Shell = shell;
+        ShellReadFolders = shellReadFolders;
     }
 
     /// <summary>
@@ -39,20 +40,36 @@ public sealed class ToolContext
     public ShellMode Shell { get; } = ShellMode.Writable;
 
     /// <summary>
+    /// Gets the folders outside the working folder that the user approved reading, which a shell command of this call may also read.
+    /// </summary>
+    public IReadOnlyList<string> ShellReadFolders { get; } = [];
+
+    /// <summary>
     /// Get a copy of this context that accepts paths outside the working folder.
     /// </summary>
     /// <remarks>
     /// Only for a call that has already passed the permission check.
     /// </remarks>
     /// <returns>A context with the same root that accepts any path.</returns>
-    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true, Shell);
+    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true, Shell, ShellReadFolders);
 
     /// <summary>
     /// Get a copy of this context with a different shell mode.
     /// </summary>
     /// <param name="shell">How far a shell command may reach.</param>
     /// <returns>A context with the same root and path rules.</returns>
-    public ToolContext WithShell(ShellMode shell) => new(Root, AllowsOutside, shell);
+    public ToolContext WithShell(ShellMode shell) => new(Root, AllowsOutside, shell, ShellReadFolders);
+
+    /// <summary>
+    /// Get a copy of this context with the folders a shell command may also read.
+    /// </summary>
+    /// <param name="folders">The approved folders outside the working folder.</param>
+    /// <returns>A context with the same root and path rules.</returns>
+    public ToolContext WithShellReadFolders(IReadOnlyList<string> folders)
+    {
+        ArgumentNullException.ThrowIfNull(folders);
+        return new(Root, AllowsOutside, Shell, folders);
+    }
 
     /// <summary>
     /// Resolve a path from a call to a real path inside the working folder.

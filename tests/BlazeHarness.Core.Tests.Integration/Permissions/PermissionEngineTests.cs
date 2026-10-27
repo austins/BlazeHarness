@@ -307,6 +307,34 @@ public sealed class PermissionEngineTests : IDisposable
     }
 
     [Fact]
+    public void Evaluate_ShellAfterAnApprovedRead_CarriesTheApprovedFolder()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        var read = Evaluate(new ReadFileTool(), new { path = Path.Combine(_elsewhere, "note.txt") });
+        _sut.Remember(read.GrantKey!);
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "cat note.txt" });
+
+        // Assert
+        decision.ShellReadFolders.Should().ContainSingle().Which.Should().Be(WorkspacePath.CanonicalRoot(_elsewhere));
+    }
+
+    [Fact]
+    public void Evaluate_ShellWithoutApprovedReads_CarriesNoFolders()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "ls" });
+
+        // Assert
+        decision.ShellReadFolders.Should().BeEmpty();
+    }
+
+    [Fact]
     public void Evaluate_ShellGrant_AllowsOnlyThatCommand()
     {
         // Arrange

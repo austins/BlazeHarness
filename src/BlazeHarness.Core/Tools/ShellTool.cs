@@ -83,7 +83,7 @@ public sealed class ShellTool : ITool
         var command = arguments.RequiredString("command");
         var seconds = arguments.OptionalInt("timeout_seconds", 1, MaxTimeoutSeconds) ?? DefaultTimeoutSeconds;
 
-        var launch = new ShellLaunch(_shell, command, context.Root, context.Shell, _scratchDirectory, TimeSpan.FromSeconds(seconds));
+        var launch = new ShellLaunch(_shell, command, context.Root, context.Shell, _scratchDirectory, TimeSpan.FromSeconds(seconds), context.ShellReadFolders);
         IShellProcess process;
         try
         {

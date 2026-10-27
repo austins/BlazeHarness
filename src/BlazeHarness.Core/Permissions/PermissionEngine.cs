@@ -87,8 +87,13 @@ public sealed class PermissionEngine
         var decision = tool.RunsCommands
             ? EvaluateCommand(arguments, settings)
             : EvaluatePaths(tool, arguments, settings, context);
-        return decision is { Verdict: PermissionVerdict.Ask, GrantKey: { } key } && _grants.ContainsKey(key)
-            ? PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell }
+        if (decision is { Verdict: PermissionVerdict.Ask, GrantKey: { } key } && _grants.ContainsKey(key))
+        {
+            decision = PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell };
+        }
+
+        return tool.RunsCommands && decision.Verdict != PermissionVerdict.Deny
+            ? decision with { ShellReadFolders = GrantedFolders() }
             : decision;
     }
 
@@ -218,6 +223,11 @@ public sealed class PermissionEngine
         return settings.Approvals == ApprovalMode.AskFirst
             ? new PermissionDecision(PermissionVerdict.Ask, "Changes files in the working folder.", "tool:" + tool.Name)
             : PermissionDecision.Allow;
+    }
+
+    private List<string> GrantedFolders()
+    {
+        return [.. _grants.Keys.Where(key => key.StartsWith("dir:", StringComparison.Ordinal)).Select(key => key["dir:".Length..])];
     }
 
     private bool GrantCovers(string fullPath)

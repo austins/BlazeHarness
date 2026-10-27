@@ -70,6 +70,20 @@ public sealed class MxcShellSandboxTests : IDisposable
     }
 
     [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
+    public async Task Run_ApprovedReadFolder_CanBeReadButNotChanged()
+    {
+        // Act
+        var result = await RunAsync(
+            $"cat '{Path.Combine(_outside, "secret.txt")}'; echo changed > '{Path.Combine(_outside, "secret.txt")}'",
+            ShellMode.Writable,
+            readFolders: [_outside]);
+
+        // Assert
+        result.Output.Should().Contain("top-secret").And.Contain("Read-only file system");
+        (await File.ReadAllTextAsync(Path.Combine(_outside, "secret.txt"), TestContext.Current.CancellationToken)).Should().Be("top-secret");
+    }
+
+    [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
     public async Task Run_ParentPathEscape_CannotReachFilesOutside()
     {
         // Arrange
@@ -191,13 +205,13 @@ public sealed class MxcShellSandboxTests : IDisposable
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("No sandbox here.");
     }
 
-    private async Task<ToolResult> RunAsync(string command, ShellMode mode, IShellSandbox? sandbox = null, int timeoutSeconds = 30)
+    private async Task<ToolResult> RunAsync(string command, ShellMode mode, IShellSandbox? sandbox = null, int timeoutSeconds = 30, IReadOnlyList<string>? readFolders = null)
     {
         var shell = ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false);
         var tool = new ShellTool(shell, sandbox ?? new MxcShellSandbox(SensitivePaths.None), _scratch);
         return await tool.ExecuteAsync(
             TempWorkspace.Args(new { command, timeout_seconds = timeoutSeconds }),
-            _workspace.Context.WithShell(mode),
+            _workspace.Context.WithShell(mode).WithShellReadFolders(readFolders ?? []),
             TestContext.Current.CancellationToken);
     }
 }

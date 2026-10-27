@@ -354,6 +354,11 @@ public static class ChatRunner
     private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision)
     {
         var context = decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context;
+        if (decision.ShellReadFolders is { Count: > 0 } folders)
+        {
+            context = context.WithShellReadFolders(folders);
+        }
+
         return decision.Shell == context.Shell ? context : context.WithShell(decision.Shell);
     }
 

@@ -55,6 +55,34 @@ public sealed class SandboxPolicyTests : IDisposable
     }
 
     [Fact]
+    public void Create_ApprovedReadFolders_AreReadOnly()
+    {
+        // Arrange
+        var approved = Directory.CreateDirectory(Path.Combine(_root, "approved")).FullName;
+
+        // Act
+        var policy = Create(ShellMode.Writable, readFolders: [approved, Path.Combine(_root, "missing")]);
+
+        // Assert
+        policy.ReadOnly.Should().Contain(Canonical(approved)).And.NotContain(Path.Combine(_root, "missing"));
+        policy.ReadWrite.Should().NotContain(Canonical(approved));
+    }
+
+    [Fact]
+    public void Create_ProtectedFolderInsideAnApprovedReadFolder_IsDenied()
+    {
+        // Arrange
+        var approved = Directory.CreateDirectory(Path.Combine(_root, "approved")).FullName;
+        var keys = Directory.CreateDirectory(Path.Combine(approved, ".keys")).FullName;
+
+        // Act
+        var policy = Create(ShellMode.Writable, protectedFolders: [keys], readFolders: [approved]);
+
+        // Assert
+        policy.Denied.Should().ContainSingle().Which.Should().Be(Canonical(keys));
+    }
+
+    [Fact]
     public void Create_Environment_KeepsOnlyListedVariablesAndRedirectsHome()
     {
         // Arrange
@@ -136,9 +164,10 @@ public sealed class SandboxPolicyTests : IDisposable
         IReadOnlyDictionary<string, string>? host = null,
         IEnumerable<string>? protectedFolders = null,
         string command = "true",
-        ShellInfo? shell = null)
+        ShellInfo? shell = null,
+        IReadOnlyList<string>? readFolders = null)
     {
-        var launch = new ShellLaunch(shell ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false), command, _work, mode, _scratch, TimeSpan.FromSeconds(10));
+        var launch = new ShellLaunch(shell ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false), command, _work, mode, _scratch, TimeSpan.FromSeconds(10), readFolders);
         return SandboxPolicy.Create(launch, platform, host ?? new Dictionary<string, string>(), protectedFolders ?? []);
     }
 }

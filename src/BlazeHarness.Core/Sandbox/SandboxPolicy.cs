@@ -102,7 +102,8 @@ internal sealed class SandboxPolicy
             readWrite.Add(workDirectory);
         }
 
-        foreach (var path in RuntimeFolders(platform, host).Append(Path.GetDirectoryName(launch.Shell.Executable) ?? string.Empty).Concat(PathFolders(host)))
+        var approved = (launch.ReadFolders ?? []).Where(Directory.Exists).Select(WorkspacePath.CanonicalRoot);
+        foreach (var path in approved.Concat(RuntimeFolders(platform, host)).Append(Path.GetDirectoryName(launch.Shell.Executable) ?? string.Empty).Concat(PathFolders(host)))
         {
             if (path.Length > 0 && Directory.Exists(path) && !IsCovered(path, readOnly) && !IsCovered(path, readWrite))
             {
