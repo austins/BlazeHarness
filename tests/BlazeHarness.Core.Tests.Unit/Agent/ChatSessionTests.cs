@@ -60,6 +60,21 @@ public sealed class ChatSessionTests
     }
 
     [Fact]
+    public async Task SendAsync_ClientFactoryThrows_LogsAWarningWithTheReason()
+    {
+        // Arrange
+        var logger = new LoggerFake<ChatSession>();
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException("no key"), logger: logger);
+
+        // Act
+        await sut.SendAsync("hi", Fast);
+
+        // Assert
+        logger.Entries.Should().ContainSingle().Which.Message.Should().Be("A reply failed: no key");
+        logger.Entries[0].LogLevel.Should().Be(LogLevel.Warning);
+    }
+
+    [Fact]
     public async Task SendAsync_Stopped_KeepsPartialReplyAsCancelled()
     {
         // Arrange

@@ -1,6 +1,7 @@
 using BlazeHarness.Core;
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Logging;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
@@ -20,6 +21,7 @@ var builder = WebApplication.CreateBuilder(args);
 HostLauncher.ConfigureKestrel(builder, HostLauncher.ConfiguredPort(args));
 
 var paths = AppPaths.FromEnvironment();
+builder.Services.AddSingleton<ILoggerProvider>(_ => new FileLoggerProvider(paths.LogsDirectory, TimeProvider.System));
 builder.Services.AddSingleton(paths);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(await SecretStoreFactory.CreateAsync(paths));

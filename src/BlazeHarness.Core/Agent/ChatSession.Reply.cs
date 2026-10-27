@@ -4,6 +4,7 @@ using BlazeHarness.Core.Sessions;
 using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
 using System.Text;
 
 namespace BlazeHarness.Core.Agent;
@@ -64,6 +65,7 @@ public sealed partial class ChatSession
         {
             reply.Entry.Status = EntryStatus.Failed;
             reply.Entry.Error = ex.Message;
+            LogReplyFailed(ex.Message);
         }
         finally
         {
@@ -107,6 +109,7 @@ public sealed partial class ChatSession
                 break;
             case AgentError error:
                 entry.Error = error.Message;
+                LogReplyFailed(error.Message);
                 break;
             case Done done:
                 entry.Status = done.Reason switch
@@ -275,6 +278,9 @@ public sealed partial class ChatSession
             LogSaveFailed(ex);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A reply failed: {Reason}")]
+    private partial void LogReplyFailed(string reason);
 
     private sealed class Reply(ChatEntry entry, ChatTarget target, List<ChatMessage> working, int before, long lastSave)
     {

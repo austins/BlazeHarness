@@ -72,6 +72,11 @@ public sealed class AppPaths
     public string SessionsDirectory => Path.Combine(Home, "sessions");
 
     /// <summary>
+    /// Gets the folder that holds the log files.
+    /// </summary>
+    public string LogsDirectory => Path.Combine(Home, "logs");
+
+    /// <summary>
     /// Resolve the paths for the current user, honoring the <see cref="HomeEnvironmentVariable"/> override.
     /// </summary>
     /// <returns>Paths rooted at <c>~/.blazeharness</c>, or at the overridden folder.</returns>
