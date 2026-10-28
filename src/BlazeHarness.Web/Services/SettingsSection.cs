@@ -26,6 +26,11 @@ public enum SettingsSection
     Skills,
 
     /// <summary>
+    /// The web search and fetch tools.
+    /// </summary>
+    Web,
+
+    /// <summary>
     /// How a chat that grows too long is compacted.
     /// </summary>
     Context,

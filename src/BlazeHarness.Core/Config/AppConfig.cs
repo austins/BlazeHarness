@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -73,6 +74,11 @@ public sealed record AppConfig
     /// Gets how the summary that replaces older messages is written; the model writes it by default.
     /// </summary>
     public CompactionMode Compaction { get; init; } = CompactionMode.Model;
+
+    /// <summary>
+    /// Gets the switches and search providers of the web search and web fetch tools.
+    /// </summary>
+    public WebSettings Web { get; init; } = new();
 
     /// <summary>
     /// Gets properties this version does not know about, kept so a save does not drop them.

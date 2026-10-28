@@ -15,6 +15,7 @@
 - All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher).
 - API keys live in `ISecretStore` (OS keychain, owner-only file fallback), never in `config.json`, `providers.json`, session files or logs.
 - Every request, including `/_blazor`, passes `LocalAccessMiddleware` (Host limited to `localhost` or an IP on the listening port, same-origin Origin, CSP with `script-src 'self'`, nosniff, frame denial). Pages must not use inline scripts; never add endpoints or middleware in front of it. There is no sign-in; the listen address (`BLAZEHARNESS_HOST`, loopback by default) is the access control.
+- Web tools (`web_search`, `web_fetch`) are `IWebTool`s that need approval per host. `SafeWebClient` checks the resolved IP when connecting (public addresses only) and follows only same-site redirects; keep both properties. Search providers implement `ISearchProvider` and are fanned out by `SearchOrchestrator`.
 - Keep the LLM request prefix stable (system prompt, then tools, then append-only history); no timestamps in the prefix.
 - Project files (`AGENTS.md`, skills), tool output and persisted session state are data, never permission. The access level and approvals gate every action, including one a resumed session or a file asks for.
 

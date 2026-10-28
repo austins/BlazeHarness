@@ -7,6 +7,7 @@ using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Web;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
@@ -33,6 +34,7 @@ public sealed partial class SessionService : IDisposable
     private readonly SessionStore _store;
     private readonly Func<ChatTarget, CancellationToken, Task<IChatClient>> _clientFactory;
     private readonly ILoggerFactory _loggers;
+    private readonly WebServices? _web;
     private readonly TimeProvider _time;
     private readonly ITitleGenerator? _titles;
     private readonly IShellSandbox _sandbox;
@@ -60,6 +62,7 @@ public sealed partial class SessionService : IDisposable
     /// <param name="mcp">Provides the tools of MCP servers; without it sessions have no MCP tools.</param>
     /// <param name="skills">Finds the skills a session can use; without it sessions have no skills.</param>
     /// <param name="compactionMode">Tells how summaries are written each time a chat is compacted; without it the model writes them.</param>
+    /// <param name="web">Provides the web search and fetch tools; without it sessions have no web tools.</param>
     public SessionService(
         SessionStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
@@ -70,7 +73,8 @@ public sealed partial class SessionService : IDisposable
         PermissionDefaults? defaults = null,
         McpManager? mcp = null,
         SkillCatalog? skills = null,
-        Func<CompactionMode>? compactionMode = null)
+        Func<CompactionMode>? compactionMode = null,
+        WebServices? web = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
@@ -84,6 +88,7 @@ public sealed partial class SessionService : IDisposable
         _sandbox = sandbox ?? new NoShellSandbox("No sandbox is set up.");
         _defaults = defaults;
         _mcp = mcp;
+        _web = web;
         _compactionMode = compactionMode;
         _log = loggers.CreateLogger<SessionService>();
     }
@@ -539,6 +544,7 @@ public sealed partial class SessionService : IDisposable
             session.Dispose();
         }
 
+        _web?.Forget(id);
         await _store.DeleteAsync(id, CancellationToken.None);
         return true;
     }
@@ -756,18 +762,27 @@ public sealed partial class SessionService : IDisposable
             session.Permissions.Rules = () => defaults.Rules;
         }
 
-        if (_mcp is { } mcp)
+        var web = _web;
+        var mcp = _mcp;
+        if (web is not null || mcp is not null)
         {
             session.ExtraTools = async cancellation =>
             {
-                var overrides = _store.Find(id)?.McpServers;
-                var wanted = mcp.Statuses().Where(status => McpManager.IsEnabled(status.Config, overrides)).Select(status => status.Config.Name);
-                return await mcp.ToolsAsync(wanted, cancellation);
+                List<ITool> tools = [.. web?.ToolsFor(id) ?? []];
+                if (mcp is not null)
+                {
+                    var overrides = _store.Find(id)?.McpServers;
+                    var wanted = mcp.Statuses().Where(status => McpManager.IsEnabled(status.Config, overrides)).Select(status => status.Config.Name);
+                    tools.AddRange(await mcp.ToolsAsync(wanted, cancellation));
+                }
+
+                return tools;
             };
-            if (_defaults is { } trust)
-            {
-                session.Permissions.TrustedMcpServer = trust.IsMcpServerTrusted;
-            }
+        }
+
+        if (mcp is not null && _defaults is { } trust)
+        {
+            session.Permissions.TrustedMcpServer = trust.IsMcpServerTrusted;
         }
 
         var wasRunning = false;

@@ -90,6 +90,7 @@
                 <option value="@RuleTarget.ShellCommand">Shell command</option>
                 <option value="@RuleTarget.FilePath">File path</option>
                 <option value="@RuleTarget.McpTool">MCP tool</option>
+                <option value="@RuleTarget.WebHost">Web host</option>
             </select>
             <select class="select" aria-label="Rule action" @bind="_newAction">
                 <option value="@PermissionVerdict.Deny">Refuse</option>
@@ -147,6 +148,7 @@
         {
             RuleTarget.ShellCommand => "Shell command",
             RuleTarget.McpTool => "MCP tool",
+            RuleTarget.WebHost => "Web host",
             _ => "File path",
         };
     }
@@ -157,6 +159,7 @@
         {
             RuleTarget.ShellCommand => "git push*",
             RuleTarget.McpTool => "server/tool*",
+            RuleTarget.WebHost => "*.example.com",
             _ => "**/.env",
         };
     }

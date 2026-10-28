@@ -1,0 +1,90 @@
+@using BlazeHarness.Core.Config
+@using BlazeHarness.Core.Web
+@inject JsonFileStore<AppConfig> Config
+@inject WebServices Web
+@inject ToastService Toasts
+
+<div class="page">
+    <header class="page-header">
+        <h1>Web</h1>
+        <p class="muted">Lets the agent search the web and read pages and PDF files. Each use asks first, unless the chat's access level is Unrestricted or it never asks. The page text is treated as data, never as instructions. JavaScript is not run, so pages that need it may come out empty.</p>
+    </header>
+
+    <section class="card stack" aria-labelledby="web-tools-heading">
+        <h2 id="web-tools-heading">Tools</h2>
+        <label class="check">
+            <input type="checkbox" checked="@Current.SearchEnabled" @onchange="e => SaveAsync(s => s with { SearchEnabled = (bool)e.Value! })" />
+            <span>Web search</span>
+        </label>
+        <label class="check">
+            <input type="checkbox" checked="@Current.FetchEnabled" @onchange="e => SaveAsync(s => s with { FetchEnabled = (bool)e.Value! })" />
+            <span>Web fetch (pages, PDF files and text)</span>
+        </label>
+        <p class="hint">A fetch only reaches the public internet. Addresses on this computer or the local network are refused. The proxy settings of the system are not used. Fetched pages are kept in memory for a short while so a long page can be read in pieces.</p>
+    </section>
+
+    <section class="card stack" aria-labelledby="web-search-heading">
+        <h2 id="web-search-heading">Search providers</h2>
+        <p class="hint">None of these need an account or key. Each one is a free public service that can change or limit access at any time.</p>
+        <div class="stack" role="radiogroup" aria-label="How to use the providers">
+            <label class="check">
+                <input type="radio" name="web-mode" checked="@(Current.SearchMode == WebSearchMode.Parallel)" @onchange="() => SaveAsync(s => s with { SearchMode = WebSearchMode.Parallel })" />
+                <span>In parallel: ask every provider you turned on and merge the results (faster and broader, but the query goes to all of them)</span>
+            </label>
+            <label class="check">
+                <input type="radio" name="web-mode" checked="@(Current.SearchMode == WebSearchMode.Sequential)" @onchange="() => SaveAsync(s => s with { SearchMode = WebSearchMode.Sequential })" />
+                <span>One at a time: in the order below, stopping at the first one that gives results</span>
+            </label>
+        </div>
+        @foreach (var (provider, index) in Providers.Select((p, i) => (p, i)))
+        {
+            var info = WebProviders.All.First(i => i.Id == provider.Id);
+            var status = Web.StatusOf(provider.Id);
+            <div class="row" role="group" aria-label="@info.Name">
+                <label class="check">
+                    <input type="checkbox" checked="@provider.Enabled" @onchange="e => SetProviderAsync(index, (bool)e.Value!)" />
+                    <span><strong>@info.Name</strong> <span class="muted">@info.Description</span></span>
+                </label>
+                @if (status is not null)
+                {
+                    <span class="badge">@(status.Working ? "Working" : status.Detail)</span>
+                }
+                <button type="button" class="btn btn-sm" aria-label="Move @info.Name up" disabled="@(index == 0)" @onclick="() => MoveAsync(index, -1)"><Icon Name="arrow-up" /></button>
+                <button type="button" class="btn btn-sm" aria-label="Move @info.Name down" disabled="@(index == Providers.Count - 1)" @onclick="() => MoveAsync(index, 1)"><Icon Name="arrow-down" /></button>
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private const string SaveFailure = "The setting could not be saved because the settings file could not be written.";
+
+    private WebSettings Current => Config.Current.Web;
+
+    private IReadOnlyList<WebProviderSetting> Providers => Current.ResolveProviders();
+
+    private Task SaveAsync(Func<WebSettings, WebSettings> change)
+    {
+        return Toasts.TrySaveAsync(() => Config.UpdateAsync(config => config with { Web = change(config.Web) }), SaveFailure);
+    }
+
+    private Task SetProviderAsync(int index, bool enabled)
+    {
+        return SaveProvidersAsync(list => list[index] = list[index] with { Enabled = enabled });
+    }
+
+    private Task MoveAsync(int index, int by)
+    {
+        return SaveProvidersAsync(list => (list[index], list[index + by]) = (list[index + by], list[index]));
+    }
+
+    private Task SaveProvidersAsync(Action<List<WebProviderSetting>> change)
+    {
+        return SaveAsync(settings =>
+        {
+            var list = settings.ResolveProviders().ToList();
+            change(list);
+            return settings with { Providers = list };
+        });
+    }
+}

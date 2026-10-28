@@ -9,6 +9,7 @@ using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Secrets;
 using BlazeHarness.Core.Sessions;
 using BlazeHarness.Core.Skills;
+using BlazeHarness.Core.Web;
 using BlazeHarness.Web.Components;
 using BlazeHarness.Web.Hosting;
 using BlazeHarness.Web.Services;
@@ -17,6 +18,7 @@ using BlazeHarness.Web.Services;
 AppContext.SetData("REGEX_DEFAULT_MATCH_TIMEOUT", TimeSpan.FromSeconds(2));
 
 const int MaxHubMessageBytes = 4 * 1024 * 1024;
+const string WebSearchClientName = "web-search";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +59,11 @@ builder.Services.AddSingleton<IMcpConnector, SdkMcpConnector>();
 builder.Services.AddSingleton<McpManager>();
 builder.Services.AddSingleton<McpServerEditor>();
 builder.Services.AddSingleton(sp => new SkillCatalog(paths, sp.GetRequiredService<JsonFileStore<AppConfig>>(), sp.GetRequiredService<ILogger<SkillCatalog>>(), time: sp.GetRequiredService<TimeProvider>()));
+builder.Services.AddSingleton(sp => new WebServices(
+    () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.Web,
+    sp.GetRequiredService<IHttpClientFactory>().CreateClient(WebSearchClientName),
+    sp.GetRequiredService<ILoggerFactory>(),
+    sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<SessionStore>(),
     sp.GetRequiredService<ChatClientSource>().CreateAsync,
@@ -67,9 +74,12 @@ builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<PermissionDefaults>(),
     sp.GetRequiredService<McpManager>(),
     sp.GetRequiredService<SkillCatalog>(),
-    () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.Compaction));
+    () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.Compaction,
+    sp.GetRequiredService<WebServices>()));
 builder.Services.AddSingleton(sp => new FolderRegistry(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient(WebSearchClientName, client => client.Timeout = TimeSpan.FromSeconds(30))
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false, PooledConnectionLifetime = TimeSpan.FromMinutes(2) });
 builder.Services.AddHttpClient(ChatClientSource.HttpClientName, client => client.Timeout = Timeout.InfiniteTimeSpan);
 
 builder.Services.AddRazorComponents()

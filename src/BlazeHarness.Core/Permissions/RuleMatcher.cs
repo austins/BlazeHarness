@@ -103,6 +103,25 @@ internal static class RuleMatcher
         return decided;
     }
 
+    /// <summary>
+    /// Find the rule that decides a web tool call.
+    /// </summary>
+    /// <param name="rules">The rules to search.</param>
+    /// <param name="target">The host being fetched, or <c>web_search</c>.</param>
+    /// <returns>The deciding rule, or null when none applies.</returns>
+    public static PermissionRule? ForWeb(IReadOnlyList<PermissionRule> rules, string target)
+    {
+        // Host names are not case-sensitive, so both sides are compared in upper case.
+        var text = target.ToUpperInvariant();
+        PermissionRule? decided = null;
+        foreach (var rule in rules.Where(r => r.Target == RuleTarget.WebHost && r.Pattern.Length > 0 && Matches(r, Compile(r.Pattern.ToUpperInvariant(), pathStyle: false), text)))
+        {
+            decided = Stronger(decided, rule);
+        }
+
+        return decided;
+    }
+
     private static PermissionRule Stronger(PermissionRule? current, PermissionRule next)
     {
         return current is { Action: PermissionVerdict.Deny } && next.Action != PermissionVerdict.Deny ? current : next;

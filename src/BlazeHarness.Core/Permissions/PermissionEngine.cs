@@ -131,6 +131,7 @@ public sealed class PermissionEngine
         var decision = tool switch
         {
             IMcpTool mcp => EvaluateMcp(mcp, settings),
+            IWebTool web => EvaluateWeb(web, arguments, settings),
             { RunsCommands: true } => EvaluateCommand(arguments, settings),
             _ => EvaluatePaths(tool, arguments, settings, context),
         };
@@ -213,6 +214,10 @@ public sealed class PermissionEngine
         {
             rule = RuleMatcher.ForMcpTool(rules, mcp.ServerName, mcp.RemoteName);
         }
+        else if (tool is IWebTool web)
+        {
+            rule = web.Describe(arguments) is { } request ? RuleMatcher.ForWeb(rules, request.Target) : null;
+        }
         else if (tool.RunsCommands)
         {
             rule = RuleMatcher.ForCommand(rules, Text(arguments, "command") ?? string.Empty);
@@ -232,6 +237,17 @@ public sealed class PermissionEngine
         }
 
         return rule is null ? decision : ApplyRule(rule, decision);
+    }
+
+    private static PermissionDecision EvaluateWeb(IWebTool tool, JsonElement arguments, PermissionSettings settings)
+    {
+        // Malformed arguments are refused by the tool itself, so there is nothing to ask about.
+        if (tool.Describe(arguments) is not { } request || settings.IsRisky)
+        {
+            return PermissionDecision.Allow;
+        }
+
+        return new PermissionDecision(PermissionVerdict.Ask, request.Reason, request.GrantKey);
     }
 
     private PermissionDecision EvaluateMcp(IMcpTool tool, PermissionSettings settings)

@@ -43,6 +43,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 * Export and import of sessions.
 * MCP servers, added and edited in a form (secrets go in the OS keychain) or in a standard `mcp.json`, and enabled globally or per session.
 * Skills, loaded on demand from `SKILL.md` folders in `~/.blazeharness/skills`, `~/.agents/skills`, and a folder's own `.agents/skills`.
+* Web search and web fetch tools (Settings > Web). Search uses keyless public providers (DuckDuckGo, Exa, Parallel, Keenable), in parallel or one at a time, with retries and a pause after repeated failures. Fetch reads HTML, PDF and text from the public internet only, and pages are cached in memory per session. Each use asks first unless the chat is Unrestricted or never asks; rules can match a host. JavaScript is not run, and system proxy settings are not used.
 
 ## Planned and ideas
 
@@ -51,7 +52,7 @@ Not built yet, and not promised:
 * A touch-friendly layout for use from a phone or tablet. Listening beyond localhost is possible with `--host 0.0.0.0`; the layout is the missing part.
 * Localization of the web UI, starting with English.
 * An in-app browser that the agent can use to open a running service, read the page, and take a screenshot.
-* Web search and web fetch tools, so the agent can look things up and read pages, with the usual approval prompts.
+* Reading Office documents (docx, xlsx, pptx) in the web fetch tool, which today reads HTML, PDF and text.
 * An "Ask user" tool that lets the agent pause and ask you a question, with free text or choices.
 * Subagents that work in their own context and return a summary.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
