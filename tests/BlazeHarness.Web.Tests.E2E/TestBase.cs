@@ -17,7 +17,7 @@ namespace BlazeHarness.Web.Tests.E2E;
 public abstract class TestBase : IAsyncLifetime
 {
     protected const string ProviderName = "Fake Provider";
-    protected const string ModelId = "fake-model";
+    private const string ModelId = "fake-model";
 
     private readonly BrowserFixture _browser;
     private readonly TempFolder _home = new("bh-e2e-");
@@ -33,8 +33,6 @@ public abstract class TestBase : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        Assert.SkipWhen(_browser.Browser is null, _browser.SkipReason ?? "The browser is not available.");
-
         var providers = new ProvidersDocument
         {
             Providers =
@@ -58,7 +56,7 @@ public abstract class TestBase : IAsyncLifetime
 
 #pragma warning disable IDISP003 // Set once per test.
         _factory = new AppFactory(_home.Root);
-        _context = await _browser.Browser.NewContextAsync(new BrowserNewContextOptions { BaseURL = _factory.ClientOptions.BaseAddress.AbsoluteUri });
+        _context = await _browser.Browser!.NewContextAsync(new BrowserNewContextOptions { BaseURL = _factory.ClientOptions.BaseAddress.AbsoluteUri });
         _context.SetDefaultTimeout((float)TestTimeouts.Default.TotalMilliseconds);
         Page = await _context.NewPageAsync();
 #pragma warning restore IDISP003
@@ -72,10 +70,7 @@ public abstract class TestBase : IAsyncLifetime
 
     protected virtual async ValueTask DisposeAsyncCore()
     {
-        if (Page is not null)
-        {
-            await Page.CloseAsync();
-        }
+        await Page.CloseAsync();
 
         if (_context is not null)
         {
