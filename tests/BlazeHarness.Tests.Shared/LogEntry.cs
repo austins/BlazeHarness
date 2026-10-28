@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace BlazeHarness.Tests.Shared;
 
 /// <summary>One entry a <see cref="LoggerFake"/> recorded.</summary>

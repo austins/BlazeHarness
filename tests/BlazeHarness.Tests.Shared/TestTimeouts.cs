@@ -1,3 +1,5 @@
+using Xunit;
+
 namespace BlazeHarness.Tests.Shared;
 
 /// <summary>Bounds for waiting in tests. They only matter when a test is already failing, so they are generous.</summary>

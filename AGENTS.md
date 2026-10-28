@@ -34,7 +34,7 @@
 
 ## Tests
 
-- One project per source project and kind: `<Project>.Tests.Unit` (no file I/O, processes or network) and `<Project>.Tests.Integration` (real file system, processes, fake HTTP servers). Shared settings live in `tests/Directory.Build.props`.
+- One project per source project and kind: `<Project>.Tests.Unit` (no file I/O, processes or network) and `<Project>.Tests.Integration` (real file system, processes, fake HTTP servers). Test projects explicitly import `tests/TestProject.props`; the shared helper library does not.
 - Mirror the source folder and namespace (`Secrets/ApiKeyResolverTests.cs` -> `BlazeHarness.Core.Tests.Unit.Secrets`). One test class per file.
 - xUnit v3 on Microsoft.Testing.Platform, NSubstitute, AwesomeAssertions (`.Should()`). `Method_Scenario_Expected` names, `// Arrange` / `// Act` / `// Assert`, class under test in `_sut`.
 - Put helpers used by multiple test projects in `tests/BlazeHarness.Tests.Shared` (`LoggerFake<T>`, `ScriptedChatClient`, `FakeOpenAiServer`, `TempFolder`, `TestTargets`, `TestTimeouts.Default` with `.Bounded()`, `RecordingSessionLog`); keep single-project helpers in that project.

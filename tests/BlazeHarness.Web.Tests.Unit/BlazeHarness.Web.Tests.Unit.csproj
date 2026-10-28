@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+    <Import Project="../TestProject.props"/>
+
     <ItemGroup>
-        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
         <ProjectReference Include="..\..\src\BlazeHarness.Web\BlazeHarness.Web.csproj"/>
     </ItemGroup>
 </Project>

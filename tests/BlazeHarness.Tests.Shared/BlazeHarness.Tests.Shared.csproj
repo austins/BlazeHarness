@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <OutputType>Library</OutputType>
-        <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
-        <IsTestSupport>true</IsTestSupport>
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>

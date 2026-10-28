@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Logging;
+using Xunit;
+
 namespace BlazeHarness.Tests.Shared;
 
 /// <summary>A logger that keeps what it is given in memory. It is safe to log to from timers and background threads.</summary>

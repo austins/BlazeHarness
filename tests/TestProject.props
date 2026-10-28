@@ -1,6 +1,4 @@
 <Project>
-    <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
-
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
@@ -22,7 +20,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="xunit.v3.core" Version="4.0.2" Condition="'$(IsTestSupport)' != 'true'"/>
+        <PackageReference Include="xunit.v3.core" Version="4.0.2"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -36,6 +34,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="$(MSBuildThisFileDirectory)BlazeHarness.Tests.Shared/BlazeHarness.Tests.Shared.csproj" Condition="'$(IsTestSupport)' != 'true'"/>
+        <ProjectReference Include="$(MSBuildThisFileDirectory)BlazeHarness.Tests.Shared/BlazeHarness.Tests.Shared.csproj"/>
     </ItemGroup>
 </Project>
