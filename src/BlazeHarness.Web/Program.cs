@@ -109,10 +109,3 @@ var sandbox = app.Services.GetRequiredService<IShellSandbox>();
 _ = Task.Run(() => sandbox.Status);
 
 await HostLauncher.RunAsync(app, args);
-
-/// <summary>
-/// The entry point, exposed so integration and end-to-end tests can host the app.
-/// </summary>
-#pragma warning disable S1118 // The compiler-generated entry point class cannot be made static.
-public partial class Program;
-#pragma warning restore S1118

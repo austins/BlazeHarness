@@ -17,8 +17,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="BlazeHarness.Core.Tests.Unit"/>
-        <InternalsVisibleTo Include="BlazeHarness.Core.Tests.Integration"/>
+        <InternalsVisibleTo Include="$(AssemblyName).Tests.Unit"/>
+        <InternalsVisibleTo Include="$(AssemblyName).Tests.Integration"/>
+        <InternalsVisibleTo Include="DynamicProxyGenAssembly2"/>
     </ItemGroup>
 
     <ItemGroup>
