@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Config;
+using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 

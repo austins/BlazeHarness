@@ -3,6 +3,7 @@ using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Secrets;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Config;
+using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Config;
 

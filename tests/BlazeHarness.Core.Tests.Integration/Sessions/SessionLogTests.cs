@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BlazeHarness.Core.Tests.Integration.Sessions;

@@ -2,6 +2,8 @@ using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sessions;
 using BlazeHarness.Core.Skills;
+using BlazeHarness.Tests.Shared;
+using BlazeHarness.Tests.Shared.Agent;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 

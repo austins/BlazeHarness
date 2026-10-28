@@ -1,4 +1,6 @@
 using BlazeHarness.Core.Compaction;
+using BlazeHarness.Tests.Shared;
+using BlazeHarness.Tests.Shared.Agent;
 using Microsoft.Extensions.AI;
 
 namespace BlazeHarness.Core.Tests.Unit.Compaction;

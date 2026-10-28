@@ -1,3 +1,4 @@
+using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
 

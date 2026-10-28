@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Folders;
 

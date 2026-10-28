@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Tests.Shared.Agent;
 
 #pragma warning disable IDISP001 // The service disposes the sessions it opens.
 

@@ -2,6 +2,8 @@ using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Tests.Shared;
+using BlazeHarness.Tests.Shared.Agent;
 using Microsoft.Extensions.Logging.Abstractions;
 
 #pragma warning disable IDISP001 // The service disposes the sessions it opens.

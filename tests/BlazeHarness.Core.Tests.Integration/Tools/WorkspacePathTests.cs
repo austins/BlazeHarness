@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Tests.Shared;
 using System.Runtime.Versioning;
 
 namespace BlazeHarness.Core.Tests.Integration.Tools;

@@ -1,3 +1,5 @@
+using BlazeHarness.Core.Folders;
+
 namespace BlazeHarness.Web.Tests.E2E.Components.Conversation;
 
 public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)

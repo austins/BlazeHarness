@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Providers;
+using BlazeHarness.Tests.Shared.Providers;
 using Microsoft.Extensions.AI;
 using System.Net;
 using System.Text.Json;

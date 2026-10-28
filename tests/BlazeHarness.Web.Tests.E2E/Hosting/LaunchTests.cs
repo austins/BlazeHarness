@@ -1,3 +1,5 @@
+using BlazeHarness.Web.Hosting;
+
 namespace BlazeHarness.Web.Tests.E2E.Hosting;
 
 public sealed class LaunchTests(BrowserFixture browser) : TestBase(browser)

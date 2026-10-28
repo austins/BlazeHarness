@@ -1,6 +1,8 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Tests.Shared;
+using BlazeHarness.Tests.Shared.Agent;
 using Microsoft.Extensions.AI;
 
 namespace BlazeHarness.Core.Tests.Unit.Sessions;

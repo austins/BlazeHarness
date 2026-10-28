@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Time.Testing;
 using System.Text.Json;
 

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Attachments;
 

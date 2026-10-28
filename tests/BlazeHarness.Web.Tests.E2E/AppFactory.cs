@@ -1,3 +1,5 @@
+using BlazeHarness.Core;
+using BlazeHarness.Web.Hosting;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Hosting;

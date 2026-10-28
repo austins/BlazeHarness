@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Tests.Shared;
 using System.Text.Json;
 
 namespace BlazeHarness.Core.Tests.Unit.Agent;

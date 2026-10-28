@@ -23,15 +23,10 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="xunit.v3.core" Version="4.0.2" Condition="'$(IsTestSupport)' != 'true'"/>
-        <PackageReference Include="xunit.v3.extensibility.core" Version="4.0.2" Condition="'$(IsTestSupport)' == 'true'"/>
     </ItemGroup>
 
     <ItemGroup>
         <Using Include="AwesomeAssertions"/>
-        <Using Include="BlazeHarness.Tests.Shared"/>
-        <Using Include="BlazeHarness.Tests.Shared.Agent"/>
-        <Using Include="BlazeHarness.Tests.Shared.Providers"/>
-        <Using Include="BlazeHarness.Tests.Shared.Sessions"/>
         <Using Include="Microsoft.Extensions.Logging"/>
         <Using Include="NSubstitute"/>
         <Using Include="NSubstitute.ClearExtensions"/>

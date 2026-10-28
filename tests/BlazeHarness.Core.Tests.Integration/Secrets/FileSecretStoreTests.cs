@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Secrets;
+using BlazeHarness.Tests.Shared;
 using System.Runtime.Versioning;
 
 namespace BlazeHarness.Core.Tests.Integration.Secrets;

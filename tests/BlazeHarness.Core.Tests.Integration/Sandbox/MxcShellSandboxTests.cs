@@ -2,6 +2,7 @@ using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tests.Integration.Tools;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Time.Testing;
 
 namespace BlazeHarness.Core.Tests.Integration.Sandbox;

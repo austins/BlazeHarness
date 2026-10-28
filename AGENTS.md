@@ -29,6 +29,8 @@
 - Every public type and member needs XML docs (CS1591 is an error in `src/`): `<summary>`, plus `<remarks>`, `<param>`, `<returns>` and `<exception>` where they add something. Use `<inheritdoc />` on interface implementations and `<param>` on the type for positional records. Properties start with "Gets" or "Gets or sets"; method summaries use the imperative.
 - Give every `#pragma warning disable` a trailing comment saying why.
 - Don't use `.ConfigureAwait(false)` unless a case really needs it. Blazor components run on the circuit's `SynchronizationContext` and must resume on it, and the host has no other context to avoid. Never block on a task (`.Result`, `.Wait()`, `GetAwaiter().GetResult()`); marshal events raised on other threads with `InvokeAsync`.
+- Use C# 14 extension blocks (`extension(Type receiver)`) for extension members instead of `this`-parameter extension methods.
+- Keep solution-owned namespaces (`BlazeHarness.*`) file-local: use ordinary `using` directives, not global usings or project-level `<Using Include="..."/>`. Global usings are fine for framework and external package namespaces.
 
 ## Tests
 

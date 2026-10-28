@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Secrets;
+using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Secrets;
 

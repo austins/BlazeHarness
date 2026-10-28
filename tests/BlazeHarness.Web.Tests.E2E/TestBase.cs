@@ -1,5 +1,8 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Providers;
+using BlazeHarness.Tests.Shared;
+using BlazeHarness.Tests.Shared.Providers;
+using BlazeHarness.Web.Hosting;
 using System.Text.Json;
 
 namespace BlazeHarness.Web.Tests.E2E;

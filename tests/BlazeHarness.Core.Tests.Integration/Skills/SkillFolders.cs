@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Skills;
+using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Skills;
 

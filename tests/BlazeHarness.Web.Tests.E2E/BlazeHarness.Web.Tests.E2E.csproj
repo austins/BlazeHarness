@@ -8,9 +8,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Using Include="BlazeHarness.Core"/>
-        <Using Include="BlazeHarness.Core.Folders"/>
-        <Using Include="BlazeHarness.Web.Hosting"/>
         <Using Include="Microsoft.Extensions.DependencyInjection"/>
         <Using Include="Microsoft.Playwright"/>
     </ItemGroup>

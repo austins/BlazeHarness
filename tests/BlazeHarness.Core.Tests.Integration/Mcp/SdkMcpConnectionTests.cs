@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Mcp;
+using BlazeHarness.Tests.Shared;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;

@@ -1,3 +1,5 @@
+using BlazeHarness.Tests.Shared;
+
 namespace BlazeHarness.Web.Tests.E2E;
 
 /// <summary>

@@ -2,6 +2,9 @@ using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sessions;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Tests.Shared;
+using BlazeHarness.Tests.Shared.Agent;
+using BlazeHarness.Tests.Shared.Sessions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Time.Testing;
 

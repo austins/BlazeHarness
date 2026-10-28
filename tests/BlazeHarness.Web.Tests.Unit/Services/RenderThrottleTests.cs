@@ -1,3 +1,4 @@
+using BlazeHarness.Tests.Shared;
 using BlazeHarness.Web.Services;
 using Microsoft.Extensions.Time.Testing;
 

@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Secrets;
+using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BlazeHarness.Core.Tests.Integration.Mcp;

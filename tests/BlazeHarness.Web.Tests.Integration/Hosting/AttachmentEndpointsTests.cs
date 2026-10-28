@@ -1,5 +1,6 @@
 using BlazeHarness.Core;
 using BlazeHarness.Core.Sessions;
+using BlazeHarness.Tests.Shared;
 using BlazeHarness.Web.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
