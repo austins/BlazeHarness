@@ -4,7 +4,7 @@ namespace BlazeHarness.Web.Hosting;
 
 /// <summary>
 /// Gate in front of everything, including the <c>/_blazor</c> SignalR connection. A request must have a <c>Host</c> that is
-/// <c>localhost</c> or an IP address on the listening port, and a same-origin <c>Origin</c> when one is sent (always for SignalR
+/// <c>localhost</c>, an IP address, or (when listening on all interfaces) this machine's name on the listening port, and a same-origin <c>Origin</c> when one is sent (always for SignalR
 /// connections). The Host check stops DNS rebinding, which needs a domain name, and the Origin check stops other web pages.
 /// There is no sign-in: whoever can reach the port can use the app, so the listening address is the access control.
 /// </summary>
@@ -19,6 +19,8 @@ public sealed class LocalAccessMiddleware(RequestDelegate next, AccessPolicy pol
     public const string PageContentSecurityPolicy =
         "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; "
         + "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
+    private static readonly string[] PrivateSuffixes = [".lan", ".local", ".localdomain", ".home", ".internal", ".home.arpa"];
 
     /// <summary>
     /// Allow or reject a request.
@@ -76,7 +78,24 @@ public sealed class LocalAccessMiddleware(RequestDelegate next, AccessPolicy pol
             return true;
         }
 
-        return policy.AllowAnyHost && IPAddress.TryParse(name, out _);
+        return policy.AllowAnyHost && (IPAddress.TryParse(name, out _) || IsMachineName(name));
+    }
+
+    private bool IsMachineName(string name)
+    {
+        if (policy.MachineName.Length == 0)
+        {
+            return false;
+        }
+
+        if (name.Equals(policy.MachineName, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var prefix = policy.MachineName + ".";
+        return name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            && PrivateSuffixes.Any(suffix => name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase));
     }
 
     private static Task RejectAsync(HttpContext context, int status, string message)

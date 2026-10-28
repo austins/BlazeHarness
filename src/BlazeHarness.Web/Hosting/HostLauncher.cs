@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using System.Diagnostics;
 using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 
 namespace BlazeHarness.Web.Hosting;
 
@@ -89,9 +91,15 @@ public static class HostLauncher
         var url = $"http://127.0.0.1:{port}";
 
         Console.WriteLine($"BlazeHarness is running at {url}");
-        if (app.Services.GetRequiredService<AccessPolicy>().AllowAnyHost)
+        var policy = app.Services.GetRequiredService<AccessPolicy>();
+        if (policy.AllowAnyHost)
         {
-            Console.WriteLine($"Listening on all interfaces over plain HTTP with no sign-in: anyone who can reach port {port} can use it. Use this machine's IP address from other devices, and limit access with a firewall.");
+            Console.WriteLine($"Listening on all interfaces over plain HTTP with no sign-in: anyone who can reach port {port} can use it. Limit access with a firewall.");
+            Console.WriteLine("From another device, open one of:");
+            foreach (var reachable in ReachableUrls(LocalIPv4Addresses(), policy.MachineName, port))
+            {
+                Console.WriteLine($"  {reachable}");
+            }
         }
 
         if (ShouldOpenBrowser(args, app.Configuration))
@@ -103,6 +111,29 @@ public static class HostLauncher
     }
 
     /// <summary>
+    /// List the URLs another device can use to reach the app.
+    /// </summary>
+    /// <param name="addresses">The IP addresses of this machine.</param>
+    /// <param name="machineName">The host name of this machine, or empty for none.</param>
+    /// <param name="port">The listening port.</param>
+    /// <returns>One URL per address, then the host name URL, which only works if the network resolves the name.</returns>
+    public static IReadOnlyList<string> ReachableUrls(IEnumerable<IPAddress> addresses, string machineName, int port)
+    {
+        ArgumentNullException.ThrowIfNull(addresses);
+        ArgumentNullException.ThrowIfNull(machineName);
+
+#pragma warning disable S5332 // The app only serves plain HTTP; there is no TLS to switch to.
+        var urls = addresses.Select(a => $"http://{a}:{port}").ToList();
+        if (machineName.Length > 0)
+        {
+            urls.Add($"http://{machineName}:{port} (only if your network resolves the name)");
+        }
+#pragma warning restore S5332
+
+        return urls;
+    }
+
+    /// <summary>
     /// Make Kestrel listen on one address.
     /// </summary>
     /// <param name="builder">The application builder.</param>
@@ -111,6 +142,16 @@ public static class HostLauncher
     public static void ConfigureKestrel(WebApplicationBuilder builder, IPAddress address, int port)
     {
         builder.WebHost.ConfigureKestrel(options => options.Listen(address, port));
+    }
+
+    private static IEnumerable<IPAddress> LocalIPv4Addresses()
+    {
+        return NetworkInterface.GetAllNetworkInterfaces()
+            .Where(n => n.OperationalStatus == OperationalStatus.Up && n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+            .SelectMany(n => n.GetIPProperties().UnicastAddresses)
+            .Select(a => a.Address)
+            .Where(a => a.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(a))
+            .Distinct();
     }
 
     private static void TryOpenBrowser(string url)

@@ -23,6 +23,29 @@ public sealed class HostLauncherTests
     }
 
     [Fact]
+    public void ReachableUrls_AddressesAndName_ListsEachWithThePort()
+    {
+        // Act
+        var urls = HostLauncher.ReachableUrls([IPAddress.Parse("192.168.1.38"), IPAddress.Parse("10.0.0.4")], "mypc", 5877);
+
+        // Assert
+        urls.Should().Equal(
+            "http://192.168.1.38:5877",
+            "http://10.0.0.4:5877",
+            "http://mypc:5877 (only if your network resolves the name)");
+    }
+
+    [Fact]
+    public void ReachableUrls_NoName_ListsOnlyAddresses()
+    {
+        // Act
+        var urls = HostLauncher.ReachableUrls([IPAddress.Parse("192.168.1.38")], string.Empty, 5877);
+
+        // Assert
+        urls.Should().Equal("http://192.168.1.38:5877");
+    }
+
+    [Fact]
     public void ConfiguredHost_NothingSet_IsLoopback()
     {
         // Act

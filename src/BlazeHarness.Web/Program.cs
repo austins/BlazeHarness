@@ -28,7 +28,7 @@ if (listenOnAllInterfaces)
 }
 
 HostLauncher.ConfigureKestrel(builder, listenAddress, HostLauncher.ConfiguredPort(args, builder.Configuration));
-builder.Services.AddSingleton(new AccessPolicy(listenOnAllInterfaces));
+builder.Services.AddSingleton(new AccessPolicy(listenOnAllInterfaces) { MachineName = Environment.MachineName });
 
 var paths = AppPaths.FromConfiguration(builder.Configuration);
 builder.Services.AddSingleton<ILoggerProvider>(_ => new FileLoggerProvider(paths.LogsDirectory, TimeProvider.System));

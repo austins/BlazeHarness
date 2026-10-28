@@ -148,7 +148,10 @@ public sealed class LocalAccessMiddlewareTests
 
     [Theory]
     [InlineData("evil.com:5555")]
-    [InlineData("mypc.local:5555")]
+    [InlineData("other:5555")]
+    [InlineData("mypc.evil.com:5555")]
+    [InlineData("mypc.lan.evil.com:5555")]
+    [InlineData("evil.lan:5555")]
     [InlineData("192.168.1.20:9999")]
     [InlineData("192.168.1.20")]
     public async Task InvokeAsync_DomainOrWrongPortWhenAllInterfaces_Returns403(string host)
@@ -163,6 +166,39 @@ public sealed class LocalAccessMiddlewareTests
         // Assert
         context.Response.StatusCode.Should().Be(403);
         _nextCalled.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("mypc:5555")]
+    [InlineData("MyPC:5555")]
+    [InlineData("mypc.lan:5555")]
+    [InlineData("mypc.local:5555")]
+    [InlineData("mypc.home.arpa:5555")]
+    public async Task InvokeAsync_MachineNameWhenAllInterfaces_CallsNext(string host)
+    {
+        // Arrange
+        var sut = CreateAllInterfaces();
+        var context = CreateContext(host);
+
+        // Act
+        await sut.InvokeAsync(context);
+
+        // Assert
+        _nextCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task InvokeAsync_MachineNameWhenLoopbackOnly_Returns403()
+    {
+        // Arrange
+        var sut = new LocalAccessMiddleware(_ => Task.CompletedTask, new AccessPolicy(AllowAnyHost: false) { MachineName = "mypc" });
+        var context = CreateContext("mypc:5555");
+
+        // Act
+        await sut.InvokeAsync(context);
+
+        // Assert
+        context.Response.StatusCode.Should().Be(403);
     }
 
     [Fact]
@@ -185,7 +221,7 @@ public sealed class LocalAccessMiddlewareTests
             _nextCalled = true;
             return Task.CompletedTask;
         },
-        new AccessPolicy(AllowAnyHost: true));
+        new AccessPolicy(AllowAnyHost: true) { MachineName = "mypc" });
 
     private static DefaultHttpContext CreateContext(
         string host,
