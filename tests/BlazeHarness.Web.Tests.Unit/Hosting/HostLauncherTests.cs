@@ -65,18 +65,39 @@ public sealed class HostLauncherTests
         address.Should().Be(IPAddress.Any);
     }
 
-    [Theory]
-    [InlineData("--port", "8123", 8123)]
-    [InlineData("--port", "abc", 0)]
-    [InlineData("--port", "70000", 0)]
-    [InlineData("--port", "-1", 0)]
-    public void ConfiguredPort_FromArgs_ParsesOrFallsBackToFreePort(string flag, string value, int expected)
+    [Fact]
+    public void ConfiguredPort_NothingSet_UsesTheDefault()
     {
         // Act
-        var port = HostLauncher.ConfiguredPort([flag, value], Setting("x", null));
+        var port = HostLauncher.ConfiguredPort([], Setting("x", null));
+
+        // Assert
+        port.Should().Be(HostLauncher.DefaultPort);
+    }
+
+    [Theory]
+    [InlineData("8123", 8123)]
+    [InlineData("0", 0)]
+    public void ConfiguredPort_FromArgs_ParsesIt(string value, int expected)
+    {
+        // Act
+        var port = HostLauncher.ConfiguredPort(["--port", value], Setting("x", null));
 
         // Assert
         port.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("70000")]
+    [InlineData("-1")]
+    public void ConfiguredPort_InvalidArg_Throws(string value)
+    {
+        // Act
+        var act = () => HostLauncher.ConfiguredPort(["--port", value], Setting("x", null));
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
@@ -102,14 +123,13 @@ public sealed class HostLauncherTests
     [Theory]
     [InlineData("not a number")]
     [InlineData("99999")]
-    [InlineData("")]
-    public void ConfiguredPort_InvalidEnvironment_FallsBackToFreePort(string value)
+    public void ConfiguredPort_InvalidEnvironment_Throws(string value)
     {
         // Act
-        var port = HostLauncher.ConfiguredPort([], Setting(HostLauncher.PortSettingKey, value));
+        var act = () => HostLauncher.ConfiguredPort([], Setting(HostLauncher.PortSettingKey, value));
 
         // Assert
-        port.Should().Be(0);
+        act.Should().Throw<InvalidOperationException>();
     }
 
     [Fact]

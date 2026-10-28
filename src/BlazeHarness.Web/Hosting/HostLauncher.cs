@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using System.Diagnostics;
@@ -8,7 +9,7 @@ using System.Net.Sockets;
 namespace BlazeHarness.Web.Hosting;
 
 /// <summary>
-/// Starts the server on a free loopback port (or the configured address) and opens the browser.
+/// Starts the server on a fixed port (or the configured address and port) and opens the browser.
 /// </summary>
 public static class HostLauncher
 {
@@ -18,9 +19,14 @@ public static class HostLauncher
     public const string HostSettingKey = "BLAZEHARNESS_HOST";
 
     /// <summary>
-    /// The configuration key (and environment variable) that pins the listening port.
+    /// The configuration key (and environment variable) that sets the listening port.
     /// </summary>
     public const string PortSettingKey = "BLAZEHARNESS_PORT";
+
+    /// <summary>
+    /// The port the app listens on unless the user picks another one.
+    /// </summary>
+    public const int DefaultPort = 5380;
 
     /// <summary>
     /// The configuration key (and environment variable) that, when set to any value, stops the browser from opening automatically.
@@ -47,11 +53,12 @@ public static class HostLauncher
     }
 
     /// <summary>
-    /// Get the port the user asked for.
+    /// Get the port to listen on.
     /// </summary>
     /// <param name="args">The command line arguments; <c>--port N</c> wins over the setting.</param>
     /// <param name="configuration">The app configuration, which carries <see cref="PortSettingKey"/> (from the environment by default).</param>
-    /// <returns>The requested port, or 0 to let the OS pick a free one when none or an invalid one was given.</returns>
+    /// <returns>The requested port, or <see cref="DefaultPort"/> when none was given. Port 0 lets the OS pick a free one.</returns>
+    /// <exception cref="InvalidOperationException">The requested port is not a number from 0 to 65535.</exception>
     public static int ConfiguredPort(string[] args, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(args);
@@ -59,7 +66,14 @@ public static class HostLauncher
 
         var index = Array.IndexOf(args, "--port");
         var text = index >= 0 && index + 1 < args.Length ? args[index + 1] : configuration[PortSettingKey];
-        return int.TryParse(text, out var port) && port is >= 0 and <= 65535 ? port : 0;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return DefaultPort;
+        }
+
+        return int.TryParse(text, out var port) && port is >= 0 and <= 65535
+            ? port
+            : throw new InvalidOperationException("The port must be a number from 0 to 65535.");
     }
 
     /// <summary>
@@ -84,7 +98,16 @@ public static class HostLauncher
     /// <returns>A task that completes when the app shuts down.</returns>
     public static async Task RunAsync(WebApplication app, string[] args)
     {
-        await app.StartAsync();
+        try
+        {
+            await app.StartAsync();
+        }
+        catch (IOException ex) when (ex.InnerException is AddressInUseException)
+        {
+            Console.WriteLine($"Could not start: the port is already in use. Close the other program, or pick another port with --port N (or {PortSettingKey}).");
+            Environment.ExitCode = 1;
+            return;
+        }
 
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
         var port = new Uri(address).Port;
@@ -138,7 +161,7 @@ public static class HostLauncher
     /// </summary>
     /// <param name="builder">The application builder.</param>
     /// <param name="address">The address to listen on; loopback unless the user opted in to all interfaces.</param>
-    /// <param name="port">The port to listen on, or 0 for a free one.</param>
+    /// <param name="port">The port to listen on.</param>
     public static void ConfigureKestrel(WebApplicationBuilder builder, IPAddress address, int port)
     {
         builder.WebHost.ConfigureKestrel(options => options.Listen(address, port));

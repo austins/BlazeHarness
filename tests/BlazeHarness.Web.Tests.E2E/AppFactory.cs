@@ -26,6 +26,8 @@ public sealed class AppFactory : WebApplicationFactory<Program>
         builder.UseStaticWebAssets();
         builder.UseEnvironment(Environments.Staging);
         builder.UseSetting(AppPaths.HomeSettingKey, _home);
+        // A free port per instance, so parallel tests do not fight over the default one.
+        builder.UseSetting(HostLauncher.PortSettingKey, "0");
         // Program starts the launcher, which would open the developer's default browser without this.
         builder.UseSetting(HostLauncher.NoBrowserSettingKey, "1");
     }
