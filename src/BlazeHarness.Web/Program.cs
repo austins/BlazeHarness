@@ -88,7 +88,8 @@ app.MapExport();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-_ = Task.Run(() => app.Services.GetRequiredService<IShellSandbox>().Status);
+var sandbox = app.Services.GetRequiredService<IShellSandbox>();
+_ = Task.Run(() => sandbox.Status);
 
 await HostLauncher.RunAsync(app, args);
 

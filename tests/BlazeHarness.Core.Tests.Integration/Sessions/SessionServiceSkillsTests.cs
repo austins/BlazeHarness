@@ -40,7 +40,7 @@ public sealed class SessionServiceSkillsTests : IDisposable
         var info = await Sut.CreateAsync(_rig.Work, TestContext.Current.CancellationToken);
 
         // Act
-        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"));
+        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         var prompt = _rig.Client.Requests[0][0].Text;
@@ -53,10 +53,10 @@ public sealed class SessionServiceSkillsTests : IDisposable
     {
         // Arrange
         var info = await Sut.CreateAsync(_rig.Work, TestContext.Current.CancellationToken);
-        await Sut.SetSkillAsync(info.Id, "report", enabled: false);
+        await Sut.SetSkillAsync(info.Id, "report", enabled: false, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
-        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"));
+        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         _rig.Client.Requests[0][0].Text.Should().Contain("- local:").And.NotContain("- report:");
@@ -68,10 +68,10 @@ public sealed class SessionServiceSkillsTests : IDisposable
         // Arrange
         await _skills.SetDisabledAsync("report", true, TestContext.Current.CancellationToken);
         var info = await Sut.CreateAsync(_rig.Work, TestContext.Current.CancellationToken);
-        await Sut.SetSkillAsync(info.Id, "report", enabled: true);
+        await Sut.SetSkillAsync(info.Id, "report", enabled: true, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
-        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"));
+        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         _rig.Client.Requests[0][0].Text.Should().Contain("- report:");
@@ -82,11 +82,11 @@ public sealed class SessionServiceSkillsTests : IDisposable
     {
         // Arrange
         var info = await Sut.CreateAsync(_rig.Work, TestContext.Current.CancellationToken);
-        await Sut.SetSkillAsync(info.Id, "report", enabled: false);
-        await Sut.SetSkillAsync(info.Id, "local", enabled: false);
+        await Sut.SetSkillAsync(info.Id, "report", enabled: false, cancellationToken: TestContext.Current.CancellationToken);
+        await Sut.SetSkillAsync(info.Id, "local", enabled: false, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
-        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"));
+        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         _rig.Client.Requests[0][0].Text.Should().NotContain("load_skill");
@@ -100,10 +100,10 @@ public sealed class SessionServiceSkillsTests : IDisposable
         var info = await Sut.CreateAsync(_rig.Work, TestContext.Current.CancellationToken);
 
         // Act
-        await Sut.SetSkillAsync(info.Id, "report", enabled: false);
+        await Sut.SetSkillAsync(info.Id, "report", enabled: false, cancellationToken: TestContext.Current.CancellationToken);
         var enabledAfterChoice = Sut.IsSkillEnabled(info.Id, "report");
         var savedAfterChoice = _rig.Store.Find(info.Id)!.Skills;
-        await Sut.SetSkillAsync(info.Id, "report", enabled: null);
+        await Sut.SetSkillAsync(info.Id, "report", enabled: null, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         enabledAfterChoice.Should().BeFalse();

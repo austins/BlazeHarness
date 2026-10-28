@@ -152,7 +152,7 @@ public sealed class SessionStoreTests : IDisposable
         var info = await _sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await Task.WhenAll(Enumerable.Range(0, 20).Select(i => _sut.UpdateAsync(info.Id, s => s with { Title = s.Title + "x" }, cancellationToken: ct)));
+        await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => _sut.UpdateAsync(info.Id, s => s with { Title = s.Title + "x" }, cancellationToken: ct)));
 
         // Assert
         _sut.Find(info.Id)!.Title.Should().Be(new string('x', 20));

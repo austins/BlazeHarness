@@ -4,6 +4,21 @@ namespace BlazeHarness.Core.Tests.Unit.Permissions;
 
 public sealed class ShellCommandParserTests
 {
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Parse_NullOrBlankCommand_ReturnsNoSegments(string? command)
+    {
+        // Arrange
+
+        // Act
+        var segments = ShellCommandParser.Parse(command);
+
+        // Assert
+        segments.Should().BeEmpty();
+    }
+
     [Fact]
     public void Parse_Pipeline_GivesEachCommand()
     {

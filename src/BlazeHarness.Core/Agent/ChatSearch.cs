@@ -13,9 +13,9 @@ public static class ChatSearch
     /// tool output are not searched.
     /// </remarks>
     /// <param name="entries">The messages of the conversation, oldest first.</param>
-    /// <param name="query">The text to look for; it is trimmed, and a blank query matches nothing.</param>
+    /// <param name="query">The text to look for; it is trimmed, and a null or blank query matches nothing.</param>
     /// <returns>The ids of the matching messages, oldest first.</returns>
-    public static IReadOnlyList<Guid> Find(IReadOnlyList<ChatEntry> entries, string query)
+    public static IReadOnlyList<Guid> Find(IReadOnlyList<ChatEntry> entries, string? query)
     {
         ArgumentNullException.ThrowIfNull(entries);
         var text = query?.Trim();

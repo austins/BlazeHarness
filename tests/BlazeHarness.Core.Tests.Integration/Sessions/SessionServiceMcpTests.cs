@@ -54,7 +54,7 @@ public sealed class SessionServiceMcpTests : IAsyncLifetime
         var info = await Sut.CreateAsync(_rig.Work, TestContext.Current.CancellationToken);
 
         // Act
-        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"));
+        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         _rig.Client.Options[0]!.Tools!.Select(t => t.Name).Should().Contain("files__read").And.NotContain(name => name.StartsWith("off__", StringComparison.Ordinal));
@@ -66,10 +66,10 @@ public sealed class SessionServiceMcpTests : IAsyncLifetime
     {
         // Arrange
         var info = await Sut.CreateAsync(_rig.Work, TestContext.Current.CancellationToken);
-        await Sut.SetMcpServerAsync(info.Id, "files", enabled: false);
+        await Sut.SetMcpServerAsync(info.Id, "files", enabled: false, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
-        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"));
+        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         _rig.Client.Options[0]!.Tools!.Select(t => t.Name).Should().NotContain("files__read");
@@ -81,10 +81,10 @@ public sealed class SessionServiceMcpTests : IAsyncLifetime
     {
         // Arrange
         var info = await Sut.CreateAsync(_rig.Work, TestContext.Current.CancellationToken);
-        await Sut.SetMcpServerAsync(info.Id, "off", enabled: true);
+        await Sut.SetMcpServerAsync(info.Id, "off", enabled: true, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
-        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"));
+        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         _rig.Client.Options[0]!.Tools!.Select(t => t.Name).Should().Contain("off__read");
@@ -98,10 +98,10 @@ public sealed class SessionServiceMcpTests : IAsyncLifetime
         var files = _manager.Statuses().Single(s => s.Config.Name == "files").Config;
 
         // Act
-        await Sut.SetMcpServerAsync(info.Id, "files", enabled: false);
+        await Sut.SetMcpServerAsync(info.Id, "files", enabled: false, cancellationToken: TestContext.Current.CancellationToken);
         var chosen = _rig.Store.Find(info.Id)!.McpServers;
         var effective = Sut.IsMcpServerEnabled(info.Id, files);
-        await Sut.SetMcpServerAsync(info.Id, "files", enabled: null);
+        await Sut.SetMcpServerAsync(info.Id, "files", enabled: null, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         chosen.Should().Equal(new Dictionary<string, bool> { ["files"] = false });
@@ -115,7 +115,7 @@ public sealed class SessionServiceMcpTests : IAsyncLifetime
     {
         // Arrange
         var info = await Sut.CreateAsync(_rig.Work, TestContext.Current.CancellationToken);
-        var session = await Sut.OpenAsync(info.Id);
+        var session = await Sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
         await _defaults.SetMcpServerTrustedAsync("files", trusted: true, TestContext.Current.CancellationToken);
 
         // Assert

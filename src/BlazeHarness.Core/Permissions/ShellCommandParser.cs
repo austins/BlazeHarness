@@ -52,9 +52,9 @@ internal static partial class ShellCommandParser
     /// <summary>
     /// Split a command line.
     /// </summary>
-    /// <param name="command">The command text the model passed to the shell tool.</param>
+    /// <param name="command">The command text the model passed to the shell tool; null is treated as empty.</param>
     /// <returns>The simple commands in it, including those inside substitutions and nested shells.</returns>
-    public static IReadOnlyList<CommandSegment> Parse(string command)
+    public static IReadOnlyList<CommandSegment> Parse(string? command)
     {
         var segments = new List<CommandSegment>();
         new Scanner(command ?? string.Empty, 0, segments).Run();

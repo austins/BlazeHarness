@@ -43,7 +43,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, "  What is\n the weather?  ", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "  What is\n the weather?  ", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         var saved = sut.Store.Find(info.Id)!;
@@ -64,7 +64,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, new string('a', 200), TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, new string('a', 200), TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         sut.Store.Find(info.Id)!.Title.Should().HaveLength(49).And.EndWith("…");
@@ -78,11 +78,11 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hello")]);
         var first = Create(client);
         var info = await first.CreateAsync(cancellationToken: ct);
-        await first.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        await first.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
         var second = Create(client);
-        var session = await second.OpenAsync(info.Id);
+        var session = await second.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         session.Should().NotBeNull();
@@ -100,9 +100,9 @@ public sealed class SessionServiceTests : IDisposable
         var settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AutoApprove);
 
         // Act
-        await first.SetPermissionsAsync(info.Id, settings);
+        await first.SetPermissionsAsync(info.Id, settings, cancellationToken: TestContext.Current.CancellationToken);
         var second = Create(client);
-        var session = await second.OpenAsync(info.Id);
+        var session = await second.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         first.Store.Find(info.Id)!.Permissions.Should().Be(settings);
@@ -119,10 +119,10 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new ScriptedChatClient();
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SetPermissionsAsync(info.Id, new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk));
+        await sut.SetPermissionsAsync(info.Id, new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk), cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
-        await sut.SetPermissionsAsync(info.Id, PermissionSettings.Default);
+        await sut.SetPermissionsAsync(info.Id, PermissionSettings.Default, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         var saved = sut.Store.Find(info.Id)!;
@@ -140,7 +140,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        var session = await sut.OpenAsync(info.Id);
+        var session = await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         session!.Permissions.Sensitive().IsProtected(_paths.ConfigFile).Should().BeTrue();
@@ -156,10 +156,143 @@ public sealed class SessionServiceTests : IDisposable
         var sut = Create(client);
 
         // Act
-        var session = await sut.OpenAsync("missing");
+        var session = await sut.OpenAsync("missing", cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         session.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task OpenAsync_CancelledCaller_DoesNotOpenAndAllowsRetry()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient();
+        var sut = Create(client);
+        var info = await sut.Store.CreateAsync(cancellationToken: TestContext.Current.CancellationToken);
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        // Act
+        Func<Task> open = async () => { await sut.OpenAsync(info.Id, cancellation.Token).Bounded(); };
+
+        // Assert
+        await open.Should().ThrowAsync<OperationCanceledException>();
+        (await sut.OpenAsync(info.Id, TestContext.Current.CancellationToken).Bounded()).Should().NotBeNull();
+    }
+
+    [Theory]
+    [InlineData("permissions")]
+    [InlineData("mcp")]
+    [InlineData("skill")]
+    [InlineData("delete")]
+    [InlineData("send")]
+    [InlineData("edit")]
+    [InlineData("retry")]
+    [InlineData("compact")]
+    [InlineData("refresh")]
+    public async Task SessionOperation_CancelledCaller_LeavesSessionUnchanged(string operation)
+    {
+        // Arrange
+        using var client = new ScriptedChatClient();
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var session = await sut.OpenAsync(info.Id, TestContext.Current.CancellationToken);
+        var target = TestTargets.Create();
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+        var token = cancellation.Token;
+        Func<Task> act = operation switch
+        {
+            "permissions" => async () => { await sut.SetPermissionsAsync(info.Id, new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk), token); },
+            "mcp" => async () => { await sut.SetMcpServerAsync(info.Id, "server", true, token); },
+            "skill" => async () => { await sut.SetSkillAsync(info.Id, "skill", false, token); },
+            "delete" => async () => { await sut.DeleteAsync(info.Id, token); },
+            "send" => async () => { await sut.SendAsync(info.Id, "hello", target, token); },
+            "edit" => async () => { await sut.EditAsync(info.Id, Guid.NewGuid(), "hello", target, token); },
+            "retry" => async () => { await sut.RetryAsync(info.Id, target, token); },
+            "compact" => async () => { await sut.CompactAsync(info.Id, target, token); },
+            "refresh" => async () => { await sut.RefreshProjectsAsync(token); },
+            _ => throw new ArgumentOutOfRangeException(nameof(operation)),
+        };
+
+        // Act / Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        sut.Store.Find(info.Id).Should().Be(info);
+        session.Should().NotBeNull();
+        session.Entries.Should().BeEmpty();
+        session.Permissions.Settings.Should().Be(info.Permissions);
+    }
+
+    [Fact]
+    public async Task SetPermissionsAsync_CallerCancelsAfterChangeBegins_CompletesBothSaves()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient();
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var session = await sut.OpenAsync(info.Id, TestContext.Current.CancellationToken);
+        using var cancellation = new CancellationTokenSource();
+        session!.Changed += (_, _) => cancellation.Cancel();
+        var settings = new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk);
+
+        // Act
+        await sut.SetPermissionsAsync(info.Id, settings, cancellation.Token).Bounded();
+
+        // Assert
+        cancellation.IsCancellationRequested.Should().BeTrue();
+        session.Permissions.Settings.Should().Be(settings);
+        sut.Store.Find(info.Id)!.Permissions.Should().Be(settings);
+        (await sut.Store.GetLog(info.Id).ReadAsync(TestContext.Current.CancellationToken))
+            .OfType<PermissionsChangedEvent>().Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task SendAsync_CallerCancelsAfterReplyStarts_ReplyCompletes()
+    {
+        // Arrange
+        using var client = new GatedChatClient();
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: TestContext.Current.CancellationToken);
+        using var cancellation = new CancellationTokenSource();
+
+        // Act
+        var send = sut.SendAsync(info.Id, "hello", TestTargets.Create(), cancellation.Token);
+        await client.Started.Bounded();
+        await cancellation.CancelAsync();
+        client.Release();
+        await send.Bounded();
+
+        // Assert
+        var session = await sut.OpenAsync(info.Id, TestContext.Current.CancellationToken);
+        session!.Entries[^1].Text.Should().Be("Hello");
+        session.Entries[^1].Status.Should().Be(EntryStatus.Done);
+    }
+
+    [Fact]
+    public async Task OpenAsync_LogReadFails_PropagatesErrorAndAllowsRetry()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient();
+        var sut = Create(client);
+        var info = await sut.Store.CreateAsync(cancellationToken: ct);
+        var path = Path.Combine(_paths.SessionDirectory(info.Id), "messages.jsonl");
+        var messageId = Guid.NewGuid();
+        await sut.Store.GetLog(info.Id).AppendAsync([new UserMessageEvent(DateTimeOffset.UnixEpoch, messageId, "hello")], ct);
+        Func<Task> open = async () => { await sut.OpenAsync(info.Id).Bounded(); };
+
+        // Act
+        await using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await open.Should().ThrowAsync<IOException>();
+        }
+
+        var session = await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        session.Should().NotBeNull();
+        session.Entries.Should().ContainSingle().Which.Id.Should().Be(messageId);
+        (await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken).Bounded()).Should().BeSameAs(session);
     }
 
     [Fact]
@@ -172,8 +305,8 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        var a = await sut.OpenAsync(info.Id);
-        var b = await sut.OpenAsync(info.Id);
+        var a = await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
+        var b = await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         b.Should().BeSameAs(a);
@@ -198,7 +331,7 @@ public sealed class SessionServiceTests : IDisposable
         ct);
 
         // Act
-        var session = await Create(client).OpenAsync(info.Id);
+        var session = await Create(client).OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         session.Should().NotBeNull();
@@ -217,13 +350,13 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await client.Started.WaitAsync(TestTimeouts.Default, ct);
         client.Release();
         await turn.Bounded();
 
         // Assert
-        var reopened = await Create(client).OpenAsync(info.Id);
+        var reopened = await Create(client).OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
         reopened.Should().NotBeNull();
         reopened.Entries[1].Text.Should().Be("Hello");
         reopened.Entries[1].Status.Should().Be(EntryStatus.Done);
@@ -237,11 +370,11 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new GatedChatClient();
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await client.Started.WaitAsync(TestTimeouts.Default, ct);
 
         // Act
-        var secondTab = await sut.OpenAsync(info.Id);
+        var secondTab = await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
         var finished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         secondTab!.Changed += (_, _) =>
         {
@@ -269,11 +402,11 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new GatedChatClient();
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await client.Started.WaitAsync(TestTimeouts.Default, ct);
 
         // Act
-        var deleted = await sut.DeleteAsync(info.Id);
+        var deleted = await sut.DeleteAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
         client.Release();
         await turn.Bounded();
 
@@ -290,15 +423,15 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")]).Enqueue([ScriptedChatClient.Text("two")]);
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SendAsync(info.Id, "first draft", TestTargets.Create("p1", "fast"));
-        var entryId = (await sut.OpenAsync(info.Id))!.Entries[0].Id;
+        await sut.SendAsync(info.Id, "first draft", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
+        var entryId = (await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken))!.Entries[0].Id;
 
         // Act
-        await sut.EditAsync(info.Id, entryId, "better question", TestTargets.Create("p1", "fast"));
+        await sut.EditAsync(info.Id, entryId, "better question", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         sut.Store.Find(info.Id)!.Title.Should().Be("better question");
-        var reopened = await Create(client).OpenAsync(info.Id);
+        var reopened = await Create(client).OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
         reopened!.Entries.Select(e => e.Text).Should().Equal("better question", "two");
     }
 
@@ -312,12 +445,12 @@ public sealed class SessionServiceTests : IDisposable
             .Enqueue([ScriptedChatClient.Text("three")]);
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SendAsync(info.Id, "topic", TestTargets.Create("p1", "fast"));
-        await sut.SendAsync(info.Id, "follow up", TestTargets.Create("p1", "fast"));
-        var entryId = (await sut.OpenAsync(info.Id))!.Entries[2].Id;
+        await sut.SendAsync(info.Id, "topic", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
+        await sut.SendAsync(info.Id, "follow up", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
+        var entryId = (await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken))!.Entries[2].Id;
 
         // Act
-        await sut.EditAsync(info.Id, entryId, "other follow up", TestTargets.Create("p1", "fast"));
+        await sut.EditAsync(info.Id, entryId, "other follow up", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         sut.Store.Find(info.Id)!.Title.Should().Be("topic");
@@ -331,12 +464,12 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new GatedChatClient();
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await client.Started.WaitAsync(TestTimeouts.Default, ct);
-        var session = (await sut.OpenAsync(info.Id))!;
+        var session = (await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken))!;
 
         // Act
-        await sut.EditAsync(info.Id, session.Entries[0].Id, "changed", TestTargets.Create("p1", "fast"));
+        await sut.EditAsync(info.Id, session.Entries[0].Id, "changed", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         client.Release();
         await turn.Bounded();
 
@@ -352,14 +485,14 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
-        var deleted = await sut.DeleteAsync(info.Id);
+        var deleted = await sut.DeleteAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         deleted.Should().BeTrue();
-        (await sut.OpenAsync(info.Id)).Should().BeNull();
+        (await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken)).Should().BeNull();
         Directory.GetDirectories(_paths.SessionsDirectory).Should().BeEmpty();
     }
 
@@ -371,8 +504,8 @@ public sealed class SessionServiceTests : IDisposable
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
         var sut = Create(client);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        var session = (await sut.OpenAsync(info.Id))!;
-        await sut.DeleteAsync(info.Id);
+        var session = (await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken))!;
+        await sut.DeleteAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
         await session.SendAsync("late", [], TestTargets.Create("p1", "fast"));
@@ -400,7 +533,7 @@ public sealed class SessionServiceTests : IDisposable
         };
 
         // Act
-        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        var turn = sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await client.Started.WaitAsync(TestTimeouts.Default, ct);
         client.Release();
         await turn.Bounded();
@@ -426,7 +559,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, "hi there", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi there", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await sut.PendingTitleAsync(info.Id);
 
         // Assert
@@ -451,7 +584,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(folder, ct);
 
         // Act
-        await sut.SendAsync(info.Id, "what is here?", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "what is here?", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await sut.PendingTitleAsync(info.Id);
 
         // Assert
@@ -469,11 +602,11 @@ public sealed class SessionServiceTests : IDisposable
         titles.GenerateAsync(Arg.Any<ChatTarget>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns("Greeting");
         var sut = Create(client, titles);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await sut.PendingTitleAsync(info.Id);
 
         // Act
-        await sut.SendAsync(info.Id, "more", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "more", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await sut.PendingTitleAsync(info.Id);
 
         // Assert
@@ -493,7 +626,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await sut.PendingTitleAsync(info.Id);
 
         // Assert
@@ -518,7 +651,7 @@ public sealed class SessionServiceTests : IDisposable
         // Act
         for (var i = 0; i < 5; i++)
         {
-            await sut.SendAsync(info.Id, "hi " + i, target);
+            await sut.SendAsync(info.Id, "hi " + i, target, cancellationToken: TestContext.Current.CancellationToken);
             await sut.PendingTitleAsync(info.Id);
         }
 
@@ -539,7 +672,7 @@ public sealed class SessionServiceTests : IDisposable
 #pragma warning restore VSTHRD003, IDISP013
         var sut = Create(client, titles);
         var info = await sut.CreateAsync(cancellationToken: ct);
-        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
         await sut.Store.RenameAsync(info.Id, "Mine", ct);
@@ -563,7 +696,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
         await sut.PendingTitleAsync(info.Id);
 
         // Assert
@@ -584,10 +717,10 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(folder, ct);
 
         // Act
-        await sut.SendAsync(info.Id, "read notes", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "read notes", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        var session = (await sut.OpenAsync(info.Id))!;
+        var session = (await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken))!;
         session.Entries[1].ToolCalls.Single().Output.Should().Contain("secret plans");
         client.Options[0]!.Tools.Should().Contain(t => t.Name == "write_file");
         client.Requests[0][0].Role.Should().Be(ChatRole.System);
@@ -607,13 +740,13 @@ public sealed class SessionServiceTests : IDisposable
         var sut = Create(client);
         var earlier = await sut.CreateAsync(folder, ct);
         var current = await sut.CreateAsync(folder, ct);
-        await sut.SendAsync(earlier.Id, "the codename is zebra", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(earlier.Id, "the codename is zebra", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
-        await sut.SendAsync(current.Id, "what was the codename?", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(current.Id, "what was the codename?", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        var session = (await sut.OpenAsync(current.Id))!;
+        var session = (await sut.OpenAsync(current.Id, cancellationToken: TestContext.Current.CancellationToken))!;
         session.Entries[1].ToolCalls.Single().Output.Should().Contain("the codename is zebra").And.Contain("[the codename is zebra]");
     }
 
@@ -627,7 +760,7 @@ public sealed class SessionServiceTests : IDisposable
         var info = await sut.CreateAsync(cancellationToken: ct);
 
         // Act
-        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "hi", TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         client.Options[0]!.Tools.Should().Contain(t => t.Name == "write_file").And.Contain(t => t.Name == "read_attachment");
@@ -648,7 +781,7 @@ public sealed class SessionServiceTests : IDisposable
 
         // Act
         var info = await sut.CreateAsync(_temp.Root, ct);
-        var session = await sut.OpenAsync(info.Id);
+        var session = await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         info.Permissions.Should().Be(new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AutoApprove));
@@ -664,8 +797,8 @@ public sealed class SessionServiceTests : IDisposable
         var defaults = await NewDefaultsAsync(PermissionSettings.Default, allowBypass: true);
         var sut = Create(client, defaults: defaults);
         var info = await sut.CreateAsync(_temp.Root, ct);
-        await sut.SetPermissionsAsync(info.Id, new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk));
-        var session = await sut.OpenAsync(info.Id);
+        await sut.SetPermissionsAsync(info.Id, new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk), cancellationToken: TestContext.Current.CancellationToken);
+        var session = await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
         await defaults.SaveAsync(PermissionSettings.Default, allowBypass: false, ct);
@@ -685,7 +818,7 @@ public sealed class SessionServiceTests : IDisposable
 
         // Act
         var info = await sut.CreateAsync(cancellationToken: ct);
-        var session = await sut.OpenAsync(info.Id);
+        var session = await sut.OpenAsync(info.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         info.Permissions.Access.Should().Be(AccessLevel.ReadOnly);
@@ -705,7 +838,7 @@ public sealed class SessionServiceTests : IDisposable
         var file = await sut.SaveAttachmentAsync(info.Id, "notes.txt", content, ct);
 
         // Act
-        await sut.SendAsync(info.Id, "summarize", [file!], TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, "summarize", [file!], TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         client.Requests[0].Should().Contain(m => m.Role == ChatRole.User && m.Text.Contains("summarize") && m.Text.Contains("some notes"));
@@ -725,7 +858,7 @@ public sealed class SessionServiceTests : IDisposable
         var file = await sut.SaveAttachmentAsync(info.Id, "notes.txt", content, ct);
 
         // Act
-        await sut.SendAsync(info.Id, string.Empty, [file!], TestTargets.Create("p1", "fast"));
+        await sut.SendAsync(info.Id, string.Empty, [file!], TestTargets.Create("p1", "fast"), cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         sut.Store.Find(info.Id)!.Title.Should().Be("notes.txt");

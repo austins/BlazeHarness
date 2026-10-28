@@ -54,9 +54,10 @@ public sealed class ChatSearchTests
     }
 
     [Theory]
+    [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Find_BlankQuery_MatchesNothing(string query)
+    public void Find_NullOrBlankQuery_MatchesNothing(string? query)
     {
         // Arrange
         var entry = new ChatEntry(ChatRole.User, "hello");

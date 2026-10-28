@@ -10,7 +10,6 @@ using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace BlazeHarness.Core.Sessions;
@@ -21,8 +20,9 @@ namespace BlazeHarness.Core.Sessions;
 /// </summary>
 /// <remarks>
 /// Sessions are restored from their log on first use and then kept in memory until they are deleted.
+/// Caller cancellation stops preparation, not accepted replies or committed permission changes and deletions.
+/// Shutdown cancels title requests.
 /// </remarks>
-[SuppressMessage("Major Code Smell", "S8949", Justification = "The shutdown token only stops title requests; the other calls are short store writes that should finish.")]
 public sealed partial class SessionService : IDisposable
 {
     private const int PlaceholderLength = 48;
@@ -116,7 +116,7 @@ public sealed partial class SessionService : IDisposable
         var session = NewSession(info.Id);
         session.Permissions.Settings = info.Permissions;
         _live[info.Id] = session;
-        await ApplyFolderAsync(info.Id, session);
+        await ApplyFolderAsync(info.Id, session, CancellationToken.None);
         return info;
     }
 
@@ -188,9 +188,11 @@ public sealed partial class SessionService : IDisposable
     /// Open a session, restoring its messages from the log the first time.
     /// </summary>
     /// <param name="id">The session id.</param>
+    /// <param name="cancellationToken">A token to cancel loading the session.</param>
     /// <returns>The session, or null when there is none with that id.</returns>
-    public async Task<ChatSession?> OpenAsync(string id)
+    public async Task<ChatSession?> OpenAsync(string id, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (_store.Find(id) is null)
         {
             return null;
@@ -201,7 +203,7 @@ public sealed partial class SessionService : IDisposable
             return live;
         }
 
-        await _opening.WaitAsync();
+        await _opening.WaitAsync(cancellationToken);
         try
         {
             if (_live.TryGetValue(id, out live))
@@ -209,14 +211,25 @@ public sealed partial class SessionService : IDisposable
                 return live;
             }
 
-#pragma warning disable CA2000 // The live registry owns the session once it is added.
-            var session = NewSession(id);
-#pragma warning restore CA2000
-            session.Restore(await _store.GetLog(id).ReadAsync());
-            session.Permissions.Settings = _store.Find(id)?.Permissions ?? PermissionSettings.Default;
-            await ApplyFolderAsync(id, session);
-            _live[id] = session;
-            return session;
+            ChatSession? session = null;
+            try
+            {
+                session = NewSession(id);
+                session.Restore(await _store.GetLog(id).ReadAsync(cancellationToken));
+                session.Permissions.Settings = _store.Find(id)?.Permissions ?? PermissionSettings.Default;
+                await ApplyFolderAsync(id, session, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                _live[id] = session;
+                var opened = session;
+#pragma warning disable IDISP003 // Ownership transferred to the live registry; only failed initialization is disposed here.
+                session = null;
+#pragma warning restore IDISP003
+                return opened;
+            }
+            finally
+            {
+                session?.Dispose();
+            }
         }
         finally
         {
@@ -229,16 +242,18 @@ public sealed partial class SessionService : IDisposable
     /// </summary>
     /// <param name="id">The session id.</param>
     /// <param name="settings">The new settings.</param>
+    /// <param name="cancellationToken">A token to cancel before the permission change begins; once begun, both saves finish.</param>
     /// <returns>A task that completes once the change is saved; it does nothing when the session is unknown.</returns>
-    public async Task SetPermissionsAsync(string id, PermissionSettings settings)
+    public async Task SetPermissionsAsync(string id, PermissionSettings settings, CancellationToken cancellationToken = default)
     {
-        if (await OpenAsync(id) is not { } session)
+        if (await OpenAsync(id, cancellationToken) is not { } session)
         {
             return;
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         await session.SetPermissionsAsync(settings);
-        await _store.UpdateAsync(id, s => StoreSettings(s, settings));
+        await _store.UpdateAsync(id, s => StoreSettings(s, settings), cancellationToken: CancellationToken.None);
     }
 
     /// <summary>
@@ -259,8 +274,9 @@ public sealed partial class SessionService : IDisposable
     /// <param name="id">The session id.</param>
     /// <param name="serverName">The server's name in <c>mcp.json</c>.</param>
     /// <param name="enabled">True or false to choose for this session, or null to follow the global state again.</param>
+    /// <param name="cancellationToken">A token to cancel saving the choice.</param>
     /// <returns>A task that completes once the choice is saved. It applies from the session's next reply.</returns>
-    public Task SetMcpServerAsync(string id, string serverName, bool? enabled)
+    public Task SetMcpServerAsync(string id, string serverName, bool? enabled, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(serverName);
         return _store.UpdateAsync(
@@ -274,7 +290,8 @@ public sealed partial class SessionService : IDisposable
                 }
 
                 return s with { McpServers = chosen.Count == 0 ? null : chosen };
-            });
+            },
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -305,8 +322,9 @@ public sealed partial class SessionService : IDisposable
     /// <param name="id">The session id.</param>
     /// <param name="skillName">The skill's name.</param>
     /// <param name="enabled">True or false to choose for this session, or null to follow the global state again.</param>
+    /// <param name="cancellationToken">A token to cancel saving the choice.</param>
     /// <returns>A task that completes once the choice is saved. It applies from the session's next reply.</returns>
-    public async Task SetSkillAsync(string id, string skillName, bool? enabled)
+    public async Task SetSkillAsync(string id, string skillName, bool? enabled, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(skillName);
         await _store.UpdateAsync(
@@ -320,7 +338,8 @@ public sealed partial class SessionService : IDisposable
                 }
 
                 return s with { Skills = chosen.Count == 0 ? null : chosen };
-            });
+            },
+            cancellationToken: cancellationToken);
         if (_live.TryGetValue(id, out var session))
         {
             ApplySkills(id, session);
@@ -333,8 +352,9 @@ public sealed partial class SessionService : IDisposable
     /// <param name="id">The session id.</param>
     /// <param name="text">The message text.</param>
     /// <param name="target">The provider, model and level to use.</param>
+    /// <param name="cancellationToken">A token to cancel preparation; an accepted reply is stopped through <see cref="Stop"/>.</param>
     /// <returns>A task that completes when the reply has ended; it does nothing when the session is unknown, busy, or the text is blank.</returns>
-    public Task SendAsync(string id, string text, ChatTarget target) => SendAsync(id, text, [], target);
+    public Task SendAsync(string id, string text, ChatTarget target, CancellationToken cancellationToken = default) => SendAsync(id, text, [], target, cancellationToken);
 
     /// <summary>
     /// Send a message with attached files in a session, and remember the target it was sent with.
@@ -343,19 +363,21 @@ public sealed partial class SessionService : IDisposable
     /// <param name="text">The message text, which may be blank when files are attached.</param>
     /// <param name="files">The files, already saved with <see cref="SaveAttachmentAsync"/>.</param>
     /// <param name="target">The provider, model and level to use.</param>
+    /// <param name="cancellationToken">A token to cancel preparation; an accepted reply is stopped through <see cref="Stop"/>.</param>
     /// <returns>A task that completes when the reply has ended; it does nothing when the session is unknown, busy, or there is neither text nor a file.</returns>
-    public async Task SendAsync(string id, string text, IReadOnlyList<AttachmentInfo> files, ChatTarget target)
+    public async Task SendAsync(string id, string text, IReadOnlyList<AttachmentInfo> files, ChatTarget target, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(target);
-        if (await OpenAsync(id) is not { IsRunning: false } session || (string.IsNullOrWhiteSpace(text) && files.Count == 0))
+        if (await OpenAsync(id, cancellationToken) is not { IsRunning: false } session || (string.IsNullOrWhiteSpace(text) && files.Count == 0))
         {
             return;
         }
 
-        await RememberAsync(id, target, string.IsNullOrWhiteSpace(text) ? string.Join(", ", files.Select(f => f.Name)) : text);
-        await ApplyFolderAsync(id, session);
+        await RememberAsync(id, target, string.IsNullOrWhiteSpace(text) ? string.Join(", ", files.Select(f => f.Name)) : text, cancellationToken: cancellationToken);
+        await ApplyFolderAsync(id, session, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         await session.SendAsync(text, files, target);
         StartTitle(id, session, target);
     }
@@ -412,11 +434,12 @@ public sealed partial class SessionService : IDisposable
     /// <param name="entryId">The id of the message to replace.</param>
     /// <param name="text">The new message text.</param>
     /// <param name="target">The provider, model and level to use.</param>
+    /// <param name="cancellationToken">A token to cancel preparation; an accepted reply is stopped through <see cref="Stop"/>.</param>
     /// <returns>A task that completes when the reply has ended; it does nothing when the session is unknown, busy, the message can't be edited or the text is blank.</returns>
-    public async Task EditAsync(string id, Guid entryId, string text, ChatTarget target)
+    public async Task EditAsync(string id, Guid entryId, string text, ChatTarget target, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(target);
-        if (await OpenAsync(id) is not { IsRunning: false } session
+        if (await OpenAsync(id, cancellationToken) is not { IsRunning: false } session
             || string.IsNullOrWhiteSpace(text)
             || !session.CanEdit(entryId))
         {
@@ -424,8 +447,9 @@ public sealed partial class SessionService : IDisposable
         }
 
         var first = session.Entries is [{ } head, ..] && head.Id == entryId;
-        await RememberAsync(id, target, first ? text : null, replacePlaceholder: first);
-        await ApplyFolderAsync(id, session);
+        await RememberAsync(id, target, first ? text : null, replacePlaceholder: first, cancellationToken: cancellationToken);
+        await ApplyFolderAsync(id, session, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         await session.EditAsync(entryId, text, target);
         StartTitle(id, session, target);
     }
@@ -435,17 +459,19 @@ public sealed partial class SessionService : IDisposable
     /// </summary>
     /// <param name="id">The session id.</param>
     /// <param name="target">The provider, model and level to use.</param>
+    /// <param name="cancellationToken">A token to cancel preparation; an accepted reply is stopped through <see cref="Stop"/>.</param>
     /// <returns>A task that completes when the reply has ended; it does nothing when the session is unknown or its last reply can't be retried.</returns>
-    public async Task RetryAsync(string id, ChatTarget target)
+    public async Task RetryAsync(string id, ChatTarget target, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(target);
-        if (await OpenAsync(id) is not { CanRetry: true } session)
+        if (await OpenAsync(id, cancellationToken) is not { CanRetry: true } session)
         {
             return;
         }
 
-        await RememberAsync(id, target, null);
-        await ApplyFolderAsync(id, session);
+        await RememberAsync(id, target, null, cancellationToken: cancellationToken);
+        await ApplyFolderAsync(id, session, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         await session.RetryAsync(target);
         StartTitle(id, session, target);
     }
@@ -455,17 +481,19 @@ public sealed partial class SessionService : IDisposable
     /// </summary>
     /// <param name="id">The session id.</param>
     /// <param name="target">The model that writes the summary.</param>
+    /// <param name="cancellationToken">A token to cancel preparation; accepted compaction is stopped through <see cref="Stop"/>.</param>
     /// <returns>True when the session was compacted; false when it is unknown, busy, has nothing older to summarize, or was stopped.</returns>
     /// <exception cref="InvalidOperationException">The model could not write the summary.</exception>
-    public async Task<bool> CompactAsync(string id, ChatTarget target)
+    public async Task<bool> CompactAsync(string id, ChatTarget target, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(target);
-        if (await OpenAsync(id) is not { CanCompact: true } session)
+        if (await OpenAsync(id, cancellationToken) is not { CanCompact: true } session)
         {
             return false;
         }
 
-        await ApplyFolderAsync(id, session);
+        await ApplyFolderAsync(id, session, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         return await session.CompactAsync(target);
     }
 
@@ -495,9 +523,11 @@ public sealed partial class SessionService : IDisposable
     /// Delete a session and everything stored for it, unless it is producing a reply.
     /// </summary>
     /// <param name="id">The session id.</param>
+    /// <param name="cancellationToken">A token to cancel before deletion begins; once begun, deletion finishes.</param>
     /// <returns>False when the session is running and was left alone; true otherwise.</returns>
-    public async Task<bool> DeleteAsync(string id)
+    public async Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (_live.TryGetValue(id, out var session))
         {
             if (!session.TryClose())
@@ -509,7 +539,7 @@ public sealed partial class SessionService : IDisposable
             session.Dispose();
         }
 
-        await _store.DeleteAsync(id);
+        await _store.DeleteAsync(id, CancellationToken.None);
         return true;
     }
 
@@ -532,23 +562,27 @@ public sealed partial class SessionService : IDisposable
     /// Read the project instructions that apply to a folder.
     /// </summary>
     /// <param name="folderPath">The folder, or null for a chat without one.</param>
+    /// <param name="cancellationToken">A token to cancel reading the project instructions.</param>
     /// <returns>The instructions, or null when there is no folder.</returns>
-    public static async Task<ProjectContext?> LoadProjectAsync(string? folderPath)
+    public static async Task<ProjectContext?> LoadProjectAsync(string? folderPath, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         return folderPath is null || !Directory.Exists(folderPath)
             ? null
-            : await ProjectContextLoader.LoadAsync(folderPath);
+            : await ProjectContextLoader.LoadAsync(folderPath, cancellationToken);
     }
 
     /// <summary>
     /// Re-read the project instructions of every open session, for after folders were moved, removed or re-pointed.
     /// </summary>
+    /// <param name="cancellationToken">A token to cancel refreshing the sessions.</param>
     /// <returns>A task that completes when every session has been updated.</returns>
-    public async Task RefreshProjectsAsync()
+    public async Task RefreshProjectsAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         foreach (var (id, session) in _live.ToArray())
         {
-            await ApplyFolderAsync(id, session);
+            await ApplyFolderAsync(id, session, cancellationToken);
         }
     }
 
@@ -562,10 +596,10 @@ public sealed partial class SessionService : IDisposable
         return _titling.TryGetValue(id, out var task) ? task : Task.CompletedTask;
     }
 
-    private async Task ApplyFolderAsync(string id, ChatSession session)
+    private async Task ApplyFolderAsync(string id, ChatSession session, CancellationToken cancellationToken)
     {
         var folderPath = _store.Find(id)?.FolderPath;
-        var loaded = await LoadProjectAsync(folderPath);
+        var loaded = await LoadProjectAsync(folderPath, cancellationToken);
         var current = session.Project;
         if (loaded is null ? current is not null : !loaded.SameAs(current))
         {
@@ -665,29 +699,31 @@ public sealed partial class SessionService : IDisposable
             return;
         }
 
-        _ = Task.Run(async () =>
-        {
-            try
+        _ = Task.Run(
+            async () =>
             {
-                if (await _titles.GenerateAsync(target, first.Text.Length > 0 ? first.Text : string.Join(", ", first.Attachments.Select(a => a.File.Name)), reply.Text, _shutdown.Token) is { } title)
+                try
                 {
-                    await _store.UpdateAsync(
-                        id,
-                        s => s.TitleSource == TitleSource.Placeholder ? s with { Title = title, TitleSource = TitleSource.Generated } : s,
-                        cancellationToken: _shutdown.Token);
+                    if (await _titles.GenerateAsync(target, first.Text.Length > 0 ? first.Text : string.Join(", ", first.Attachments.Select(a => a.File.Name)), reply.Text, _shutdown.Token) is { } title)
+                    {
+                        await _store.UpdateAsync(
+                            id,
+                            s => s.TitleSource == TitleSource.Placeholder ? s with { Title = title, TitleSource = TitleSource.Generated } : s,
+                            cancellationToken: _shutdown.Token);
+                    }
                 }
-            }
-            catch (Exception ex) when (ex is not OutOfMemoryException)
-            {
-                _titleFailures.AddOrUpdate(id, 1, (_, count) => count + 1);
-                LogTitleFailed(ex);
-            }
-            finally
-            {
-                _titling.TryRemove(id, out _);
-                gate.SetResult();
-            }
-        });
+                catch (Exception ex) when (ex is not OutOfMemoryException)
+                {
+                    _titleFailures.AddOrUpdate(id, 1, (_, count) => count + 1);
+                    LogTitleFailed(ex);
+                }
+                finally
+                {
+                    _titling.TryRemove(id, out _);
+                    gate.SetResult();
+                }
+            },
+            CancellationToken.None);
     }
 
     private static SessionInfo StoreSettings(SessionInfo info, PermissionSettings settings)
@@ -754,7 +790,7 @@ public sealed partial class SessionService : IDisposable
         return session;
     }
 
-    private Task RememberAsync(string id, ChatTarget target, string? firstText, bool replacePlaceholder = false)
+    private Task RememberAsync(string id, ChatTarget target, string? firstText, bool replacePlaceholder = false, CancellationToken cancellationToken = default)
     {
         return _store.UpdateAsync(
             id,
@@ -765,7 +801,8 @@ public sealed partial class SessionService : IDisposable
                 Level = target.Level,
                 Title = firstText is not null && (s.Title.Length == 0 || (replacePlaceholder && s.TitleSource == TitleSource.Placeholder)) ? Placeholder(firstText) : s.Title,
             },
-            touch: true);
+            touch: true,
+            cancellationToken: cancellationToken);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not write a title for a session; it keeps its placeholder title.")]

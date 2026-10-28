@@ -116,7 +116,7 @@ public sealed record ResolvedRequestParams(SamplingParams Sampling, JsonObject B
 
     private static string Wire(string key) => SamplingRange.All.First(r => r.Key == key).WireName;
 
-    private static JsonNode? ParseLiteral(string value)
+    private static JsonNode ParseLiteral(string value)
     {
         if (bool.TryParse(value, out var b))
         {

@@ -87,8 +87,6 @@ public abstract class TestBase : IAsyncLifetime
         _home.Dispose();
     }
 
-    protected FakeOpenAiServer Provider => _provider;
-
     protected TempFolder Workspace { get; } = new("bh-e2e-ws-");
 
     protected IPage Page { get; private set; } = null!;

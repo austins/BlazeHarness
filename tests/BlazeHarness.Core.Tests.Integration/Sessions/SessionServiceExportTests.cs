@@ -37,7 +37,7 @@ public sealed class SessionServiceExportTests : IDisposable
         var folder = Path.Combine(_rig.Root, "work");
         Directory.CreateDirectory(folder);
         var source = await Sut.CreateAsync(folder, ct);
-        await Sut.SendAsync(source.Id, "What is the weather?", TestTargets.Create());
+        await Sut.SendAsync(source.Id, "What is the weather?", TestTargets.Create(), cancellationToken: TestContext.Current.CancellationToken);
         var exported = await Sut.ExportAsync(source.Id, ExportFormat.Json, ct);
 
         // Act
@@ -59,12 +59,12 @@ public sealed class SessionServiceExportTests : IDisposable
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var source = await Sut.CreateAsync(cancellationToken: ct);
-        await Sut.SendAsync(source.Id, "What is the weather?", TestTargets.Create());
+        await Sut.SendAsync(source.Id, "What is the weather?", TestTargets.Create(), cancellationToken: TestContext.Current.CancellationToken);
         var exported = await Sut.ExportAsync(source.Id, ExportFormat.Json, ct);
 
         // Act
         var imported = await Sut.ImportAsync(exported!.Content, ct);
-        var session = await Sut.OpenAsync(imported.Id);
+        var session = await Sut.OpenAsync(imported.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         session!.Entries.Select(e => e.Text).Should().Equal("What is the weather?", "Sunny.");
