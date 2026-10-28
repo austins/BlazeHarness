@@ -2,13 +2,12 @@ using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Tests.Shared.Providers;
-using BlazeHarness.Web.Hosting;
 using System.Text.Json;
 
 namespace BlazeHarness.Web.Tests.E2E;
 
 /// <summary>
-/// Gives each test its own app instance (data folder, launch token, fake provider) and a fresh browser page.
+/// Gives each test its own app instance (data folder, fake provider) and a fresh browser page.
 /// </summary>
 /// <remarks>
 /// The launch token works once, so a shared app could not serve parallel tests. The browser is shared and each test
@@ -95,18 +94,12 @@ public abstract class TestBase : IAsyncLifetime
 
     protected static ILocatorAssertions Expect(ILocator locator) => Assertions.Expect(locator);
 
-    /// <summary>Sign in with the launch token, the way the printed link does, and wait for the Blazor circuit.</summary>
-    /// <param name="path">The page to open after signing in.</param>
+    /// <summary>Open the app and wait for the Blazor circuit.</summary>
+    /// <param name="path">The page to open.</param>
     protected async Task LaunchAsync(string path = "/")
     {
-        var token = Factory.Services.GetRequiredService<LaunchCredentials>().Token;
-        await Page.GotoAsync($"{LocalAccessMiddleware.LaunchPath}?token={token}");
+        await Page.GotoAsync(path);
         await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
-        if (path != "/")
-        {
-            await Page.GotoAsync(path);
-            await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
-        }
     }
 
     /// <summary>Gets the chunks the fake provider streams for a request body. Override to script a chat.</summary>

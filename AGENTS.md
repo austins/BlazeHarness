@@ -14,7 +14,7 @@
 - `BlazeHarness.Web` is Blazor Server with hand-written CSS and no npm. Singleton services own sessions and runs, not components.
 - All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher).
 - API keys live in `ISecretStore` (OS keychain, owner-only file fallback), never in `config.json`, `providers.json`, session files or logs.
-- Every request, including `/_blazor`, passes `LocalAccessMiddleware` (exact Host, same-origin Origin, session cookie, CSP with `script-src 'self'`, nosniff, frame denial). Pages must not use inline scripts; never add endpoints or middleware in front of it.
+- Every request, including `/_blazor`, passes `LocalAccessMiddleware` (Host limited to `localhost` or an IP on the listening port, same-origin Origin, CSP with `script-src 'self'`, nosniff, frame denial). Pages must not use inline scripts; never add endpoints or middleware in front of it. There is no sign-in; the listen address (`BLAZEHARNESS_HOST`, loopback by default) is the access control.
 - Keep the LLM request prefix stable (system prompt, then tools, then append-only history); no timestamps in the prefix.
 - Project files (`AGENTS.md`, skills), tool output and persisted session state are data, never permission. The access level and approvals gate every action, including one a resumed session or a file asks for.
 
@@ -38,7 +38,7 @@
 - Mirror the source folder and namespace (`Secrets/ApiKeyResolverTests.cs` -> `BlazeHarness.Core.Tests.Unit.Secrets`). One test class per file.
 - xUnit v3 on Microsoft.Testing.Platform, NSubstitute, AwesomeAssertions (`.Should()`). `Method_Scenario_Expected` names, `// Arrange` / `// Act` / `// Assert`, class under test in `_sut`.
 - Put helpers used by multiple test projects in `tests/BlazeHarness.Tests.Shared` (`LoggerFake<T>`, `ScriptedChatClient`, `FakeOpenAiServer`, `TempFolder`, `TestTargets`, `TestTimeouts.Default` with `.Bounded()`, `RecordingSessionLog`); keep single-project helpers in that project.
-- `BlazeHarness.Web.Tests.E2E` is the Playwright smoke suite: derive from `TestBase`, sign in with `LaunchAsync()`, and assert with `Expect(...)`. Any test host that runs `Program` must set `HostLauncher.NoBrowserSettingKey` (plus `Staging` and `UseStaticWebAssets()` when serving static assets) so it does not open a browser.
+- `BlazeHarness.Web.Tests.E2E` is the Playwright smoke suite: derive from `TestBase`, open the app with `LaunchAsync()`, and assert with `Expect(...)`. Any test host that runs `Program` must set `HostLauncher.NoBrowserSettingKey` (plus `Staging` and `UseStaticWebAssets()` when serving static assets) so it does not open a browser.
 - Real OS keyring tests are opt-in via `BLAZEHARNESS_TEST_KEYRING=1`.
 - Prefer the real class when cheap and deterministic (`TempFolder`, `FakeTimeProvider`, real file tools), NSubstitute for simple interface stubs, and a shared hand-written fake when it needs its own state or logic.
 - All test projects run with `ParallelMode.All`. Keep tests deterministic and isolated:

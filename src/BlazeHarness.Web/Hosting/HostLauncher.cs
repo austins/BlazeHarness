@@ -6,10 +6,15 @@ using System.Net;
 namespace BlazeHarness.Web.Hosting;
 
 /// <summary>
-/// Starts the server on a free loopback port and opens the browser with the one-time launch URL.
+/// Starts the server on a free loopback port (or the configured address) and opens the browser.
 /// </summary>
 public static class HostLauncher
 {
+    /// <summary>
+    /// The configuration key (and environment variable) that picks the address to listen on.
+    /// </summary>
+    public const string HostSettingKey = "BLAZEHARNESS_HOST";
+
     /// <summary>
     /// The configuration key (and environment variable) that pins the listening port.
     /// </summary>
@@ -19,6 +24,25 @@ public static class HostLauncher
     /// The configuration key (and environment variable) that, when set to any value, stops the browser from opening automatically.
     /// </summary>
     public const string NoBrowserSettingKey = "BLAZEHARNESS_NO_BROWSER";
+
+    /// <summary>
+    /// Get the address the user asked to listen on.
+    /// </summary>
+    /// <param name="args">The command line arguments; <c>--host X</c> wins over the setting.</param>
+    /// <param name="configuration">The app configuration, which carries <see cref="HostSettingKey"/> (from the environment by default).</param>
+    /// <returns>
+    /// <see cref="IPAddress.Any"/> for <c>0.0.0.0</c>, otherwise loopback, including when the value is missing or not recognized
+    /// (<c>localhost</c> and <c>127.0.0.1</c> are the accepted spellings).
+    /// </returns>
+    public static IPAddress ConfiguredHost(string[] args, IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        var index = Array.IndexOf(args, "--host");
+        var text = index >= 0 && index + 1 < args.Length ? args[index + 1] : configuration[HostSettingKey];
+        return string.Equals(text?.Trim(), "0.0.0.0", StringComparison.Ordinal) ? IPAddress.Any : IPAddress.Loopback;
+    }
 
     /// <summary>
     /// Get the port the user asked for.
@@ -51,7 +75,7 @@ public static class HostLauncher
     }
 
     /// <summary>
-    /// Start the app, print the one-time launch link, optionally open the browser, and wait for shutdown.
+    /// Start the app, print its URL, optionally open the browser, and wait for shutdown.
     /// </summary>
     /// <param name="app">The built application.</param>
     /// <param name="args">The command line arguments.</param>
@@ -62,28 +86,31 @@ public static class HostLauncher
 
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
         var port = new Uri(address).Port;
-        var token = app.Services.GetRequiredService<LaunchCredentials>().Token;
-        var launchUrl = $"http://127.0.0.1:{port}{LocalAccessMiddleware.LaunchPath}?token={token}";
+        var url = $"http://127.0.0.1:{port}";
 
-        Console.WriteLine($"BlazeHarness is running at http://127.0.0.1:{port}");
-        Console.WriteLine($"Open this link once to sign in: {launchUrl}");
+        Console.WriteLine($"BlazeHarness is running at {url}");
+        if (app.Services.GetRequiredService<AccessPolicy>().AllowAnyHost)
+        {
+            Console.WriteLine($"Listening on all interfaces over plain HTTP with no sign-in: anyone who can reach port {port} can use it. Use this machine's IP address from other devices, and limit access with a firewall.");
+        }
 
         if (ShouldOpenBrowser(args, app.Configuration))
         {
-            TryOpenBrowser(launchUrl);
+            TryOpenBrowser(url);
         }
 
         await app.WaitForShutdownAsync();
     }
 
     /// <summary>
-    /// Make Kestrel listen on the loopback interface only.
+    /// Make Kestrel listen on one address.
     /// </summary>
     /// <param name="builder">The application builder.</param>
+    /// <param name="address">The address to listen on; loopback unless the user opted in to all interfaces.</param>
     /// <param name="port">The port to listen on, or 0 for a free one.</param>
-    public static void ConfigureKestrel(WebApplicationBuilder builder, int port)
+    public static void ConfigureKestrel(WebApplicationBuilder builder, IPAddress address, int port)
     {
-        builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, port));
+        builder.WebHost.ConfigureKestrel(options => options.Listen(address, port));
     }
 
     private static void TryOpenBrowser(string url)

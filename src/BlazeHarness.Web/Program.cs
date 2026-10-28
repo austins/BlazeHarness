@@ -20,7 +20,15 @@ const int MaxHubMessageBytes = 4 * 1024 * 1024;
 
 var builder = WebApplication.CreateBuilder(args);
 
-HostLauncher.ConfigureKestrel(builder, HostLauncher.ConfiguredPort(args, builder.Configuration));
+var listenAddress = HostLauncher.ConfiguredHost(args, builder.Configuration);
+var listenOnAllInterfaces = Equals(listenAddress, System.Net.IPAddress.Any);
+if (listenOnAllInterfaces)
+{
+    builder.Configuration["AllowedHosts"] = "*"; // LocalAccessMiddleware does the Host check in this mode.
+}
+
+HostLauncher.ConfigureKestrel(builder, listenAddress, HostLauncher.ConfiguredPort(args, builder.Configuration));
+builder.Services.AddSingleton(new AccessPolicy(listenOnAllInterfaces));
 
 var paths = AppPaths.FromConfiguration(builder.Configuration);
 builder.Services.AddSingleton<ILoggerProvider>(_ => new FileLoggerProvider(paths.LogsDirectory, TimeProvider.System));
@@ -61,7 +69,6 @@ builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<SkillCatalog>(),
     () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.Compaction));
 builder.Services.AddSingleton(sp => new FolderRegistry(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
-builder.Services.AddSingleton<LaunchCredentials>();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient(ChatClientSource.HttpClientName, client => client.Timeout = Timeout.InfiniteTimeSpan);
 

@@ -15,12 +15,15 @@ A local web app for chatting and coding with any OpenAI-compatible LLM. It runs 
 dotnet run --project src/BlazeHarness.Web
 ```
 
-The app binds a free port on `127.0.0.1`, prints a one-time launch URL, and opens your browser. Options:
+The app binds a free port on `127.0.0.1`, prints its URL, and opens your browser. Options:
 
 | Option | Environment variable | Effect |
 |---|---|---|
 | `--port N` | `BLAZEHARNESS_PORT` | Pin the port instead of picking a free one. |
+| `--host ADDRESS` | `BLAZEHARNESS_HOST` | `localhost` or `127.0.0.1` (default) listens on this machine only. `0.0.0.0` listens on all interfaces so other devices can connect by IP address. |
 | `--no-browser` | `BLAZEHARNESS_NO_BROWSER=1` | Don't open the browser; use the printed URL. |
+
+There is no sign-in. With the default, only programs on this machine can reach the app. With `0.0.0.0`, anyone who can reach the port can use it, and it can run commands and edit files, so only do that on a trusted network and limit access with a firewall. The connection is plain HTTP, and the URL must use an IP address, `localhost`, not a domain name or host name (refused to block DNS rebinding).
 
 The app stores everything under `~/.blazeharness` (`%USERPROFILE%\.blazeharness` on Windows). Set `BLAZEHARNESS_HOME` to use another folder, for example a temp folder when experimenting. Providers and models are in `providers.json`, and defaults and permissions are in `config.json`.
 
@@ -45,7 +48,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 
 Not built yet, and not promised:
 
-* A touch-friendly layout for use from a phone or tablet. The app is localhost-only by design, so that would need to be configurable.
+* A touch-friendly layout for use from a phone or tablet. Listening beyond localhost is possible with `--host 0.0.0.0`; the layout is the missing part.
 * Localization of the web UI, starting with English.
 * An in-app browser that the agent can use to open a running service, read the page, and take a screenshot.
 * Web search and web fetch tools, so the agent can look things up and read pages, with the usual approval prompts.

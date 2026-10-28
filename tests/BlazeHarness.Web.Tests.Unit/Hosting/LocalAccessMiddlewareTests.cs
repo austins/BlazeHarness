@@ -7,7 +7,6 @@ public sealed class LocalAccessMiddlewareTests
 {
     private const int Port = 5555;
 
-    private readonly LaunchCredentials _credentials = new();
     private readonly LocalAccessMiddleware _sut;
     private bool _nextCalled;
 
@@ -19,14 +18,14 @@ public sealed class LocalAccessMiddlewareTests
                 _nextCalled = true;
                 return Task.CompletedTask;
             },
-            _credentials);
+            new AccessPolicy(AllowAnyHost: false));
     }
 
     [Fact]
-    public async Task InvokeAsync_ValidCookieAndHost_CallsNext()
+    public async Task InvokeAsync_ValidHost_CallsNext()
     {
         // Arrange
-        var context = CreateContext("127.0.0.1:5555", cookie: _credentials.SessionSecret);
+        var context = CreateContext("127.0.0.1:5555");
 
         // Act
         await _sut.InvokeAsync(context);
@@ -40,7 +39,7 @@ public sealed class LocalAccessMiddlewareTests
     public async Task InvokeAsync_ValidRequest_SetsSecurityHeaders()
     {
         // Arrange
-        var context = CreateContext("127.0.0.1:5555", cookie: _credentials.SessionSecret);
+        var context = CreateContext("127.0.0.1:5555");
 
         // Act
         await _sut.InvokeAsync(context);
@@ -58,10 +57,12 @@ public sealed class LocalAccessMiddlewareTests
     [InlineData("127.0.0.1:9999")]
     [InlineData("localhost")]
     [InlineData("127.0.0.1.evil.com:5555")]
+    [InlineData("192.168.1.20:5555")]
+    [InlineData("[::1]:5555")]
     public async Task InvokeAsync_UnexpectedHost_Returns403(string host)
     {
         // Arrange
-        var context = CreateContext(host, cookie: _credentials.SessionSecret);
+        var context = CreateContext(host);
 
         // Act
         await _sut.InvokeAsync(context);
@@ -79,7 +80,7 @@ public sealed class LocalAccessMiddlewareTests
     public async Task InvokeAsync_ForeignOrigin_Returns403(string origin)
     {
         // Arrange
-        var context = CreateContext("127.0.0.1:5555", cookie: _credentials.SessionSecret, origin: origin);
+        var context = CreateContext("127.0.0.1:5555", origin: origin);
 
         // Act
         await _sut.InvokeAsync(context);
@@ -93,7 +94,7 @@ public sealed class LocalAccessMiddlewareTests
     public async Task InvokeAsync_SameOrigin_CallsNext()
     {
         // Arrange
-        var context = CreateContext("localhost:5555", cookie: _credentials.SessionSecret, origin: "http://localhost:5555");
+        var context = CreateContext("localhost:5555", origin: "http://localhost:5555");
 
         // Act
         await _sut.InvokeAsync(context);
@@ -106,7 +107,7 @@ public sealed class LocalAccessMiddlewareTests
     public async Task InvokeAsync_SignalRNegotiateWithoutOrigin_Returns403()
     {
         // Arrange
-        var context = CreateContext("127.0.0.1:5555", cookie: _credentials.SessionSecret, path: "/_blazor/negotiate", method: "POST");
+        var context = CreateContext("127.0.0.1:5555", path: "/_blazor/negotiate", method: "POST");
 
         // Act
         await _sut.InvokeAsync(context);
@@ -119,7 +120,7 @@ public sealed class LocalAccessMiddlewareTests
     public async Task InvokeAsync_BlazorInitializersGetWithoutOrigin_CallsNext()
     {
         // Arrange
-        var context = CreateContext("127.0.0.1:5555", cookie: _credentials.SessionSecret, path: "/_blazor/initializers");
+        var context = CreateContext("127.0.0.1:5555", path: "/_blazor/initializers");
 
         // Act
         await _sut.InvokeAsync(context);
@@ -129,72 +130,67 @@ public sealed class LocalAccessMiddlewareTests
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("wrong")]
-    public async Task InvokeAsync_MissingOrWrongCookie_Returns401(string? cookie)
+    [InlineData("192.168.1.20:5555")]
+    [InlineData("[fe80::1]:5555")]
+    [InlineData("localhost:5555")]
+    public async Task InvokeAsync_IpHostWhenAllInterfaces_CallsNext(string host)
     {
         // Arrange
-        var context = CreateContext("127.0.0.1:5555", cookie: cookie);
+        var sut = CreateAllInterfaces();
+        var context = CreateContext(host, origin: "http://" + host);
 
         // Act
-        await _sut.InvokeAsync(context);
+        await sut.InvokeAsync(context);
 
         // Assert
-        context.Response.StatusCode.Should().Be(401);
+        _nextCalled.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("evil.com:5555")]
+    [InlineData("mypc.local:5555")]
+    [InlineData("192.168.1.20:9999")]
+    [InlineData("192.168.1.20")]
+    public async Task InvokeAsync_DomainOrWrongPortWhenAllInterfaces_Returns403(string host)
+    {
+        // Arrange
+        var sut = CreateAllInterfaces();
+        var context = CreateContext(host);
+
+        // Act
+        await sut.InvokeAsync(context);
+
+        // Assert
+        context.Response.StatusCode.Should().Be(403);
         _nextCalled.Should().BeFalse();
     }
 
     [Fact]
-    public async Task InvokeAsync_LaunchWithToken_SetsStrictHttpOnlyCookieAndRedirects()
+    public async Task InvokeAsync_OriginDiffersFromHostWhenAllInterfaces_Returns403()
     {
         // Arrange
-        var context = CreateContext("127.0.0.1:5555", path: "/launch", query: "?token=" + _credentials.Token);
+        var sut = CreateAllInterfaces();
+        var context = CreateContext("192.168.1.20:5555", origin: "http://192.168.1.21:5555");
 
         // Act
-        await _sut.InvokeAsync(context);
+        await sut.InvokeAsync(context);
 
         // Assert
-        context.Response.StatusCode.Should().Be(302);
-        var setCookie = context.Response.Headers.SetCookie.ToString();
-        setCookie.Should().Contain(LaunchCredentials.CookieName + "=" + _credentials.SessionSecret);
-        setCookie.Should().ContainEquivalentOf("httponly").And.ContainEquivalentOf("samesite=strict");
-        setCookie.Should().NotContain(_credentials.Token);
+        context.Response.StatusCode.Should().Be(403);
     }
 
-    [Fact]
-    public async Task InvokeAsync_LaunchTokenReused_Returns401()
-    {
-        // Arrange
-        await _sut.InvokeAsync(CreateContext("127.0.0.1:5555", path: "/launch", query: "?token=" + _credentials.Token));
-        var second = CreateContext("127.0.0.1:5555", path: "/launch", query: "?token=" + _credentials.Token);
-
-        // Act
-        await _sut.InvokeAsync(second);
-
-        // Assert
-        second.Response.StatusCode.Should().Be(401);
-    }
-
-    [Fact]
-    public async Task InvokeAsync_LaunchWithWrongToken_Returns401()
-    {
-        // Arrange
-        var context = CreateContext("127.0.0.1:5555", path: "/launch", query: "?token=nope");
-
-        // Act
-        await _sut.InvokeAsync(context);
-
-        // Assert
-        context.Response.StatusCode.Should().Be(401);
-        context.Response.Headers.SetCookie.ToString().Should().BeEmpty();
-    }
+    private LocalAccessMiddleware CreateAllInterfaces() => new(
+        _ =>
+        {
+            _nextCalled = true;
+            return Task.CompletedTask;
+        },
+        new AccessPolicy(AllowAnyHost: true));
 
     private static DefaultHttpContext CreateContext(
         string host,
-        string? cookie = null,
         string? origin = null,
         string path = "/",
-        string query = "",
         string method = "GET")
     {
         var context = new DefaultHttpContext();
@@ -202,16 +198,10 @@ public sealed class LocalAccessMiddlewareTests
         context.Request.Method = method;
         context.Request.Host = new HostString(host);
         context.Request.Path = path;
-        context.Request.QueryString = new QueryString(query);
         context.Response.Body = new MemoryStream();
         if (origin is not null)
         {
             context.Request.Headers.Origin = origin;
-        }
-
-        if (cookie is not null)
-        {
-            context.Request.Headers.Cookie = $"{LaunchCredentials.CookieName}={cookie}";
         }
 
         return context;
