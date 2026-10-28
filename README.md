@@ -19,8 +19,8 @@ The app binds a free port on `127.0.0.1`, prints its URL, and opens your browser
 
 | Option | Environment variable | Effect |
 |---|---|---|
-| `--port N` | `BLAZEHARNESS_PORT` | Pin the port instead of picking a free one. |
 | `--host ADDRESS` | `BLAZEHARNESS_HOST` | `localhost` or `127.0.0.1` (default) listens on this machine only. `0.0.0.0` listens on all interfaces so other devices can connect by IP address. |
+| `--port N` | `BLAZEHARNESS_PORT` | Pin the port instead of picking a free one. |
 | `--no-browser` | `BLAZEHARNESS_NO_BROWSER=1` | Don't open the browser; use the printed URL. |
 
 There is no sign-in. With the default, only programs on this machine can reach the app. With `0.0.0.0`, anyone who can reach the port can use it, and it can run commands and edit files, so only do that on a trusted network and limit access with a firewall. The connection is plain HTTP, and the URL must use an IP address, `localhost`, or this machine's host name (also with a `.lan`, `.local`, `.localdomain`, `.home`, `.internal` or `.home.arpa` suffix). Other names are refused to block DNS rebinding.
