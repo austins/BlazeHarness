@@ -2,7 +2,7 @@
 
 A local web app for chatting and coding with any OpenAI-compatible LLM. It runs on Windows, macOS and Linux. The model can read, edit and search files and run shell commands, and you approve what it may do.
 
-⚠ This app is still in early development. It is not yet suitable for production use.
+⚠️ This app is in early development and not yet suitable for production use.
 
 ## Requirements
 
@@ -15,13 +15,13 @@ A local web app for chatting and coding with any OpenAI-compatible LLM. It runs 
 dotnet run --project src/BlazeHarness.Web
 ```
 
-The app listens on port 5380 of `127.0.0.1`, prints its URL, and opens your browser. Options:
+The app listens on `127.0.0.1:5380`, prints its URL, and opens your browser. Options:
 
 | Option | Environment variable | Effect |
 |---|---|---|
 | `--host ADDRESS` | `BLAZEHARNESS_HOST` | `localhost` or `127.0.0.1` (default) listens on this machine only. `0.0.0.0` listens on all interfaces so other devices can connect by IP address. |
-| `--port N` | `BLAZEHARNESS_PORT` | Use another port than the default 5380. The app stops with a message if the port is taken. |
-| `--no-browser` | `BLAZEHARNESS_NO_BROWSER=1` | Don't open the browser; use the printed URL. |
+| `--port N` | `BLAZEHARNESS_PORT` | Listen on this port instead of 5380. The app exits with a message if the port is taken. |
+| `--no-browser` | `BLAZEHARNESS_NO_BROWSER=1` | Don't open the browser on startup. |
 
 There is no sign-in. With the default, only programs on this machine can reach the app. With `0.0.0.0`, anyone who can reach the port can use it, and it can run commands and edit files, so only do that on a trusted network and limit access with a firewall. The connection is plain HTTP, and the URL must use an IP address, `localhost`, or this machine's host name (also with a `.lan`, `.local`, `.localdomain`, `.home`, `.internal` or `.home.arpa` suffix). Other names are refused to block DNS rebinding.
 
@@ -43,16 +43,16 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 * Export and import of sessions.
 * MCP servers, added and edited in a form (secrets go in the OS keychain) or in a standard `mcp.json`, and enabled globally or per session.
 * Skills, loaded on demand from `SKILL.md` folders in `~/.blazeharness/skills`, `~/.agents/skills`, and a folder's own `.agents/skills`.
-* Web search and web fetch tools (Settings > Web). Search uses keyless public providers (DuckDuckGo, Exa, Parallel, Keenable), in parallel or one at a time, with retries and a pause after repeated failures. Fetch reads HTML, PDF and text from the public internet only, and pages are cached in memory per session. Each use asks first unless the chat is Unrestricted or never asks; rules can match a host. JavaScript is not run, and system proxy settings are not used.
+* Web search and web fetch tools (Settings > Web). Search uses public providers that need no API key (DuckDuckGo, Exa, Parallel, Keenable), either in parallel or one at a time, with retries and a pause after repeated failures. Fetch reads HTML, PDF and text from the public internet only and caches pages in memory per session. Each use asks first, unless the chat is Unrestricted or set to never ask, and rules can match a host. JavaScript is not run, and system proxy settings are not used.
 
 ## Planned and ideas
 
 Not built yet, and not promised:
 
-* A touch-friendly layout for use from a phone or tablet. Listening beyond localhost is possible with `--host 0.0.0.0`; the layout is the missing part.
+* A touch-friendly layout for use from a phone or tablet. `--host 0.0.0.0` already lets other devices connect, but the layout isn't made for small screens.
 * Localization of the web UI, starting with English.
 * An in-app browser that the agent can use to open a running service, read the page, and take a screenshot.
-* Reading Office documents (docx, xlsx, pptx) in the web fetch tool, which today reads HTML, PDF and text.
+* Reading Office documents (docx, xlsx, pptx) in the web fetch tool, which reads HTML, PDF and text.
 * An "Ask user" tool that lets the agent pause and ask you a question, with free text or choices.
 * Subagents that work in their own context and return a summary.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
