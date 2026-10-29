@@ -55,10 +55,10 @@
 
     @if (_problems.Count > 0)
     {
-        <div class="alert alert-error" role="alert">
+        <Alert>
             <strong>Fix these before saving:</strong>
             <ul>@foreach (var problem in _problems) { <li>@problem</li> }</ul>
-        </div>
+        </Alert>
     }
 
     <div class="row">

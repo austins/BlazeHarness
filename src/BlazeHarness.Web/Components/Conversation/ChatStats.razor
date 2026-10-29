@@ -1,0 +1,74 @@
+@using System.Globalization
+
+@if (_totals is { Responses: > 0 } totals)
+{
+    <dl class="chat-stats" aria-label="Usage of this chat">
+        <div title="Prompt tokens sent, over all responses of this chat">
+            <dt>In</dt>
+            <dd>@TokenFormat.Of(totals.PromptTokens)</dd>
+        </div>
+        @if (totals.CacheHitRate is { } hit && totals.CachedTokens > 0)
+        {
+            <div title="@($"{totals.CachedTokens:N0} prompt tokens were served from the provider's cache")">
+                <dt>Cached</dt>
+                <dd>@hit.ToString("P0", CultureInfo.CurrentCulture)</dd>
+            </div>
+        }
+
+        <div title="@(totals.ReasoningTokens > 0 ? $"{totals.ReasoningTokens:N0} of them were thinking" : "Tokens the model generated")">
+            <dt>Out</dt>
+            <dd>@TokenFormat.Of(totals.CompletionTokens)</dd>
+        </div>
+        @if (totals.DecodeTokensPerSecond is { } decode)
+        {
+            <div title="Tokens generated per second while streaming">
+                <dt>Decode</dt>
+                <dd>@TokenFormat.Rate(decode)</dd>
+            </div>
+        }
+
+        @if (totals.PrefillTokensPerSecond is { } prefill)
+        {
+            <div title="Uncached prompt tokens processed per second before the first output">
+                <dt>Prefill</dt>
+                <dd>@TokenFormat.Rate(prefill)</dd>
+            </div>
+        }
+
+        @if (totals.TimeToFirstToken is { } wait)
+        {
+            <div title="Average wait until the first output arrived">
+                <dt>First token</dt>
+                <dd>@TokenFormat.Duration(wait)</dd>
+            </div>
+        }
+
+        @if (totals.GenerationTime > TimeSpan.Zero)
+        {
+            <div title="Time spent streaming output, over all responses">
+                <dt>Streaming</dt>
+                <dd>@TokenFormat.Duration(totals.GenerationTime)</dd>
+            </div>
+        }
+
+        <div title="Responses the model gave, tool rounds included">
+            <dt>Responses</dt>
+            <dd>@totals.Responses</dd>
+        </div>
+    </dl>
+}
+
+@code {
+    private UsageTotals? _totals;
+
+    /// <summary>
+    /// Gets or sets the entries of the chat.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ChatEntry> Entries { get; set; } = [];
+
+    protected override void OnParametersSet()
+    {
+        _totals = UsageTotals.Of(Entries.Select(e => e.Usage).OfType<UsageReported>());
+    }
+}

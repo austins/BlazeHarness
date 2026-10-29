@@ -132,7 +132,7 @@
         <div class="sidebar-links">
             <button type="button" class="nav-link" data-shortcut="settings" title="Settings (Ctrl+,)" @onclick="() => SettingsState.Open()"><Icon Name="settings" /> Settings</button>
         </div>
-        <button type="button" class="btn btn-ghost btn-icon" @onclick="ToggleThemeAsync"
+        <button type="button" class="nav-link nav-link-icon" @onclick="ToggleThemeAsync"
                 title="@(_dark ? "Switch to light theme" : "Switch to dark theme")"
                 aria-label="@(_dark ? "Switch to light theme" : "Switch to dark theme")">
             <Icon Name="@(_dark ? "moon" : "sun")" />
@@ -145,15 +145,9 @@
 <OpenFolderDialog Open="_locating is not null" OnClose="() => _locating = null" OnPicked="RelocateAsync"
                   Title="Find folder" Hint="Choose where this folder is now. Its chats move with it." ConfirmText="Use this folder" />
 
-<Dialog Title="Remove this folder?" Open="_removing is not null" OnClose="() => _removing = null">
-    <ChildContent>
-        <p><strong>@_removing?.Name</strong> is removed from this list. The folder on your computer is not touched, and its chats stay, moved to Chats.</p>
-    </ChildContent>
-    <Footer>
-        <button type="button" class="btn" @onclick="() => _removing = null">Keep</button>
-        <button type="button" class="btn btn-primary" @onclick="RemoveAsync">Remove</button>
-    </Footer>
-</Dialog>
+<ConfirmDialog Title="Remove this folder?" Open="_removing is not null" ConfirmText="Remove" OnConfirm="RemoveAsync" OnCancel="() => _removing = null">
+    <p><strong>@_removing?.Name</strong> is removed from this list. The folder on your computer is not touched, and its chats stay, moved to Chats.</p>
+</ConfirmDialog>
 
 @code {
     private readonly HashSet<string> _collapsed = new(FolderPaths.Comparer);

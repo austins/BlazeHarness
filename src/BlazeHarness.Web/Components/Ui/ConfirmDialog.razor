@@ -1,0 +1,53 @@
+<Dialog Title="@Title" Open="Open" OnClose="OnCancel">
+    <ChildContent>
+        @ChildContent
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn" @onclick="OnCancel">@CancelText</button>
+        <button type="button" class="btn btn-primary" @onclick="OnConfirm">@ConfirmText</button>
+    </Footer>
+</Dialog>
+
+@code {
+    /// <summary>
+    /// Gets or sets the heading, which is usually the question.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the dialog is shown.
+    /// </summary>
+    [Parameter]
+    public bool Open { get; set; }
+
+    /// <summary>
+    /// Gets or sets the label of the button that goes ahead with the action.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string ConfirmText { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the label of the button that closes the dialog without acting.
+    /// </summary>
+    [Parameter]
+    public string CancelText { get; set; } = "Keep";
+
+    /// <summary>
+    /// Gets or sets the callback for the user confirming.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user cancelling or closing the dialog.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    /// <summary>
+    /// Gets or sets the message that explains what will happen.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

@@ -4,10 +4,7 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <header class="page-header">
-        <h1>Providers</h1>
-        <p class="muted">Connect any OpenAI-compatible endpoint. Keys are kept in @Service.Secrets.Name@(Service.Secrets.IsSecure ? "." : ", which is not encrypted. Install a system keyring to store keys more securely.")</p>
-    </header>
+    <PageHeader Title="Providers">Connect any OpenAI-compatible endpoint. Keys are kept in @Service.Secrets.Name@(Service.Secrets.IsSecure ? "." : ", which is not encrypted. Install a system keyring to store keys more securely.")</PageHeader>
 
     <div class="split">
         <aside class="stack" aria-label="Configured providers">
@@ -21,7 +18,7 @@
                     </button>
                 }
             </div>
-            <button type="button" class="btn" @onclick="() => StartNew(null, null)">＋ Add provider</button>
+            <button type="button" class="btn btn-add" @onclick="() => StartNew(null, null)"><Icon Name="plus" /> Add provider</button>
         </aside>
 
         <section>
@@ -213,10 +210,10 @@
 
                     @if (_issues.Count > 0)
                     {
-                        <div class="alert alert-error" role="alert">
+                        <Alert>
                             <strong>Fix these before saving:</strong>
                             <ul>@foreach (var issue in _issues) { <li>@issue.Message</li> }</ul>
-                        </div>
+                        </Alert>
                     }
 
                     <div class="row row-spread">
@@ -237,15 +234,9 @@
 
 <ModelTuning Provider="_edit" Model="_tuning" Open="_tuning is not null" OnClose="() => _tuning = null" />
 
-<Dialog Title="Remove provider?" Open="_confirmDelete" OnClose="() => _confirmDelete = false">
-    <ChildContent>
-        <p>This removes <strong>@_edit?.DisplayName</strong> and its stored API key. Existing chats that used it will need another provider.</p>
-    </ChildContent>
-    <Footer>
-        <button type="button" class="btn" @onclick="() => _confirmDelete = false">Keep</button>
-        <button type="button" class="btn btn-primary" @onclick="RemoveAsync">Remove</button>
-    </Footer>
-</Dialog>
+<ConfirmDialog Title="Remove provider?" Open="_confirmDelete" ConfirmText="Remove" OnConfirm="RemoveAsync" OnCancel="() => _confirmDelete = false">
+    <p>This removes <strong>@_edit?.DisplayName</strong> and its stored API key. Existing chats that used it will need another provider.</p>
+</ConfirmDialog>
 
 @code {
     private static readonly (string Name, string Url)[] QuickStarts =

@@ -6,17 +6,14 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <header class="page-header">
-        <h1>Skills</h1>
-        <p class="muted">A skill is a folder with a <code class="mono">SKILL.md</code> file that tells the model how to do one kind of work. The model sees each skill's name and description, and loads the rest only when it needs it. Each chat can turn skills on or off for itself.</p>
-    </header>
+    <PageHeader Title="Skills">A skill is a folder with a <code class="mono">SKILL.md</code> file that tells the model how to do one kind of work. The model sees each skill's name and description, and loads the rest only when it needs it. Each chat can turn skills on or off for itself.</PageHeader>
 
-    <div class="alert alert-warning" role="note">
+    <Alert Kind="AlertKind.Warning">
         <Icon Name="alert" />
         <span>A skill is text the model follows, and it may come with scripts. It never gives the model more permissions, and running anything still asks first. Only install skills you trust.</span>
-    </div>
+    </Alert>
 
-    <section class="card stack" aria-labelledby="skills-heading">
+    <section class="card stack divided" aria-labelledby="skills-heading">
         <h2 id="skills-heading">Installed skills</h2>
         @if (_resolution.Skills.Count == 0)
         {

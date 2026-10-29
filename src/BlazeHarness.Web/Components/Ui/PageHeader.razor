@@ -1,0 +1,18 @@
+<header class="page-header">
+    <h1>@Title</h1>
+    <p class="muted">@ChildContent</p>
+</header>
+
+@code {
+    /// <summary>
+    /// Gets or sets the page heading.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the short description under the heading.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

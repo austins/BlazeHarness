@@ -5,10 +5,7 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <header class="page-header">
-        <h1>Web</h1>
-        <p class="muted">Lets the agent search the web and read pages and PDF files. Each use asks first, unless the chat's access level is Unrestricted or it never asks. The page text is treated as data, never as instructions. JavaScript is not run, so pages that need it may come out empty.</p>
-    </header>
+    <PageHeader Title="Web">Lets the agent search the web and read pages and PDF files. Each use asks first, unless the chat's access level is Unrestricted or it never asks. The page text is treated as data, never as instructions. JavaScript is not run, so pages that need it may come out empty.</PageHeader>
 
     <section class="card stack" aria-labelledby="web-tools-heading">
         <h2 id="web-tools-heading">Tools</h2>
@@ -40,7 +37,7 @@
         {
             var info = WebProviders.All.First(i => i.Id == provider.Id);
             var status = Web.StatusOf(provider.Id);
-            <div class="row" role="group" aria-label="@info.Name">
+            <div class="row provider-row" role="group" aria-label="@info.Name">
                 <label class="check">
                     <input type="checkbox" checked="@provider.Enabled" @onchange="e => SetProviderAsync(index, (bool)e.Value!)" />
                     <span><strong>@info.Name</strong> <span class="muted">@info.Description</span></span>
@@ -49,8 +46,8 @@
                 {
                     <span class="badge">@(status.Working ? "Working" : status.Detail)</span>
                 }
-                <button type="button" class="btn btn-sm" aria-label="Move @info.Name up" disabled="@(index == 0)" @onclick="() => MoveAsync(index, -1)"><Icon Name="arrow-up" /></button>
-                <button type="button" class="btn btn-sm" aria-label="Move @info.Name down" disabled="@(index == Providers.Count - 1)" @onclick="() => MoveAsync(index, 1)"><Icon Name="arrow-down" /></button>
+                <button type="button" class="btn btn-sm btn-icon" aria-label="Move @info.Name up" disabled="@(index == 0)" @onclick="() => MoveAsync(index, -1)"><Icon Name="arrow-up" /></button>
+                <button type="button" class="btn btn-sm btn-icon" aria-label="Move @info.Name down" disabled="@(index == Providers.Count - 1)" @onclick="() => MoveAsync(index, 1)"><Icon Name="arrow-down" /></button>
             </div>
         }
     </section>

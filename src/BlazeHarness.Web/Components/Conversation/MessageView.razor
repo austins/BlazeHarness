@@ -71,7 +71,7 @@
 
     @if (Entry.Error is not null)
     {
-        <div class="alert alert-error" role="alert">@Entry.Error</div>
+        <Alert>@Entry.Error</Alert>
     }
 
     <footer class="msg-meta">
@@ -88,12 +88,49 @@
         <time class="msg-time" datetime="@Entry.At.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)"></time>
         @if (Entry.Usage is { } usage)
         {
-            <span class="mono">@usage.PromptTokens in · @usage.CompletionTokens out</span>
+            <span class="msg-usage mono" title="@UsageDetails(usage)">@UsageSummary(usage)</span>
         }
     </footer>
 </article>
 
 @code {
+    private static string UsageSummary(UsageReported usage)
+    {
+        var parts = new List<string> { $"{TokenFormat.Of(usage.PromptTokens)} in" };
+        if (usage.CachedTokens > 0)
+        {
+            parts.Add($"{TokenFormat.Of(usage.CachedTokens)} cached");
+        }
+
+        parts.Add($"{TokenFormat.Of(usage.CompletionTokens)} out");
+        if (usage.DecodeTokensPerSecond is { } decode)
+        {
+            parts.Add(TokenFormat.Rate(decode));
+        }
+
+        return string.Join(" · ", parts);
+    }
+
+    private static string UsageDetails(UsageReported usage)
+    {
+        var lines = new List<string>
+        {
+            $"Prompt: {usage.PromptTokens:N0} tokens, {usage.CachedTokens:N0} from the cache",
+            $"Output: {usage.CompletionTokens:N0} tokens" + (usage.ReasoningTokens > 0 ? $", {usage.ReasoningTokens:N0} of them thinking" : string.Empty),
+        };
+        if (usage.TimeToFirstToken is { } wait)
+        {
+            lines.Add($"First output after {TokenFormat.Duration(wait)}" + (usage.PrefillTokensPerSecond is { } prefill ? $", prompt processed at {TokenFormat.Rate(prefill)}" : string.Empty));
+        }
+
+        if (usage.GenerationTime is { } generation)
+        {
+            lines.Add($"Output streamed in {TokenFormat.Duration(generation)}" + (usage.DecodeTokensPerSecond is { } decode ? $" at {TokenFormat.Rate(decode)}" : string.Empty));
+        }
+
+        return string.Join('\n', lines);
+    }
+
     /// <summary>
     /// Gets or sets the message to show.
     /// </summary>

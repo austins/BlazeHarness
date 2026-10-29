@@ -9,15 +9,12 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <header class="page-header">
-        <h1>MCP servers</h1>
-        <p class="muted">Servers that give the model more tools. They are listed in <code class="mono">@File.FilePath</code>, and each chat can turn them on or off for itself.</p>
-    </header>
+    <PageHeader Title="MCP servers">Servers that give the model more tools. They are listed in <code class="mono">@File.FilePath</code>, and each chat can turn them on or off for itself.</PageHeader>
 
-    <div class="alert alert-warning" role="note">
+    <Alert Kind="AlertKind.Warning">
         <Icon Name="alert" />
         <span>Adding a server is like installing software. A local server runs a program on this computer with your permissions, outside the sandbox, and a remote one receives what the model sends it. Only add servers you trust.</span>
-    </div>
+    </Alert>
 
     @if (_status is not null)
     {
@@ -58,10 +55,10 @@
                 }
                 @if (literals.Count > 0)
                 {
-                    <p class="alert alert-warning" role="note">
+                    <Alert Kind="AlertKind.Warning">
                         <Icon Name="alert" />
                         <span>This server has what looks like a secret written into the file: @string.Join(", ", literals). Use a <code class="mono">${NAME}</code> reference to an environment variable instead, so the secret stays out of the file.</span>
-                    </p>
+                    </Alert>
                 }
                 <div class="row">
                     <label class="check">
@@ -129,15 +126,9 @@
     </details>
 </div>
 
-<Dialog Title="Remove server?" Open="_removing is not null" OnClose="() => _removing = null">
-    <ChildContent>
-        <p>This removes <strong>@_removing</strong> from the file and deletes its stored secrets.</p>
-    </ChildContent>
-    <Footer>
-        <button type="button" class="btn" @onclick="() => _removing = null">Keep</button>
-        <button type="button" class="btn btn-primary" @onclick="RemoveAsync">Remove</button>
-    </Footer>
-</Dialog>
+<ConfirmDialog Title="Remove server?" Open="_removing is not null" ConfirmText="Remove" OnConfirm="RemoveAsync" OnCancel="() => _removing = null">
+    <p>This removes <strong>@_removing</strong> from the file and deletes its stored secrets.</p>
+</ConfirmDialog>
 
 @code {
     private readonly HashSet<string> _busy = new(StringComparer.Ordinal);

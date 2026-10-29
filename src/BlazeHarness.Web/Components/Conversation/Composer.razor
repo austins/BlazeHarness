@@ -70,12 +70,7 @@ else
         }
         <textarea class="input composer-input" rows="1" @ref="_input" @bind="_text" @bind:event="oninput"
                   placeholder="Message the model" aria-label="Message"></textarea>
-        <div class="composer-bar">
-            @if (Editing is null)
-            {
-                <InputFile @ref="_picker" OnChange="AddFilesAsync" multiple tabindex="-1" class="visually-hidden" aria-hidden="true" />
-                <button type="button" class="btn btn-ghost btn-icon" aria-label="Attach files" title="Attach files" data-bh-action="pick"><Icon Name="paperclip" /></button>
-            }
+        <div class="composer-options">
             <select class="select" aria-label="Model" value="@_selected" @onchange="OnModelChanged">
                 @foreach (var group in _models.GroupBy(m => m.Provider.Id))
                 {
@@ -96,6 +91,14 @@ else
                         <option value="@level">@level</option>
                     }
                 </select>
+            }
+            @ChildContent
+        </div>
+        <div class="composer-bar">
+            @if (Editing is null)
+            {
+                <InputFile @ref="_picker" OnChange="AddFilesAsync" multiple tabindex="-1" class="visually-hidden" aria-hidden="true" />
+                <button type="button" class="btn btn-ghost btn-icon" aria-label="Attach files" title="Attach files" data-bh-action="pick"><Icon Name="paperclip" /></button>
             }
             <span class="composer-spacer"></span>
             @if (_context is not null)
@@ -235,6 +238,12 @@ else
     /// </summary>
     [Parameter]
     public EventCallback OnStop { get; set; }
+
+    /// <summary>
+    /// Gets or sets extra controls shown after the model and thinking choices.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
 
     protected override void OnInitialized()
     {

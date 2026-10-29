@@ -37,15 +37,9 @@
 
 <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
 
-<Dialog Title="Delete this chat?" Open="_deleting is not null" OnClose="() => _deleting = null">
-    <ChildContent>
-        <p>This can't be undone. <strong>@(_deleting is null ? string.Empty : DisplayTitle(_deleting))</strong> and everything stored for it is removed. Files in your project folder are not touched.</p>
-    </ChildContent>
-    <Footer>
-        <button type="button" class="btn" @onclick="() => _deleting = null">Keep</button>
-        <button type="button" class="btn btn-primary" @onclick="DeleteAsync">Delete</button>
-    </Footer>
-</Dialog>
+<ConfirmDialog Title="Delete this chat?" Open="_deleting is not null" ConfirmText="Delete" OnConfirm="DeleteAsync" OnCancel="() => _deleting = null">
+    <p>This can't be undone. <strong>@(_deleting is null ? string.Empty : DisplayTitle(_deleting))</strong> and everything stored for it is removed. Files in your project folder are not touched.</p>
+</ConfirmDialog>
 
 @code {
     private const int MaxTitleLength = 200;

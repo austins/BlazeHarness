@@ -3,10 +3,7 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <header class="page-header">
-        <h1>Permissions</h1>
-        <p class="muted">What new chats start with. Each chat can still change its own settings, and changes here apply right away.</p>
-    </header>
+    <PageHeader Title="Permissions">What new chats start with. Each chat can still change its own settings, and changes here apply right away.</PageHeader>
 
     <section class="card stack" aria-labelledby="start-heading">
         <h2 id="start-heading">New chats start with</h2>
@@ -47,7 +44,7 @@
         {
             var index = i;
             var folder = _protected[i];
-            <div class="row">
+            <div class="row list-row">
                 <code class="mono">@folder</code>
                 <button type="button" class="btn btn-sm" aria-label="Remove @folder from the protected folders" @onclick="() => RemoveProtectedAsync(index)">Remove</button>
             </div>
@@ -78,7 +75,7 @@
         {
             var index = i;
             var rule = _rules[i];
-            <div class="row">
+            <div class="row list-row">
                 <span>@TargetLabel(rule.Target)</span>
                 <span>@ActionLabel(rule.Action)</span>
                 <code class="mono">@rule.Pattern</code>

@@ -42,6 +42,7 @@ internal static class ChatRunner
     /// <param name="permissions">Decides which calls run, ask or are refused. Null means the default settings.</param>
     /// <param name="maxRounds">The most times to call the model.</param>
     /// <param name="context">Chooses what part of <paramref name="history"/> is sent and compacts it before a call when it has grown too large. Null sends all of it.</param>
+    /// <param name="time">The clock that times each response. Null uses the system clock.</param>
     /// <param name="cancellationToken">A token that stops the run.</param>
     /// <returns>The events of the run.</returns>
     public static IAsyncEnumerable<AgentEvent> RunAsync(
@@ -53,13 +54,19 @@ internal static class ChatRunner
         PermissionEngine? permissions = null,
         int maxRounds = DefaultMaxRounds,
         ConversationContext? context = null,
+        TimeProvider? time = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(history);
         ArgumentOutOfRangeException.ThrowIfLessThan(maxRounds, 1);
 
-        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), maxRounds, context, cancellationToken);
+        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), maxRounds, context, time ?? TimeProvider.System, cancellationToken);
+    }
+
+    private static TimeSpan? Positive(TimeSpan span)
+    {
+        return span > TimeSpan.Zero ? span : null;
     }
 
     private static async IAsyncEnumerable<AgentEvent> RunCoreAsync(
@@ -71,6 +78,7 @@ internal static class ChatRunner
         PermissionEngine permissions,
         int maxRounds,
         ConversationContext? context,
+        TimeProvider time,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         if (tools is { Declarations.Count: > 0 })
@@ -128,6 +136,10 @@ internal static class ChatRunner
             var reason = StopReason.Completed;
             string? error = null;
 
+            UsageDetails? usageDetails = null;
+            long? firstOutput = null;
+            long lastOutput = 0;
+            var requested = time.GetTimestamp();
             var stream = client.GetStreamingResponseAsync(requestMessages, options, cancellationToken);
             await using var enumerator = stream.GetAsyncEnumerator(cancellationToken);
 
@@ -157,6 +169,12 @@ internal static class ChatRunner
 
                 foreach (var content in update.Contents)
                 {
+                    if (content is TextReasoningContent or TextContent or FunctionCallContent)
+                    {
+                        lastOutput = time.GetTimestamp();
+                        firstOutput ??= lastOutput;
+                    }
+
                     switch (content)
                     {
                         case TextReasoningContent { Text.Length: > 0 } thinking:
@@ -170,16 +188,24 @@ internal static class ChatRunner
                             calls.Add(call);
                             break;
                         case UsageContent usage:
-                            context?.RecordUsage(usage.Details.InputTokenCount ?? 0, requestCount);
-                            yield return new UsageReported(
-                                usage.Details.InputTokenCount ?? 0,
-                                usage.Details.OutputTokenCount ?? 0,
-                                usage.Details.CachedInputTokenCount ?? 0);
+                            usageDetails = usage.Details;
                             break;
                         default:
                             break;
                     }
                 }
+            }
+
+            if (usageDetails is not null)
+            {
+                context?.RecordUsage(usageDetails.InputTokenCount ?? 0, requestCount);
+                yield return new UsageReported(
+                    usageDetails.InputTokenCount ?? 0,
+                    usageDetails.OutputTokenCount ?? 0,
+                    usageDetails.CachedInputTokenCount ?? 0,
+                    usageDetails.ReasoningTokenCount ?? 0,
+                    firstOutput is { } first ? Positive(time.GetElapsedTime(requested, first)) : null,
+                    firstOutput is { } start ? Positive(time.GetElapsedTime(start, lastOutput)) : null);
             }
 
             if (reason != StopReason.Completed)

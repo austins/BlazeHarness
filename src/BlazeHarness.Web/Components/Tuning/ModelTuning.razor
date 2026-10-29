@@ -33,12 +33,12 @@
                         <span class="hint">Paste a bare object of sampling values, or an object with samplingParams, samplingParamsByThinkingLevel and thinkingLevels.</span>
                         @if (_importErrors.Count > 0)
                         {
-                            <div class="alert alert-error" role="alert">
+                            <Alert>
                                 @foreach (var error in _importErrors)
                                 {
                                     <div>@error</div>
                                 }
-                            </div>
+                            </Alert>
                         }
                         <div><button type="button" class="btn" disabled="@string.IsNullOrWhiteSpace(_importText)" @onclick="Import">Import</button></div>
                     </div>

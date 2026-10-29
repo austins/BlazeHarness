@@ -1,0 +1,21 @@
+<div id="@Id" class="@(Kind == AlertKind.Error ? "alert alert-error" : "alert alert-warning")" role="@(Kind == AlertKind.Error ? "alert" : "note")">@ChildContent</div>
+
+@code {
+    /// <summary>
+    /// Gets or sets whether this reports an error (announced right away) or a warning (a note).
+    /// </summary>
+    [Parameter]
+    public AlertKind Kind { get; set; } = AlertKind.Error;
+
+    /// <summary>
+    /// Gets or sets the element id, for <c>aria-describedby</c> on the field it belongs to.
+    /// </summary>
+    [Parameter]
+    public string? Id { get; set; }
+
+    /// <summary>
+    /// Gets or sets the message.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}
