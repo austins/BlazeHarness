@@ -6,6 +6,8 @@
 - `dotnet test` runs everything; one project: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit`.
 - One test class: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit -- --filter-class "*ResolvedRequestParamsTests"`.
 - Running the app and its environment variables: see [README.md](README.md).
+- To check UI in a browser, use whichever browser tool the session has (Playwright MCP, an agent browser, or none: then say the UI is unchecked). Run `ASPNETCORE_ENVIRONMENT=Development BLAZEHARNESS_HOME=$(mktemp -d) BLAZEHARNESS_NO_BROWSER=1 dotnet run --no-build --project src/BlazeHarness.Web`; Development is what serves `app.css`. Rebuild for Razor changes, restart for CSS, and reload the page after a restart. Stop the app with `kill <PID>` from `ss -ltnp | grep 5380`. Delete screenshots, the temp home and any browser output folder afterwards.
+- To seed a chat without a model server, write `providers.json`, `sessions/<32-hex>/session.json` and `messages.jsonl` under the home. Copy the event shapes from `tests/BlazeHarness.Core.Tests.Unit/Sessions/SampleChat.cs` and `src/BlazeHarness.Core/Sessions/*Event.cs` (enums are strings). If the transcript stays empty, the app's console log names the bad field in a `JsonException`.
 - After changing packages, commit every updated `packages.lock.json`.
 
 ## Architecture
