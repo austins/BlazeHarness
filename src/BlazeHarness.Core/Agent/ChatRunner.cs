@@ -13,11 +13,6 @@ namespace BlazeHarness.Core.Agent;
 /// </summary>
 internal static class ChatRunner
 {
-    /// <summary>
-    /// The default most times the model is called in one run, so a model stuck in a loop can't run forever.
-    /// </summary>
-    public const int DefaultMaxRounds = 50;
-
     private static readonly JsonSerializerOptions CompactJson = new(AIJsonUtilities.DefaultOptions) { WriteIndented = false };
 
     /// <summary>
@@ -40,7 +35,6 @@ internal static class ChatRunner
     /// <param name="tools">The tools the model may call, or null for a reply without tools.</param>
     /// <param name="approver">Asks the user before a call that needs approval runs.</param>
     /// <param name="permissions">Decides which calls run, ask or are refused. Null means the default settings.</param>
-    /// <param name="maxRounds">The most times to call the model.</param>
     /// <param name="context">Chooses what part of <paramref name="history"/> is sent and compacts it before a call when it has grown too large. Null sends all of it.</param>
     /// <param name="time">The clock that times each response. Null uses the system clock.</param>
     /// <param name="cancellationToken">A token that stops the run.</param>
@@ -52,16 +46,13 @@ internal static class ChatRunner
         ToolSet? tools = null,
         IToolApprover? approver = null,
         PermissionEngine? permissions = null,
-        int maxRounds = DefaultMaxRounds,
         ConversationContext? context = null,
         TimeProvider? time = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(history);
-        ArgumentOutOfRangeException.ThrowIfLessThan(maxRounds, 1);
-
-        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), maxRounds, context, time ?? TimeProvider.System, cancellationToken);
+        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), context, time ?? TimeProvider.System, cancellationToken);
     }
 
     private static TimeSpan? Positive(TimeSpan span)
@@ -76,7 +67,6 @@ internal static class ChatRunner
         ToolSet? tools,
         IToolApprover? approver,
         PermissionEngine permissions,
-        int maxRounds,
         ConversationContext? context,
         TimeProvider time,
         [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -86,7 +76,9 @@ internal static class ChatRunner
             options.Tools = [.. tools.Declarations];
         }
 
-        for (var round = 0; round < maxRounds; round++)
+        // There is no limit on rounds: the user can stop a run, and compaction keeps the context in bounds.
+        var firstResponse = true;
+        while (true)
         {
             if (context is not null && context.ShouldCompact(history))
             {
@@ -123,15 +115,18 @@ internal static class ChatRunner
                 }
             }
 
-            if (round > 0)
+            if (!firstResponse)
             {
                 yield return new NewResponse();
             }
+
+            firstResponse = false;
 
             var requestMessages = context?.View(history) ?? history;
             var requestCount = history.Count;
 
             var reply = new StringBuilder();
+            var thinking = new StringBuilder();
             var calls = new List<FunctionCallContent>();
             var reason = StopReason.Completed;
             string? error = null;
@@ -177,8 +172,9 @@ internal static class ChatRunner
 
                     switch (content)
                     {
-                        case TextReasoningContent { Text.Length: > 0 } thinking:
-                            yield return new ReasoningDelta(thinking.Text);
+                        case TextReasoningContent { Text.Length: > 0 } reasoning:
+                            thinking.Append(reasoning.Text);
+                            yield return new ReasoningDelta(reasoning.Text);
                             break;
                         case TextContent { Text.Length: > 0 } text:
                             reply.Append(text.Text);
@@ -234,6 +230,12 @@ internal static class ChatRunner
             contents.AddRange(calls);
             if (contents.Count > 0)
             {
+                // Kept so the next call of this run can see what the model worked out; see ReasoningReplayChatClient.
+                if (thinking.Length > 0)
+                {
+                    contents.Insert(0, new TextReasoningContent(thinking.ToString()));
+                }
+
                 history.Add(new ChatMessage(ChatRole.Assistant, contents));
             }
 
@@ -255,9 +257,6 @@ internal static class ChatRunner
                 yield break;
             }
         }
-
-        yield return new AgentError($"The run stopped after {maxRounds} model calls without finishing.");
-        yield return new Done(StopReason.MaxIterations);
     }
 
     private static async IAsyncEnumerable<AgentEvent> ExecuteCallsAsync(

@@ -55,6 +55,7 @@ public static class TokenEstimate
             total += content switch
             {
                 TextContent text => Of(text.Text),
+                TextReasoningContent reasoning => Of(reasoning.Text),
                 FunctionCallContent call => Of(call.Name) + Of(JsonSerializer.Serialize(call.Arguments, AIJsonUtilities.DefaultOptions)),
                 FunctionResultContent result => Of(result.Result?.ToString()),
                 DataContent data when data.HasTopLevelMediaType("image") => ImageTokens,

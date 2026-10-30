@@ -89,6 +89,39 @@ public sealed class ChatClientFactoryTests
     }
 
     [Fact]
+    public async Task Request_ThinkingOfThisTurn_IsSentBackAsReasoningContent()
+    {
+        // Arrange
+        using var server = new FakeOpenAiServer([Chunk2]);
+        var (provider, model) = CreateProvider(server.BaseUrl);
+        using var http = new HttpClient();
+        using var client = ChatClientFactory.Create(provider, model.Id, null, http);
+        List<ChatMessage> history =
+        [
+            new(ChatRole.User, "first"),
+            new(ChatRole.Assistant, [new TextReasoningContent("old thought"), new TextContent("answer")]),
+            new(ChatRole.User, "second"),
+            new(ChatRole.Assistant, [new TextReasoningContent("plan"), new FunctionCallContent("call_1", "read_file", new Dictionary<string, object?> { ["path"] = "a" })]),
+            new(ChatRole.Tool, [new FunctionResultContent("call_1", "text")]),
+        ];
+
+        // Act
+        await client.GetStreamingResponseAsync(history, ChatClientFactory.BuildOptions(provider, model, null), TestContext.Current.CancellationToken)
+            .ToChatResponseAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        using var body = JsonDocument.Parse(server.RequestBodies.Single());
+        var messages = body.RootElement.GetProperty("messages");
+        messages[1].TryGetProperty("reasoning_content", out _).Should().BeFalse();
+        messages[1].GetProperty("content").ToString().Should().Contain("answer");
+        messages[3].GetProperty("reasoning_content").GetString().Should().Be("plan");
+        var call = messages[3].GetProperty("tool_calls")[0];
+        call.GetProperty("id").GetString().Should().Be("call_1");
+        using var arguments = JsonDocument.Parse(call.GetProperty("function").GetProperty("arguments").GetString()!);
+        arguments.RootElement.GetProperty("path").GetString().Should().Be("a");
+    }
+
+    [Fact]
     public async Task Request_StreamUsageDisabled_OmitsStreamOptions()
     {
         // Arrange

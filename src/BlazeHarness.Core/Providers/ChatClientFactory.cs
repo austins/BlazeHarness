@@ -116,7 +116,9 @@ public static class ChatClientFactory
         }
 
         var credential = new ApiKeyCredential(string.IsNullOrEmpty(apiKey) ? PlaceholderApiKey : apiKey);
-        return new ChatClient(modelId, credential, options).AsIChatClient();
+#pragma warning disable IDISP004 // DelegatingChatClient disposes the client it wraps.
+        return new ReasoningReplayChatClient(new ChatClient(modelId, credential, options).AsIChatClient());
+#pragma warning restore IDISP004
     }
 
     private sealed class HeadersPolicy(IReadOnlyDictionary<string, string> headers) : PipelinePolicy

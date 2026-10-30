@@ -552,6 +552,11 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
             return;
         }
 
+        if (entry.Reasoning.Length > 0)
+        {
+            contents.Insert(0, new TextReasoningContent(entry.Reasoning));
+        }
+
         history.Add(new ChatMessage(ChatRole.Assistant, contents));
         if (entry.ToolCalls.Count > 0)
         {

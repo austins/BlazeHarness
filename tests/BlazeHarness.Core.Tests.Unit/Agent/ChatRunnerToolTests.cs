@@ -173,23 +173,24 @@ public sealed class ChatRunnerToolTests
     }
 
     [Fact]
-    public async Task RunAsync_ModelNeverStopsCalling_EndsWithMaxIterations()
+    public async Task RunAsync_NoLimitGiven_KeepsCallingPastFiftyRounds()
     {
         // Arrange
         var read = new FakeTool("read", isReadOnly: true);
-        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read")])
-            .Enqueue([ScriptedChatClient.Call("c2", "read")])
-            .Enqueue([ScriptedChatClient.Call("c3", "read")]);
-        var history = NewHistory();
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c0", "read")]);
+        for (var i = 1; i < 60; i++)
+        {
+            client.Enqueue([ScriptedChatClient.Call("c" + i, "read")]);
+        }
+
+        client.Enqueue([ScriptedChatClient.Text("done")]);
 
         // Act
-        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(read), maxRounds: 2);
+        var events = await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(read));
 
         // Assert
-        events[^1].Should().Be(new Done(StopReason.MaxIterations));
-        events.OfType<AgentError>().Should().ContainSingle();
-        client.Requests.Should().HaveCount(2);
-        history[^1].Role.Should().Be(ChatRole.Tool);
+        events[^1].Should().Be(new Done(StopReason.Completed));
+        client.Requests.Should().HaveCount(61);
     }
 
     [Fact]

@@ -32,6 +32,21 @@ public sealed class ChatRunnerTests
         history.Should().HaveCount(2);
         history[1].Role.Should().Be(ChatRole.Assistant);
         history[1].Text.Should().Be("Hello");
+        history[1].Contents[0].Should().BeOfType<TextReasoningContent>().Which.Text.Should().Be("hmm");
+    }
+
+    [Fact]
+    public async Task RunAsync_ThinkingWithoutAnAnswer_AddsNothingToHistory()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([Update(new TextReasoningContent("hmm"))]);
+        var history = new List<ChatMessage> { new(ChatRole.User, "hi") };
+
+        // Act
+        await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken);
+
+        // Assert
+        history.Should().ContainSingle();
     }
 
     [Fact]

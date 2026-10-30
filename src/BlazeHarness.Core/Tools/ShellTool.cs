@@ -46,7 +46,8 @@ internal sealed class ShellTool : ITool
         $"Run one command in {_shell.Name} with the working folder as the current directory, and return its combined output and exit code. " +
         "Use it for builds, tests, git and other programs. Use the file tools to read, search and edit files. " +
         "The command cannot read input, so avoid anything interactive. " +
-        "Unless the user turned it off, the command runs in a sandbox that can only change the working folder and can't see the rest of the computer's files.";
+        "Unless the user turned it off, the command runs in a sandbox that can only change the working folder and can't see the rest of the computer's files. " +
+        "Each command starts fresh: /tmp is private to it and emptied when it ends, so keep files that later commands need under $TMPDIR, which lasts for the whole chat.";
 
     /// <inheritdoc />
     public string InputSchema => $$"""

@@ -115,7 +115,7 @@ public sealed partial class ChatSession
                 entry.Status = done.Reason switch
                 {
                     StopReason.Cancelled => EntryStatus.Cancelled,
-                    StopReason.Error or StopReason.MaxIterations => EntryStatus.Failed,
+                    StopReason.Error => EntryStatus.Failed,
                     _ => EntryStatus.Done,
                 };
                 break;
