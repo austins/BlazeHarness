@@ -66,6 +66,25 @@ public sealed class McpConfigFileTests : IDisposable
     }
 
     [Fact]
+    public async Task OnExternalChange_FileCannotBeRead_KeepsTheLoadedServers()
+    {
+        // Arrange
+        await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, watch: false);
+        var raised = 0;
+        sut.Changed += (_, _) => raised++;
+        await using var locked = new FileStream(_path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        // Act
+        sut.OnExternalChange();
+
+        // Assert
+        raised.Should().Be(0);
+        sut.Text.Should().Be(OneServer);
+        sut.Parsed.Servers.Should().ContainSingle();
+    }
+
+    [Fact]
 #pragma warning disable IDISP016, IDISP017 // Using the file after disposal is the point of the test.
     public void OnExternalChange_AfterDispose_DoesNotThrow()
     {

@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Agent;
 using Microsoft.Extensions.AI;
 using System.Text;
 using System.Text.Json;
@@ -85,7 +86,7 @@ internal sealed class ExtractiveSummarizer : ISummarizer
     {
         var failed = messages
             .SelectMany(m => m.Contents.OfType<FunctionResultContent>())
-            .Where(r => r.Result?.ToString()?.StartsWith("Error:", StringComparison.Ordinal) == true)
+            .Where(r => r.Result?.ToString()?.StartsWith(ToolCallEntry.ErrorPrefix, StringComparison.Ordinal) == true)
             .Select(r => r.CallId)
             .ToHashSet(StringComparer.Ordinal);
 

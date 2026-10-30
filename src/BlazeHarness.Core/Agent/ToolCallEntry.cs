@@ -9,6 +9,11 @@ namespace BlazeHarness.Core.Agent;
 public sealed class ToolCallEntry
 {
     /// <summary>
+    /// The text that starts the result of a failed call in what the model is given, as written by <see cref="ForModel"/>.
+    /// </summary>
+    public const string ErrorPrefix = "Error: ";
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="ToolCallEntry"/> class.
     /// </summary>
     /// <param name="callId">The provider's identifier for the call.</param>
@@ -77,7 +82,7 @@ public sealed class ToolCallEntry
     public static string ForModel(ToolCallStatus status, string output)
     {
         ArgumentNullException.ThrowIfNull(output);
-        return status == ToolCallStatus.Failed ? $"Error: {output}" : output;
+        return status == ToolCallStatus.Failed ? ErrorPrefix + output : output;
     }
 
     /// <summary>

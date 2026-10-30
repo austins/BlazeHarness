@@ -336,22 +336,19 @@ internal static class ChatRunner
                         yield return new ToolCallRunning(planned[i].Call.CallId);
                     }
 
-                    var batch = Enumerable.Range(index, contexts.Count).Select(i => RunAsync(tools, planned[i], contexts[i - index], cancellationToken)).ToList();
-                    ToolResult[]? done = null;
-                    try
+                    // A call that finished before a stop keeps its result; the ones that were stopped are reported as cancelled below.
+                    var done = await Task.WhenAll(Enumerable.Range(index, contexts.Count).Select(i => RunUnlessStoppedAsync(tools, planned[i], contexts[i - index], cancellationToken)));
+                    outcome.Cancelled = Array.Exists(done, result => result is null);
+                    for (var i = index; i < end; i++)
                     {
-                        done = await Task.WhenAll(batch);
-                    }
-                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                    {
-                        outcome.Cancelled = true;
-                    }
+                        if (done[i - index] is not { } result)
+                        {
+                            continue;
+                        }
 
-                    for (var i = index; i < end && done is not null; i++)
-                    {
-                        results[i] = done[i - index];
-                        statuses[i] = results[i]!.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
-                        yield return Finished(planned[i], results[i]!, statuses[i]);
+                        results[i] = result;
+                        statuses[i] = result.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
+                        yield return Finished(planned[i], result, statuses[i]);
                     }
 
                     index = end;
@@ -457,6 +454,18 @@ internal static class ChatRunner
         catch (Exception ex) when (ex is not (OperationCanceledException or OutOfMemoryException))
         {
             return ToolResult.Error($"The tool failed unexpectedly: {ex.Message}");
+        }
+    }
+
+    private static async Task<ToolResult?> RunUnlessStoppedAsync(ToolSet tools, PlannedCall call, ToolContext context, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await RunAsync(tools, call, context, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return null;
         }
     }
 

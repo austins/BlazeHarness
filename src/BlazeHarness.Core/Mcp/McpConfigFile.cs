@@ -163,11 +163,12 @@ public sealed partial class McpConfigFile : IDisposable
         }
     }
 
+    // Null means the file exists but could not be read, so a passing lock keeps the servers that were loaded instead of looking like an empty file.
     private string? ReadText()
     {
         try
         {
-            return File.Exists(_path) ? File.ReadAllText(_path) : null;
+            return File.Exists(_path) ? File.ReadAllText(_path) : string.Empty;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -181,8 +182,8 @@ public sealed partial class McpConfigFile : IDisposable
         _lock.Wait();
         try
         {
-            var text = ReadText() ?? string.Empty;
-            if (text == _current.Text)
+            var text = ReadText();
+            if (text is null || text == _current.Text)
             {
                 return false;
             }
