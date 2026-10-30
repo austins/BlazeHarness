@@ -284,11 +284,24 @@ public sealed class ChatSessionToolTests
 
     private static async Task WaitForStatus(ChatSession session, ToolCallStatus status)
     {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        timeout.CancelAfter(TestTimeouts.Default);
-        while (!session.Entries.Any(e => e.ToolCalls.Any(c => c.Status == status)))
+        var reached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void Check(object? sender, EventArgs e)
         {
-            await Task.Delay(5, timeout.Token);
+            if (session.Entries.Any(entry => entry.ToolCalls.Any(c => c.Status == status)))
+            {
+                reached.TrySetResult();
+            }
+        }
+
+        session.Changed += Check;
+        try
+        {
+            Check(session, EventArgs.Empty);
+            await reached.Task.WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            session.Changed -= Check;
         }
     }
 

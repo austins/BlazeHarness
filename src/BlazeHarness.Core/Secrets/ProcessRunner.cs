@@ -37,18 +37,25 @@ internal static class ProcessRunner
 
         using var process = new Process { StartInfo = startInfo };
         process.Start();
-        await using var killOnCancel = cancellationToken.Register(static state => Kill((Process)state!), process);
-
-        var stdout = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderr = process.StandardError.ReadToEndAsync(cancellationToken);
-        if (stdin is not null)
+        try
         {
-            await process.StandardInput.WriteAsync(stdin.AsMemory(), cancellationToken);
-        }
+            var stdout = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var stderr = process.StandardError.ReadToEndAsync(cancellationToken);
+            if (stdin is not null)
+            {
+                await process.StandardInput.WriteAsync(stdin.AsMemory(), cancellationToken);
+            }
 
-        process.StandardInput.Close();
-        await process.WaitForExitAsync(cancellationToken);
-        return new ProcessResult(process.ExitCode, await stdout, await stderr);
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(cancellationToken);
+            return new ProcessResult(process.ExitCode, await stdout, await stderr);
+        }
+        catch
+        {
+            // Kill here rather than from a cancellation callback: leaving this method can unregister a callback before it runs.
+            Kill(process);
+            throw;
+        }
     }
 
     private static void Kill(Process process)

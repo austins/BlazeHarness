@@ -68,7 +68,7 @@ public sealed class ProcessRunnerTests : IDisposable
         }
 
         var pid = int.Parse((await File.ReadAllTextAsync(pidFile, TestContext.Current.CancellationToken)).Trim(), System.Globalization.CultureInfo.InvariantCulture);
-        using var victim = Process.GetProcessById(pid);
+        using var shell = Process.GetProcessById(pid);
 
         // Act
         await _cts.CancelAsync();
@@ -78,7 +78,7 @@ public sealed class ProcessRunnerTests : IDisposable
 
         // Assert
         await act.Should().ThrowAsync<OperationCanceledException>().WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
-        await victim.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
-        victim.HasExited.Should().BeTrue();
+        await shell.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
+        shell.HasExited.Should().BeTrue();
     }
 }
