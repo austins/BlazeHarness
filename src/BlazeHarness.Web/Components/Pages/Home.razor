@@ -1,5 +1,6 @@
 @page "/"
 @page "/chat/{Id}"
+@implements IDisposable
 @inject ProviderService Service
 @inject SettingsDialogState SettingsState
 
@@ -32,4 +33,19 @@ else
     /// </summary>
     [SupplyParameterFromQuery(Name = "folder")]
     public string? Folder { get; set; }
+
+    public void Dispose()
+    {
+        Service.Changed -= OnProvidersChanged;
+    }
+
+    protected override void OnInitialized()
+    {
+        Service.Changed += OnProvidersChanged;
+    }
+
+    private void OnProvidersChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
 }

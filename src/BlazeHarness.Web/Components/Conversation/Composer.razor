@@ -1,3 +1,4 @@
+@implements IDisposable
 @inject ProviderService Providers
 @inject IJSRuntime JS
 @inject SkillCatalog Catalog
@@ -168,6 +169,7 @@ else
     private List<SkillInfo>? _suggestions;
     private bool _resize;
     private bool _applied;
+    private bool _wired;
     private bool _creating;
     private string? _appliedFor;
     private Guid? _loadedEdit;
@@ -256,9 +258,38 @@ else
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
+    public void Dispose()
+    {
+        Providers.Changed -= OnProvidersChanged;
+    }
+
     protected override void OnInitialized()
     {
         LoadModels();
+        Providers.Changed += OnProvidersChanged;
+    }
+
+    private void OnProvidersChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            LoadModels();
+            if (_models.Exists(m => m.Key == _selected))
+            {
+                LoadLevels();
+                if (_level.Length > 0 && !_levels.Any(l => l.ToString() == _level))
+                {
+                    _level = string.Empty;
+                }
+            }
+            else
+            {
+                ApplyChoices();
+            }
+
+            RefreshContext();
+            StateHasChanged();
+        });
     }
 
     protected override void OnParametersSet()
@@ -299,13 +330,16 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // The message box only exists while there are models, and is built anew when they come back.
         if (_models.Count == 0)
         {
+            _wired = false;
             return;
         }
 
-        if (firstRender)
+        if (!_wired)
         {
+            _wired = true;
             await JS.InvokeVoidAsync("bhChat.initComposer", _input, _form);
         }
 
