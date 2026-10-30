@@ -1,0 +1,43 @@
+@* One choice in a Menu. Choosing it closes the menu. *@
+<button type="button" class="menu-item" role="menuitemradio" aria-checked="@(Checked ? "true" : "false")" popovertarget="@Menu?.Id" popovertargetaction="hide" @onclick="OnSelect">
+    <span class="menu-check"><Icon Name="check" /></span>
+    <span class="menu-item-text">
+        <span class="menu-item-label">@Label</span>
+        @if (Description is not null)
+        {
+            <span class="menu-item-description">@Description</span>
+        }
+    </span>
+</button>
+
+@code {
+    /// <summary>
+    /// Gets or sets the menu the item belongs to.
+    /// </summary>
+    [CascadingParameter]
+    public Menu? Menu { get; set; }
+
+    /// <summary>
+    /// Gets or sets the name of the choice.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a short line explaining the choice, or null.
+    /// </summary>
+    [Parameter]
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this is the current choice.
+    /// </summary>
+    [Parameter]
+    public bool Checked { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user choosing the item.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnSelect { get; set; }
+}

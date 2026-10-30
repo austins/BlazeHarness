@@ -1,13 +1,26 @@
 @using BlazeHarness.Web.Hosting
 
-<details class="chat-context-files export-menu">
-    <summary title="Save this chat as a file"><Icon Name="arrow-up" /> Export</summary>
-    <ul>
-        <li><a href="@ExportEndpoints.AddressOf(SessionId, ExportFormat.Markdown)" download>Markdown, to read</a></li>
-        <li><a href="@ExportEndpoints.AddressOf(SessionId, ExportFormat.Json)" download>JSON, to import again</a></li>
-    </ul>
-    <p class="hint">The file holds everything in the chat, including what tools printed, such as the contents of files they read. Check it for secrets before you share it. Attached files are not included.</p>
-</details>
+<Popover Label="Export" Title="Save this chat as a file">
+    <Trigger><Icon Name="arrow-up" /> Export</Trigger>
+    <ChildContent>
+        <div class="panel-head"><span>Export chat</span></div>
+        <ul class="panel-list">
+            <li>
+                <a class="panel-option" href="@ExportEndpoints.AddressOf(SessionId, ExportFormat.Markdown)" download>
+                    <Icon Name="file" />
+                    <span class="panel-option-text"><span class="panel-option-name">Markdown</span><span class="panel-option-hint">To read or share</span></span>
+                </a>
+            </li>
+            <li>
+                <a class="panel-option" href="@ExportEndpoints.AddressOf(SessionId, ExportFormat.Json)" download>
+                    <Icon Name="file" />
+                    <span class="panel-option-text"><span class="panel-option-name">JSON</span><span class="panel-option-hint">To import again later</span></span>
+                </a>
+            </li>
+        </ul>
+        <p class="panel-foot panel-foot-warning"><Icon Name="alert" /> <span>The file holds everything in the chat, including what tools printed, such as the contents of files they read. Check it for secrets before you share it. Attached files are not included.</span></p>
+    </ChildContent>
+</Popover>
 
 @code {
     /// <summary>

@@ -26,35 +26,45 @@
 else
 {
     <section class="chat" data-pinned="true" @ref="_root" aria-label="Conversation">
-        <div class="chat-context" title="@(ContextPath ?? "Files this chat creates are kept with the chat")">
+        <div class="chat-context">
             @if (ContextPath is { } folderPath)
             {
-                <Icon Name="folder" />
-                <span class="chat-context-name">@(Folders.Find(folderPath)?.Name ?? FolderPaths.DisplayName(folderPath))</span>
-                <span class="chat-context-path mono">@folderPath</span>
+                <span class="chat-context-where" title="@folderPath">
+                    <Icon Name="folder" />
+                    <span class="chat-context-name">@(Folders.Find(folderPath)?.Name ?? FolderPaths.DisplayName(folderPath))</span>
+                    <span class="chat-context-path mono">@folderPath</span>
+                </span>
                 @if (Project is { Files.Count: > 0 } project)
                 {
-                    <details class="chat-context-files">
-                        <summary title="Project instructions the model was given"><Icon Name="file" /> AGENTS.md <span class="badge">@project.Files.Count</span></summary>
-                        <ul>
-                            @foreach (var file in project.Files)
-                            {
-                                <li>
-                                    <span class="mono">@file.Path</span>
-                                    @if (file.Truncated)
-                                    {
-                                        <span class="hint">@(file.Content.Length == 0 ? "Too large, not included." : "Too large, cut off.")</span>
-                                    }
-                                </li>
-                            }
-                        </ul>
-                    </details>
+                    <Popover Label="Project instructions" Title="Project instructions the model was given">
+                        <Trigger><Icon Name="file" /> AGENTS.md <span class="badge">@project.Files.Count</span></Trigger>
+                        <ChildContent>
+                            <div class="panel-head"><span>Project instructions</span></div>
+                            <ul class="panel-list">
+                                @foreach (var file in project.Files)
+                                {
+                                    <li class="panel-option">
+                                        <Icon Name="file" />
+                                        <span class="panel-option-text">
+                                            <span class="panel-option-name mono">@file.Path</span>
+                                            @if (file.Truncated)
+                                            {
+                                                <span class="panel-option-hint panel-option-error">@(file.Content.Length == 0 ? "Too large, not included" : "Too large, cut off")</span>
+                                            }
+                                        </span>
+                                    </li>
+                                }
+                            </ul>
+                        </ChildContent>
+                    </Popover>
                 }
             }
             else
             {
-                <Icon Name="file" />
-                <span class="chat-context-name">Session files</span>
+                <span class="chat-context-where" title="Files this chat creates are kept with the chat">
+                    <Icon Name="file" />
+                    <span class="chat-context-name">Session files</span>
+                </span>
             }
 
             @if (_openId is { } mcpId)

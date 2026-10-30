@@ -1,15 +1,25 @@
 @using BlazeHarness.Core.Compaction
 
 <span class="context" data-level="@_level" title="@_details" role="status">
-    <span class="context-text">@_text</span>
+    @if (_share is { } share)
+    {
+        <svg class="context-ring" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <circle class="context-ring-track" cx="10" cy="10" r="@RingRadius" />
+            <circle class="context-ring-fill" cx="10" cy="10" r="@RingRadius" stroke-dasharray="@Dash(share)" />
+        </svg>
+    }
+    <span class="context-text">@_text</span><span class="sr-only"> tokens</span>
 </span>
 
 @code {
     private const double HighShare = 0.8;
+    private const double RingRadius = 8;
+    private static readonly double Circumference = 2 * Math.PI * RingRadius;
 
     private string _level = "ok";
     private string _text = string.Empty;
     private string _details = string.Empty;
+    private double? _share;
     private ContextStatus? _shown;
 
     /// <summary>
@@ -29,7 +39,10 @@
         _level = LevelOf(Status);
         _text = TextOf(Status);
         _details = DetailsOf(Status);
+        _share = Status.Window > 0 ? Math.Clamp((double)Status.Tokens / Status.Window, 0, 1) : null;
     }
+
+    private static string Dash(double share) => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{share * Circumference:0.##} {Circumference:0.##}");
 
     private static string LevelOf(ContextStatus status)
     {
@@ -49,7 +62,7 @@
     private static string TextOf(ContextStatus status)
     {
         var tokens = (status.Approximate ? "~" : string.Empty) + TokenFormat.Of(status.Tokens);
-        return status.Window > 0 ? $"{tokens} of {TokenFormat.Of(status.Window)} tokens" : $"{tokens} tokens";
+        return status.Window > 0 ? $"{tokens} / {TokenFormat.Of(status.Window)}" : tokens;
     }
 
     private static string DetailsOf(ContextStatus status)

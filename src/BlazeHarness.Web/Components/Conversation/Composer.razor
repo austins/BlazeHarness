@@ -26,6 +26,20 @@ else
                 <button type="button" class="btn btn-ghost btn-sm" @onclick="CancelEditAsync">Cancel</button>
             </div>
         }
+        @if (Suggestions() is { Count: > 0 } suggestions)
+        {
+            <ul class="composer-suggestions" aria-label="Skills">
+                @foreach (var skill in suggestions)
+                {
+                    <li>
+                        <button type="button" class="btn btn-ghost btn-sm" @onclick="() => ChooseSkillAsync(skill)">
+                            <strong>/@skill.Name</strong> <span class="muted">@ShortDescription(skill)</span>
+                        </button>
+                    </li>
+                }
+            </ul>
+        }
+        <div class="composer-box">
         @if (_files.Count > 0)
         {
             var deliveries = Deliveries();
@@ -50,56 +64,48 @@ else
             {
                 <pre class="composer-preview" aria-label="@($"Start of {previewed.Name}")">@Preview(previewed)</pre>
             }
-            @if (!ModelSeesImages && _files.Any(f => f.IsImage))
-            {
-                <div class="hint" role="status">The selected model can't view images, so they will be left out of what it sees.</div>
-            }
         }
-        @if (Suggestions() is { Count: > 0 } suggestions)
-        {
-            <ul class="composer-suggestions" aria-label="Skills">
-                @foreach (var skill in suggestions)
-                {
-                    <li>
-                        <button type="button" class="btn btn-ghost btn-sm" @onclick="() => ChooseSkillAsync(skill)">
-                            <strong>/@skill.Name</strong> <span class="muted">@ShortDescription(skill)</span>
-                        </button>
-                    </li>
-                }
-            </ul>
-        }
-        <textarea class="input composer-input" rows="1" @ref="_input" @bind="_text" @bind:event="oninput"
+        <textarea class="composer-input" rows="1" @ref="_input" @bind="_text" @bind:event="oninput"
                   placeholder="Message the model" aria-label="Message"></textarea>
-        <div class="composer-options">
-            <select class="select" aria-label="Model" value="@_selected" @onchange="OnModelChanged">
-                @foreach (var group in _models.GroupBy(m => m.Provider.Id))
-                {
-                    <optgroup label="@group.First().Provider.DisplayName">
-                        @foreach (var item in group)
-                        {
-                            <option value="@item.Key">@item.Model.Name</option>
-                        }
-                    </optgroup>
-                }
-            </select>
-            @if (_levels.Count > 0)
-            {
-                <select class="select" aria-label="Thinking" value="@_level" @onchange="OnLevelChanged">
-                    <option value="">Thinking: default</option>
-                    @foreach (var level in _levels)
-                    {
-                        <option value="@level">@level</option>
-                    }
-                </select>
-            }
-            @ChildContent
-        </div>
         <div class="composer-bar">
             @if (Editing is null)
             {
                 <InputFile @ref="_picker" OnChange="AddFilesAsync" multiple tabindex="-1" class="visually-hidden" aria-hidden="true" />
                 <button type="button" class="btn btn-ghost btn-icon" aria-label="Attach files" title="Attach files" data-bh-action="pick"><Icon Name="paperclip" /></button>
             }
+            <Menu Label="Model" Title="Model">
+                <Trigger><Icon Name="sparkle" /> <span class="menu-trigger-text">@(SelectedChoice?.Model.Name ?? "Choose a model")</span></Trigger>
+                <ChildContent>
+                    @{ var grouped = _models.GroupBy(m => m.Provider.Id).ToList(); }
+                    @foreach (var group in grouped)
+                    {
+                        @if (grouped.Count > 1)
+                        {
+                            <div class="menu-heading">@group.First().Provider.DisplayName</div>
+                        }
+                        @foreach (var item in group)
+                        {
+                            <MenuItem Label="@item.Model.Name" Checked="item.Key == _selected" OnSelect="() => SelectModel(item.Key)" />
+                        }
+                    }
+                </ChildContent>
+            </Menu>
+            @if (_levels.Count > 0)
+            {
+                <Menu Label="Thinking" Title="How much the model thinks before answering">
+                    <Trigger><Icon Name="bulb" /> <span class="menu-trigger-text">@(_level.Length > 0 ? _level : "Default")</span></Trigger>
+                    <ChildContent>
+                        <div class="menu-heading">Thinking</div>
+                        <MenuItem Label="Default" Description="The model's own setting" Checked="_level.Length == 0" OnSelect="() => SelectLevel(string.Empty)" />
+                        @foreach (var level in _levels)
+                        {
+                            var name = level.ToString();
+                            <MenuItem Label="@name" Checked="name == _level" OnSelect="() => SelectLevel(name)" />
+                        }
+                    </ChildContent>
+                </Menu>
+            }
+            @ChildContent
             <span class="composer-spacer"></span>
             @if (_context is not null)
             {
@@ -107,21 +113,26 @@ else
             }
             @if (CanCompact && !Running && Editing is null)
             {
-                <button type="button" class="btn" title="Replace older messages with a summary" @onclick="CompactAsync"><Icon Name="compress" /> Compact</button>
+                <button type="button" class="btn btn-ghost btn-icon" aria-label="Compact" title="Compact: replace older messages with a summary" @onclick="CompactAsync"><Icon Name="compress" /></button>
             }
             @if (CanRetry && Editing is null)
             {
-                <button type="button" class="btn" @onclick="RetryAsync"><Icon Name="retry" /> Retry</button>
+                <button type="button" class="btn btn-ghost btn-icon" aria-label="Retry" title="Retry the last reply" @onclick="RetryAsync"><Icon Name="retry" /></button>
             }
             @if (Running)
             {
-                <button type="button" class="btn btn-danger" @onclick="OnStop"><Icon Name="stop" /> Stop</button>
+                <button type="button" class="btn btn-send btn-stop" aria-label="Stop" title="Stop" @onclick="OnStop"><Icon Name="stop" /></button>
             }
             else
             {
-                <button type="submit" class="btn btn-primary"><Icon Name="arrow-up" /> Send</button>
+                <button type="submit" class="btn btn-primary btn-send" aria-label="Send" title="Send (Enter)"><Icon Name="arrow-up" /></button>
             }
         </div>
+        </div>
+        @if (!ModelSeesImages && _files.Any(f => f.IsImage))
+        {
+            <div class="hint" role="status">The selected model can't view images, so they will be left out of what it sees.</div>
+        }
         @if (_note is not null)
         {
             <div class="hint" role="status">@_note</div>
@@ -339,9 +350,11 @@ else
         _levels = levels is null ? [] : [.. levels.Keys.Order()];
     }
 
-    private void OnModelChanged(ChangeEventArgs e)
+    private Choice? SelectedChoice => _models.Find(m => m.Key == _selected);
+
+    private void SelectModel(string key)
     {
-        _selected = e.Value?.ToString() ?? string.Empty;
+        _selected = key;
         LoadLevels();
         _note = null;
         if (_level.Length > 0 && !_levels.Any(l => l.ToString() == _level))
@@ -353,16 +366,16 @@ else
         RefreshContext();
     }
 
-    private void OnLevelChanged(ChangeEventArgs e)
+    private void SelectLevel(string level)
     {
-        _level = e.Value?.ToString() ?? string.Empty;
+        _level = level;
         _note = null;
         RefreshContext();
     }
 
     private ChatTarget? CurrentTarget()
     {
-        var choice = _models.Find(m => m.Key == _selected);
+        var choice = SelectedChoice;
         if (choice is null)
         {
             return null;

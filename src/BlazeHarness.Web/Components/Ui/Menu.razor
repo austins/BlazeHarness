@@ -1,0 +1,48 @@
+@* A pill button that opens a list of choices in a popover. The browser closes it on Escape or a click outside, and CSS anchor positioning places it beside the button. *@
+<button type="button" class="menu-trigger" popovertarget="@Id" aria-haspopup="menu" title="@Title" data-tone="@Tone" style="anchor-name: --@Id">
+    <span class="sr-only">@Label: </span>
+    @Trigger
+    <Icon Name="chevron-down" />
+</button>
+<div id="@Id" class="menu" popover="auto" role="menu" aria-label="@Label" style="position-anchor: --@Id" data-bh-menu>
+    <CascadingValue Value="this" IsFixed="true">
+        @ChildContent
+    </CascadingValue>
+</div>
+
+@code {
+    /// <summary>
+    /// Gets the id of the popover, which items use to close it.
+    /// </summary>
+    public string Id { get; } = $"menu-{Guid.NewGuid():N}";
+
+    /// <summary>
+    /// Gets or sets what the menu chooses, such as <c>Model</c>, read by screen readers before the trigger's content.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the tooltip of the trigger, or null.
+    /// </summary>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Gets or sets the trigger's color, <c>success</c>, <c>warning</c> or <c>danger</c>, or null for the plain look.
+    /// </summary>
+    [Parameter]
+    public string? Tone { get; set; }
+
+    /// <summary>
+    /// Gets or sets the content of the trigger, usually an icon and the current choice.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? Trigger { get; set; }
+
+    /// <summary>
+    /// Gets or sets the items, headings and notes in the menu.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

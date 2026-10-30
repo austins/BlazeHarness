@@ -103,3 +103,32 @@ document.addEventListener("click", (event) => {
     big.alt = image.alt;
     dialog.showModal();
 });
+
+// Menus are popovers, so the browser closes them on Escape or a click outside; these add the focus and arrow keys a menu needs.
+const menuItems = (menu) => [...menu.querySelectorAll(".menu-item:not(:disabled)")];
+document.addEventListener("toggle", (event) => {
+    const menu = event.target;
+    if (event.newState === "open" && menu instanceof HTMLElement && menu.matches("[data-bh-menu]")) {
+        const items = menuItems(menu);
+        (items.find((item) => item.getAttribute("aria-checked") === "true") ?? items[0])?.focus();
+    }
+}, true);
+document.addEventListener("keydown", (event) => {
+    const menu = event.target instanceof Element ? event.target.closest("[data-bh-menu]") : null;
+    if (!menu) {
+        return;
+    }
+
+    const items = menuItems(menu);
+    const at = items.indexOf(document.activeElement);
+    const next = {
+        ArrowDown: items[(at + 1) % items.length],
+        ArrowUp: items[(at - 1 + items.length) % items.length],
+        Home: items[0],
+        End: items[items.length - 1],
+    }[event.key];
+    if (next) {
+        event.preventDefault();
+        next.focus();
+    }
+});

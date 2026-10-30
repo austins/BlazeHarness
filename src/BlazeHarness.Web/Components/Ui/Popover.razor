@@ -1,0 +1,36 @@
+@* A button that opens a panel of free content in a popover below it. The browser closes it on Escape or a click outside. *@
+<button type="button" class="btn btn-ghost btn-sm popover-trigger" popovertarget="@_id" title="@Title" style="anchor-name: --@_id">
+    @Trigger
+    <Icon Name="chevron-down" />
+</button>
+<div id="@_id" class="popover-panel" popover="auto" role="dialog" aria-label="@Label" style="position-anchor: --@_id">
+    @ChildContent
+</div>
+
+@code {
+    private readonly string _id = $"popover-{Guid.NewGuid():N}";
+
+    /// <summary>
+    /// Gets or sets the name of the panel, read by screen readers.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the tooltip of the button, or null.
+    /// </summary>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Gets or sets the content of the button.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? Trigger { get; set; }
+
+    /// <summary>
+    /// Gets or sets the content of the panel.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}
