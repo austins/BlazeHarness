@@ -395,7 +395,7 @@ else
     private void Refresh()
     {
         _entries = _session?.Entries ?? [];
-        _windowStart = Math.Min(_windowStart, _entries.Count);
+        _windowStart = Math.Min(_windowStart, Math.Max(0, _entries.Count - 1));
         Announce();
         if (_editing is not null && !_entries.Any(e => e.Id == _editing.Id))
         {
@@ -457,7 +457,6 @@ else
             if (_newPermissions is { } chosen)
             {
                 await Sessions.SetPermissionsAsync(id, chosen);
-                _newPermissions = null;
             }
         }
 
@@ -494,6 +493,7 @@ else
 
         if (created is not null)
         {
+            _newPermissions = null;
             var session = await Sessions.OpenAsync(id);
             Attach(session!);
             _openId = id;

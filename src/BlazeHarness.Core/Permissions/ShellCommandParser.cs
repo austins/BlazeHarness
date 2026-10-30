@@ -465,25 +465,64 @@ internal static partial class ShellCommandParser
 
         private int ReadSubstitution(int i)
         {
-            var nesting = 0;
-            var j = i + 1;
-            for (; j < text.Length; j++)
-            {
-                if (text[j] == '(')
-                {
-                    nesting++;
-                }
-                else if (text[j] == ')' && --nesting == 0)
-                {
-                    break;
-                }
-            }
-
-            var stop = Math.Min(j, text.Length);
+            var stop = SubstitutionEnd(i + 2);
             Rescan(text[(i + 2)..Math.Max(i + 2, stop)], depth, output);
             Append(text[i..Math.Min(stop + 1, text.Length)]);
             return Math.Min(stop + 1, text.Length);
         }
+
+        // Finds the ')' that closes a substitution whose body starts at 'start', or the end of the text.
+        // Quotes must be followed: a ')' inside them doesn't close it, and stopping there would leave the rest of the body to be read as the outer
+        // command with its quoting flipped, so a command in the body could pass for a quoted argument.
+        private int SubstitutionEnd(int start)
+        {
+            // One entry per open substitution: its '(' count and whether its body is inside double quotes.
+            var open = new Stack<(int Nesting, bool Quoted)>();
+            var nesting = 1;
+            var quoted = false;
+            var j = start;
+            while (j < text.Length)
+            {
+                var next = j + 1;
+                switch (text[j])
+                {
+                    case '\\':
+                        next = j + 2;
+                        break;
+                    case '\'' when !quoted:
+                        next = After(text.IndexOf('\'', j + 1));
+                        break;
+                    case '`':
+                        next = After(text.IndexOf('`', j + 1));
+                        break;
+                    case '"':
+                        quoted = !quoted;
+                        break;
+                    case '$' when j + 1 < text.Length && text[j + 1] == '(':
+                        open.Push((nesting, quoted));
+                        (nesting, quoted) = (1, false);
+                        next = j + 2;
+                        break;
+                    case '(' when !quoted:
+                        nesting++;
+                        break;
+                    case ')' when !quoted && --nesting == 0:
+                        if (open.Count == 0)
+                        {
+                            return j;
+                        }
+
+                        (nesting, quoted) = open.Pop();
+                        break;
+                }
+
+                j = next;
+            }
+
+            return text.Length;
+        }
+
+        private int After(int close) => close < 0 ? text.Length : close + 1;
 
         private int ReadBacktick(int i)
         {

@@ -256,7 +256,7 @@ public sealed class PermissionEngine
         {
             return settings.Approvals == ApprovalMode.NeverAsk
                 ? new PermissionDecision(PermissionVerdict.Deny, "This session is Read only, and an MCP tool can change things the harness can't see. Say what you wanted to do, and the user can change the access level.")
-                : AskMcp(tool) with { Sticky = true };
+                : AskMcp(tool) with { Sticky = true, GrantKey = null };
         }
 
         if (settings.Approvals == ApprovalMode.NeverAsk)

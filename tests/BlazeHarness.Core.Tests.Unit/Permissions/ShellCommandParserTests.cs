@@ -5,6 +5,32 @@ namespace BlazeHarness.Core.Tests.Unit.Permissions;
 public sealed class ShellCommandParserTests
 {
     [Theory]
+    [InlineData("echo $(echo \")\"; rm -rf x; echo \"y\")")]
+    [InlineData("echo \"$(printf ')'; rm -rf x)\"")]
+    [InlineData("echo $(echo \"$(date ')')\"; rm -rf x)")]
+    public void Parse_ParenthesisQuotedInsideASubstitution_StillFindsTheCommandsAfterIt(string command)
+    {
+        // Act
+        var segments = ShellCommandParser.Parse(command);
+
+        // Assert
+        segments.Select(s => s.Program).Should().Contain("rm");
+    }
+
+    [Fact]
+    public void Parse_DeeplyNestedSubstitutions_ReturnsWithoutOverflowingTheStack()
+    {
+        // Arrange
+        var command = "echo " + string.Concat(Enumerable.Repeat("$(", 100_000)) + string.Concat(Enumerable.Repeat(")", 100_000));
+
+        // Act
+        var act = () => ShellCommandParser.Parse(command);
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]

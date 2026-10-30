@@ -53,6 +53,10 @@
     {
         <div class="msg-wait" role="status">Waiting for the model…</div>
     }
+    else if (Entry.Role == ChatRole.Assistant && Entry is { Status: EntryStatus.Done, ToolCalls.Count: 0, Error: null })
+    {
+        <div class="hint">The model ended its reply without any text.</div>
+    }
 
     @foreach (var call in Entry.ToolCalls)
     {

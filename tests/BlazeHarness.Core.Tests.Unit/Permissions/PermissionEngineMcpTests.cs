@@ -114,6 +114,21 @@ public sealed class PermissionEngineMcpTests
     }
 
     [Fact]
+    public void Evaluate_ReadOnlySessionWithARememberedApproval_StillAsksAndCannotBeRemembered()
+    {
+        // Arrange
+        _sut.Remember("mcp:files/read");
+        _sut.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst);
+
+        // Act
+        var decision = Evaluate(Tool("files", "read"));
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Ask);
+        decision.GrantKey.Should().BeNull();
+    }
+
+    [Fact]
     public void Evaluate_ReadOnlySessionThatNeverAsks_Denies()
     {
         // Arrange
