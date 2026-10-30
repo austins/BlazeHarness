@@ -194,6 +194,47 @@ public sealed class ChatRunnerToolTests
     }
 
     [Fact]
+    public async Task RunAsync_ReplyIsOnlyATextToolCall_TellsTheModelAndAsksAgain()
+    {
+        // Arrange
+        var read = new FakeTool("read", isReadOnly: true);
+        using var client = new ScriptedChatClient(
+                [ScriptedChatClient.Text("<tool_call><function=read><parameter=path>a</parameter></function></tool_call>")])
+            .Enqueue([ScriptedChatClient.Call("c1", "read")])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(read));
+
+        // Assert
+        events[^1].Should().Be(new Done(StopReason.Completed));
+        events.OfType<ToolCallFinished>().Should().ContainSingle();
+        history.Select(m => m.Role).Should().Equal(
+            ChatRole.User, ChatRole.Assistant, ChatRole.User, ChatRole.Assistant, ChatRole.Tool, ChatRole.Assistant);
+        history[2].Text.Should().Contain("tool interface");
+    }
+
+    [Fact]
+    public async Task RunAsync_ModelKeepsWritingTextToolCalls_GivesUpAfterThreeNotices()
+    {
+        // Arrange
+        var read = new FakeTool("read", isReadOnly: true);
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("<tool_call>x")]);
+        for (var i = 0; i < 4; i++)
+        {
+            client.Enqueue([ScriptedChatClient.Text("<tool_call>x")]);
+        }
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(read));
+
+        // Assert
+        events[^1].Should().Be(new Done(StopReason.Completed));
+        client.Requests.Should().HaveCount(4);
+    }
+
+    [Fact]
     public async Task RunAsync_CancelledWhileToolRuns_AnswersEveryCallInHistory()
     {
         // Arrange

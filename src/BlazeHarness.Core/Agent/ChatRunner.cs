@@ -13,6 +13,11 @@ namespace BlazeHarness.Core.Agent;
 /// </summary>
 internal static class ChatRunner
 {
+    private const int MaxTextCallRetries = 3;
+    private const string TextCallMarker = "<tool_call>";
+    private const string TextCallNotice =
+        "Your last reply wrote a tool call as plain text, so it was not run. Call the tool through the tool interface instead.";
+
     private static readonly JsonSerializerOptions CompactJson = new(AIJsonUtilities.DefaultOptions) { WriteIndented = false };
 
     /// <summary>
@@ -78,6 +83,7 @@ internal static class ChatRunner
 
         // There is no limit on rounds: the user can stop a run, and compaction keeps the context in bounds.
         var firstResponse = true;
+        var textCallRetries = 0;
         while (true)
         {
             if (context is not null && context.ShouldCompact(history))
@@ -241,9 +247,21 @@ internal static class ChatRunner
 
             if (calls.Count == 0)
             {
+                // Some models write the call as text when the server's parser misses it; nothing ran, so tell the model.
+                if (tools is { Declarations.Count: > 0 }
+                    && textCallRetries < MaxTextCallRetries
+                    && reply.ToString().AsSpan().TrimStart().StartsWith(TextCallMarker, StringComparison.Ordinal))
+                {
+                    textCallRetries++;
+                    history.Add(new ChatMessage(ChatRole.User, TextCallNotice));
+                    continue;
+                }
+
                 yield return new Done(StopReason.Completed);
                 yield break;
             }
+
+            textCallRetries = 0;
 
             var outcome = new RoundOutcome();
             await foreach (var e in ExecuteCallsAsync(calls, tools, approver, permissions, history, outcome, cancellationToken))
