@@ -109,7 +109,7 @@ public sealed class ChatSessionPersistenceTests
         var gate = new TaskCompletionSource<IChatClient>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("first")]);
         #pragma warning disable IDISP013, VSTHRD003 // The test holds the factory open with its own task source.
-        using var sut = new ChatSession((_, _) => gate.Task, _log, _time);
+        using var sut = new ChatSession((_, _) => gate.Task, _time, _log);
 #pragma warning restore IDISP013, VSTHRD003
         var first = sut.SendAsync("one", TestTargets.Create());
 
@@ -129,7 +129,7 @@ public sealed class ChatSessionPersistenceTests
         var gate = new TaskCompletionSource<IChatClient>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("x")]);
         #pragma warning disable IDISP013, VSTHRD003 // The test holds the factory open with its own task source.
-        using var sut = new ChatSession((_, _) => gate.Task, _log, _time);
+        using var sut = new ChatSession((_, _) => gate.Task, _time, _log);
 #pragma warning restore IDISP013, VSTHRD003
         var turn = sut.SendAsync("one", TestTargets.Create());
         var before = sut.Entries;
@@ -150,7 +150,7 @@ public sealed class ChatSessionPersistenceTests
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("Hel"), ScriptedChatClient.Text("lo")]);
         using var original = Create(client);
         await original.SendAsync("hi", TestTargets.Create());
-        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException(), TimeProvider.System);
 
         // Act
         sut.Restore(await _log.ReadAsync(TestContext.Current.CancellationToken));
@@ -185,7 +185,7 @@ public sealed class ChatSessionPersistenceTests
         var first = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
         var done = Guid.NewGuid();
         var cut = Guid.NewGuid();
-        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException(), TimeProvider.System);
 
         // Act
         sut.Restore(
@@ -209,7 +209,7 @@ public sealed class ChatSessionPersistenceTests
         var user = Guid.NewGuid();
         var reply = Guid.NewGuid();
         var at = DateTimeOffset.UnixEpoch;
-        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException(), TimeProvider.System);
 
         // Act
         sut.Restore(
@@ -232,7 +232,7 @@ public sealed class ChatSessionPersistenceTests
         // Arrange
         var at = DateTimeOffset.UnixEpoch;
         var reply = Guid.NewGuid();
-        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException(), TimeProvider.System);
 
         // Act
         sut.Restore(
@@ -281,7 +281,7 @@ public sealed class ChatSessionPersistenceTests
         using var edited = Create(client);
         await edited.SendAsync("a", TestTargets.Create());
         await edited.EditAsync(edited.Entries[0].Id, "a2", TestTargets.Create());
-        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException(), TimeProvider.System);
 
         // Act
         sut.Restore(await _log.ReadAsync(TestContext.Current.CancellationToken));
@@ -299,7 +299,7 @@ public sealed class ChatSessionPersistenceTests
         var failed = Guid.NewGuid();
         var good = Guid.NewGuid();
         var at = DateTimeOffset.UnixEpoch;
-        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException(), TimeProvider.System);
 
         // Act
         sut.Restore(
@@ -359,5 +359,5 @@ public sealed class ChatSessionPersistenceTests
     }
 
     private ChatSession Create(ScriptedChatClient client, TimeProvider? time = null) =>
-        new((_, _) => Task.FromResult<IChatClient>(client), _log, time ?? _time);
+        new((_, _) => Task.FromResult<IChatClient>(client), time ?? _time, _log);
 }

@@ -14,7 +14,7 @@
 
 - `BlazeHarness.Core` has no UI dependency. The agent loop emits an `IAsyncEnumerable<AgentEvent>`; the UI only consumes it.
 - `BlazeHarness.Web` is Blazor Server with hand-written CSS and no npm. Singleton services own sessions and runs, not components.
-- All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher).
+- All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher). A file it can't serve (`McpConfigFile` keeps raw text) follows the same reload rules: an unreadable or invalid file keeps the last good value and retries.
 - API keys live in `ISecretStore` (OS keychain, owner-only file fallback), never in `config.json`, `providers.json`, session files or logs.
 - Every request, including `/_blazor`, passes `LocalAccessMiddleware` (Host limited to `localhost` or an IP on the listening port, same-origin Origin, CSP with `script-src 'self'`, nosniff, frame denial). Pages must not use inline scripts; never add endpoints or middleware in front of it. There is no sign-in; the listen address (`BLAZEHARNESS_HOST`, loopback by default) is the access control.
 - Web tools (`web_search`, `web_fetch`) are `IWebTool`s that need approval per host. `SafeWebClient` checks the resolved IP when connecting (public addresses only) and follows only same-site redirects; keep both properties. Search providers implement `ISearchProvider` and are fanned out by `SearchOrchestrator`.
@@ -23,15 +23,16 @@
 
 ## Conventions
 
-- Log IDs and counts only, never message or file contents. Log an exception's type (and HTTP status), never its message: it can echo a prompt or reply.
+- Log IDs and counts only, never message or file contents. Pass an exception as the logger's exception argument; `FileLoggerProvider` writes only its type and HTTP status. Keep `ex.Message` out of log messages: it can echo a prompt or reply.
 - One type per file, and the namespace matches the folder (enums, records and event types included).
 - Make types `internal` unless another project uses them. `BlazeHarness.Core` exposes internals only to its two test projects (`InternalsVisibleTo`).
 - Persistence is plain files under `AppPaths` (no database, no migrations). Prefer Microsoft packages (`Microsoft.Extensions.*`, `System.Text.Json`, `System.Threading.Channels`); add another package only when no real alternative exists.
 - Say "folder", not "workspace", in code and UI names (`Folder`, `FolderRegistry`, `folders.json`).
-- Anything that reads the time takes a `TimeProvider` (registered once in `Program.cs`, never `DateTime.Now` or `TimeProvider.System` inline), so tests can use `FakeTimeProvider`.
+- Read the time through the `TimeProvider` registered in `Program.cs`, injected as a required constructor parameter: `GetUtcNow()` where you'd write `DateTime.Now`/`UtcNow`, and its timers and delays. Tests pass a `FakeTimeProvider`. Add a `?? TimeProvider.System` fallback only for a caller that has no provider to pass.
 - Every public type and member needs XML docs (CS1591 is an error in `src/`): `<summary>`, plus `<remarks>`, `<param>`, `<returns>` and `<exception>` where they add something. Use `<inheritdoc />` on interface implementations and `<param>` on the type for positional records. Properties start with "Gets" or "Gets or sets"; method summaries use the imperative.
 - Give every `#pragma warning disable` a trailing comment saying why.
-- Don't use `.ConfigureAwait(false)` unless a case really needs it. Blazor components run on the circuit's `SynchronizationContext` and must resume on it, and the host has no other context to avoid. Never block on a task (`.Result`, `.Wait()`, `GetAwaiter().GetResult()`); marshal events raised on other threads with `InvokeAsync`.
+- Don't use `.ConfigureAwait(false)` unless a case really needs it. Blazor components run on the circuit's `SynchronizationContext` and must resume on it, and the host has no other context to avoid. Marshal events raised on other threads with `InvokeAsync`.
+- Text that two components must agree on (result prefixes, prompt tags, markers) is one constant both reference, so the compiler keeps them in step.
 - Use C# 14 extension blocks (`extension(Type receiver)`) for extension members instead of `this`-parameter extension methods.
 - Keep solution-owned namespaces (`BlazeHarness.*`) file-local: use ordinary `using` directives, not global usings or project-level `<Using Include="..."/>`. Global usings are fine for framework and external package namespaces.
 

@@ -149,7 +149,7 @@ public sealed class ModelTitleGeneratorTests
 
     private static ModelTitleGenerator Generator(IChatClient client)
     {
-        return new ModelTitleGenerator((_, _) => Task.FromResult(client));
+        return new ModelTitleGenerator((_, _) => Task.FromResult(client), TimeProvider.System);
     }
 
     private static ChatTarget Target(ModelConfig? model = null, ThinkingLevel? level = null)

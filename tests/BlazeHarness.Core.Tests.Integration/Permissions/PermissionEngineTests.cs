@@ -655,7 +655,8 @@ public sealed class PermissionEngineTests : IDisposable
     private static ShellTool NewShell() => new(
         ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false),
         new NoShellSandbox("none"),
-        Path.GetTempPath());
+        Path.GetTempPath(),
+        TimeProvider.System);
 
     private PermissionDecision Evaluate(ITool tool, object arguments)
     {

@@ -16,8 +16,8 @@ public sealed class ProviderServiceTests : IDisposable
 
     public ProviderServiceTests()
     {
-        _config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
-        _providers = new JsonFileStore<ProvidersDocument>(Path.Combine(_temp.Root, "providers.json"), NullLogger<JsonFileStore<ProvidersDocument>>.Instance, watch: false);
+        _config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, TimeProvider.System, watch: false);
+        _providers = new JsonFileStore<ProvidersDocument>(Path.Combine(_temp.Root, "providers.json"), NullLogger<JsonFileStore<ProvidersDocument>>.Instance, TimeProvider.System, watch: false);
         _secrets = new FileSecretStore(Path.Combine(_temp.Root, "secrets.json"));
         _sut = new ProviderService(_config, _providers, _secrets, new ApiKeyResolver(_secrets, _ => null));
     }

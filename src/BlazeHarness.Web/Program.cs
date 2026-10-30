@@ -69,7 +69,7 @@ builder.Services.AddSingleton(sp => new SessionService(
     sp.GetRequiredService<ChatClientSource>().CreateAsync,
     sp.GetRequiredService<ILoggerFactory>(),
     sp.GetRequiredService<TimeProvider>(),
-    new ModelTitleGenerator(sp.GetRequiredService<ChatClientSource>().CreateAsync),
+    new ModelTitleGenerator(sp.GetRequiredService<ChatClientSource>().CreateAsync, sp.GetRequiredService<TimeProvider>()),
     sp.GetRequiredService<IShellSandbox>(),
     sp.GetRequiredService<PermissionDefaults>(),
     sp.GetRequiredService<McpManager>(),

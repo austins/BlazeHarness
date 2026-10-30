@@ -16,9 +16,9 @@ public sealed class McpServerEditorTests : IAsyncDisposable
     public McpServerEditorTests()
     {
         Directory.CreateDirectory(_temp.Root);
-        _file = new McpConfigFile(Path.Combine(_temp.Root, "mcp.json"), NullLogger<McpConfigFile>.Instance, watch: false);
+        _file = new McpConfigFile(Path.Combine(_temp.Root, "mcp.json"), NullLogger<McpConfigFile>.Instance, TimeProvider.System, watch: false);
         _secrets = new FileSecretStore(Path.Combine(_temp.Root, "secrets.json"));
-        _manager = new McpManager(_file, Substitute.For<IMcpConnector>(), NullLogger<McpManager>.Instance, secrets: _secrets);
+        _manager = new McpManager(_file, Substitute.For<IMcpConnector>(), NullLogger<McpManager>.Instance, TimeProvider.System, secrets: _secrets);
         _sut = new McpServerEditor(_file, _secrets, _manager);
     }
 

@@ -22,7 +22,7 @@ internal sealed class SessionServiceRig : IDisposable
         _temp = new TempFolder(prefix);
         Paths = new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root);
         Work = _temp.CreateDirectory("work");
-        Store = new SessionStore(Paths, NullLoggerFactory.Instance);
+        Store = new SessionStore(Paths, NullLoggerFactory.Instance, TimeProvider.System);
         Client = new ScriptedChatClient([ScriptedChatClient.Text(reply)]);
     }
 
@@ -41,7 +41,7 @@ internal sealed class SessionServiceRig : IDisposable
 #pragma warning disable IDISP003 // Build refuses a second call, so nothing is overwritten.
     public SessionService Build(SkillCatalog? skills = null, McpManager? mcp = null, PermissionDefaults? defaults = null)
     {
-        _service = _service is null ? new SessionService(Store, (_, _) => Task.FromResult<IChatClient>(Client), NullLoggerFactory.Instance, skills: skills, defaults: defaults, mcp: mcp) : throw new InvalidOperationException("Build was already called.");
+        _service = _service is null ? new SessionService(Store, (_, _) => Task.FromResult<IChatClient>(Client), NullLoggerFactory.Instance, TimeProvider.System, defaults: defaults, mcp: mcp, skills: skills) : throw new InvalidOperationException("Build was already called.");
         return _service;
     }
 #pragma warning restore IDISP003

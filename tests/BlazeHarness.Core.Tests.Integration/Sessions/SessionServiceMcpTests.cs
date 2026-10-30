@@ -21,9 +21,9 @@ public sealed class SessionServiceMcpTests : IAsyncLifetime
 
     public SessionServiceMcpTests()
     {
-        _file = new McpConfigFile(Path.Combine(_rig.Root, "mcp.json"), new LoggerFake<McpConfigFile>(), watch: false);
-        _manager = new McpManager(_file, _connector, new LoggerFake<McpManager>());
-        _config = new JsonFileStore<AppConfig>(Path.Combine(_rig.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
+        _file = new McpConfigFile(Path.Combine(_rig.Root, "mcp.json"), new LoggerFake<McpConfigFile>(), TimeProvider.System, watch: false);
+        _manager = new McpManager(_file, _connector, new LoggerFake<McpManager>(), TimeProvider.System);
+        _config = new JsonFileStore<AppConfig>(Path.Combine(_rig.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, TimeProvider.System, watch: false);
         _defaults = new PermissionDefaults(_config, _rig.Paths);
         _rig.Build(defaults: _defaults, mcp: _manager);
     }

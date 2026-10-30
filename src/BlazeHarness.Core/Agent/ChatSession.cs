@@ -65,19 +65,20 @@ public sealed partial class ChatSession : IDisposable, IToolApprover
     /// Initializes a new instance of the <see cref="ChatSession"/> class.
     /// </summary>
     /// <param name="clientFactory">Creates the chat client for a target. The session disposes the client after each reply.</param>
+    /// <param name="time">The clock for timestamps and save batching.</param>
     /// <param name="log">Where messages are saved, or null to keep the conversation in memory only.</param>
-    /// <param name="time">The clock for timestamps and save batching; defaults to the system clock.</param>
     /// <param name="logger">The logger for save failures.</param>
     public ChatSession(
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
+        TimeProvider time,
         ISessionLog? log = null,
-        TimeProvider? time = null,
         ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(clientFactory);
+        ArgumentNullException.ThrowIfNull(time);
         _clientFactory = clientFactory;
         _log = log;
-        _time = time ?? TimeProvider.System;
+        _time = time;
         _logger = logger ?? NullLogger.Instance;
     }
 

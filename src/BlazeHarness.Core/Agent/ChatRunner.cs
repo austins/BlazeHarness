@@ -37,27 +37,28 @@ internal static class ChatRunner
     /// <param name="client">The chat client to call.</param>
     /// <param name="history">The conversation so far, ending with the user's message.</param>
     /// <param name="options">The request options, including sampling and thinking fields. The tool definitions are added to it.</param>
+    /// <param name="time">The clock that times each response.</param>
     /// <param name="tools">The tools the model may call, or null for a reply without tools.</param>
     /// <param name="approver">Asks the user before a call that needs approval runs.</param>
     /// <param name="permissions">Decides which calls run, ask or are refused. Null means the default settings.</param>
     /// <param name="context">Chooses what part of <paramref name="history"/> is sent and compacts it before a call when it has grown too large. Null sends all of it.</param>
-    /// <param name="time">The clock that times each response. Null uses the system clock.</param>
     /// <param name="cancellationToken">A token that stops the run.</param>
     /// <returns>The events of the run.</returns>
     public static IAsyncEnumerable<AgentEvent> RunAsync(
         IChatClient client,
         IList<ChatMessage> history,
         ChatOptions options,
+        TimeProvider time,
         ToolSet? tools = null,
         IToolApprover? approver = null,
         PermissionEngine? permissions = null,
         ConversationContext? context = null,
-        TimeProvider? time = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(history);
-        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), context, time ?? TimeProvider.System, cancellationToken);
+        ArgumentNullException.ThrowIfNull(time);
+        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), context, time, cancellationToken);
     }
 
     private static TimeSpan? Positive(TimeSpan span)

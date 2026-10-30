@@ -66,7 +66,7 @@ public sealed class ChatRunnerCompactionTests
         var context = new ConversationContext(1_000, _summarizer);
 
         // Act
-        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, context: context, tools: new ToolSet([read], new ToolContext(Path.GetTempPath())));
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, context: context, tools: new ToolSet([read], new ToolContext(Path.GetTempPath()), TimeProvider.System));
 
         // Assert
         var types = events.Select(e => e.GetType()).ToList();

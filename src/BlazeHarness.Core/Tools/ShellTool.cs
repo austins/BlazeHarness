@@ -26,16 +26,17 @@ internal sealed class ShellTool : ITool
     /// <param name="shell">The shell to run commands in.</param>
     /// <param name="sandbox">Starts the commands, inside a sandbox when the call's shell mode asks for one.</param>
     /// <param name="scratchDirectory">A folder confined commands may always write to, for their home and temporary files.</param>
-    /// <param name="time">Times the command's time limit and the wait for its output; the system clock when null.</param>
-    public ShellTool(ShellInfo shell, IShellSandbox sandbox, string scratchDirectory, TimeProvider? time = null)
+    /// <param name="time">Times the command's time limit and the wait for its output.</param>
+    public ShellTool(ShellInfo shell, IShellSandbox sandbox, string scratchDirectory, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(shell);
         ArgumentNullException.ThrowIfNull(sandbox);
         ArgumentException.ThrowIfNullOrWhiteSpace(scratchDirectory);
+        ArgumentNullException.ThrowIfNull(time);
         _shell = shell;
         _sandbox = sandbox;
         _scratchDirectory = scratchDirectory;
-        _time = time ?? TimeProvider.System;
+        _time = time;
     }
 
     /// <inheritdoc />

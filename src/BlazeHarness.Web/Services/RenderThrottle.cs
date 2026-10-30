@@ -22,15 +22,16 @@ public sealed partial class RenderThrottle : IDisposable
     /// <param name="render">The action that renders the view.</param>
     /// <param name="interval">The shortest time between renders.</param>
     /// <param name="logger">The log that receives the type of an exception the render throws.</param>
-    /// <param name="time">The clock, which tests replace; null uses the system clock.</param>
-    public RenderThrottle(Func<Task> render, TimeSpan interval, ILogger logger, TimeProvider? time = null)
+    /// <param name="time">The clock, which tests replace.</param>
+    public RenderThrottle(Func<Task> render, TimeSpan interval, ILogger logger, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(render);
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(time);
         _render = render;
         _interval = interval;
         _logger = logger;
-        _time = time ?? TimeProvider.System;
+        _time = time;
     }
 
     /// <summary>

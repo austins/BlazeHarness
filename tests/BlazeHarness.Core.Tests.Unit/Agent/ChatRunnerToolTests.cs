@@ -466,5 +466,5 @@ public sealed class ChatRunnerToolTests
 
     private static List<ChatMessage> NewHistory() => [new(ChatRole.User, "hi")];
 
-    private static ToolSet Tools(params ITool[] tools) => new(tools, new ToolContext(Path.GetTempPath()));
+    private static ToolSet Tools(params ITool[] tools) => new(tools, new ToolContext(Path.GetTempPath()), TimeProvider.System);
 }

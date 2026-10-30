@@ -18,7 +18,7 @@ public sealed class JsonFileStoreLoggingTests : IDisposable
         var logger = new LoggerFake<JsonFileStore<Dictionary<string, string>>>();
 
         // Act
-        using var sut = new JsonFileStore<Dictionary<string, string>>(path, logger, watch: false);
+        using var sut = new JsonFileStore<Dictionary<string, string>>(path, logger, TimeProvider.System, watch: false);
 
         // Assert
         logger.Entries.Should().NotBeEmpty();

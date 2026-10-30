@@ -234,7 +234,7 @@ public sealed class ChatSessionAttachmentTests : IDisposable
 
     private ChatSession Create(ScriptedChatClient client)
     {
-        return new ChatSession((_, _) => Task.FromResult<IChatClient>(client), _log)
+        return new ChatSession((_, _) => Task.FromResult<IChatClient>(client), TimeProvider.System, _log)
         {
             Attachments = _attachments,
         };

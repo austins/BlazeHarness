@@ -21,15 +21,19 @@ public sealed class ModelTitleGenerator : ITitleGenerator
     private static readonly char[] EdgeCharacters = ['"', '\'', '“', '”', '‘', '’', '`', '*', '#', '.', ':', ';', ',', '!', '。'];
 
     private readonly Func<ChatTarget, CancellationToken, Task<IChatClient>> _clientFactory;
+    private readonly TimeProvider _time;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ModelTitleGenerator"/> class.
     /// </summary>
     /// <param name="clientFactory">Creates the chat client for a target.</param>
-    public ModelTitleGenerator(Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory)
+    /// <param name="time">The clock the request runs with.</param>
+    public ModelTitleGenerator(Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(clientFactory);
+        ArgumentNullException.ThrowIfNull(time);
         _clientFactory = clientFactory;
+        _time = time;
     }
 
     /// <inheritdoc />
@@ -46,7 +50,7 @@ public sealed class ModelTitleGenerator : ITitleGenerator
 
         using var client = await _clientFactory(target, cancellationToken);
         var title = new StringBuilder();
-        await foreach (var e in ChatRunner.RunAsync(client, messages, options, cancellationToken: cancellationToken))
+        await foreach (var e in ChatRunner.RunAsync(client, messages, options, _time, cancellationToken: cancellationToken))
         {
             switch (e)
             {

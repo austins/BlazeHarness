@@ -19,8 +19,8 @@ public sealed class SessionServiceSkillsTests : IDisposable
     {
         WriteSkill(Path.Combine(_rig.Paths.SkillsDirectory, "report"), "report", "Write reports.");
         WriteSkill(Path.Combine(_rig.Work, ".agents", "skills", "local"), "local", "Project only.");
-        _config = new JsonFileStore<AppConfig>(_rig.Paths.ConfigFile, NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
-        _skills = new SkillCatalog(_rig.Paths, _config, new LoggerFake<SkillCatalog>(), watch: false);
+        _config = new JsonFileStore<AppConfig>(_rig.Paths.ConfigFile, NullLogger<JsonFileStore<AppConfig>>.Instance, TimeProvider.System, watch: false);
+        _skills = new SkillCatalog(_rig.Paths, _config, new LoggerFake<SkillCatalog>(), TimeProvider.System, watch: false);
         _rig.Build(skills: _skills);
     }
 

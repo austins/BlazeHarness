@@ -13,7 +13,7 @@ public sealed class ToolSetTests
     public void Constructor_DuplicateNames_Throws()
     {
         // Act
-        var act = () => new ToolSet([new ReadFileTool(), new ReadFileTool()], _context);
+        var act = () => new ToolSet([new ReadFileTool(), new ReadFileTool()], _context, TimeProvider.System);
 
         // Assert
         act.Should().Throw<ArgumentException>().WithMessage("*read_file*");
@@ -23,7 +23,7 @@ public sealed class ToolSetTests
     public void With_ExtraTools_AreOfferedAfterTheExistingOnes()
     {
         // Arrange
-        var sut = new ToolSet([new ReadFileTool()], _context);
+        var sut = new ToolSet([new ReadFileTool()], _context, TimeProvider.System);
 
         // Act
         var more = sut.With([Named("extra_one"), Named("extra_two")]);
@@ -39,7 +39,7 @@ public sealed class ToolSetTests
     public void With_NameAlreadyTaken_KeepsTheExistingToolAndSkipsTheNewOne()
     {
         // Arrange
-        var sut = new ToolSet([new ReadFileTool()], _context);
+        var sut = new ToolSet([new ReadFileTool()], _context, TimeProvider.System);
 
         // Act
         var more = sut.With([Named("read_file"), Named("fresh"), Named("fresh")]);
@@ -53,7 +53,7 @@ public sealed class ToolSetTests
     public void With_NothingNew_ReturnsTheSameSet()
     {
         // Arrange
-        var sut = new ToolSet([new ReadFileTool()], _context);
+        var sut = new ToolSet([new ReadFileTool()], _context, TimeProvider.System);
 
         // Assert
         sut.With([]).Should().BeSameAs(sut);
@@ -63,7 +63,7 @@ public sealed class ToolSetTests
     public void Declarations_BuiltInTools_HaveNamesAndSchemas()
     {
         // Act
-        var sut = new ToolSet([new ReadFileTool(), new WriteFileTool(), new EditFileTool(), new ListFilesTool(), new SearchFilesTool()], _context);
+        var sut = new ToolSet([new ReadFileTool(), new WriteFileTool(), new EditFileTool(), new ListFilesTool(), new SearchFilesTool()], _context, TimeProvider.System);
 
         // Assert
         sut.Declarations.Select(d => d.Name).Should().Equal("read_file", "write_file", "edit_file", "list_files", "search_files");
@@ -107,7 +107,7 @@ public sealed class ToolSetTests
     public async Task ExecuteAsync_BadArguments_BecomesAnErrorResult()
     {
         // Arrange
-        var sut = new ToolSet([new ReadFileTool()], _context);
+        var sut = new ToolSet([new ReadFileTool()], _context, TimeProvider.System);
 
         // Act
         var missing = await sut.ExecuteAsync(sut.Find("read_file")!, "{}", TestContext.Current.CancellationToken);
@@ -122,7 +122,7 @@ public sealed class ToolSetTests
     public async Task ExecuteAsync_IoFailure_BecomesAnErrorResult()
     {
         // Arrange
-        var sut = new ToolSet([Tool(TimeSpan.FromSeconds(5), _ => throw new IOException("disk on fire"))], _context);
+        var sut = new ToolSet([Tool(TimeSpan.FromSeconds(5), _ => throw new IOException("disk on fire"))], _context, TimeProvider.System);
 
         // Act
         var result = await sut.ExecuteAsync(sut.Tools[0], "{}", TestContext.Current.CancellationToken);
@@ -154,7 +154,7 @@ public sealed class ToolSetTests
     public async Task ExecuteAsync_CallerCancels_Throws()
     {
         // Arrange
-        var sut = new ToolSet([Hanging(TimeSpan.FromMinutes(1), started: null)], _context);
+        var sut = new ToolSet([Hanging(TimeSpan.FromMinutes(1), started: null)], _context, TimeProvider.System);
         var cancelled = new CancellationToken(canceled: true);
 
         // Act
@@ -168,7 +168,7 @@ public sealed class ToolSetTests
     public async Task ExecuteAsync_HugeOutput_IsLimited()
     {
         // Arrange
-        var sut = new ToolSet([Tool(TimeSpan.FromSeconds(5), _ => Task.FromResult(ToolResult.Ok(new string('x', ToolSet.MaxOutputCharacters * 2))))], _context);
+        var sut = new ToolSet([Tool(TimeSpan.FromSeconds(5), _ => Task.FromResult(ToolResult.Ok(new string('x', ToolSet.MaxOutputCharacters * 2))))], _context, TimeProvider.System);
 
         // Act
         var result = await sut.ExecuteAsync(sut.Tools[0], "{}", TestContext.Current.CancellationToken);
@@ -209,7 +209,7 @@ public sealed class ToolSetTests
             release.Wait(TestContext.Current.CancellationToken);
             return Task.FromResult(ToolResult.Ok("late"));
         });
-        var sut = new ToolSet([blocking], _context);
+        var sut = new ToolSet([blocking], _context, TimeProvider.System);
         var cancel = new CancellationTokenSource();
         try
         {

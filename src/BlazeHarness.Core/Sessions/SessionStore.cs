@@ -39,15 +39,16 @@ public sealed partial class SessionStore : IDisposable
     /// </summary>
     /// <param name="paths">Resolves the sessions directory.</param>
     /// <param name="loggers">Creates loggers for the store and its message logs.</param>
-    /// <param name="time">The clock for timestamps; defaults to the system clock.</param>
-    public SessionStore(AppPaths paths, ILoggerFactory loggers, TimeProvider? time = null)
+    /// <param name="time">The clock for timestamps.</param>
+    public SessionStore(AppPaths paths, ILoggerFactory loggers, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(loggers);
+        ArgumentNullException.ThrowIfNull(time);
         _paths = paths;
         _loggers = loggers;
         _logger = loggers.CreateLogger<SessionStore>();
-        _time = time ?? TimeProvider.System;
+        _time = time;
         LoadIndex();
     }
 

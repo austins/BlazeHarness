@@ -92,9 +92,9 @@ public sealed class ChatSessionSkillsTests
 
     private static ChatSession Create(ScriptedChatClient client, bool tools)
     {
-        return new ChatSession((_, _) => Task.FromResult<IChatClient>(client))
+        return new ChatSession((_, _) => Task.FromResult<IChatClient>(client), TimeProvider.System)
         {
-            Tools = tools ? new ToolSet([], new ToolContext(Path.GetTempPath())) : null,
+            Tools = tools ? new ToolSet([], new ToolContext(Path.GetTempPath()), TimeProvider.System) : null,
         };
     }
 }

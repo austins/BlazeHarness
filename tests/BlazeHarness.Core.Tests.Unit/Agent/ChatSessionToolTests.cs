@@ -144,7 +144,7 @@ public sealed class ChatSessionToolTests
             .Enqueue([ScriptedChatClient.Text("Found it")]);
         using var original = Create(client, new FakeTool("read", isReadOnly: true));
         await original.SendAsync("go", TestTargets.Create());
-        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException(), TimeProvider.System);
 
         // Act
         sut.Restore(await _log.ReadAsync(TestContext.Current.CancellationToken));
@@ -163,7 +163,7 @@ public sealed class ChatSessionToolTests
         // Arrange
         var user = Guid.NewGuid();
         var reply = Guid.NewGuid();
-        using var sut = new ChatSession((_, _) => throw new InvalidOperationException());
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException(), TimeProvider.System);
 
         // Act
         sut.Restore(
@@ -307,9 +307,9 @@ public sealed class ChatSessionToolTests
 
     private ChatSession Create(ScriptedChatClient client, params ITool[] tools)
     {
-        return new ChatSession((_, _) => Task.FromResult<IChatClient>(client), _log, _time)
+        return new ChatSession((_, _) => Task.FromResult<IChatClient>(client), _time, _log)
         {
-            Tools = new ToolSet(tools, new ToolContext(Path.GetTempPath())),
+            Tools = new ToolSet(tools, new ToolContext(Path.GetTempPath()), TimeProvider.System),
         };
     }
 }

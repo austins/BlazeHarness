@@ -22,15 +22,16 @@ public sealed class ToolSet
     /// </summary>
     /// <param name="tools">The tools to offer; names must be unique.</param>
     /// <param name="context">What the calls run against.</param>
-    /// <param name="time">Times each call's timeout; the system clock when null.</param>
+    /// <param name="time">Times each call's timeout.</param>
     /// <exception cref="ArgumentException">Two tools share a name.</exception>
-    public ToolSet(IEnumerable<ITool> tools, ToolContext context, TimeProvider? time = null)
+    public ToolSet(IEnumerable<ITool> tools, ToolContext context, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(time);
 
         Context = context;
-        _time = time ?? TimeProvider.System;
+        _time = time;
         Tools = [.. tools];
         if (Tools.GroupBy(t => t.Name, StringComparer.Ordinal).FirstOrDefault(g => g.Count() > 1) is { } duplicate)
         {

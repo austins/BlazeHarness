@@ -14,7 +14,7 @@ public sealed class PermissionDefaultsTests : IDisposable
 
     public PermissionDefaultsTests()
     {
-        _config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
+        _config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, TimeProvider.System, watch: false);
         _sut = new PermissionDefaults(_config, new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root));
     }
 

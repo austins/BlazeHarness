@@ -26,16 +26,17 @@ public sealed partial class McpConfigFile : IDisposable
     /// </summary>
     /// <param name="path">The path of the file; it does not need to exist.</param>
     /// <param name="logger">The logger.</param>
+    /// <param name="time">Times the delay that merges bursts of file events.</param>
     /// <param name="watch">Whether to watch the file for edits made outside the app.</param>
-    /// <param name="time">Times the delay that merges bursts of file events; the system clock when null.</param>
-    public McpConfigFile(string path, ILogger logger, bool watch = true, TimeProvider? time = null)
+    public McpConfigFile(string path, ILogger logger, TimeProvider time, bool watch = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(time);
         _path = path;
         _logger = logger;
         _current = Snapshot.Of(ReadText() ?? string.Empty);
-        _debounce = (time ?? TimeProvider.System).CreateTimer(_ => OnExternalChange(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        _debounce = time.CreateTimer(_ => OnExternalChange(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
         if (watch)
         {
@@ -72,6 +73,15 @@ public sealed partial class McpConfigFile : IDisposable
     /// Gets the result of parsing <see cref="Text"/>.
     /// </summary>
     public McpParseResult Parsed => Volatile.Read(ref _current).Result;
+
+    /// <summary>
+    /// Gets the servers to run: those of the newest text that had no errors.
+    /// </summary>
+    /// <remarks>
+    /// A hand edit that breaks the file shows its errors through <see cref="Parsed"/> but leaves the running servers and their trust alone until it is fixed.
+    /// When the file already has errors at startup, the servers that could be read are used.
+    /// </remarks>
+    public IReadOnlyList<McpServerConfig> Servers => Volatile.Read(ref _current).Servers;
 
     /// <summary>
     /// Save new text, unless it has errors.
@@ -163,7 +173,6 @@ public sealed partial class McpConfigFile : IDisposable
         }
     }
 
-    // Null means the file exists but could not be read, so a passing lock keeps the servers that were loaded instead of looking like an empty file.
     private string? ReadText()
     {
         try
@@ -182,13 +191,24 @@ public sealed partial class McpConfigFile : IDisposable
         _lock.Wait();
         try
         {
-            var text = ReadText();
-            if (text is null || text == _current.Text)
+            string text;
+            try
+            {
+                text = File.Exists(_path) ? File.ReadAllText(_path) : string.Empty;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Often the writer still holds the file. Keep the servers that were loaded instead of treating it as empty, and try again shortly.
+                Schedule();
+                return false;
+            }
+
+            if (text == _current.Text)
             {
                 return false;
             }
 
-            Volatile.Write(ref _current, Snapshot.Of(text));
+            Volatile.Write(ref _current, Snapshot.Of(text, _current));
             return true;
         }
         finally
@@ -200,8 +220,12 @@ public sealed partial class McpConfigFile : IDisposable
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not read {File}.")]
     private partial void LogReadFailed(Exception ex, string file);
 
-    private sealed record Snapshot(string Text, McpParseResult Result)
+    private sealed record Snapshot(string Text, McpParseResult Result, IReadOnlyList<McpServerConfig> Servers)
     {
-        public static Snapshot Of(string text) => new(text, McpConfigParser.Parse(text));
+        public static Snapshot Of(string text, Snapshot? previous = null)
+        {
+            var result = McpConfigParser.Parse(text);
+            return new(text, result, result.Errors.Count > 0 && previous is not null ? previous.Servers : result.Servers);
+        }
     }
 }

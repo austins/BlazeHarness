@@ -29,14 +29,15 @@ public sealed partial class JsonFileStore<T> : IDisposable
     /// </remarks>
     /// <param name="path">The full path of the JSON file.</param>
     /// <param name="logger">The logger for read failures.</param>
+    /// <param name="time">Times the delay that merges bursts of file events.</param>
     /// <param name="watch">Whether to watch the file and raise <see cref="ExternalChange"/> on outside edits.</param>
-    /// <param name="time">Times the delay that merges bursts of file events; the system clock when null.</param>
-    public JsonFileStore(string path, ILogger logger, bool watch = true, TimeProvider? time = null)
+    public JsonFileStore(string path, ILogger logger, TimeProvider time, bool watch = true)
     {
+        ArgumentNullException.ThrowIfNull(time);
         _path = path;
         _logger = logger;
         _current = ReadFromDisk() ?? new T();
-        _debounce = (time ?? TimeProvider.System).CreateTimer(_ => OnExternalChange(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        _debounce = time.CreateTimer(_ => OnExternalChange(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
         if (watch)
         {

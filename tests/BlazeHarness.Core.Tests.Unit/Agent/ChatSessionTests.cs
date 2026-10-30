@@ -49,7 +49,7 @@ public sealed class ChatSessionTests
     public async Task SendAsync_ClientFactoryThrows_MarksReplyFailed()
     {
         // Arrange
-        using var sut = new ChatSession((_, _) => throw new InvalidOperationException("no key"));
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException("no key"), TimeProvider.System);
 
         // Act
         await sut.SendAsync("hi", Fast);
@@ -66,7 +66,7 @@ public sealed class ChatSessionTests
     {
         // Arrange
         var logger = new LoggerFake<ChatSession>();
-        using var sut = new ChatSession((_, _) => throw new InvalidOperationException("no key"), logger: logger);
+        using var sut = new ChatSession((_, _) => throw new InvalidOperationException("no key"), TimeProvider.System, logger: logger);
 
         // Act
         await sut.SendAsync("hi", Fast);
@@ -318,9 +318,11 @@ public sealed class ChatSessionTests
     }
 
     private static ChatSession CreateSession(ScriptedChatClient client, Action<ChatTarget>? onTarget = null) =>
-        new((target, _) =>
-        {
-            onTarget?.Invoke(target);
-            return Task.FromResult<IChatClient>(client);
-        });
+        new(
+            (target, _) =>
+            {
+                onTarget?.Invoke(target);
+                return Task.FromResult<IChatClient>(client);
+            },
+            TimeProvider.System);
 }

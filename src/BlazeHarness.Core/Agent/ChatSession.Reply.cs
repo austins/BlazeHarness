@@ -51,7 +51,7 @@ public sealed partial class ChatSession
             var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level);
             var context = CreateContext(client, target, prompt.Length > 0 ? 1 : 0);
             var tools = await TurnToolsAsync(cancellation);
-            await foreach (var e in ChatRunner.RunAsync(client, working, options, tools, this, Permissions, context: context, time: _time, cancellationToken: cancellation))
+            await foreach (var e in ChatRunner.RunAsync(client, working, options, _time, tools, this, Permissions, context: context, cancellationToken: cancellation))
             {
                 await ApplyAsync(reply, e);
                 RaiseChanged();

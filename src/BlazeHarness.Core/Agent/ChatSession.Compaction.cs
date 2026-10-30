@@ -105,7 +105,7 @@ public sealed partial class ChatSession
             else
             {
                 client = await _clientFactory(target, run.Token);
-                summarizer = ModelSummarizer.For(client, target);
+                summarizer = ModelSummarizer.For(client, target, _time);
             }
 
             var context = new ConversationContext(ContextBudget.Limit(target.Model), summarizer, 0, state?.Summary, state?.KeptFrom ?? 0);
@@ -143,7 +143,7 @@ public sealed partial class ChatSession
             state = _compaction;
         }
 
-        return new ConversationContext(ContextBudget.Limit(target.Model), UsesExtractiveCompaction ? new ExtractiveSummarizer() : ModelSummarizer.For(client, target), leadingMessages, state?.Summary, state?.KeptFrom ?? 0);
+        return new ConversationContext(ContextBudget.Limit(target.Model), UsesExtractiveCompaction ? new ExtractiveSummarizer() : ModelSummarizer.For(client, target, _time), leadingMessages, state?.Summary, state?.KeptFrom ?? 0);
     }
 
     // Must be called with the gate held, after the entries or the history changed.

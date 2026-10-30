@@ -36,6 +36,7 @@ internal sealed class ModelSummarizer : ISummarizer
     private readonly IChatClient _client;
     private readonly ChatOptions _options;
     private readonly long _maxInputTokens;
+    private readonly TimeProvider _time;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ModelSummarizer"/> class.
@@ -43,13 +44,16 @@ internal sealed class ModelSummarizer : ISummarizer
     /// <param name="client">The client to ask. The caller owns it.</param>
     /// <param name="options">The request options, with no tools and a cap on the response.</param>
     /// <param name="maxInputTokens">The most tokens of conversation to send, or 0 for no limit.</param>
-    public ModelSummarizer(IChatClient client, ChatOptions options, long maxInputTokens)
+    /// <param name="time">The clock the request runs with.</param>
+    public ModelSummarizer(IChatClient client, ChatOptions options, long maxInputTokens, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(time);
         _client = client;
         _options = options;
         _maxInputTokens = maxInputTokens;
+        _time = time;
     }
 
     /// <summary>
@@ -60,13 +64,14 @@ internal sealed class ModelSummarizer : ISummarizer
     /// </remarks>
     /// <param name="client">The client for the target. The caller owns it.</param>
     /// <param name="target">The provider, model and level the conversation uses.</param>
+    /// <param name="time">The clock the request runs with.</param>
     /// <returns>A summarizer that sends no more than the limit for the model's context.</returns>
-    public static ModelSummarizer For(IChatClient client, ChatTarget target)
+    public static ModelSummarizer For(IChatClient client, ChatTarget target, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(target);
 
         var maxOutput = target.Model.MaxOutputTokens > 0 ? Math.Min(target.Model.MaxOutputTokens, MaxSummaryTokens) : MaxSummaryTokens;
-        return new ModelSummarizer(client, ChatClientFactory.BuildHelperOptions(target.Provider, target.Model, maxOutput), ContextBudget.Limit(target.Model));
+        return new ModelSummarizer(client, ChatClientFactory.BuildHelperOptions(target.Provider, target.Model, maxOutput), ContextBudget.Limit(target.Model), time);
     }
 
     /// <inheritdoc />
@@ -81,7 +86,7 @@ internal sealed class ModelSummarizer : ISummarizer
         ];
 
         var summary = new StringBuilder();
-        await foreach (var e in ChatRunner.RunAsync(_client, request, _options, cancellationToken: cancellationToken))
+        await foreach (var e in ChatRunner.RunAsync(_client, request, _options, _time, cancellationToken: cancellationToken))
         {
             switch (e)
             {

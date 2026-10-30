@@ -28,10 +28,10 @@ public sealed class McpManagerTests : IAsyncLifetime
     public McpManagerTests()
     {
         Directory.CreateDirectory(_temp.Root);
-        _file = new McpConfigFile(Path.Combine(_temp.Root, "mcp.json"), new LoggerFake<McpConfigFile>(), watch: false);
-        _appConfig = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
+        _file = new McpConfigFile(Path.Combine(_temp.Root, "mcp.json"), new LoggerFake<McpConfigFile>(), TimeProvider.System, watch: false);
+        _appConfig = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, TimeProvider.System, watch: false);
         _permissions = new PermissionDefaults(_appConfig, new AppPaths(Path.Combine(_temp.Root, "app"), _temp.Root));
-        _sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, ConnectTimeout, _permissions);
+        _sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), _time, name => _environment.GetValueOrDefault(name), ConnectTimeout, _permissions);
     }
 
     public async ValueTask InitializeAsync() => await _file.SaveAsync(Two, TestContext.Current.CancellationToken);
@@ -200,7 +200,7 @@ public sealed class McpManagerTests : IAsyncLifetime
         using var secrets = new FileSecretStore(Path.Combine(_temp.Root, "secrets.json"));
         await secrets.SetAsync("mcp:MCP_ALPHA_KEY", "stored", TestContext.Current.CancellationToken);
         await _file.SaveAsync("""{"mcpServers": {"alpha": {"command": "a", "env": {"KEY": "${MCP_ALPHA_KEY}"}}}}""", TestContext.Current.CancellationToken);
-        await using var sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, ConnectTimeout, _permissions, secrets);
+        await using var sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), _time, name => _environment.GetValueOrDefault(name), ConnectTimeout, _permissions, secrets);
         McpServerConfig? seen = null;
         _connector.ConnectAsync(Arg.Do<McpServerConfig>(c => seen = c), Arg.Any<CancellationToken>()).Returns(_ => Connection());
 
@@ -218,7 +218,7 @@ public sealed class McpManagerTests : IAsyncLifetime
         using var secrets = new FileSecretStore(Path.Combine(_temp.Root, "secrets.json"));
         await secrets.SetAsync("mcp:MCP_BETA_KEY", "stored", TestContext.Current.CancellationToken);
         await _file.SaveAsync("""{"mcpServers": {"alpha": {"command": "a", "env": {"KEY": "${MCP_BETA_KEY}"}}}}""", TestContext.Current.CancellationToken);
-        await using var sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), name => _environment.GetValueOrDefault(name), _time, ConnectTimeout, _permissions, secrets);
+        await using var sut = new McpManager(_file, _connector, new LoggerFake<McpManager>(), _time, name => _environment.GetValueOrDefault(name), ConnectTimeout, _permissions, secrets);
 
         // Act
         var tools = await sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
@@ -369,6 +369,26 @@ public sealed class McpManagerTests : IAsyncLifetime
 
         // Assert
         _permissions.TrustedMcpServers.Should().Equal("alpha");
+    }
+
+    [Fact]
+    public async Task ConfigChange_HandEditBreaksTheFile_KeepsTheConnectionAndTrust()
+    {
+        // Arrange
+        await _permissions.SetMcpServerTrustedAsync("alpha", trusted: true, TestContext.Current.CancellationToken);
+        var alpha = Connection(Tool("a"));
+        _connector.ConnectAsync(Arg.Any<McpServerConfig>(), Arg.Any<CancellationToken>()).Returns(alpha);
+        await _sut.ToolsAsync(["alpha"], TestContext.Current.CancellationToken);
+
+        // Act
+        await File.WriteAllTextAsync(_file.FilePath, "{ \"mcpServers\": {", TestContext.Current.CancellationToken);
+        _file.OnExternalChange();
+        await _sut.ReconcileAsync();
+
+        // Assert
+        await alpha.DidNotReceive().DisposeAsync();
+        _permissions.TrustedMcpServers.Should().Equal("alpha");
+        _sut.Statuses().Select(s => s.Config.Name).Should().Equal("alpha", "beta");
     }
 
     [Fact]

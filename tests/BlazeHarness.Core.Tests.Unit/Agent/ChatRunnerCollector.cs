@@ -28,7 +28,7 @@ public static class ChatRunnerCollector
         ConversationContext? context = null)
     {
         var events = new List<AgentEvent>();
-        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), tools, approver, permissions, context, new Microsoft.Extensions.Time.Testing.FakeTimeProvider(), cancellationToken))
+        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(), tools, approver, permissions, context, cancellationToken))
         {
             events.Add(e);
         }

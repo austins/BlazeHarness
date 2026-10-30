@@ -23,13 +23,14 @@ public sealed class FolderRegistry : IDisposable
     /// </summary>
     /// <param name="paths">Resolves the file and the user's home folder.</param>
     /// <param name="loggers">Creates the logger for read failures.</param>
-    /// <param name="time">The clock for timestamps; defaults to the system clock.</param>
-    public FolderRegistry(AppPaths paths, ILoggerFactory loggers, TimeProvider? time = null)
+    /// <param name="time">The clock for timestamps.</param>
+    public FolderRegistry(AppPaths paths, ILoggerFactory loggers, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(loggers);
+        ArgumentNullException.ThrowIfNull(time);
         _paths = paths;
-        _time = time ?? TimeProvider.System;
+        _time = time;
         _store = new JsonFileStore<FoldersDocument>(paths.FoldersFile, loggers.CreateLogger<JsonFileStore<FoldersDocument>>(), time: _time);
         _store.ExternalChange += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
     }

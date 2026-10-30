@@ -12,7 +12,7 @@ public sealed class ModelSummarizerTests
     {
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("Goal: "), ScriptedChatClient.Text("fix the build.")]);
-        var sut = new ModelSummarizer(client, new ChatOptions(), 0);
+        var sut = new ModelSummarizer(client, new ChatOptions(), 0, TimeProvider.System);
         List<ChatMessage> messages = [new(ChatRole.User, "please fix the build"), new(ChatRole.Assistant, "done")];
 
         // Act
@@ -31,7 +31,7 @@ public sealed class ModelSummarizerTests
     {
         // Arrange
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("  ")]);
-        var sut = new ModelSummarizer(client, new ChatOptions(), 0);
+        var sut = new ModelSummarizer(client, new ChatOptions(), 0, TimeProvider.System);
 
         // Act
         var act = async () => await sut.SummarizeAsync(null, [new ChatMessage(ChatRole.User, "hi")], TestContext.Current.CancellationToken);
@@ -46,7 +46,7 @@ public sealed class ModelSummarizerTests
         // Arrange
         using var stop = new CancellationTokenSource();
         using var client = new ScriptedChatClient([ScriptedChatClient.Text("Goal: fix")], cancelAfterwards: stop);
-        var sut = new ModelSummarizer(client, new ChatOptions(), 0);
+        var sut = new ModelSummarizer(client, new ChatOptions(), 0, TimeProvider.System);
 
         // Act
         var act = async () => await sut.SummarizeAsync(null, [new ChatMessage(ChatRole.User, "hi")], stop.Token);
@@ -61,7 +61,7 @@ public sealed class ModelSummarizerTests
         // Arrange
         using var stop = new CancellationTokenSource();
         using var client = new ScriptedChatClient([], cancelAfterwards: stop);
-        var sut = new ModelSummarizer(client, new ChatOptions(), 0);
+        var sut = new ModelSummarizer(client, new ChatOptions(), 0, TimeProvider.System);
 
         // Act
         var act = async () => await sut.SummarizeAsync(null, [new ChatMessage(ChatRole.User, "hi")], stop.Token);
@@ -75,7 +75,7 @@ public sealed class ModelSummarizerTests
     {
         // Arrange
         using var client = new ScriptedChatClient([], failure: new InvalidOperationException("server down"));
-        var sut = new ModelSummarizer(client, new ChatOptions(), 0);
+        var sut = new ModelSummarizer(client, new ChatOptions(), 0, TimeProvider.System);
 
         // Act
         var act = async () => await sut.SummarizeAsync(null, [new ChatMessage(ChatRole.User, "hi")], TestContext.Current.CancellationToken);

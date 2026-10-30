@@ -37,8 +37,8 @@ public sealed partial class McpManager : IAsyncDisposable
     /// <param name="config">The <c>mcp.json</c> file.</param>
     /// <param name="connector">Connects to servers.</param>
     /// <param name="log">The logger.</param>
+    /// <param name="time">The clock, used to decide when to retry a failed server.</param>
     /// <param name="environment">Looks up the variables that <c>${NAME}</c> references name; defaults to the process environment.</param>
-    /// <param name="time">The clock, used to decide when to retry a failed server; defaults to the system clock.</param>
     /// <param name="connectTimeout">How long a server may take to start; defaults to one minute, which leaves room for a first download.</param>
     /// <param name="permissions">Where trust in a server is kept, so it can be withdrawn when the server's settings change; when null, trust is left alone.</param>
     /// <param name="secrets">Where the secrets of a server's environment and headers are kept; when null, only environment variables fill in a reference.</param>
@@ -46,8 +46,8 @@ public sealed partial class McpManager : IAsyncDisposable
         McpConfigFile config,
         IMcpConnector connector,
         ILogger<McpManager> log,
+        TimeProvider time,
         Func<string, string?>? environment = null,
-        TimeProvider? time = null,
         TimeSpan? connectTimeout = null,
         PermissionDefaults? permissions = null,
         ISecretStore? secrets = null)
@@ -55,15 +55,16 @@ public sealed partial class McpManager : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(connector);
         ArgumentNullException.ThrowIfNull(log);
+        ArgumentNullException.ThrowIfNull(time);
         _config = config;
         _connector = connector;
         _log = log;
         _environment = environment ?? Environment.GetEnvironmentVariable;
-        _time = time ?? TimeProvider.System;
+        _time = time;
         _connectTimeout = connectTimeout ?? TimeSpan.FromMinutes(1);
         _permissions = permissions;
         _secrets = secrets;
-        _known = _config.Parsed.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
+        _known = _config.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
         _config.Changed += OnConfigChanged;
     }
 
@@ -78,7 +79,7 @@ public sealed partial class McpManager : IAsyncDisposable
     /// <returns>The servers, including the ones turned off.</returns>
     public IReadOnlyList<McpServerStatus> Statuses()
     {
-        return [.. _config.Parsed.Servers.Select(StatusOf)];
+        return [.. _config.Servers.Select(StatusOf)];
     }
 
     /// <summary>
@@ -101,7 +102,7 @@ public sealed partial class McpManager : IAsyncDisposable
     /// <returns>The state afterwards, which is <see cref="McpServerState.Failed"/> with the reason when it did not work; null when there is no such server.</returns>
     public async Task<McpServerStatus?> ReconnectAsync(string name, CancellationToken cancellationToken = default)
     {
-        if (_config.Parsed.Servers.FirstOrDefault(s => s.Name == name) is not { } config)
+        if (_config.Servers.FirstOrDefault(s => s.Name == name) is not { } config)
         {
             return null;
         }
@@ -165,7 +166,7 @@ public sealed partial class McpManager : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(servers);
         var wanted = servers.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
-        var configs = _config.Parsed.Servers.Where(s => wanted.Contains(s.Name)).OrderBy(s => s.Name, StringComparer.Ordinal).ToList();
+        var configs = _config.Servers.Where(s => wanted.Contains(s.Name)).OrderBy(s => s.Name, StringComparer.Ordinal).ToList();
         await Task.WhenAll(configs.Select(c => EnsureConnectedAsync(c, cancellationToken)));
 
         var taken = new HashSet<string>(StringComparer.Ordinal);
@@ -226,7 +227,7 @@ public sealed partial class McpManager : IAsyncDisposable
         await _reconcile.WaitAsync();
         try
         {
-            var current = _config.Parsed.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
+            var current = _config.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
             foreach (var (name, _) in _known.Where(p => !current.TryGetValue(p.Key, out var now) || !now.SameAs(p.Value)))
             {
                 await WithdrawTrustAsync(name);

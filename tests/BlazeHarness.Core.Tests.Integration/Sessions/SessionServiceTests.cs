@@ -908,7 +908,7 @@ public sealed class SessionServiceTests : IDisposable
 
     private async Task<PermissionDefaults> NewDefaultsAsync(PermissionSettings settings, bool allowBypass)
     {
-        var config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, watch: false);
+        var config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, TimeProvider.System, watch: false);
         _disposables.Add(config);
         var defaults = new PermissionDefaults(config, _paths);
         await defaults.SaveAsync(settings, allowBypass, TestContext.Current.CancellationToken);
@@ -917,8 +917,8 @@ public sealed class SessionServiceTests : IDisposable
 
     private SessionService Create(IChatClient client, ITitleGenerator? titles = null, PermissionDefaults? defaults = null)
     {
-        var store = new SessionStore(_paths, NullLoggerFactory.Instance);
-        var service = new SessionService(store, (_, _) => Task.FromResult(client), NullLoggerFactory.Instance, titles: titles, defaults: defaults);
+        var store = new SessionStore(_paths, NullLoggerFactory.Instance, TimeProvider.System);
+        var service = new SessionService(store, (_, _) => Task.FromResult(client), NullLoggerFactory.Instance, TimeProvider.System, titles: titles, defaults: defaults);
         _disposables.Add(service);
         _disposables.Add(store);
         return service;

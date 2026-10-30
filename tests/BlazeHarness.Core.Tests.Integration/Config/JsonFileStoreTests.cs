@@ -12,7 +12,7 @@ public sealed class JsonFileStoreTests : IDisposable
 
     public JsonFileStoreTests()
     {
-        _sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "doc.json"), NullLogger<JsonFileStore<Doc>>.Instance, watch: false);
+        _sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "doc.json"), NullLogger<JsonFileStore<Doc>>.Instance, TimeProvider.System, watch: false);
     }
 
     public void Dispose()
@@ -65,7 +65,7 @@ public sealed class JsonFileStoreTests : IDisposable
     {
         // Arrange
         var logger = new LoggerFake<JsonFileStore<Doc>>();
-        using var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "handler.json"), logger, watch: false);
+        using var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "handler.json"), logger, TimeProvider.System, watch: false);
         sut.ExternalChange += (_, _) => throw new InvalidOperationException("boom");
         await File.WriteAllTextAsync(Path.Combine(_temp.Root, "handler.json"), """{"count": 5}""", TestContext.Current.CancellationToken);
 
@@ -82,7 +82,7 @@ public sealed class JsonFileStoreTests : IDisposable
     public async Task OnExternalChange_HandlerUpdatesTheStore_DoesNotDeadlock()
     {
         // Arrange
-        using var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "reenter.json"), NullLogger<JsonFileStore<Doc>>.Instance, watch: false);
+        using var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "reenter.json"), NullLogger<JsonFileStore<Doc>>.Instance, TimeProvider.System, watch: false);
 #pragma warning disable VSTHRD002 // The event handler is synchronous.
         sut.ExternalChange += (_, e) => sut.UpdateAsync(d => d with { Count = e.Value.Count + 1 }).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002
@@ -99,7 +99,7 @@ public sealed class JsonFileStoreTests : IDisposable
     public void OnExternalChange_AfterDispose_DoesNotThrow()
     {
         // Arrange
-        var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "gone.json"), NullLogger<JsonFileStore<Doc>>.Instance, watch: false);
+        var sut = new JsonFileStore<Doc>(Path.Combine(_temp.Root, "gone.json"), NullLogger<JsonFileStore<Doc>>.Instance, TimeProvider.System, watch: false);
 #pragma warning disable IDISP016, IDISP017 // Raising the callback after disposal is the scenario.
         sut.Dispose();
 
@@ -120,7 +120,7 @@ public sealed class JsonFileStoreTests : IDisposable
         File.WriteAllText(path, "{ not json");
 
         // Act
-        using var sut = new JsonFileStore<Doc>(path, NullLogger<JsonFileStore<Doc>>.Instance, watch: false);
+        using var sut = new JsonFileStore<Doc>(path, NullLogger<JsonFileStore<Doc>>.Instance, TimeProvider.System, watch: false);
 
         // Assert
         sut.Current.Count.Should().Be(0);

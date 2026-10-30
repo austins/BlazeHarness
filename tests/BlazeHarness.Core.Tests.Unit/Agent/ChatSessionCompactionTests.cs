@@ -323,7 +323,7 @@ public sealed class ChatSessionCompactionTests
     }
 
     private ChatSession Create(ScriptedChatClient client) =>
-        new((_, _) => Task.FromResult<IChatClient>(client), _log, _time);
+        new((_, _) => Task.FromResult<IChatClient>(client), _time, _log);
 
     private ChatSession CreateExtractive(ScriptedChatClient client)
     {
@@ -333,8 +333,8 @@ public sealed class ChatSessionCompactionTests
                 _clientsCreated++;
                 return Task.FromResult<IChatClient>(client);
             },
-            _log,
-            _time)
+            _time,
+            _log)
         {
             CompactionModeSource = () => CompactionMode.Extractive,
         };

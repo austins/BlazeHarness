@@ -55,7 +55,7 @@ public sealed partial class SessionService : IDisposable
     /// <param name="store">The saved sessions.</param>
     /// <param name="clientFactory">Creates the chat client for a target.</param>
     /// <param name="loggers">Creates loggers for the sessions.</param>
-    /// <param name="time">The clock for timestamps; defaults to the system clock.</param>
+    /// <param name="time">The clock for timestamps.</param>
     /// <param name="titles">Writes a title after the first exchange; without it a session keeps its placeholder title.</param>
     /// <param name="sandbox">Runs shell commands; without it commands only run in sessions with the Unrestricted access level.</param>
     /// <param name="defaults">The global permission choices; without it new chats start with the built-in settings and the risky options stay available.</param>
@@ -67,7 +67,7 @@ public sealed partial class SessionService : IDisposable
         SessionStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
         ILoggerFactory loggers,
-        TimeProvider? time = null,
+        TimeProvider time,
         ITitleGenerator? titles = null,
         IShellSandbox? sandbox = null,
         PermissionDefaults? defaults = null,
@@ -79,10 +79,11 @@ public sealed partial class SessionService : IDisposable
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
         ArgumentNullException.ThrowIfNull(loggers);
+        ArgumentNullException.ThrowIfNull(time);
         _store = store;
         _clientFactory = clientFactory;
         _loggers = loggers;
-        _time = time ?? TimeProvider.System;
+        _time = time;
         _titles = titles;
         _skills = skills;
         _sandbox = sandbox ?? new NoShellSandbox("No sandbox is set up.");
@@ -653,7 +654,7 @@ public sealed partial class SessionService : IDisposable
             }
 
             var shell = ShellInfo.DetectCurrent();
-            var tools = BuiltInTools.Create(root, shell, session.Attachments, _sandbox, _store.ShellDirectory(id), _time, ChatSearchFor(id, session, folderPath));
+            var tools = BuiltInTools.Create(root, _time, shell, session.Attachments, _sandbox, _store.ShellDirectory(id), ChatSearchFor(id, session, folderPath));
             session.Tools = tools;
             session.BasePrompt = SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root);
         }
@@ -748,7 +749,7 @@ public sealed partial class SessionService : IDisposable
 
     private ChatSession NewSession(string id)
     {
-        var session = new ChatSession(_clientFactory, _store.GetLog(id), _time, _loggers.CreateLogger<ChatSession>())
+        var session = new ChatSession(_clientFactory, _time, _store.GetLog(id), _loggers.CreateLogger<ChatSession>())
         {
             Attachments = new SessionAttachments(_store.AttachmentsDirectory(id)),
             CompactionModeSource = _compactionMode,

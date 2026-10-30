@@ -106,6 +106,8 @@ internal static class SessionReplay
                 dangling = true;
             }
 
+            // A reply's end event is saved as Done before its calls run, and a finished run always starts a new reply after them,
+            // so a last reply with calls means the app stopped before the model answered their results.
             if (entry.Status == EntryStatus.Done && (dangling || (i == entries.Count - 1 && entry.ToolCalls.Count > 0)))
             {
                 entry.Status = EntryStatus.Interrupted;

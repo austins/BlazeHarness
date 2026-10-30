@@ -16,8 +16,8 @@ public sealed class AttachmentEndpointsTests : IDisposable
 
     public AttachmentEndpointsTests()
     {
-        _store = new SessionStore(new AppPaths(_temp.Root, _temp.Root), NullLoggerFactory.Instance);
-        _service = new SessionService(_store, (_, _) => throw new NotSupportedException(), NullLoggerFactory.Instance);
+        _store = new SessionStore(new AppPaths(_temp.Root, _temp.Root), NullLoggerFactory.Instance, TimeProvider.System);
+        _service = new SessionService(_store, (_, _) => throw new NotSupportedException(), NullLoggerFactory.Instance, TimeProvider.System);
     }
 
     [Fact]

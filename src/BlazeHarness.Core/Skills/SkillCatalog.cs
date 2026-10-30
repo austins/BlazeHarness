@@ -36,13 +36,14 @@ public sealed partial class SkillCatalog : IDisposable
     /// <param name="paths">Where BlazeHarness keeps its files.</param>
     /// <param name="config">The app settings, which hold the list of turned-off skills.</param>
     /// <param name="logger">The logger.</param>
+    /// <param name="time">The clock, used to expire the scans of chat folders.</param>
     /// <param name="watch">Whether to watch the skill folders for edits.</param>
-    /// <param name="time">The clock, used to expire the scans of chat folders; defaults to the system clock.</param>
-    public SkillCatalog(AppPaths paths, JsonFileStore<AppConfig> config, ILogger<SkillCatalog> logger, bool watch = true, TimeProvider? time = null)
+    public SkillCatalog(AppPaths paths, JsonFileStore<AppConfig> config, ILogger<SkillCatalog> logger, TimeProvider time, bool watch = true)
     {
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(time);
         _globalFolders =
         [
             (paths.SkillsDirectory, SkillSource.App),
@@ -51,7 +52,7 @@ public sealed partial class SkillCatalog : IDisposable
         _config = config;
         _logger = logger;
         _watch = watch;
-        _time = time ?? TimeProvider.System;
+        _time = time;
         _debounce = _time.CreateTimer(_ => Refresh(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
         Refresh();
     }
