@@ -525,6 +525,25 @@ dialog.dialog.dialog-settings { width: min(68rem, calc(100vw - 2rem)); height: m
 }
 .details-body { padding-block-start: var(--space-2); }
 details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600; }
+.skill-list { display: flex; flex-direction: column; }
+.skill-item {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--space-3);
+    padding-block: var(--space-2); border-block-start: 1px solid var(--border);
+}
+.skill-item:first-child { border-block-start: 0; }
+.skill-item > .check { padding-block-start: var(--space-1); }
+.skill-item summary {
+    display: flex; align-items: flex-start; gap: var(--space-2); list-style: none;
+    padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: 400;
+}
+.skill-item summary::-webkit-details-marker { display: none; }
+.skill-item summary:hover { background: var(--bg-subtle); }
+.skill-item summary > .icon { flex: none; margin-block-start: 0.2rem; color: var(--fg-muted); transition: rotate 0.15s; }
+.skill-item details[open] > summary > .icon { rotate: 90deg; }
+.skill-title { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
+.skill-blurb { color: var(--fg-muted); font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+details[open] > summary .skill-blurb { display: none; }
+.skill-body { padding: var(--space-2) var(--space-2) var(--space-2) calc(var(--space-2) + 1rem + var(--space-2)); }
 .field-path { flex: 1 1 20rem; min-width: 18rem; }
 
 /* Chat */

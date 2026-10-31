@@ -13,25 +13,46 @@
         <span>A skill is text the model follows, and it may come with scripts. It never gives the model more permissions, and running anything still asks first. Only install skills you trust.</span>
     </Alert>
 
-    <section class="card stack divided" aria-labelledby="skills-heading">
-        <h2 id="skills-heading">Installed skills</h2>
+    <section class="card stack" aria-labelledby="skills-heading">
+        <div class="row row-spread">
+            <h2 id="skills-heading">Installed skills</h2>
+            @if (_resolution.Skills.Count > 0)
+            {
+                <span class="hint">@_resolution.Skills.Count installed · on by default for new chats</span>
+            }
+        </div>
         @if (_resolution.Skills.Count == 0)
         {
             <p class="muted">No skills yet. Put a folder with a <code class="mono">SKILL.md</code> in one of the places below.</p>
         }
-        @foreach (var skill in _resolution.Skills)
+        else
         {
-            <div class="stack" role="group" aria-label="@skill.Name">
-                <div class="row">
-                    <strong>@skill.Name</strong>
-                    <span class="badge">@SourceText(skill.Source)</span>
-                </div>
-                <p>@skill.Description</p>
-                <p class="hint mono">@skill.Directory</p>
-                <label class="check">
-                    <input type="checkbox" checked="@(!Catalog.IsDisabledGlobally(skill.Name))" @onchange="e => SetEnabledAsync(skill.Name, (bool)e.Value!)" />
-                    <span>On for new chats</span>
-                </label>
+            <div class="skill-list">
+                @foreach (var skill in _resolution.Skills)
+                {
+                    <div class="skill-item" role="group" aria-label="@skill.Name">
+                        <details>
+                            <summary>
+                                <Icon Name="chevron-right" />
+                                <span class="skill-title">
+                                    <span class="row">
+                                        <strong>@skill.Name</strong>
+                                        <span class="badge">@SourceText(skill.Source)</span>
+                                    </span>
+                                    <span class="skill-blurb">@skill.Description</span>
+                                </span>
+                            </summary>
+                            <div class="skill-body stack">
+                                <p>@skill.Description</p>
+                                <p class="hint mono">@skill.Directory</p>
+                            </div>
+                        </details>
+                        <label class="check" title="On for new chats">
+                            <input type="checkbox" aria-label="On for new chats" checked="@(!Catalog.IsDisabledGlobally(skill.Name))" @onchange="e => SetEnabledAsync(skill.Name, (bool)e.Value!)" />
+                            <span>On</span>
+                        </label>
+                    </div>
+                }
             </div>
         }
     </section>
