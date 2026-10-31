@@ -181,4 +181,29 @@ public sealed class McpConfigEditorTests
         // Assert
         text.Should().BeNull();
     }
+
+    [Fact]
+    public void Format_ValidJson_IndentsItAndKeepsTheContent()
+    {
+        // Act
+        var text = McpConfigEditor.Format("""{"mcpServers":{"a":{"command":"x","args":["1"]}}}""");
+
+        // Assert
+        text.Should().Contain("\n").And.Contain("  \"mcpServers\"");
+        JsonNode.DeepEquals(JsonNode.Parse(text), JsonNode.Parse("""{"mcpServers":{"a":{"command":"x","args":["1"]}}}""")).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("{")]
+    [InlineData("""{"a": 1,}""")]
+    public void Format_BlankOrInvalid_ReturnsNull(string json)
+    {
+        // Act
+        var text = McpConfigEditor.Format(json);
+
+        // Assert
+        text.Should().BeNull();
+    }
 }

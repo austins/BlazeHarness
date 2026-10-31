@@ -33,7 +33,9 @@ internal static partial class McpConfigParser
         }
         catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
-            return Failed(ex is JsonException { LineNumber: { } line } ? $"The file is not valid JSON (line {line + 1})." : "The file is not valid JSON.");
+            return Failed(ex is JsonException { LineNumber: { } line, BytePositionInLine: { } column }
+                ? $"The file is not valid JSON (line {line + 1}, column {column + 1})."
+                : "The file is not valid JSON.");
         }
 
         if (root is not JsonObject top)
@@ -63,6 +65,14 @@ internal static partial class McpConfigParser
             else
             {
                 errors.Add($"Server \"{name}\": {error}");
+            }
+        }
+
+        foreach (var (name, node) in top)
+        {
+            if (name is not ("mcpServers" or "servers") && node is JsonObject { } stray && (stray["command"] is JsonValue || stray["url"] is JsonValue))
+            {
+                errors.Add($"\"{name}\" looks like a server but is outside \"mcpServers\", so it is ignored. Move it inside.");
             }
         }
 

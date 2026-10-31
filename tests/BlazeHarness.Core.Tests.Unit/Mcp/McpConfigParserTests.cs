@@ -78,6 +78,27 @@ public sealed class McpConfigParserTests
         result.Errors.Should().BeEmpty();
     }
 
+    [Fact]
+    public void Parse_ServerPlacedBesideMcpServers_ReportsItAsOutside()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"a": {"command": "x"}}, "b": {"command": "y"}, "note": {"text": "z"}}""");
+
+        // Assert
+        result.Servers.Should().ContainSingle().Which.Name.Should().Be("a");
+        result.Errors.Should().ContainSingle().Which.Should().Contain("\"b\"").And.Contain("outside");
+    }
+
+    [Fact]
+    public void Parse_InvalidJson_NamesTheLineAndColumn()
+    {
+        // Act
+        var result = McpConfigParser.Parse("{\n  \"mcpServers\": {,}\n}");
+
+        // Assert
+        result.Errors.Should().ContainSingle().Which.Should().Contain("line 2, column");
+    }
+
     [Theory]
     [InlineData("{", "not valid JSON")]
     [InlineData("[]", "must be a JSON object")]

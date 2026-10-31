@@ -133,6 +133,30 @@ public static class McpConfigEditor
         return top.ToJsonString(Indented);
     }
 
+    /// <summary>
+    /// Lay the text of the file out with one indent level per nesting, as the editor writes it.
+    /// </summary>
+    /// <param name="json">The file's text.</param>
+    /// <returns>The formatted text, or null when the text is blank or not valid JSON.</returns>
+    public static string? Format(string json)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonNode.Parse(json)?.ToJsonString(Indented);
+        }
+        catch (Exception ex) when (ex is JsonException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
     private static void SetText(JsonObject entry, string key, string? value)
     {
         if (string.IsNullOrEmpty(value))

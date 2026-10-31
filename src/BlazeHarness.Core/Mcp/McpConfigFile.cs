@@ -84,6 +84,13 @@ public sealed partial class McpConfigFile : IDisposable
     public IReadOnlyList<McpServerConfig> Servers => Volatile.Read(ref _current).Servers;
 
     /// <summary>
+    /// Check text as <see cref="SaveAsync"/> would, without saving it.
+    /// </summary>
+    /// <param name="text">The text to check.</param>
+    /// <returns>The result of parsing the text.</returns>
+    public static McpParseResult Check(string text) => McpConfigParser.Parse(text);
+
+    /// <summary>
     /// Save new text, unless it has errors.
     /// </summary>
     /// <param name="text">The new text of the file.</param>
