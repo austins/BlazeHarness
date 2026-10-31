@@ -38,6 +38,11 @@ public sealed class McpServerDraft
     public string Cwd { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets a value indicating whether every tool of the server is offered to the model in each request, instead of being found with a search.
+    /// </summary>
+    public bool AlwaysLoadAll { get; set; }
+
+    /// <summary>
     /// Gets or sets the address of a remote server.
     /// </summary>
 #pragma warning disable CA1056 // Holds text the user is still typing, which may not be an address yet.

@@ -41,7 +41,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 * Persistent history in plain, human-readable files, with context compaction for long conversations. By default the model writes the summary; Settings > Context can switch to deterministic extraction (no model request), which lists the requests, changed and read files, and commands, and relies on `search_chat` for detail.
 * Diffs, syntax highlighting, and find in the chat, with smooth scrolling in very long chats.
 * Export and import of sessions.
-* MCP servers, added and edited in a form (secrets go in the OS keychain) or in a standard `mcp.json`, and enabled globally or per session.
+* MCP servers, added and edited in a form (secrets go in the OS keychain) or in a standard `mcp.json`, and enabled globally or per session. A server's tools are found by search when needed (`find_tools`, then `use_tool`) so a pile of servers doesn't fill the context window. Tick "Always load all of its tools" for a small server, or set `"alwaysLoad"` in `mcp.json` to `true` or a list of tool name patterns. List tool name patterns in `"excludeTools"` to keep a server's tools from the model entirely. The tool lists are remembered in `cache/mcp-tools.json`, which is safe to delete.
 * Skills, loaded on demand from `SKILL.md` folders in `~/.blazeharness/skills`, `~/.agents/skills`, and a folder's own `.agents/skills`.
 * Web search and web fetch tools (Settings > Web). Search uses public providers that need no API key (DuckDuckGo, Exa, Parallel, Keenable), either in parallel or one at a time, with retries and a pause after repeated failures. Fetch reads HTML, PDF and text from the public internet only and caches pages in memory per session. Each use asks first, unless the chat is Unrestricted or set to never ask, and rules can match a host. JavaScript is not run, and system proxy settings are not used.
 
@@ -57,7 +57,7 @@ Not built yet, and not promised:
 * Subagents that work in their own context and return a summary.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
-* Smaller additions: a command palette, per-tool MCP toggles, dynamic MCP tool loading, a sandbox network allow-list, message search across all folders, a duplicate-provider action, and a per-folder `.mcp.json`.
+* Smaller additions: a command palette, per-tool MCP toggles, a sandbox network allow-list, message search across all folders, a duplicate-provider action, and a per-folder `.mcp.json`.
 
 ## Not goals
 

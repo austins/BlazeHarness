@@ -161,4 +161,54 @@ public sealed class McpConfigParserTests
         result.Errors.Should().BeEmpty();
         result.Servers.Single().Url.Should().Be("${BASE:-https://x.test}/mcp");
     }
+
+    [Theory]
+    [InlineData("""{"mcpServers": {"s": {"command": "x"}}}""", new string[0])]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "alwaysLoad": false}}}""", new string[0])]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "alwaysLoad": true}}}""", new[] { "*" })]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "alwaysLoad": ["get_*", "ping"]}}}""", new[] { "get_*", "ping" })]
+    public void Parse_AlwaysLoad_IsOffUnlessAskedFor(string json, string[] expected)
+    {
+        // Act
+        var result = McpConfigParser.Parse(json);
+
+        // Assert
+        result.Errors.Should().BeEmpty();
+        result.Servers.Single().AlwaysLoad.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void Parse_AlwaysLoadOfTheWrongType_IsReported()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"s": {"command": "x", "alwaysLoad": "yes"}}}""");
+
+        // Assert
+        result.Servers.Should().BeEmpty();
+        result.Errors.Should().ContainSingle().Which.Should().Contain("alwaysLoad");
+    }
+
+    [Fact]
+    public void Parse_ExcludeTools_AreMatchedByPattern()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"s": {"command": "x", "excludeTools": ["get_thread", "old_*"]}}}""");
+
+        // Assert
+        result.Errors.Should().BeEmpty();
+        var server = result.Servers.Single();
+        server.IsExcluded("get_thread").Should().BeTrue();
+        server.IsExcluded("old_name").Should().BeTrue();
+        server.IsExcluded("search").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Parse_ExcludeToolsThatIsNotAList_IsReported()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"s": {"command": "x", "excludeTools": "get_thread"}}}""");
+
+        // Assert
+        result.Errors.Should().ContainSingle().Which.Should().Contain("excludeTools");
+    }
 }

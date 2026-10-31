@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Compaction;
+using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
@@ -287,15 +288,28 @@ internal static class ChatRunner
         RoundOutcome outcome,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var planned = calls.ConvertAll(c => new PlannedCall(c, tools?.Find(c.Name), ArgumentsJson(c)));
-        var results = new ToolResult?[planned.Count];
-        var statuses = new ToolCallStatus[planned.Count];
+        List<PlannedCall> planned = [];
+        var results = new ToolResult?[calls.Count];
+        var statuses = new ToolCallStatus[calls.Count];
 
         try
         {
+            foreach (var call in calls)
+            {
+                try
+                {
+                    planned.Add(await PlanAsync(call, tools, cancellationToken));
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    outcome.Cancelled = true;
+                    yield break;
+                }
+            }
+
             foreach (var p in planned)
             {
-                yield return new ToolCallRequested(p.Call.CallId, p.Call.Name, p.Json, p.Tool is null ? string.Empty : ToolSet.Summarize(p.Tool, p.Json));
+                yield return new ToolCallRequested(p.Call.CallId, p.Call.Name, p.RawJson, p.Summary());
             }
 
             var index = 0;
@@ -359,7 +373,7 @@ internal static class ChatRunner
                 var allowed = decision.Verdict == PermissionVerdict.Allow;
                 if (!allowed && approver is not null)
                 {
-                    var request = new ApprovalRequest(p.Call.CallId, p.Call.Name, p.Json, decision.Reason, decision.GrantKey is not null);
+                    var request = new ApprovalRequest(p.Call.CallId, p.Name, p.Json, decision.Reason, decision.GrantKey is not null);
                     var answer = approver.RequestAsync(request, cancellationToken);
                     yield return new ToolAwaitingApproval(p.Call.CallId, decision.Reason, request.CanRemember);
                     try
@@ -418,15 +432,36 @@ internal static class ChatRunner
         finally
         {
             List<AIContent> answers = [];
-            for (var i = 0; i < planned.Count; i++)
+            for (var i = 0; i < calls.Count; i++)
             {
                 var text = results[i] is { } result
                     ? ToolCallEntry.ForModel(statuses[i], result.Output)
                     : ToolCallEntry.Unfinished(ToolCallStatus.Cancelled);
-                answers.Add(new FunctionResultContent(planned[i].Call.CallId, text));
+                answers.Add(new FunctionResultContent(calls[i].CallId, text));
             }
 
             history.Add(new ChatMessage(ChatRole.Tool, answers));
+        }
+    }
+
+    // A call to a forwarding tool is planned as the tool it names, so permissions and approvals judge the tool that really runs.
+    private static async Task<PlannedCall> PlanAsync(FunctionCallContent call, ToolSet? tools, CancellationToken cancellationToken)
+    {
+        var raw = ArgumentsJson(call);
+        var tool = tools?.Find(call.Name);
+        if (tool is not IForwardingTool forwarding || call.Exception is not null)
+        {
+            return new PlannedCall(call, tool, raw, raw, call.Name, null);
+        }
+
+        try
+        {
+            var forwarded = await forwarding.ResolveAsync(ToolArguments.Parse(raw), cancellationToken);
+            return new PlannedCall(call, forwarded.Tool, forwarded.ArgumentsJson, raw, forwarded.Name, forwarded.Problem);
+        }
+        catch (ToolArgumentException ex)
+        {
+            return new PlannedCall(call, null, raw, raw, call.Name, ex.Message);
         }
     }
 
@@ -480,16 +515,36 @@ internal static class ChatRunner
         public bool Cancelled { get; set; }
     }
 
-    private sealed record PlannedCall(FunctionCallContent Call, ITool? Tool, string Json)
+    // Json holds the arguments of the tool that runs, which for a forwarded call are not the ones the model sent (RawJson).
+    private sealed record PlannedCall(FunctionCallContent Call, ITool? Tool, string Json, string RawJson, string Name, string? Error)
     {
         public bool CanRun => Tool is not null && Call.Exception is null;
 
-        public string Problem(ToolSet? tools)
+        public string Summary()
         {
             if (Tool is null)
             {
+                return string.Empty;
+            }
+
+            var summary = ToolSet.Summarize(Tool, Json);
+            return Name == Call.Name ? summary : $"{Name} {summary}".TrimEnd();
+        }
+
+        public string Problem(ToolSet? tools)
+        {
+            if (Error is not null)
+            {
+                return Error;
+            }
+
+            if (Tool is null)
+            {
                 var names = tools is null ? "none" : string.Join(", ", tools.Tools.Select(t => t.Name));
-                return $"There is no tool named '{Call.Name}'. The available tools are: {names}.";
+                var hint = tools?.Find(UseToolTool.ToolName) is null || !Call.Name.Contains(McpToolNames.Separator, StringComparison.Ordinal)
+                    ? string.Empty
+                    : $" If '{Call.Name}' is a tool of an MCP server, call it through {UseToolTool.ToolName}.";
+                return $"There is no tool named '{Call.Name}'. The available tools are: {names}.{hint}";
             }
 
             return "The arguments are not valid JSON. Send a JSON object.";

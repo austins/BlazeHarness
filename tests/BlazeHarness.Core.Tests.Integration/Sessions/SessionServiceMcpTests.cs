@@ -32,7 +32,7 @@ public sealed class SessionServiceMcpTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        await _file.SaveAsync("""{"mcpServers": {"files": {"command": "f"}, "off": {"command": "o", "disabled": true}}}""", TestContext.Current.CancellationToken);
+        await _file.SaveAsync("""{"mcpServers": {"files": {"command": "f", "alwaysLoad": true}, "off": {"command": "o", "disabled": true, "alwaysLoad": true}, "lazy": {"command": "l"}}}""", TestContext.Current.CancellationToken);
         var connection = Substitute.For<IMcpConnection>();
         connection.Closed.Returns(new TaskCompletionSource().Task);
         connection.ListToolsAsync(Arg.Any<CancellationToken>()).Returns([new McpToolInfo("read", "Reads.", """{"type":"object","properties":{}}""")]);
@@ -59,6 +59,22 @@ public sealed class SessionServiceMcpTests : IAsyncLifetime
         // Assert
         _rig.Client.Options[0]!.Tools!.Select(t => t.Name).Should().Contain("files__read").And.NotContain(name => name.StartsWith("off__", StringComparison.Ordinal));
         await _connector.Received(1).ConnectAsync(Arg.Any<McpServerConfig>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SendAsync_ServerWithoutAlwaysLoad_OffersTheSearchToolsAndDoesNotStartIt()
+    {
+        // Arrange
+        var info = await Sut.CreateAsync(_rig.Work, TestContext.Current.CancellationToken);
+
+        // Act
+        await Sut.SendAsync(info.Id, "hi", TestTargets.Create("p", "m"), cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var names = _rig.Client.Options[0]!.Tools!.Select(t => t.Name).ToList();
+        names.Should().Contain(["find_tools", "use_tool"]).And.NotContain("lazy__read");
+        names[^1].Should().Be("use_tool");
+        await _connector.Received(1).ConnectAsync(Arg.Is<McpServerConfig>(c => c.Name == "files"), Arg.Any<CancellationToken>());
     }
 
     [Fact]

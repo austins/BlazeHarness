@@ -78,21 +78,27 @@
                     <button type="button" class="btn btn-sm" disabled="@(_draft is not null)" @onclick="() => EditAsync(server)">Edit</button>
                     <button type="button" class="btn btn-sm btn-ghost btn-danger" aria-label="Remove @server.Name" @onclick="() => _removing = server.Name">Remove</button>
                 </div>
-                @if (status.State is McpServerState.Connected)
+                @if (status.Tools.Count > 0)
                 {
+                    var visible = status.Tools.Where(t => !server.IsExcluded(t.Name)).ToList();
+                    var loaded = visible.Count(t => server.LoadsAlways(t.Name));
                     <p class="hint">
-                        @(status.Tools.Count == 1 ? "1 tool" : $"{status.Tools.Count} tools"),
-                        about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens of the prompt when it is on.
+                        @(visible.Count == 1 ? "1 tool" : $"{visible.Count} tools"):
+                        @if (loaded == visible.Count)
+                        {
+                            <text>always loaded, about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens of the prompt when it is on.</text>
+                        }
+                        else
+                        {
+                            <text>found by search when needed, or about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens of the prompt if always loaded.</text>
+                        }
                     </p>
-                    @if (status.Tools.Count > 0)
-                    {
-                        <ul class="stack">
-                            @foreach (var tool in status.Tools)
-                            {
-                                <li><code class="mono">@tool.Name</code> <span class="muted">@FirstLine(tool.Description)</span></li>
-                            }
-                        </ul>
-                    }
+                    <ul class="stack">
+                        @foreach (var tool in visible)
+                        {
+                            <li><code class="mono">@tool.Name</code> <span class="muted">@FirstLine(tool.Description)</span></li>
+                        }
+                    </ul>
                 }
             </div>
             @if (!ReferenceEquals(status, _statuses[^1]))

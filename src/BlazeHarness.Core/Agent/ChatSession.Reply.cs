@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sessions;
 using BlazeHarness.Core.Skills;
@@ -51,6 +52,7 @@ public sealed partial class ChatSession
             var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level);
             var context = CreateContext(client, target, prompt.Length > 0 ? 1 : 0);
             var tools = await TurnToolsAsync(cancellation);
+            EnsureToolsFit(target, prompt, tools);
             await foreach (var e in ChatRunner.RunAsync(client, working, options, _time, tools, this, Permissions, context: context, cancellationToken: cancellation))
             {
                 await ApplyAsync(reply, e);
@@ -70,6 +72,23 @@ public sealed partial class ChatSession
         finally
         {
             await CloseAsync(reply);
+        }
+    }
+
+    private static void EnsureToolsFit(ChatTarget target, string prompt, ToolSet? tools)
+    {
+        var limit = ContextBudget.Limit(target.Model);
+        if (tools is null || limit <= 0)
+        {
+            return;
+        }
+
+        var fixedTokens = TokenEstimate.Of(prompt) + TokenEstimate.OfCharacters(tools.Tools.Sum(t => t.Name.Length + t.Description.Length + t.InputSchema.Length));
+        if (fixedTokens > limit)
+        {
+            throw new InvalidOperationException(
+                $"The instructions and tool definitions alone take about {fixedTokens:N0} tokens, more than the {limit:N0} this model can use before compacting. " +
+                "Turn off some MCP servers for this chat, or untick \"Always load all of its tools\" in the MCP settings so the model finds tools by search instead.");
         }
     }
 

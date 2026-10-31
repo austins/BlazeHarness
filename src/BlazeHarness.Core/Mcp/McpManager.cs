@@ -25,6 +25,7 @@ public sealed partial class McpManager : IAsyncDisposable
     private readonly TimeSpan _connectTimeout;
     private readonly PermissionDefaults? _permissions;
     private readonly ISecretStore? _secrets;
+    private readonly McpToolCache? _toolCache;
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _reconcile = new(1, 1);
@@ -42,6 +43,7 @@ public sealed partial class McpManager : IAsyncDisposable
     /// <param name="connectTimeout">How long a server may take to start; defaults to one minute, which leaves room for a first download.</param>
     /// <param name="permissions">Where trust in a server is kept, so it can be withdrawn when the server's settings change; when null, trust is left alone.</param>
     /// <param name="secrets">Where the secrets of a server's environment and headers are kept; when null, only environment variables fill in a reference.</param>
+    /// <param name="toolCache">Where the tools of each server are remembered between runs; when null, a server's tools are known only while it is connected.</param>
     public McpManager(
         McpConfigFile config,
         IMcpConnector connector,
@@ -50,7 +52,8 @@ public sealed partial class McpManager : IAsyncDisposable
         Func<string, string?>? environment = null,
         TimeSpan? connectTimeout = null,
         PermissionDefaults? permissions = null,
-        ISecretStore? secrets = null)
+        ISecretStore? secrets = null,
+        McpToolCache? toolCache = null)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(connector);
@@ -64,6 +67,7 @@ public sealed partial class McpManager : IAsyncDisposable
         _connectTimeout = connectTimeout ?? TimeSpan.FromMinutes(1);
         _permissions = permissions;
         _secrets = secrets;
+        _toolCache = toolCache;
         _known = _config.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
         _config.Changed += OnConfigChanged;
     }
@@ -169,10 +173,11 @@ public sealed partial class McpManager : IAsyncDisposable
         var configs = _config.Servers.Where(s => wanted.Contains(s.Name)).OrderBy(s => s.Name, StringComparer.Ordinal).ToList();
         await Task.WhenAll(configs.Select(c => EnsureConnectedAsync(c, cancellationToken)));
 
-        var taken = new HashSet<string>(StringComparer.Ordinal);
         List<ITool> tools = [];
-        foreach (var serverName in configs.Select(c => c.Name))
+        foreach (var config in configs)
         {
+            var serverName = config.Name;
+            var taken = new HashSet<string>(StringComparer.Ordinal);
             Entry? entry;
             lock (_gate)
             {
@@ -186,7 +191,13 @@ public sealed partial class McpManager : IAsyncDisposable
 
             foreach (var info in entry.Tools.OrderBy(t => t.Name, StringComparer.Ordinal))
             {
-                tools.Add(new McpTool(McpToolNames.Build(serverName, info.Name, taken), serverName, info, connection));
+                var name = McpToolNames.Build(serverName, info.Name, taken);
+                if (config.IsExcluded(info.Name))
+                {
+                    continue;
+                }
+
+                tools.Add(new McpTool(name, serverName, info, connection));
             }
         }
 
@@ -277,11 +288,12 @@ public sealed partial class McpManager : IAsyncDisposable
         RaiseChanged();
     }
 
-    private static McpServerStatus Describe(McpServerConfig config, Entry? entry)
+    private McpServerStatus Describe(McpServerConfig config, Entry? entry)
     {
+        var remembered = _toolCache?.Get(config) ?? [];
         return entry is null || !config.SameAs(entry.Config)
-            ? new McpServerStatus(config, McpServerState.Stopped, null, [])
-            : new McpServerStatus(config, entry.State, entry.Error, entry.Tools);
+            ? new McpServerStatus(config, McpServerState.Stopped, null, remembered)
+            : new McpServerStatus(config, entry.State, entry.Error, entry.State == McpServerState.Connected ? entry.Tools : remembered);
     }
 
     private McpServerStatus StatusOf(McpServerConfig config)
@@ -410,6 +422,7 @@ public sealed partial class McpManager : IAsyncDisposable
 
             _ = WatchAsync(entry, connection);
             RaiseChanged();
+            await RememberToolsAsync(config, tools);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -429,6 +442,23 @@ public sealed partial class McpManager : IAsyncDisposable
             Fail(entry, ex is OperationCanceledException
                 ? string.Create(CultureInfo.InvariantCulture, $"The server did not answer within {_connectTimeout.TotalSeconds:0} seconds.")
                 : ex.Message);
+        }
+    }
+
+    private async Task RememberToolsAsync(McpServerConfig config, IReadOnlyList<McpToolInfo> tools)
+    {
+        if (_toolCache is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _toolCache.SetAsync(config, tools, _config.Servers.Select(s => s.Name).ToHashSet(StringComparer.Ordinal));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogToolsNotSaved(ex, config.Name);
         }
     }
 
@@ -559,6 +589,9 @@ public sealed partial class McpManager : IAsyncDisposable
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not connect to the MCP server {Server}.")]
     private partial void LogConnectFailed(Exception ex, string server);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not save the tool list of the MCP server {Server}.")]
+    private partial void LogToolsNotSaved(Exception ex, string server);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not read the secrets of the MCP server {Server}: {ExceptionType}.")]
     private partial void LogSecretsFailed(string exceptionType, string server);

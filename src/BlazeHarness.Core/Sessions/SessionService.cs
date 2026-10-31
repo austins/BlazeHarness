@@ -774,7 +774,7 @@ public sealed partial class SessionService : IDisposable
                 {
                     var overrides = _store.Find(id)?.McpServers;
                     var wanted = mcp.Statuses().Where(status => McpManager.IsEnabled(status.Config, overrides)).Select(status => status.Config.Name);
-                    tools.AddRange(await mcp.ToolsAsync(wanted, cancellation));
+                    tools.AddRange(await mcp.OfferAsync(wanted, cancellation));
                 }
 
                 return tools;

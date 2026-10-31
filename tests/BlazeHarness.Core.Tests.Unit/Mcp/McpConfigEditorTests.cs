@@ -206,4 +206,36 @@ public sealed class McpConfigEditorTests
         // Assert
         text.Should().BeNull();
     }
+
+    [Theory]
+    [InlineData(new string[0], false)]
+    [InlineData(new[] { "*" }, true)]
+    [InlineData(new[] { "get_*", "ping" }, true)]
+    public void Upsert_AlwaysLoad_IsWrittenAndReadBack(string[] patterns, bool written)
+    {
+        // Arrange
+        var server = new McpServerConfig("c", McpTransport.Stdio, "npx", [], new Dictionary<string, string>(), null, null, new Dictionary<string, string>(), false) { AlwaysLoad = patterns };
+
+        // Act
+        var result = McpConfigEditor.Upsert(Original, server);
+
+        // Assert
+        var entry = JsonNode.Parse(result.Text!)!["mcpServers"]!["c"]!.AsObject();
+        entry.ContainsKey("alwaysLoad").Should().Be(written);
+        McpConfigParser.Parse(result.Text!).Servers.Single(s => s.Name == "c").AlwaysLoad.Should().Equal(patterns);
+    }
+
+    [Fact]
+    public void Upsert_NoPatterns_RemovesAnEarlierAlwaysLoad()
+    {
+        // Arrange
+        const string before = """{"mcpServers": {"a": {"command": "x", "alwaysLoad": true}}}""";
+        var server = new McpServerConfig("a", McpTransport.Stdio, "x", [], new Dictionary<string, string>(), null, null, new Dictionary<string, string>(), false);
+
+        // Act
+        var result = McpConfigEditor.Upsert(before, server);
+
+        // Assert
+        result.Text.Should().NotContain("alwaysLoad");
+    }
 }

@@ -99,6 +99,8 @@ internal static partial class McpConfigParser
         Dictionary<string, string> env = new(StringComparer.Ordinal);
         Dictionary<string, string> headers = new(StringComparer.OrdinalIgnoreCase);
         var disabled = false;
+        List<string> alwaysLoad = [];
+        List<string> exclude = [];
 
         var error = ReadString(fields, "command", ref command)
             ?? ReadString(fields, "cwd", ref cwd)
@@ -107,7 +109,9 @@ internal static partial class McpConfigParser
             ?? ReadStrings(fields, "args", args)
             ?? ReadMap(fields, "env", env)
             ?? ReadMap(fields, "headers", headers)
-            ?? ReadBool(fields, "disabled", ref disabled);
+            ?? ReadBool(fields, "disabled", ref disabled)
+            ?? ReadAlwaysLoad(fields, alwaysLoad)
+            ?? ReadStrings(fields, "excludeTools", exclude);
         if (error is not null)
         {
             return error;
@@ -134,7 +138,11 @@ internal static partial class McpConfigParser
             return "the \"url\" must be an http or https address.";
         }
 
-        server = new McpServerConfig(name, transport, command, args, env, cwd, url, headers, disabled);
+        server = new McpServerConfig(name, transport, command, args, env, cwd, url, headers, disabled)
+        {
+            AlwaysLoad = alwaysLoad,
+            ExcludeTools = exclude,
+        };
         return null;
     }
 
@@ -194,6 +202,27 @@ internal static partial class McpConfigParser
         }
 
         return $"\"{key}\" must be true or false.";
+    }
+
+    // "alwaysLoad" is true for every tool, or a list of name patterns.
+    private static string? ReadAlwaysLoad(JsonObject fields, List<string> into)
+    {
+        if (fields["alwaysLoad"] is not { } node)
+        {
+            return null;
+        }
+
+        if (node is JsonValue v && v.TryGetValue<bool>(out var all))
+        {
+            if (all)
+            {
+                into.Add("*");
+            }
+
+            return null;
+        }
+
+        return node is JsonArray ? ReadStrings(fields, "alwaysLoad", into) : "\"alwaysLoad\" must be true, false or a list of tool name patterns.";
     }
 
     private static string? ReadStrings(JsonObject fields, string key, List<string> into)

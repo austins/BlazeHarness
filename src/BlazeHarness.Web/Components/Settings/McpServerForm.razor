@@ -48,6 +48,15 @@
         @Entries(Draft.Headers, "Headers", "Add header", "Header name")
     }
 
+    <label class="check">
+        <input type="checkbox" @bind="Draft.AlwaysLoadAll" />
+        <span>Always load all of its tools</span>
+    </label>
+    <p class="hint">
+        Off by default: the model finds this server's tools with a search when it needs them, which keeps the prompt small.
+        Turn it on for a small server whose tools you use in most chats.
+    </p>
+
     <p class="hint">
         Mark a value as secret to keep it in @Editor.SecretStoreName@(Editor.SecretStoreIsSecure ? "" : ", which is not encrypted,") instead of in the file.
         The file then holds a <code class="mono">${MCP_…}</code> reference. A variable of that name set in the environment takes its place.

@@ -110,6 +110,19 @@ public static class McpConfigEditor
             SetMap(entry, "headers", server.Headers);
         }
 
+        if (server.AlwaysLoad.Count == 0)
+        {
+            entry.Remove("alwaysLoad");
+        }
+        else if (server.AlwaysLoad is ["*"])
+        {
+            entry["alwaysLoad"] = true;
+        }
+        else
+        {
+            SetList(entry, "alwaysLoad", server.AlwaysLoad);
+        }
+
         target[server.Name] = entry;
         return new McpMergeResult(top.ToJsonString(Indented), found ? [] : [server.Name], found ? [server.Name] : [], null);
     }

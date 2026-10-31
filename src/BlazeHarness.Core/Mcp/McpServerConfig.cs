@@ -12,6 +12,9 @@ namespace BlazeHarness.Core.Mcp;
 /// <param name="Url">The address of a <see cref="McpTransport.Http"/> or <see cref="McpTransport.Sse"/> server.</param>
 /// <param name="Headers">The HTTP headers to send to a remote server.</param>
 /// <param name="Disabled">Whether the user turned the server off for every chat.</param>
+/// <remarks>
+/// Changing <see cref="AlwaysLoad"/> or <see cref="ExcludeTools"/> does not restart the server, so <see cref="SameAs"/> ignores them.
+/// </remarks>
 public sealed record McpServerConfig(
     string Name,
     McpTransport Transport,
@@ -25,6 +28,30 @@ public sealed record McpServerConfig(
     IReadOnlyDictionary<string, string> Headers,
     bool Disabled)
 {
+    /// <summary>
+    /// Gets the name patterns of the tools to offer the model in every request, where <c>*</c> matches any run of characters; the other tools of the server are found with <c>find_tools</c>.
+    /// </summary>
+    public IReadOnlyList<string> AlwaysLoad { get; init; } = [];
+
+    /// <summary>
+    /// Gets the name patterns of the tools that are never offered to the model.
+    /// </summary>
+    public IReadOnlyList<string> ExcludeTools { get; init; } = [];
+
+    /// <summary>
+    /// Check whether a tool is one the model sees in every request, rather than finding it with a search.
+    /// </summary>
+    /// <param name="tool">The name of the tool as the server calls it.</param>
+    /// <returns>True when the tool matches <see cref="AlwaysLoad"/>.</returns>
+    public bool LoadsAlways(string tool) => McpToolPatterns.Matches(AlwaysLoad, tool);
+
+    /// <summary>
+    /// Check whether a tool is kept from the model.
+    /// </summary>
+    /// <param name="tool">The name of the tool as the server calls it.</param>
+    /// <returns>True when the tool matches <see cref="ExcludeTools"/>.</returns>
+    public bool IsExcluded(string tool) => McpToolPatterns.Matches(ExcludeTools, tool);
+
     /// <summary>
     /// Check whether another configuration starts the same server, comparing lists and maps by content.
     /// </summary>

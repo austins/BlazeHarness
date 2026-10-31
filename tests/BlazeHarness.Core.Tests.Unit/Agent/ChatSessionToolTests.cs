@@ -244,6 +244,23 @@ public sealed class ChatSessionToolTests
     }
 
     [Fact]
+    public async Task SendAsync_ToolDefinitionsAloneExceedTheContext_FailsWithAHintInsteadOfSending()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("never")]);
+        using var sut = Create(client, new FakeTool("read", isReadOnly: true));
+        sut.ExtraTools = _ => Task.FromResult<IReadOnlyList<ITool>>([.. Enumerable.Range(0, 100).Select(i => new FakeTool($"server__tool_{i}", isReadOnly: true))]);
+
+        // Act
+        await sut.SendAsync("go", TestTargets.Create(contextWindow: 1000));
+
+        // Assert
+        client.Requests.Should().BeEmpty();
+        sut.Entries[^1].Status.Should().Be(EntryStatus.Failed);
+        sut.Entries[^1].Error.Should().Contain("tool definitions").And.Contain("Always load");
+    }
+
+    [Fact]
     public async Task SendAsync_ExtraToolsAreAskedOncePerReply_NotOncePerRound()
     {
         // Arrange

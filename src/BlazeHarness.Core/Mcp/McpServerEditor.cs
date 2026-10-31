@@ -66,6 +66,7 @@ public sealed class McpServerEditor
             ArgsText = string.Join('\n', server.Args),
             Cwd = server.Cwd ?? string.Empty,
             Url = server.Url ?? string.Empty,
+            AlwaysLoadAll = server.AlwaysLoad.Contains("*"),
         };
         foreach (var (key, value) in server.Env)
         {
@@ -123,7 +124,11 @@ public sealed class McpServerEditor
             isLocal ? NullIfBlank(draft.Cwd) : null,
             isLocal ? null : draft.Url.Trim(),
             headers,
-            existing?.Disabled ?? false);
+            existing?.Disabled ?? false)
+        {
+            // Patterns written by hand in mcp.json stay unless the whole server is switched to always loaded.
+            AlwaysLoad = draft.AlwaysLoadAll ? ["*"] : [.. existing?.AlwaysLoad.Where(p => p != "*") ?? []],
+        };
 
         var merged = McpConfigEditor.Upsert(_file.Text, config);
         if (merged.Text is null)

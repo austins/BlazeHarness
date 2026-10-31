@@ -49,6 +49,16 @@ public sealed class AppPaths
     public string McpFile => Path.Combine(Home, "mcp.json");
 
     /// <summary>
+    /// Gets the folder of files the app rebuilds when they are missing, so they are safe to delete and not meant to be edited.
+    /// </summary>
+    public string CacheDirectory => Path.Combine(Home, "cache");
+
+    /// <summary>
+    /// Gets the path of <c>cache/mcp-tools.json</c> (the tools each MCP server offered when it last connected).
+    /// </summary>
+    public string McpToolsFile => Path.Combine(CacheDirectory, "mcp-tools.json");
+
+    /// <summary>
     /// Gets the path of <c>folders.json</c> (the registered working folders).
     /// </summary>
     public string FoldersFile => Path.Combine(Home, "folders.json");

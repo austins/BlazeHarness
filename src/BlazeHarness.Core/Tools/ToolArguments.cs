@@ -103,6 +103,13 @@ public sealed class ToolArguments
     }
 
     /// <summary>
+    /// Gets an argument as it was sent, whatever its type.
+    /// </summary>
+    /// <param name="name">The argument name.</param>
+    /// <returns>The value, or null when the argument is absent or null.</returns>
+    public JsonElement? OptionalElement(string name) => TryGet(name, out var value) ? value : null;
+
+    /// <summary>
     /// Gets an optional true or false argument.
     /// </summary>
     /// <param name="name">The argument name.</param>
