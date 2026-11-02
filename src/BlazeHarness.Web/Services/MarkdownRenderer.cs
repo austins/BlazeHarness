@@ -38,9 +38,9 @@ public sealed partial class MarkdownRenderer
     /// Convert markdown to HTML.
     /// </summary>
     /// <param name="markdown">The markdown text.</param>
-    /// <param name="sessionId">The chat the text belongs to. An image that points to a path inside its folder is shown through the chat's file endpoint. Without it, no image is shown.</param>
+    /// <param name="chatId">The chat the text belongs to. An image that points to a path inside its folder is shown through the chat's file endpoint. Without it, no image is shown.</param>
     /// <returns>Safe HTML.</returns>
-    public string ToHtml(string markdown, string? sessionId = null)
+    public string ToHtml(string markdown, string? chatId = null)
     {
         ArgumentNullException.ThrowIfNull(markdown);
         if (markdown.Length == 0)
@@ -54,7 +54,7 @@ public sealed partial class MarkdownRenderer
         renderer.ObjectRenderers.Replace<CodeBlockRenderer>(new CopyableCodeBlockRenderer());
 
         var document = Markdown.Parse(markdown, _pipeline);
-        Sanitize(document, sessionId);
+        Sanitize(document, chatId);
         renderer.Render(document);
         writer.Flush();
         return writer.ToString();
@@ -64,12 +64,12 @@ public sealed partial class MarkdownRenderer
     /// Convert the markdown of a finished message, remembering recent results so the same message is not parsed twice.
     /// </summary>
     /// <param name="markdown">The markdown text.</param>
-    /// <param name="sessionId">The chat the text belongs to. An image that points to a path inside its folder is shown through the chat's file endpoint. Without it, no image is shown.</param>
+    /// <param name="chatId">The chat the text belongs to. An image that points to a path inside its folder is shown through the chat's file endpoint. Without it, no image is shown.</param>
     /// <returns>Safe HTML.</returns>
-    public string ToCachedHtml(string markdown, string? sessionId = null)
+    public string ToCachedHtml(string markdown, string? chatId = null)
     {
         ArgumentNullException.ThrowIfNull(markdown);
-        var key = sessionId is null ? markdown : sessionId + '\0' + markdown;
+        var key = chatId is null ? markdown : chatId + '\0' + markdown;
         lock (_gate)
         {
             if (_cache.TryGetValue(key, out var hit))
@@ -80,7 +80,7 @@ public sealed partial class MarkdownRenderer
             }
         }
 
-        var html = ToHtml(markdown, sessionId);
+        var html = ToHtml(markdown, chatId);
         lock (_gate)
         {
             if (!_cache.ContainsKey(key))
@@ -114,7 +114,7 @@ public sealed partial class MarkdownRenderer
         return Uri.TryCreate(url, UriKind.Absolute, out var uri) && AllowedSchemes.Contains(uri.Scheme);
     }
 
-    private static void Sanitize(MarkdownDocument document, string? sessionId)
+    private static void Sanitize(MarkdownDocument document, string? chatId)
     {
         foreach (var autolink in document.Descendants<AutolinkInline>().ToList())
         {
@@ -134,9 +134,9 @@ public sealed partial class MarkdownRenderer
 
         foreach (var link in document.Descendants<LinkInline>().ToList())
         {
-            if (sessionId is not null && link.IsImage && IsFolderPath(link.Url))
+            if (chatId is not null && link.IsImage && IsFolderPath(link.Url))
             {
-                link.Url = AttachmentEndpoints.FileAddressOf(sessionId, link.Url!);
+                link.Url = AttachmentEndpoints.FileAddressOf(chatId, link.Url!);
                 var attributes = link.GetAttributes();
                 attributes.AddClass("msg-image");
                 attributes.AddProperty("loading", "lazy");

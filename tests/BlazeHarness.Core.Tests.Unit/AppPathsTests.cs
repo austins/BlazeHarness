@@ -15,7 +15,7 @@ public sealed class AppPathsTests
         // Assert
         config.Should().Be(Path.Combine(_sut.Home, "config.json"));
         _sut.ProvidersFile.Should().Be(Path.Combine(_sut.Home, "providers.json"));
-        _sut.SessionsDirectory.Should().StartWith(_sut.Home);
+        _sut.ChatsDirectory.Should().StartWith(_sut.Home);
     }
 
     [Fact]
@@ -31,23 +31,23 @@ public sealed class AppPathsTests
     [InlineData("a/b")]
     [InlineData("a\0b")]
     [InlineData("")]
-    public void SessionDirectory_InvalidId_Throws(string id)
+    public void ChatDirectory_InvalidId_Throws(string id)
     {
         // Act
-        var act = () => _sut.SessionDirectory(id);
+        var act = () => _sut.ChatDirectory(id);
 
         // Assert
         act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
-    public void SessionDirectory_ValidId_IsUnderSessions()
+    public void ChatDirectory_ValidId_IsUnderChats()
     {
         // Act
-        var dir = _sut.SessionDirectory("abc123");
+        var dir = _sut.ChatDirectory("abc123");
 
         // Assert
-        dir.Should().Be(Path.Combine(_sut.SessionsDirectory, "abc123"));
+        dir.Should().Be(Path.Combine(_sut.ChatsDirectory, "abc123"));
     }
 
     [Fact]

@@ -13,7 +13,7 @@ public sealed class SensitivePaths
     /// Initializes a new instance of the <see cref="SensitivePaths"/> class.
     /// </summary>
     /// <param name="folders">The full paths of the protected folders.</param>
-    /// <param name="exempt">A folder inside a protected one that may still be used, such as the current session's own directory, or null.</param>
+    /// <param name="exempt">A folder inside a protected one that may still be used, such as the current chat's own directory, or null.</param>
     public SensitivePaths(IEnumerable<string> folders, string? exempt = null)
     {
         ArgumentNullException.ThrowIfNull(folders);
@@ -92,14 +92,14 @@ public sealed class SensitivePaths
     /// Build the list: the folders the user chose or the defaults, and the app's own folder.
     /// </summary>
     /// <param name="paths">The app's folders.</param>
-    /// <param name="currentSession">The id of the session that is running, whose own directory stays usable, or null.</param>
+    /// <param name="currentChat">The id of the chat that is running, whose own directory stays usable, or null.</param>
     /// <param name="chosen">The folders the user chose to protect, or null for <see cref="DefaultFolders"/>.</param>
     /// <returns>The protected folders.</returns>
-    public static SensitivePaths Default(AppPaths paths, string? currentSession = null, IEnumerable<string>? chosen = null)
+    public static SensitivePaths Default(AppPaths paths, string? currentChat = null, IEnumerable<string>? chosen = null)
     {
         ArgumentNullException.ThrowIfNull(paths);
         List<string> folders = [.. chosen ?? DefaultFolders(paths), paths.Home];
-        return new SensitivePaths(folders, currentSession is null ? null : paths.SessionDirectory(currentSession));
+        return new SensitivePaths(folders, currentChat is null ? null : paths.ChatDirectory(currentChat));
     }
 
     /// <summary>
@@ -111,13 +111,13 @@ public sealed class SensitivePaths
     {
         ArgumentNullException.ThrowIfNull(fullPath);
         var path = Normalize(fullPath);
-        if (Exempt is not null && WorkspacePath.IsInside(Exempt, path))
+        if (Exempt is not null && RootedPath.IsInside(Exempt, path))
         {
             return false;
         }
 
-        return _folders.Exists(folder => WorkspacePath.IsInside(folder, path));
+        return _folders.Exists(folder => RootedPath.IsInside(folder, path));
     }
 
-    private static string Normalize(string path) => WorkspacePath.CanonicalRoot(path);
+    private static string Normalize(string path) => RootedPath.CanonicalRoot(path);
 }

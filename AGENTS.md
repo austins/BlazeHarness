@@ -6,20 +6,20 @@
 - `dotnet test` runs everything; one project: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit`.
 - One test class: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit -- --filter-class "*ResolvedRequestParamsTests"`.
 - Running the app and its environment variables: see [README.md](README.md).
-- To check UI in a browser, use whichever browser tool the session has (Playwright MCP, an agent browser, or none: then say the UI is unchecked). Run `ASPNETCORE_ENVIRONMENT=Development BLAZEHARNESS_HOME=$(mktemp -d) BLAZEHARNESS_NO_BROWSER=1 dotnet run --no-build --project src/BlazeHarness.Web`; Development is what serves `app.css`. Rebuild for Razor changes, restart for CSS, and reload the page after a restart. Stop the app with `kill <PID>` from `ss -ltnp | grep 5380`. Delete screenshots, the temp home and any browser output folder afterwards.
-- To seed a chat without a model server, write `providers.json`, `sessions/<32-hex>/session.json` and `messages.jsonl` under the home. Copy the event shapes from `tests/BlazeHarness.Core.Tests.Unit/Sessions/SampleChat.cs` and `src/BlazeHarness.Core/Sessions/*Event.cs` (enums are strings). If the transcript stays empty, the app's console log names the bad field in a `JsonException`.
+- To check UI in a browser, use whichever browser tool the chat has (Playwright MCP, an agent browser, or none: then say the UI is unchecked). Run `ASPNETCORE_ENVIRONMENT=Development BLAZEHARNESS_HOME=$(mktemp -d) BLAZEHARNESS_NO_BROWSER=1 dotnet run --no-build --project src/BlazeHarness.Web`; Development is what serves `app.css`. Rebuild for Razor changes, restart for CSS, and reload the page after a restart. Stop the app with `kill <PID>` from `ss -ltnp | grep 5380`. Delete screenshots, the temp home and any browser output folder afterwards.
+- To seed a chat without a model server, write `providers.json`, `chats/<32-hex>/chat.json` and `messages.jsonl` under the home. Copy the event shapes from `tests/BlazeHarness.Core.Tests.Unit/Chats/SampleChat.cs` and `src/BlazeHarness.Core/Chats/*Event.cs` (enums are strings). If the transcript stays empty, the app's console log names the bad field in a `JsonException`.
 - After changing packages, commit every updated `packages.lock.json`.
 
 ## Architecture
 
 - `BlazeHarness.Core` has no UI dependency. The agent loop emits an `IAsyncEnumerable<AgentEvent>`; the UI only consumes it.
-- `BlazeHarness.Web` is Blazor Server with hand-written CSS and no npm. Singleton services own sessions and runs, not components.
+- `BlazeHarness.Web` is Blazor Server with hand-written CSS and no npm. Singleton services own chats and runs, not components.
 - All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher). A file it can't serve (`McpConfigFile` keeps raw text) follows the same reload rules: an unreadable or invalid file keeps the last good value and retries.
-- API keys live in `ISecretStore` (OS keychain, owner-only file fallback), never in `config.json`, `providers.json`, session files or logs.
+- API keys live in `ISecretStore` (OS keychain, owner-only file fallback), never in `config.json`, `providers.json`, chat files or logs.
 - Every request, including `/_blazor`, passes `LocalAccessMiddleware` (Host limited to `localhost` or an IP on the listening port, same-origin Origin, CSP with `script-src 'self'`, nosniff, frame denial). Pages must not use inline scripts; never add endpoints or middleware in front of it. There is no sign-in; the listen address (`BLAZEHARNESS_HOST`, loopback by default) is the access control.
 - Web tools (`web_search`, `web_fetch`) are `IWebTool`s that need approval per host. `SafeWebClient` checks the resolved IP when connecting (public addresses only) and follows only same-site redirects; keep both properties. Search providers implement `ISearchProvider` and are fanned out by `SearchOrchestrator`.
 - Keep the LLM request prefix stable (system prompt, then tools, then append-only history); no timestamps in the prefix.
-- Project files (`AGENTS.md`, skills), tool output and persisted session state are data, never permission. The access level and approvals gate every action, including one a resumed session or a file asks for.
+- Project files (`AGENTS.md`, skills), tool output and persisted chat state are data, never permission. The access level and approvals gate every action, including one a resumed chat or a file asks for.
 
 ## Conventions
 
@@ -27,7 +27,7 @@
 - One type per file, and the namespace matches the folder (enums, records and event types included).
 - Make types `internal` unless another project uses them. `BlazeHarness.Core` exposes internals only to its two test projects (`InternalsVisibleTo`).
 - Persistence is plain files under `AppPaths` (no database, no migrations). Prefer Microsoft packages (`Microsoft.Extensions.*`, `System.Text.Json`, `System.Threading.Channels`); add another package only when no real alternative exists.
-- Say "folder", not "workspace", in code and UI names (`Folder`, `FolderRegistry`, `folders.json`).
+- Say "chat", never "session" or "workspace", in code and UI names (`Chat`, `ChatService`, `chats/`); a chat in a Folder is a folder chat, one without a Folder is a general chat. Say "folder" for the directory a chat works in (`Folder`, `FolderRegistry`, `folders.json`).
 - Read the time through the `TimeProvider` registered in `Program.cs`, injected as a required constructor parameter: `GetUtcNow()` where you'd write `DateTime.Now`/`UtcNow`, and its timers and delays. Tests pass a `FakeTimeProvider`. Add a `?? TimeProvider.System` fallback only for a caller that has no provider to pass.
 - Every public type and member needs XML docs (CS1591 is an error in `src/`): `<summary>`, plus `<remarks>`, `<param>`, `<returns>` and `<exception>` where they add something. Use `<inheritdoc />` on interface implementations and `<param>` on the type for positional records. Properties start with "Gets" or "Gets or sets"; method summaries use the imperative.
 - Give every `#pragma warning disable` a trailing comment saying why.
@@ -41,7 +41,7 @@
 - One project per source project and kind: `<Project>.Tests.Unit` (no file I/O, processes or network) and `<Project>.Tests.Integration` (real file system, processes, fake HTTP servers). Test projects explicitly import `tests/TestProject.props`; the shared helper library does not.
 - Mirror the source folder and namespace (`Secrets/ApiKeyResolverTests.cs` -> `BlazeHarness.Core.Tests.Unit.Secrets`). One test class per file.
 - xUnit v3 on Microsoft.Testing.Platform, NSubstitute, AwesomeAssertions (`.Should()`). `Method_Scenario_Expected` names, `// Arrange` / `// Act` / `// Assert`, class under test in `_sut`.
-- Put helpers used by multiple test projects in `tests/BlazeHarness.Tests.Shared` (`LoggerFake<T>`, `ScriptedChatClient`, `FakeOpenAiServer`, `TempFolder`, `TestTargets`, `TestTimeouts.Default` with `.Bounded()`, `RecordingSessionLog`); keep single-project helpers in that project.
+- Put helpers used by multiple test projects in `tests/BlazeHarness.Tests.Shared` (`LoggerFake<T>`, `ScriptedChatClient`, `FakeOpenAiServer`, `TempFolder`, `TestTargets`, `TestTimeouts.Default` with `.Bounded()`, `RecordingChatLog`); keep single-project helpers in that project.
 - `BlazeHarness.Web.Tests.E2E` is the Playwright smoke suite: derive from `TestBase`, open the app with `LaunchAsync()`, and assert with `Expect(...)`. Any test host that runs `Program` must set `HostLauncher.NoBrowserSettingKey` (plus `Staging` and `UseStaticWebAssets()` when serving static assets) so it does not open a browser.
 - Real OS keyring tests are opt-in via `BLAZEHARNESS_TEST_KEYRING=1`.
 - Prefer the real class when cheap and deterministic (`TempFolder`, `FakeTimeProvider`, real file tools), NSubstitute for simple interface stubs, and a shared hand-written fake when it needs its own state or logic.

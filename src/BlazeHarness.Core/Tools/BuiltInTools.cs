@@ -4,7 +4,7 @@ using BlazeHarness.Core.Sandbox;
 namespace BlazeHarness.Core.Tools;
 
 /// <summary>
-/// Creates the tool set every session with a working folder gets.
+/// Creates the tool set every chat with a working folder gets.
 /// </summary>
 internal static class BuiltInTools
 {
@@ -14,7 +14,7 @@ internal static class BuiltInTools
     /// <param name="folder">The working folder, which must exist.</param>
     /// <param name="time">Times the tools' timeouts.</param>
     /// <param name="shell">The shell for the <c>shell</c> tool, or null to leave that tool out.</param>
-    /// <param name="attachments">The session's attached files for the <c>read_attachment</c> tool, or null to leave that tool out.</param>
+    /// <param name="attachments">The chat's attached files for the <c>read_attachment</c> tool, or null to leave that tool out.</param>
     /// <param name="sandbox">Starts the shell commands. Required when <paramref name="shell"/> is set.</param>
     /// <param name="scratchDirectory">The folder confined shell commands may always write to. Required when <paramref name="shell"/> is set.</param>
     /// <param name="chatSearch">The <c>search_chat</c> tool, or null to leave it out.</param>
@@ -23,7 +23,7 @@ internal static class BuiltInTools
         string folder,
         TimeProvider time,
         ShellInfo? shell = null,
-        SessionAttachments? attachments = null,
+        ChatAttachments? attachments = null,
         IShellSandbox? sandbox = null,
         string? scratchDirectory = null,
         ITool? chatSearch = null)
@@ -52,11 +52,11 @@ internal static class BuiltInTools
     /// <summary>
     /// Create the tool set for a chat without a working folder, which can only read the files attached to it.
     /// </summary>
-    /// <param name="attachments">The session's attached files.</param>
+    /// <param name="attachments">The chat's attached files.</param>
     /// <param name="time">Times the tool's timeout.</param>
     /// <param name="chatSearch">The <c>search_chat</c> tool, or null to leave it out.</param>
     /// <returns>The tool set.</returns>
-    public static ToolSet ForAttachments(SessionAttachments attachments, TimeProvider time, ITool? chatSearch = null)
+    public static ToolSet ForAttachments(ChatAttachments attachments, TimeProvider time, ITool? chatSearch = null)
     {
         ArgumentNullException.ThrowIfNull(attachments);
         Directory.CreateDirectory(attachments.Directory);

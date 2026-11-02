@@ -82,10 +82,10 @@ public sealed class MarkdownRendererTests
     }
 
     [Theory]
-    [InlineData("out/chart.png", "api/sessions/s1/files?path=out%2Fchart.png")]
-    [InlineData("/home/me/proj/chart.png", "api/sessions/s1/files?path=%2Fhome%2Fme%2Fproj%2Fchart.png")]
-    [InlineData("C:/proj/chart.png", "api/sessions/s1/files?path=C%3A%2Fproj%2Fchart.png")]
-    public void ToHtml_ImagePathWithASession_PointsAtTheFolderEndpoint(string path, string expected)
+    [InlineData("out/chart.png", "api/chats/s1/files?path=out%2Fchart.png")]
+    [InlineData("/home/me/proj/chart.png", "api/chats/s1/files?path=%2Fhome%2Fme%2Fproj%2Fchart.png")]
+    [InlineData("C:/proj/chart.png", "api/chats/s1/files?path=C%3A%2Fproj%2Fchart.png")]
+    public void ToHtml_ImagePathWithAChat_PointsAtTheFolderEndpoint(string path, string expected)
     {
         // Act
         var html = _sut.ToHtml($"![a chart]({path})", "s1");
@@ -100,7 +100,7 @@ public sealed class MarkdownRendererTests
     [InlineData("data:image/png;base64,AAAA")]
     [InlineData("file:///etc/passwd")]
 #pragma warning disable CA1054 // InlineData requires string constants.
-    public void ToHtml_ImageThatIsAUrlWithASession_IsNeverLoaded(string url)
+    public void ToHtml_ImageThatIsAUrlWithAChat_IsNeverLoaded(string url)
 #pragma warning restore CA1054
     {
         // Act
@@ -111,7 +111,7 @@ public sealed class MarkdownRendererTests
     }
 
     [Fact]
-    public void ToHtml_ImagePathWithoutASession_IsNeverLoaded()
+    public void ToHtml_ImagePathWithoutAChat_IsNeverLoaded()
     {
         // Act
         var html = _sut.ToHtml("![x](out/chart.png)");

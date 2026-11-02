@@ -1,14 +1,14 @@
 namespace BlazeHarness.Core.Permissions;
 
 /// <summary>
-/// The two settings of a session that decide what its tool calls may do.
+/// The two settings of a chat that decide what its tool calls may do.
 /// </summary>
 /// <param name="Access">What the tools are allowed to do.</param>
 /// <param name="Approvals">When the user is asked.</param>
 public readonly record struct PermissionSettings(AccessLevel Access, ApprovalMode Approvals)
 {
     /// <summary>
-    /// Gets the built-in settings, which a session that stores none of its own uses.
+    /// Gets the built-in settings, which a chat that stores none of its own uses.
     /// </summary>
     public static PermissionSettings Default { get; } = new(AccessLevel.WriteInFolder, ApprovalMode.AskFirst);
 

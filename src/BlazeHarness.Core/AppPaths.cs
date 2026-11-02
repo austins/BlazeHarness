@@ -84,9 +84,9 @@ public sealed class AppPaths
     public string UserAgentsSkillsDirectory => Path.Combine(UserHome, ".agents", "skills");
 
     /// <summary>
-    /// Gets the folder that holds one subfolder per chat session.
+    /// Gets the folder that holds one subfolder per chat.
     /// </summary>
-    public string SessionsDirectory => Path.Combine(Home, "sessions");
+    public string ChatsDirectory => Path.Combine(Home, "chats");
 
     /// <summary>
     /// Gets the folder that holds the log files.
@@ -109,14 +109,14 @@ public sealed class AppPaths
     }
 
     /// <summary>
-    /// Get the folder of a single session.
+    /// Get the folder of a single chat.
     /// </summary>
-    /// <param name="sessionId">The session identifier. It must be a single valid file name, so it cannot escape <see cref="SessionsDirectory"/>.</param>
-    /// <returns>The session's folder path.</returns>
+    /// <param name="chatId">The chat identifier. It must be a single valid file name, so it cannot escape <see cref="ChatsDirectory"/>.</param>
+    /// <returns>The chat's folder path.</returns>
     /// <exception cref="ArgumentException">The identifier is empty, <c>.</c>, <c>..</c>, or contains invalid file name characters.</exception>
-    public string SessionDirectory(string sessionId)
+    public string ChatDirectory(string chatId)
     {
-        return Path.Combine(SessionsDirectory, ValidateId(sessionId));
+        return Path.Combine(ChatsDirectory, ValidateId(chatId));
     }
 
     private static string ValidateId(string id)

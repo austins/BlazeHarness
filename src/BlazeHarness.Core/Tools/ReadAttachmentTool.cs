@@ -4,17 +4,17 @@ using System.Text.Json;
 namespace BlazeHarness.Core.Tools;
 
 /// <summary>
-/// Reads a file the user attached to the session.
+/// Reads a file the user attached to the chat.
 /// </summary>
 internal sealed class ReadAttachmentTool : ITool
 {
-    private readonly SessionAttachments _attachments;
+    private readonly ChatAttachments _attachments;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ReadAttachmentTool"/> class.
     /// </summary>
-    /// <param name="attachments">The session's attachments, which are the only files it can read.</param>
-    public ReadAttachmentTool(SessionAttachments attachments)
+    /// <param name="attachments">The chat's attachments, which are the only files it can read.</param>
+    public ReadAttachmentTool(ChatAttachments attachments)
     {
         ArgumentNullException.ThrowIfNull(attachments);
         _attachments = attachments;

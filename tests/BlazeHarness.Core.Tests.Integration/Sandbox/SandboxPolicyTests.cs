@@ -185,7 +185,7 @@ public sealed class SandboxPolicyTests : IDisposable
         policy.CommandLine.Should().Be("\"C:\\Program Files\\PowerShell\\7\\pwsh.exe\" -NoLogo -NoProfile -NonInteractive -Command Invoke-Expression $env:BLAZEHARNESS_COMMAND");
     }
 
-    private static string Canonical(string path) => WorkspacePath.CanonicalRoot(path);
+    private static string Canonical(string path) => RootedPath.CanonicalRoot(path);
 
     private SandboxPolicy Create(
         ShellMode mode,

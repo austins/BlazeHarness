@@ -5,16 +5,16 @@ namespace BlazeHarness.Core.Tests.Integration.Tools;
 
 public sealed class ReadFileToolTests : IDisposable
 {
-    private readonly TempWorkspace _workspace = new();
+    private readonly TempRoot _root = new();
     private readonly ReadFileTool _sut = new();
 
-    public void Dispose() => _workspace.Dispose();
+    public void Dispose() => _root.Dispose();
 
     [Fact]
     public async Task ExecuteAsync_SmallFile_ReturnsContentUnchanged()
     {
         // Arrange
-        _workspace.Write("a.txt", "one\ntwo\nthree");
+        _root.Write("a.txt", "one\ntwo\nthree");
 
         // Act
         var result = await RunAsync(new { path = "a.txt" });
@@ -27,7 +27,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_OffsetAndLimit_ReturnsThatRangeWithAContinueHint()
     {
         // Arrange
-        _workspace.Write("a.txt", string.Join('\n', Enumerable.Range(1, 10).Select(i => "line" + i)));
+        _root.Write("a.txt", string.Join('\n', Enumerable.Range(1, 10).Select(i => "line" + i)));
 
         // Act
         var result = await RunAsync(new { path = "a.txt", offset = 3, limit = 2 });
@@ -41,7 +41,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_RangeReachingTheEnd_ReportsTheRangeWithoutContinueHint()
     {
         // Arrange
-        _workspace.Write("a.txt", "a\nb\nc\nd");
+        _root.Write("a.txt", "a\nb\nc\nd");
 
         // Act
         var result = await RunAsync(new { path = "a.txt", offset = 3 });
@@ -54,7 +54,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_FileOverTheDefaultLimit_StopsAndSaysWhere()
     {
         // Arrange
-        _workspace.Write("big.txt", string.Join('\n', Enumerable.Range(1, 2500).Select(i => "x" + i)));
+        _root.Write("big.txt", string.Join('\n', Enumerable.Range(1, 2500).Select(i => "x" + i)));
 
         // Act
         var result = await RunAsync(new { path = "big.txt" });
@@ -67,7 +67,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_ManyLongLines_StaysWithinTheOutputBudget()
     {
         // Arrange
-        _workspace.Write("wide.txt", string.Join('\n', Enumerable.Range(1, 100).Select(_ => new string('w', 1500))));
+        _root.Write("wide.txt", string.Join('\n', Enumerable.Range(1, 100).Select(_ => new string('w', 1500))));
 
         // Act
         var result = await RunAsync(new { path = "wide.txt" });
@@ -81,7 +81,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_VeryLongLine_IsCut()
     {
         // Arrange
-        _workspace.Write("a.txt", new string('z', 5000));
+        _root.Write("a.txt", new string('z', 5000));
 
         // Act
         var result = await RunAsync(new { path = "a.txt" });
@@ -95,7 +95,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_EmptyFile_SaysSo()
     {
         // Arrange
-        _workspace.Write("empty.txt", string.Empty);
+        _root.Write("empty.txt", string.Empty);
 
         // Act
         var result = await RunAsync(new { path = "empty.txt" });
@@ -108,7 +108,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_OffsetPastTheEnd_IsAnError()
     {
         // Arrange
-        _workspace.Write("a.txt", "a\nb");
+        _root.Write("a.txt", "a\nb");
 
         // Act
         var result = await RunAsync(new { path = "a.txt", offset = 9 });
@@ -122,7 +122,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_BinaryFile_IsRefused()
     {
         // Arrange
-        _workspace.Write("data.bin", new byte[] { 1, 2, 0, 3 });
+        _root.Write("data.bin", new byte[] { 1, 2, 0, 3 });
 
         // Act
         var result = await RunAsync(new { path = "data.bin" });
@@ -136,7 +136,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_Utf16FileWithBom_IsDecoded()
     {
         // Arrange
-        var path = Path.Combine(_workspace.Root, "u16.txt");
+        var path = Path.Combine(_root.Root, "u16.txt");
         await File.WriteAllTextAsync(path, "héllo\nwörld", System.Text.Encoding.Unicode, TestContext.Current.CancellationToken);
 
         // Act
@@ -150,7 +150,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_WindowsLineEndings_AreReturnedAsLines()
     {
         // Arrange
-        _workspace.Write("crlf.txt", "a\r\nb\r\n");
+        _root.Write("crlf.txt", "a\r\nb\r\n");
 
         // Act
         var result = await RunAsync(new { path = "crlf.txt" });
@@ -163,7 +163,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_HugeSingleLine_IsCutInsteadOfBufferedWhole()
     {
         // Arrange
-        _workspace.Write("one-line.txt", new string('x', 3 * 1024 * 1024));
+        _root.Write("one-line.txt", new string('x', 3 * 1024 * 1024));
 
         // Act
         var result = await RunAsync(new { path = "one-line.txt" });
@@ -172,11 +172,11 @@ public sealed class ReadFileToolTests : IDisposable
         result.Output.Should().Be(new string('x', 2000) + " [line cut]");
     }
 
-    [Fact(Skip = "Named pipes are a Unix feature.", SkipUnless = nameof(TempWorkspace.CanMakeFifo), SkipType = typeof(TempWorkspace))]
+    [Fact(Skip = "Named pipes are a Unix feature.", SkipUnless = nameof(TempRoot.CanMakeFifo), SkipType = typeof(TempRoot))]
     public async Task ExecuteAsync_NamedPipe_IsNotOpened()
     {
         // Arrange
-        _workspace.MakeFifo("pipe");
+        _root.MakeFifo("pipe");
 
         // Act
         var result = await RunAsync(new { path = "pipe" }).WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
@@ -192,7 +192,7 @@ public sealed class ReadFileToolTests : IDisposable
     public async Task ExecuteAsync_BadPath_IsAnError(string path, string message)
     {
         // Arrange
-        Directory.CreateDirectory(Path.Combine(_workspace.Root, "sub"));
+        Directory.CreateDirectory(Path.Combine(_root.Root, "sub"));
 
         // Act
         var result = await RunAsync(new { path });
@@ -202,5 +202,5 @@ public sealed class ReadFileToolTests : IDisposable
         result.Output.Should().Contain(message);
     }
 
-    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), _workspace.Context, TestContext.Current.CancellationToken);
+    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempRoot.Args(args), _root.Context, TestContext.Current.CancellationToken);
 }

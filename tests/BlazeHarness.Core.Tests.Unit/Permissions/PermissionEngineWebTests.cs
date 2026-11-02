@@ -7,7 +7,7 @@ public sealed class PermissionEngineWebTests
 {
     private readonly PermissionEngine _sut = new();
     private readonly ToolContext _context = new(Path.GetTempPath());
-    private readonly WebFetchTool _fetch = new(null!, "session");
+    private readonly WebFetchTool _fetch = new(null!, "chat");
 
     [Fact]
     public void Evaluate_Fetch_AsksAndKeysByHost()

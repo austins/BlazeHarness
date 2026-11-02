@@ -1,4 +1,4 @@
-using BlazeHarness.Core.Sessions;
+using BlazeHarness.Core.Chats;
 
 namespace BlazeHarness.Web.Hosting;
 
@@ -10,7 +10,7 @@ public static class ExportEndpoints
     /// <summary>
     /// The route of a chat export.
     /// </summary>
-    public const string Route = "/api/sessions/{sessionId}/export";
+    public const string Route = "/api/chats/{chatId}/export";
 
     private const string JsonFormat = "json";
     private const string MarkdownFormat = "md";
@@ -18,12 +18,12 @@ public static class ExportEndpoints
     /// <summary>
     /// Get the address of a chat export.
     /// </summary>
-    /// <param name="sessionId">The session id.</param>
+    /// <param name="chatId">The chat id.</param>
     /// <param name="format">The file format.</param>
     /// <returns>The relative address the file is served at.</returns>
-    public static string AddressOf(string sessionId, ExportFormat format)
+    public static string AddressOf(string chatId, ExportFormat format)
     {
-        return $"api/sessions/{Uri.EscapeDataString(sessionId)}/export?format={(format == ExportFormat.Json ? JsonFormat : MarkdownFormat)}";
+        return $"api/chats/{Uri.EscapeDataString(chatId)}/export?format={(format == ExportFormat.Json ? JsonFormat : MarkdownFormat)}";
     }
 
     /// <summary>
@@ -41,18 +41,18 @@ public static class ExportEndpoints
     /// <summary>
     /// Serve a chat as a download.
     /// </summary>
-    /// <param name="sessionId">The session id.</param>
+    /// <param name="chatId">The chat id.</param>
     /// <param name="format">"json" for the importable file; anything else gives the Markdown transcript.</param>
-    /// <param name="sessions">The chat sessions.</param>
+    /// <param name="chatService">The chat service.</param>
     /// <param name="context">The current request.</param>
     /// <param name="cancellationToken">A token that is cancelled when the request is aborted.</param>
     /// <returns>The file as an attachment, or a not found response.</returns>
-    public static async Task<IResult> ServeAsync(string sessionId, string? format, SessionService sessions, HttpContext context, CancellationToken cancellationToken)
+    public static async Task<IResult> ServeAsync(string chatId, string? format, ChatService chatService, HttpContext context, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(sessions);
+        ArgumentNullException.ThrowIfNull(chatService);
         ArgumentNullException.ThrowIfNull(context);
 
-        var file = await sessions.ExportAsync(sessionId, format == JsonFormat ? ExportFormat.Json : ExportFormat.Markdown, cancellationToken);
+        var file = await chatService.ExportAsync(chatId, format == JsonFormat ? ExportFormat.Json : ExportFormat.Markdown, cancellationToken);
         if (file is null)
         {
             return Results.NotFound();

@@ -136,9 +136,9 @@ internal static class RuleMatcher
     {
         var full = fullPath.Replace('\\', '/');
         List<string> candidates = [full];
-        if (WorkspacePath.IsInside(root, fullPath))
+        if (RootedPath.IsInside(root, fullPath))
         {
-            candidates.Add(WorkspacePath.Relative(root, fullPath));
+            candidates.Add(RootedPath.Relative(root, fullPath));
         }
 
         return candidates;

@@ -7,17 +7,17 @@ namespace BlazeHarness.Core.Agent;
 /// The base system prompt.
 /// </summary>
 /// <remarks>
-/// It is deterministic for a given session (no dates, counters or per-turn text), so the provider's prompt cache keeps hitting.
+/// It is deterministic for a given chat (no dates, counters or per-turn text), so the provider's prompt cache keeps hitting.
 /// Volatile facts belong in the latest user message.
 /// </remarks>
 internal static class SystemPrompt
 {
     /// <summary>
-    /// Build the system prompt for a session.
+    /// Build the system prompt for a chat.
     /// </summary>
     /// <param name="operatingSystem">The OS name, e.g. "Linux".</param>
     /// <param name="shell">The shell the <c>shell</c> tool runs commands in, so the model writes the right syntax, or null when there is no shell tool.</param>
-    /// <param name="workingDirectory">The session's working folder, which relative paths resolve against.</param>
+    /// <param name="workingDirectory">The chat's working folder, which relative paths resolve against.</param>
     /// <returns>The prompt text.</returns>
     public static string Build(string operatingSystem, string? shell, string workingDirectory)
     {

@@ -1,5 +1,5 @@
 using BlazeHarness.Core.Attachments;
-using BlazeHarness.Core.Sessions;
+using BlazeHarness.Core.Chats;
 
 namespace BlazeHarness.Web.Hosting;
 
@@ -11,33 +11,33 @@ public static class AttachmentEndpoints
     /// <summary>
     /// The route of one attachment.
     /// </summary>
-    public const string Route = "/api/sessions/{sessionId}/attachments/{attachmentId}";
+    public const string Route = "/api/chats/{chatId}/attachments/{attachmentId}";
 
     /// <summary>
-    /// The route of an image inside the working folder of a session.
+    /// The route of an image inside the working folder of a chat.
     /// </summary>
-    public const string FileRoute = "/api/sessions/{sessionId}/files";
+    public const string FileRoute = "/api/chats/{chatId}/files";
 
     /// <summary>
     /// Get the address of an attachment.
     /// </summary>
-    /// <param name="sessionId">The session id.</param>
+    /// <param name="chatId">The chat id.</param>
     /// <param name="attachmentId">The attachment id.</param>
     /// <returns>The relative address the file is served at.</returns>
-    public static string AddressOf(string sessionId, string attachmentId)
+    public static string AddressOf(string chatId, string attachmentId)
     {
-        return $"api/sessions/{Uri.EscapeDataString(sessionId)}/attachments/{Uri.EscapeDataString(attachmentId)}";
+        return $"api/chats/{Uri.EscapeDataString(chatId)}/attachments/{Uri.EscapeDataString(attachmentId)}";
     }
 
     /// <summary>
-    /// Get the address of an image inside the working folder of a session.
+    /// Get the address of an image inside the working folder of a chat.
     /// </summary>
-    /// <param name="sessionId">The session id.</param>
+    /// <param name="chatId">The chat id.</param>
     /// <param name="path">The path as the model wrote it.</param>
     /// <returns>The relative address the image is served at.</returns>
-    public static string FileAddressOf(string sessionId, string path)
+    public static string FileAddressOf(string chatId, string path)
     {
-        return $"api/sessions/{Uri.EscapeDataString(sessionId)}/files?path={Uri.EscapeDataString(path)}";
+        return $"api/chats/{Uri.EscapeDataString(chatId)}/files?path={Uri.EscapeDataString(path)}";
     }
 
     /// <summary>
@@ -60,37 +60,37 @@ public static class AttachmentEndpoints
     /// Only the content type decided when the file was saved is sent, and the response may not be sniffed or run as a page,
     /// so a text file that looks like HTML is shown as plain text.
     /// </remarks>
-    /// <param name="sessionId">The session id.</param>
+    /// <param name="chatId">The chat id.</param>
     /// <param name="attachmentId">The attachment id.</param>
-    /// <param name="sessions">The chat sessions.</param>
+    /// <param name="chatService">The chat service.</param>
     /// <param name="context">The current request.</param>
     /// <returns>The file, or a not found response.</returns>
-    public static IResult Serve(string sessionId, string attachmentId, SessionService sessions, HttpContext context)
+    public static IResult Serve(string chatId, string attachmentId, ChatService chatService, HttpContext context)
     {
-        ArgumentNullException.ThrowIfNull(sessions);
+        ArgumentNullException.ThrowIfNull(chatService);
         ArgumentNullException.ThrowIfNull(context);
 
-        return Send(sessions.FindAttachment(sessionId, attachmentId), context);
+        return Send(chatService.FindAttachment(chatId, attachmentId), context);
     }
 
     /// <summary>
-    /// Serve an image from the working folder of a session.
+    /// Serve an image from the working folder of a chat.
     /// </summary>
     /// <remarks>
     /// The path is checked against the folder again here, so the endpoint can't be used to read any other file.
     /// Only PNG, JPEG, GIF, WebP, AVIF and SVG files up to the size cap are served.
     /// </remarks>
-    /// <param name="sessionId">The session id.</param>
+    /// <param name="chatId">The chat id.</param>
     /// <param name="path">The path of the image, relative to the folder.</param>
-    /// <param name="sessions">The chat sessions.</param>
+    /// <param name="chatService">The chat service.</param>
     /// <param name="context">The current request.</param>
     /// <returns>The image, or a not found response.</returns>
-    public static IResult ServeFolderImage(string sessionId, string? path, SessionService sessions, HttpContext context)
+    public static IResult ServeFolderImage(string chatId, string? path, ChatService chatService, HttpContext context)
     {
-        ArgumentNullException.ThrowIfNull(sessions);
+        ArgumentNullException.ThrowIfNull(chatService);
         ArgumentNullException.ThrowIfNull(context);
 
-        return Send(path is null ? null : sessions.FindFolderImage(sessionId, path), context);
+        return Send(path is null ? null : chatService.FindFolderImage(chatId, path), context);
     }
 
     private static IResult Send(AttachmentFile? file, HttpContext context)

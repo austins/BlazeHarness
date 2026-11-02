@@ -1,10 +1,11 @@
 @using BlazeHarness.Core
 @inject IJSRuntime JS
-@inject SessionService Sessions
+@inject ChatService ChatService
 @inject NavigationManager Navigation
 @inject ToastService Toasts
 @inject AppPaths Paths
 @using System.Diagnostics
+@using BlazeHarness.Core.Chats
 
 <ul class="chat-list">
     @foreach (var chat in Chats)
@@ -20,7 +21,7 @@
             {
                 <NavLink class="chat-link" href="@Routes.Chat(chat.Id)">
                     <span class="chat-title">@DisplayTitle(chat)</span>
-                    @if (Sessions.IsRunning(chat.Id))
+                    @if (ChatService.IsRunning(chat.Id))
                     {
                         <span class="chat-busy" role="status" title="Replying" aria-label="Replying"><Icon Name="spinner" Spin="true" /></span>
                     }
@@ -38,7 +39,7 @@
         <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
                 @onclick="() => _moving = target"><Icon Name="arrow-right" />Move to folder</button>
         <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                @onclick="() => OpenSessionFolder(target)"><Icon Name="folder" />Open session folder</button>
+                @onclick="() => OpenChatData(target)"><Icon Name="folder" />Open chat data</button>
         <div class="menu-sep" role="separator"></div>
         <button type="button" class="menu-item menu-item-danger" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
                 @onclick="() => _deleting = target"><Icon Name="trash" />Delete</button>
@@ -57,19 +58,19 @@
     private string? _renaming;
     private string _renameText = string.Empty;
     private bool _focusRename;
-    private SessionInfo? _deleting;
-    private SessionInfo? _moving;
+    private ChatInfo? _deleting;
+    private ChatInfo? _moving;
     private ElementReference _renameInput;
     private ElementReference _menu;
     private readonly string _menuId = $"chat-menu-{Guid.NewGuid():N}";
-    private SessionInfo? _menuChat;
+    private ChatInfo? _menuChat;
     private (double X, double Y)? _showMenuAt;
 
     /// <summary>
     /// Gets or sets the chats to list, in display order.
     /// </summary>
     [Parameter, EditorRequired]
-    public IReadOnlyList<SessionInfo> Chats { get; set; } = [];
+    public IReadOnlyList<ChatInfo> Chats { get; set; } = [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -86,7 +87,7 @@
         }
     }
 
-    private void OpenMenu(SessionInfo chat, MouseEventArgs e)
+    private void OpenMenu(ChatInfo chat, MouseEventArgs e)
     {
         if (_renaming == chat.Id)
         {
@@ -97,9 +98,9 @@
         _showMenuAt = (e.ClientX, e.ClientY);
     }
 
-    private void OpenSessionFolder(SessionInfo chat)
+    private void OpenChatData(ChatInfo chat)
     {
-        var path = Paths.SessionDirectory(chat.Id);
+        var path = Paths.ChatDirectory(chat.Id);
         try
         {
             if (!Directory.Exists(path))
@@ -112,16 +113,16 @@
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
-            Toasts.Show("The session folder could not be opened.", ToastKind.Error);
+            Toasts.Show("The chat data could not be opened.", ToastKind.Error);
         }
     }
 
-    private static string DisplayTitle(SessionInfo chat)
+    private static string DisplayTitle(ChatInfo chat)
     {
         return string.IsNullOrWhiteSpace(chat.Title) ? "Untitled chat" : chat.Title;
     }
 
-    private void StartRename(SessionInfo chat)
+    private void StartRename(ChatInfo chat)
     {
         _renaming = chat.Id;
         _renameText = chat.Title;
@@ -150,14 +151,14 @@
 
         _renaming = null;
         var title = _renameText.Trim();
-        if (title.Length == 0 || title == Sessions.Store.Find(id)?.Title)
+        if (title.Length == 0 || title == ChatService.Store.Find(id)?.Title)
         {
             return;
         }
 
         try
         {
-            await Sessions.Store.RenameAsync(id, title);
+            await ChatService.Store.RenameAsync(id, title);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -176,7 +177,7 @@
 
         try
         {
-            if (!await Sessions.DeleteAsync(chat.Id))
+            if (!await ChatService.DeleteAsync(chat.Id))
             {
                 Toasts.Show("This chat is still replying. Stop it first, then delete it.", ToastKind.Error);
                 return;

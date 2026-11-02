@@ -6,16 +6,16 @@ public sealed class ShowImageToolTests : IDisposable
 {
     private static readonly byte[] PngBytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4];
 
-    private readonly TempWorkspace _workspace = new();
+    private readonly TempRoot _root = new();
     private readonly ShowImageTool _sut = new();
 
-    public void Dispose() => _workspace.Dispose();
+    public void Dispose() => _root.Dispose();
 
     [Fact]
     public async Task ExecuteAsync_PngInTheFolder_ConfirmsItIsShown()
     {
         // Arrange
-        _workspace.Write("out/chart.png", PngBytes);
+        _root.Write("out/chart.png", PngBytes);
 
         // Act
         var result = await RunAsync("out/chart.png");
@@ -29,7 +29,7 @@ public sealed class ShowImageToolTests : IDisposable
     public async Task ExecuteAsync_Svg_IsShown()
     {
         // Arrange
-        _workspace.Write("logo.svg", "<?xml version=\"1.0\"?><svg xmlns=\"http://www.w3.org/2000/svg\"/>");
+        _root.Write("logo.svg", "<?xml version=\"1.0\"?><svg xmlns=\"http://www.w3.org/2000/svg\"/>");
 
         // Act
         var result = await RunAsync("logo.svg");
@@ -43,7 +43,7 @@ public sealed class ShowImageToolTests : IDisposable
     public async Task ExecuteAsync_Avif_IsShown()
     {
         // Arrange
-        _workspace.Write("photo.avif", [0, 0, 0, 0x1C, (byte)'f', (byte)'t', (byte)'y', (byte)'p', (byte)'a', (byte)'v', (byte)'i', (byte)'f', 0, 0, 0, 0]);
+        _root.Write("photo.avif", [0, 0, 0, 0x1C, (byte)'f', (byte)'t', (byte)'y', (byte)'p', (byte)'a', (byte)'v', (byte)'i', (byte)'f', 0, 0, 0, 0]);
 
         // Act
         var result = await RunAsync("photo.avif");
@@ -59,8 +59,8 @@ public sealed class ShowImageToolTests : IDisposable
     public async Task ExecuteAsync_NotAnImageOrMissing_IsAnError(string path)
     {
         // Arrange
-        _workspace.Write("notes.txt", "just text");
-        _workspace.Write("fake.svg", "just text, no element");
+        _root.Write("notes.txt", "just text");
+        _root.Write("fake.svg", "just text, no element");
 
         // Act
         var result = await RunAsync(path);
@@ -85,7 +85,7 @@ public sealed class ShowImageToolTests : IDisposable
         // Arrange
         var big = new byte[(10 * 1024 * 1024) + 1];
         PngBytes.CopyTo(big, 0);
-        _workspace.Write("big.png", big);
+        _root.Write("big.png", big);
 
         // Act
         var result = await RunAsync("big.png");
@@ -105,6 +105,6 @@ public sealed class ShowImageToolTests : IDisposable
 
     private Task<ToolResult> RunAsync(string path)
     {
-        return _sut.ExecuteAsync(TempWorkspace.Args(new { path }), _workspace.Context, TestContext.Current.CancellationToken);
+        return _sut.ExecuteAsync(TempRoot.Args(new { path }), _root.Context, TestContext.Current.CancellationToken);
     }
 }

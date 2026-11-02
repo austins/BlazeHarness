@@ -3,7 +3,7 @@ using BlazeHarness.Core.Web.Content;
 namespace BlazeHarness.Core.Web;
 
 /// <summary>
-/// Downloads an address and turns it into readable text, using the session's cache.
+/// Downloads an address and turns it into readable text, using the chat's cache.
 /// </summary>
 internal sealed class WebPageReader
 {
@@ -16,7 +16,7 @@ internal sealed class WebPageReader
     /// </summary>
     /// <param name="client">Downloads addresses.</param>
     /// <param name="extractor">Reads the downloaded content.</param>
-    /// <param name="cache">Keeps pages for the session.</param>
+    /// <param name="cache">Keeps pages for the chat.</param>
     public WebPageReader(SafeWebClient client, ContentExtractor extractor, WebCache cache)
     {
         _client = client;
@@ -27,15 +27,15 @@ internal sealed class WebPageReader
     /// <summary>
     /// Read an address.
     /// </summary>
-    /// <param name="sessionId">The session the call belongs to.</param>
+    /// <param name="chatId">The chat the call belongs to.</param>
     /// <param name="address">The address.</param>
     /// <param name="cancellationToken">A token that stops the download.</param>
     /// <returns>The page.</returns>
     /// <exception cref="WebFetchException">The address could not be read; the message says why and can be shown to the model.</exception>
-    public async Task<CachedPage> ReadAsync(string sessionId, Uri address, CancellationToken cancellationToken)
+    public async Task<CachedPage> ReadAsync(string chatId, Uri address, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(address);
-        if (_cache.Find(sessionId, address) is { } cached)
+        if (_cache.Find(chatId, address) is { } cached)
         {
             return cached;
         }
@@ -57,7 +57,7 @@ internal sealed class WebPageReader
         }
 
         var page = new CachedPage(response.FinalUri, _extractor.Extract(response, cancellationToken));
-        _cache.Add(sessionId, address, page);
+        _cache.Add(chatId, address, page);
         return page;
     }
 }

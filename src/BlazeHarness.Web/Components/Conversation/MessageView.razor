@@ -25,7 +25,7 @@
         <div class="msg-files">
             @foreach (var file in Entry.Attachments.Select(a => a.File))
             {
-                var address = AttachmentEndpoints.AddressOf(SessionId ?? string.Empty, file.Id);
+                var address = AttachmentEndpoints.AddressOf(ChatId ?? string.Empty, file.Id);
                 @if (file.IsImage)
                 {
                     <a href="@address" target="_blank" rel="noopener"><img class="msg-image" src="@address" alt="@file.Name" loading="lazy" /></a>
@@ -60,7 +60,7 @@
 
     @foreach (var call in Entry.ToolCalls)
     {
-        <ToolCallView @key="call.CallId" Call="call" SessionId="@SessionId" OnDecide="OnDecide" />
+        <ToolCallView @key="call.CallId" Call="call" ChatId="@ChatId" OnDecide="OnDecide" />
     }
 
     @if (Entry.Status == EntryStatus.Cancelled)
@@ -145,7 +145,7 @@
     /// Gets or sets the id of the chat the message belongs to, which its attached files are served from.
     /// </summary>
     [Parameter]
-    public string? SessionId { get; set; }
+    public string? ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether to show which model wrote the message.
@@ -202,14 +202,14 @@
         _htmlStreaming = streaming;
         if (streaming)
         {
-            _streaming ??= new StreamingMarkdown(Markdown, SessionId);
+            _streaming ??= new StreamingMarkdown(Markdown, ChatId);
             _streaming.Render(text);
             _settledHtml = _streaming.Settled;
             _tailHtml = _streaming.Tail;
         }
         else
         {
-            _settledHtml = Markdown.ToCachedHtml(text, SessionId);
+            _settledHtml = Markdown.ToCachedHtml(text, ChatId);
             _tailHtml = string.Empty;
         }
     }

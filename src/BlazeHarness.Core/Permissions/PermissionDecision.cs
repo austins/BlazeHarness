@@ -7,7 +7,7 @@ namespace BlazeHarness.Core.Permissions;
 /// </summary>
 /// <param name="Verdict">Whether the call runs, needs the user's approval, or is refused.</param>
 /// <param name="Reason">For <see cref="PermissionVerdict.Ask"/> what the user is asked to allow, and for <see cref="PermissionVerdict.Deny"/> what the model is told.</param>
-/// <param name="GrantKey">For <see cref="PermissionVerdict.Ask"/> the key that remembers an approval for the rest of the session, or null when it can only be given once.</param>
+/// <param name="GrantKey">For <see cref="PermissionVerdict.Ask"/> the key that remembers an approval for the rest of the chat, or null when it can only be given once.</param>
 /// <param name="AllowOutside">True when the call uses a path outside the working folder and must run with a context that accepts it.</param>
 /// <param name="Shell">For a shell command, how far it may reach.</param>
 /// <param name="Sticky">True when an allow rule must not turn this <see cref="PermissionVerdict.Ask"/> into an allow, because the question is a safety rule.</param>

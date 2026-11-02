@@ -11,12 +11,12 @@ internal sealed class WebFetchTool : IWebTool
     internal const int MaxChars = 25_000;
 
     private readonly WebPageReader _reader;
-    private readonly string _sessionId;
+    private readonly string _chatId;
 
-    public WebFetchTool(WebPageReader reader, string sessionId)
+    public WebFetchTool(WebPageReader reader, string chatId)
     {
         _reader = reader;
-        _sessionId = sessionId;
+        _chatId = chatId;
     }
 
     public string Name => "web_fetch";
@@ -69,7 +69,7 @@ internal sealed class WebFetchTool : IWebTool
         CachedPage page;
         try
         {
-            page = await _reader.ReadAsync(_sessionId, uri, cancellationToken);
+            page = await _reader.ReadAsync(_chatId, uri, cancellationToken);
         }
         catch (WebFetchException ex)
         {

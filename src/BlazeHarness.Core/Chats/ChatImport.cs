@@ -1,0 +1,86 @@
+using BlazeHarness.Core.Config;
+using System.Text.Json;
+
+namespace BlazeHarness.Core.Chats;
+
+/// <summary>
+/// Reads a chat from a JSON file written by <see cref="ChatExport"/>.
+/// </summary>
+/// <remarks>
+/// A file may come from anyone, so only the conversation is taken from it. Attached files and saved tool output files
+/// are not part of the import, which also means a file cannot make the app read a path it names.
+/// </remarks>
+internal static class ChatImport
+{
+    private const int MaxTitleLength = 200;
+
+    /// <summary>
+    /// Read an exported chat.
+    /// </summary>
+    /// <param name="json">The text of the file.</param>
+    /// <param name="chat">The chat when the file is valid; otherwise null.</param>
+    /// <param name="error">Why the file can't be imported, in a sentence that can be shown to the user; otherwise an empty string.</param>
+    /// <returns>True when the file is a chat export this version can read.</returns>
+    public static bool TryParse(string json, out ImportedChat? chat, out string error)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        chat = null;
+
+        ChatDocument? document;
+        try
+        {
+            document = JsonSerializer.Deserialize<ChatDocument>(json, JsonDefaults.Options);
+        }
+        catch (Exception ex) when (ex is JsonException or NotSupportedException)
+        {
+            error = "The file is not a BlazeHarness chat export.";
+            return false;
+        }
+
+        if (document is not { Format: ChatExport.JsonFormat, Chat: not null, Events: not null })
+        {
+            error = "The file is not a BlazeHarness chat export.";
+            return false;
+        }
+
+        if (document.Version > ChatExport.JsonVersion)
+        {
+            error = "The file was exported by a newer version of BlazeHarness.";
+            return false;
+        }
+
+        var events = document.Events.OfType<ChatEvent>().Select(Sanitize).ToList();
+        if (!events.Exists(e => e is UserMessageEvent or AssistantStartEvent))
+        {
+            error = "The file has no messages.";
+            return false;
+        }
+
+        var title = document.Chat.Title ?? string.Empty;
+        var cut = title.Length > MaxTitleLength && char.IsHighSurrogate(title[MaxTitleLength - 1]) ? MaxTitleLength - 1 : MaxTitleLength;
+        chat = new ImportedChat(
+            new ChatInfo
+            {
+                Title = title.Length > MaxTitleLength ? title[..cut] : title,
+                TitleSource = document.Chat.TitleSource,
+                CreatedAt = document.Chat.CreatedAt,
+                UpdatedAt = document.Chat.UpdatedAt,
+                ProviderId = document.Chat.ProviderId,
+                ModelId = document.Chat.ModelId,
+                Level = document.Chat.Level,
+            },
+            events);
+        error = string.Empty;
+        return true;
+    }
+
+    private static ChatEvent Sanitize(ChatEvent e) => e switch
+    {
+        UserMessageEvent user => user with { Text = user.Text ?? string.Empty, Attachments = null },
+        AssistantDeltaEvent delta => delta with { Text = delta.Text ?? string.Empty, Reasoning = delta.Reasoning ?? string.Empty },
+        ToolCallEvent call => call with { CallId = call.CallId ?? string.Empty, Name = call.Name ?? string.Empty, ArgumentsJson = call.ArgumentsJson ?? "{}", Summary = call.Summary ?? string.Empty },
+        ToolResultEvent result => result with { CallId = result.CallId ?? string.Empty, Output = result.Output ?? string.Empty, OutputFile = null },
+        CompactionEvent compaction => compaction with { Summary = compaction.Summary ?? string.Empty },
+        _ => e,
+    };
+}

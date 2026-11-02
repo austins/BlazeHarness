@@ -44,14 +44,14 @@ public sealed class SensitivePathsTests
     }
 
     [Fact]
-    public void IsProtected_CurrentSessionDirectory_IsFalse()
+    public void IsProtected_CurrentChatDirectory_IsFalse()
     {
         // Arrange
         var sut = SensitivePaths.Default(_paths, "s1");
 
         // Act
-        var own = sut.IsProtected(Path.Combine(_paths.SessionDirectory("s1"), "outputs", "a.txt"));
-        var other = sut.IsProtected(Path.Combine(_paths.SessionDirectory("s2"), "messages.jsonl"));
+        var own = sut.IsProtected(Path.Combine(_paths.ChatDirectory("s1"), "outputs", "a.txt"));
+        var other = sut.IsProtected(Path.Combine(_paths.ChatDirectory("s2"), "messages.jsonl"));
 
         // Assert
         own.Should().BeFalse();

@@ -58,7 +58,7 @@ public static class FolderPaths
     public static string? Normalize(string? path, string userHome)
     {
         var full = ToFullPath(path, userHome);
-        return full is null ? null : WorkspacePath.CanonicalRoot(full);
+        return full is null ? null : RootedPath.CanonicalRoot(full);
     }
 
     /// <summary>

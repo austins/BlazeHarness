@@ -1,14 +1,14 @@
 @using System.Reflection
 @using System.Runtime.InteropServices
 @using BlazeHarness.Core
+@using BlazeHarness.Core.Chats
 @using BlazeHarness.Core.Folders
 @using BlazeHarness.Core.Logging
 @using BlazeHarness.Core.Mcp
 @using BlazeHarness.Core.Sandbox
-@using BlazeHarness.Core.Sessions
 @using BlazeHarness.Core.Skills
 @inject AppPaths Paths
-@inject SessionService Sessions
+@inject ChatService ChatService
 @inject FolderRegistry Folders
 @inject McpManager Mcp
 @inject SkillCatalog Skills
@@ -36,7 +36,7 @@
                 <div class="hint">@Sandbox.Status.Detail</div>
             </dd>
             <dt>Chats</dt>
-            <dd>@Sessions.Store.List().Count</dd>
+            <dd>@ChatService.Store.List().Count</dd>
             <dt>Folders</dt>
             <dd>@Folders.List().Count</dd>
             <dt>MCP servers</dt>

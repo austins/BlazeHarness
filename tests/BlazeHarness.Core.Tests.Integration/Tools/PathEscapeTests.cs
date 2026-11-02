@@ -12,7 +12,7 @@ public sealed class PathEscapeTests : IDisposable
     private const string SkipReason = "Creating symbolic links needs a privilege on Windows.";
     private const string Secret = "top secret";
 
-    private readonly TempWorkspace _workspace = new();
+    private readonly TempRoot _root = new();
     private readonly TempFolder _outside = new("bh-outside-");
     private readonly string _secretFile;
 
@@ -26,7 +26,7 @@ public sealed class PathEscapeTests : IDisposable
 
     public void Dispose()
     {
-        _workspace.Dispose();
+        _root.Dispose();
         _outside.Dispose();
     }
 
@@ -34,10 +34,10 @@ public sealed class PathEscapeTests : IDisposable
     public async Task ReadFile_ThroughASymlinkedFolder_IsRefused()
     {
         // Arrange
-        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "link"), _outside.Root);
+        Directory.CreateSymbolicLink(Path.Combine(_root.Root, "link"), _outside.Root);
 
         // Act
-        var result = await new ReadFileTool().ExecuteAsync(TempWorkspace.Args(new { path = "link/secret.txt" }), _workspace.Context, TestContext.Current.CancellationToken);
+        var result = await new ReadFileTool().ExecuteAsync(TempRoot.Args(new { path = "link/secret.txt" }), _root.Context, TestContext.Current.CancellationToken);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -48,10 +48,10 @@ public sealed class PathEscapeTests : IDisposable
     public async Task WriteFile_NewFileInASymlinkedFolder_IsRefusedAndCreatesNothing()
     {
         // Arrange
-        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "link"), _outside.Root);
+        Directory.CreateSymbolicLink(Path.Combine(_root.Root, "link"), _outside.Root);
 
         // Act
-        var result = await new WriteFileTool().ExecuteAsync(TempWorkspace.Args(new { path = "link/new.txt", content = "x" }), _workspace.Context, TestContext.Current.CancellationToken);
+        var result = await new WriteFileTool().ExecuteAsync(TempRoot.Args(new { path = "link/new.txt", content = "x" }), _root.Context, TestContext.Current.CancellationToken);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -62,10 +62,10 @@ public sealed class PathEscapeTests : IDisposable
     public async Task WriteFile_OverASymlinkedFile_IsRefusedAndKeepsTheTarget()
     {
         // Arrange
-        File.CreateSymbolicLink(Path.Combine(_workspace.Root, "link.txt"), _secretFile);
+        File.CreateSymbolicLink(Path.Combine(_root.Root, "link.txt"), _secretFile);
 
         // Act
-        var result = await new WriteFileTool().ExecuteAsync(TempWorkspace.Args(new { path = "link.txt", content = "overwritten" }), _workspace.Context, TestContext.Current.CancellationToken);
+        var result = await new WriteFileTool().ExecuteAsync(TempRoot.Args(new { path = "link.txt", content = "overwritten" }), _root.Context, TestContext.Current.CancellationToken);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -76,12 +76,12 @@ public sealed class PathEscapeTests : IDisposable
     public async Task EditFile_ASymlinkedFile_IsRefusedAndKeepsTheTarget()
     {
         // Arrange
-        File.CreateSymbolicLink(Path.Combine(_workspace.Root, "link.txt"), _secretFile);
+        File.CreateSymbolicLink(Path.Combine(_root.Root, "link.txt"), _secretFile);
 
         // Act
         var result = await new EditFileTool().ExecuteAsync(
-            TempWorkspace.Args(new { path = "link.txt", old_string = "top", new_string = "changed" }),
-            _workspace.Context,
+            TempRoot.Args(new { path = "link.txt", old_string = "top", new_string = "changed" }),
+            _root.Context,
             TestContext.Current.CancellationToken);
 
         // Assert
@@ -93,12 +93,12 @@ public sealed class PathEscapeTests : IDisposable
     public void TryResolve_ChainOfSymlinks_IsFollowedToTheEndAndRefused()
     {
         // Arrange
-        var second = Path.Combine(_workspace.Root, "second");
+        var second = Path.Combine(_root.Root, "second");
         Directory.CreateSymbolicLink(second, _outside.Root);
-        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "first"), second);
+        Directory.CreateSymbolicLink(Path.Combine(_root.Root, "first"), second);
 
         // Act
-        var ok = _workspace.Context.TryResolve("first/secret.txt", out _, out var error);
+        var ok = _root.Context.TryResolve("first/secret.txt", out _, out var error);
 
         // Assert
         ok.Should().BeFalse();
@@ -109,11 +109,11 @@ public sealed class PathEscapeTests : IDisposable
     public void TryResolve_RelativeSymlinkTarget_IsRefused()
     {
         // Arrange
-        var relative = Path.GetRelativePath(_workspace.Root, _outside.Root);
-        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "link"), relative);
+        var relative = Path.GetRelativePath(_root.Root, _outside.Root);
+        Directory.CreateSymbolicLink(Path.Combine(_root.Root, "link"), relative);
 
         // Act
-        var ok = _workspace.Context.TryResolve("link/secret.txt", out _, out _);
+        var ok = _root.Context.TryResolve("link/secret.txt", out _, out _);
 
         // Assert
         ok.Should().BeFalse();
@@ -123,13 +123,13 @@ public sealed class PathEscapeTests : IDisposable
     public void TryResolve_SymlinkLoop_IsRefusedWithoutHanging()
     {
         // Arrange
-        var a = Path.Combine(_workspace.Root, "a");
-        var b = Path.Combine(_workspace.Root, "b");
+        var a = Path.Combine(_root.Root, "a");
+        var b = Path.Combine(_root.Root, "b");
         Directory.CreateSymbolicLink(a, b);
         Directory.CreateSymbolicLink(b, a);
 
         // Act
-        var ok = _workspace.Context.TryResolve("a/file.txt", out _, out _);
+        var ok = _root.Context.TryResolve("a/file.txt", out _, out _);
 
         // Assert
         ok.Should().BeFalse();
@@ -140,15 +140,15 @@ public sealed class PathEscapeTests : IDisposable
     {
         // Arrange
         var deep = Directory.CreateDirectory(Path.Combine(_outside.Root, "deep", "deeper"));
-        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "link"), deep.FullName);
-        _workspace.Write("notes.txt", "mine");
+        Directory.CreateSymbolicLink(Path.Combine(_root.Root, "link"), deep.FullName);
+        _root.Write("notes.txt", "mine");
 
         // Act
-        var ok = _workspace.Context.TryResolve("link/../notes.txt", out var full, out _);
+        var ok = _root.Context.TryResolve("link/../notes.txt", out var full, out _);
 
         // Assert
         ok.Should().BeTrue();
-        full.Should().Be(Path.Combine(WorkspacePath.CanonicalRoot(_workspace.Root), "notes.txt"));
+        full.Should().Be(Path.Combine(RootedPath.CanonicalRoot(_root.Root), "notes.txt"));
     }
 
     [Theory]
@@ -159,7 +159,7 @@ public sealed class PathEscapeTests : IDisposable
     public void TryResolve_DotDotSegmentsThatLeave_AreRefused(string input)
     {
         // Act
-        var ok = _workspace.Context.TryResolve(input, out _, out _);
+        var ok = _root.Context.TryResolve(input, out _, out _);
 
         // Assert
         ok.Should().BeFalse();
@@ -172,18 +172,18 @@ public sealed class PathEscapeTests : IDisposable
     public void TryResolve_ShellOrUrlSyntax_IsTakenLiterallyInsideTheFolder(string input)
     {
         // Act
-        var ok = _workspace.Context.TryResolve(input, out var full, out _);
+        var ok = _root.Context.TryResolve(input, out var full, out _);
 
         // Assert
         ok.Should().BeTrue();
-        WorkspacePath.IsInside(_workspace.Root, full).Should().BeTrue();
+        RootedPath.IsInside(_root.Root, full).Should().BeTrue();
     }
 
     [Fact(Skip = "Junctions exist only on Windows.", SkipUnless = nameof(IsWindows))]
     public void TryResolve_JunctionLeadingOut_IsRefused()
     {
         // Arrange
-        var junction = Path.Combine(_workspace.Root, "junction");
+        var junction = Path.Combine(_root.Root, "junction");
         using var process = Process.Start(new ProcessStartInfo("cmd.exe", $"/c mklink /J \"{junction}\" \"{_outside.Root}\"")
         {
             CreateNoWindow = true,
@@ -192,8 +192,8 @@ public sealed class PathEscapeTests : IDisposable
         process.WaitForExit();
 
         // Act
-        var folder = _workspace.Context.TryResolve("junction", out _, out _);
-        var file = _workspace.Context.TryResolve("junction/secret.txt", out _, out _);
+        var folder = _root.Context.TryResolve("junction", out _, out _);
+        var file = _root.Context.TryResolve("junction/secret.txt", out _, out _);
 
         // Assert
         folder.Should().BeFalse();

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace BlazeHarness.Core.Web;
 
 /// <summary>
-/// Owns the web search and fetch machinery and hands each session its web tools.
+/// Owns the web search and fetch machinery and hands each chat its web tools.
 /// </summary>
 public sealed class WebServices : IDisposable
 {
@@ -53,20 +53,20 @@ public sealed class WebServices : IDisposable
     public WebProviderStatus? StatusOf(string providerId) => _search.StatusOf(providerId);
 
     /// <summary>
-    /// Drop the pages a session fetched.
+    /// Drop the pages a chat fetched.
     /// </summary>
-    /// <param name="sessionId">The session id.</param>
-    public void Forget(string sessionId) => _cache.Forget(sessionId);
+    /// <param name="chatId">The chat id.</param>
+    public void Forget(string chatId) => _cache.Forget(chatId);
 
     /// <inheritdoc />
     public void Dispose() => _client.Dispose();
 
     /// <summary>
-    /// Get the web tools a session can use right now.
+    /// Get the web tools a chat can use right now.
     /// </summary>
-    /// <param name="sessionId">The session id, which scopes the page cache.</param>
+    /// <param name="chatId">The chat id, which scopes the page cache.</param>
     /// <returns>The tools that are turned on in the settings.</returns>
-    internal IReadOnlyList<ITool> ToolsFor(string sessionId)
+    internal IReadOnlyList<ITool> ToolsFor(string chatId)
     {
         var settings = _settings();
         List<ITool> tools = [];
@@ -77,7 +77,7 @@ public sealed class WebServices : IDisposable
 
         if (settings.FetchEnabled)
         {
-            tools.Add(new WebFetchTool(_reader, sessionId));
+            tools.Add(new WebFetchTool(_reader, chatId));
         }
 
         return tools;

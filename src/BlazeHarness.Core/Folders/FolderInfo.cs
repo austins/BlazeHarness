@@ -6,7 +6,7 @@ namespace BlazeHarness.Core.Folders;
 public sealed record FolderInfo
 {
     /// <summary>
-    /// Gets the normalized full path, which sessions refer to.
+    /// Gets the normalized full path, which chats refer to.
     /// </summary>
     public string Path { get; init; } = string.Empty;
 
@@ -16,7 +16,7 @@ public sealed record FolderInfo
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
-    /// Gets when the folder was last opened or had a session started in it, which orders the recent list.
+    /// Gets when the folder was last opened or had a chat started in it, which orders the recent list.
     /// </summary>
     public DateTimeOffset LastOpenedAt { get; init; }
 }

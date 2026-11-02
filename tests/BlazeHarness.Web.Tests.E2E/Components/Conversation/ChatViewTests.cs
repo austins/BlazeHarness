@@ -53,8 +53,8 @@ public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)
     public async Task ToolApproval_Deny_LeavesTheFileUnwrittenAndTheChatContinues()
     {
         // Arrange
-        await Factory.Services.GetRequiredService<FolderRegistry>().OpenAsync(Workspace.Root, TestContext.Current.CancellationToken);
-        await LaunchAsync("/?folder=" + Uri.EscapeDataString(Workspace.Root));
+        await Factory.Services.GetRequiredService<FolderRegistry>().OpenAsync(ProjectFolder.Root, TestContext.Current.CancellationToken);
+        await LaunchAsync("/?folder=" + Uri.EscapeDataString(ProjectFolder.Root));
 
         // Act
         await SendAsync("Write a file");
@@ -64,7 +64,7 @@ public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)
         // Assert
         await Expect(Page.Locator("[data-role=assistant]").Last).ToContainTextAsync("The file was not written.");
         await Expect(Page.Locator(".tool-approval")).ToHaveCountAsync(0);
-        File.Exists(Workspace.Combine("note.txt")).Should().BeFalse();
+        File.Exists(ProjectFolder.Combine("note.txt")).Should().BeFalse();
     }
 
     protected override string[]? ChunksFor(string body)

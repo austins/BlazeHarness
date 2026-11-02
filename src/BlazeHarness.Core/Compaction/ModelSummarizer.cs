@@ -10,7 +10,7 @@ namespace BlazeHarness.Core.Compaction;
 /// Writes summaries by asking the model the conversation already uses, with a request of its own.
 /// </summary>
 /// <remarks>
-/// Tool output is cut short in the text that is sent, because it is the bulk of a long coding session and the summary only needs what was learned.
+/// Tool output is cut short in the text that is sent, because it is the bulk of a long coding chat and the summary only needs what was learned.
 /// If the text still doesn't fit, the oldest messages are left out of it.
 /// </remarks>
 internal sealed class ModelSummarizer : ISummarizer

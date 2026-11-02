@@ -14,7 +14,7 @@ public sealed class ToolContext
     /// <param name="folder">The working folder, which must exist. Links in it are followed so every later check compares real paths.</param>
     public ToolContext(string folder)
     {
-        Root = WorkspacePath.CanonicalRoot(folder);
+        Root = RootedPath.CanonicalRoot(folder);
     }
 
     private ToolContext(string root, bool allowsOutside, ShellMode shell, IReadOnlyList<string> shellReadFolders, SensitivePaths sensitive)
@@ -101,7 +101,7 @@ public sealed class ToolContext
     /// <returns>True when the path is allowed.</returns>
     public bool TryResolve(string? input, out string fullPath, out string error)
     {
-        return WorkspacePath.TryResolve(Root, input, out fullPath, out error, AllowsOutside);
+        return RootedPath.TryResolve(Root, input, out fullPath, out error, AllowsOutside);
     }
 
     /// <summary>
@@ -109,5 +109,5 @@ public sealed class ToolContext
     /// </summary>
     /// <param name="fullPath">A path inside the working folder.</param>
     /// <returns>The relative path.</returns>
-    public string Relative(string fullPath) => WorkspacePath.Relative(Root, fullPath);
+    public string Relative(string fullPath) => RootedPath.Relative(Root, fullPath);
 }

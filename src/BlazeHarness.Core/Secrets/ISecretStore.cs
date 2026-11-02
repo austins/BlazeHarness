@@ -1,7 +1,7 @@
 namespace BlazeHarness.Core.Secrets;
 
 /// <summary>
-/// Stores API keys outside <c>config.json</c> and session files.
+/// Stores API keys outside <c>config.json</c> and chat files.
 /// </summary>
 public interface ISecretStore : IDisposable
 {

@@ -82,11 +82,11 @@ public abstract class TestBase : IAsyncLifetime
         }
 
         _provider.Dispose();
-        Workspace.Dispose();
+        ProjectFolder.Dispose();
         _home.Dispose();
     }
 
-    protected TempFolder Workspace { get; } = new("bh-e2e-ws-");
+    protected TempFolder ProjectFolder { get; } = new("bh-e2e-folder-");
 
     protected IPage Page { get; private set; } = null!;
 

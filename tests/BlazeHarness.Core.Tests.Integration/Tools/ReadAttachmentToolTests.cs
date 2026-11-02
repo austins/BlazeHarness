@@ -7,17 +7,17 @@ namespace BlazeHarness.Core.Tests.Integration.Tools;
 
 public sealed class ReadAttachmentToolTests : IDisposable
 {
-    private readonly TempWorkspace _workspace = new();
-    private readonly SessionAttachments _attachments;
+    private readonly TempRoot _root = new();
+    private readonly ChatAttachments _attachments;
     private readonly ReadAttachmentTool _sut;
 
     public ReadAttachmentToolTests()
     {
-        _attachments = new SessionAttachments(Path.Combine(_workspace.Root, "attachments"));
+        _attachments = new ChatAttachments(Path.Combine(_root.Root, "attachments"));
         _sut = new ReadAttachmentTool(_attachments);
     }
 
-    public void Dispose() => _workspace.Dispose();
+    public void Dispose() => _root.Dispose();
 
     [Fact]
     public async Task ExecuteAsync_ById_ReadsTheFile()
@@ -93,5 +93,5 @@ public sealed class ReadAttachmentToolTests : IDisposable
         _sut.Name.Should().Be("read_attachment");
     }
 
-    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), _workspace.Context, TestContext.Current.CancellationToken);
+    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempRoot.Args(args), _root.Context, TestContext.Current.CancellationToken);
 }

@@ -1,5 +1,5 @@
 using BlazeHarness.Core;
-using BlazeHarness.Core.Sessions;
+using BlazeHarness.Core.Chats;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Web.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -11,13 +11,13 @@ namespace BlazeHarness.Web.Tests.Integration.Hosting;
 public sealed class ExportEndpointsTests : IDisposable
 {
     private readonly TempFolder _temp = new("bh-export-endpoint-");
-    private readonly SessionStore _store;
-    private readonly SessionService _service;
+    private readonly ChatStore _store;
+    private readonly ChatService _service;
 
     public ExportEndpointsTests()
     {
-        _store = new SessionStore(new AppPaths(_temp.Root, _temp.Root), NullLoggerFactory.Instance, TimeProvider.System);
-        _service = new SessionService(_store, (_, _) => throw new NotSupportedException(), NullLoggerFactory.Instance, TimeProvider.System);
+        _store = new ChatStore(new AppPaths(_temp.Root, _temp.Root), NullLoggerFactory.Instance, TimeProvider.System);
+        _service = new ChatService(_store, (_, _) => throw new NotSupportedException(), NullLoggerFactory.Instance, TimeProvider.System);
     }
 
     [Theory]
@@ -25,7 +25,7 @@ public sealed class ExportEndpointsTests : IDisposable
     [InlineData("md", "text/markdown; charset=utf-8", ".md")]
     [InlineData(null, "text/markdown; charset=utf-8", ".md")]
     [InlineData("anything-else", "text/markdown; charset=utf-8", ".md")]
-    public async Task ServeAsync_KnownSession_SendsTheFormatAsADownloadThatCannotBeSniffed(string? format, string contentType, string extension)
+    public async Task ServeAsync_KnownChat_SendsTheFormatAsADownloadThatCannotBeSniffed(string? format, string contentType, string extension)
     {
         // Arrange
         var info = await _service.CreateAsync(cancellationToken: TestContext.Current.CancellationToken);
@@ -43,7 +43,7 @@ public sealed class ExportEndpointsTests : IDisposable
     }
 
     [Fact]
-    public async Task ServeAsync_UnknownSession_IsNotFoundAndSetsNoDownloadHeaders()
+    public async Task ServeAsync_UnknownChat_IsNotFoundAndSetsNoDownloadHeaders()
     {
         // Arrange
         var context = new DefaultHttpContext();
@@ -57,8 +57,8 @@ public sealed class ExportEndpointsTests : IDisposable
     }
 
     [Theory]
-    [InlineData(ExportFormat.Json, "api/sessions/abc/export?format=json")]
-    [InlineData(ExportFormat.Markdown, "api/sessions/abc/export?format=md")]
+    [InlineData(ExportFormat.Json, "api/chats/abc/export?format=json")]
+    [InlineData(ExportFormat.Markdown, "api/chats/abc/export?format=md")]
     public void AddressOf_Format_ProducesARelativeLinkTheRouteAccepts(ExportFormat format, string expected)
     {
         // Act
@@ -75,7 +75,7 @@ public sealed class ExportEndpointsTests : IDisposable
         var address = ExportEndpoints.AddressOf("a/b?c", ExportFormat.Json);
 
         // Assert
-        address.Should().Be("api/sessions/a%2Fb%3Fc/export?format=json");
+        address.Should().Be("api/chats/a%2Fb%3Fc/export?format=json");
     }
 
     public void Dispose()

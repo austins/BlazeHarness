@@ -1,3 +1,4 @@
+@using BlazeHarness.Core.Chats
 @using BlazeHarness.Web.Hosting
 
 <Popover Label="Export" Title="Save this chat as a file">
@@ -6,13 +7,13 @@
         <div class="panel-head"><span>Export chat</span></div>
         <ul class="panel-list">
             <li>
-                <a class="panel-option" href="@ExportEndpoints.AddressOf(SessionId, ExportFormat.Markdown)" download>
+                <a class="panel-option" href="@ExportEndpoints.AddressOf(ChatId, ExportFormat.Markdown)" download>
                     <Icon Name="file" />
                     <span class="panel-option-text"><span class="panel-option-name">Markdown</span><span class="panel-option-hint">To read or share</span></span>
                 </a>
             </li>
             <li>
-                <a class="panel-option" href="@ExportEndpoints.AddressOf(SessionId, ExportFormat.Json)" download>
+                <a class="panel-option" href="@ExportEndpoints.AddressOf(ChatId, ExportFormat.Json)" download>
                     <Icon Name="file" />
                     <span class="panel-option-text"><span class="panel-option-name">JSON</span><span class="panel-option-hint">To import again later</span></span>
                 </a>
@@ -27,5 +28,5 @@
     /// Gets or sets the id of the chat to export.
     /// </summary>
     [Parameter, EditorRequired]
-    public string SessionId { get; set; } = string.Empty;
+    public string ChatId { get; set; } = string.Empty;
 }

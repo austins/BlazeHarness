@@ -13,7 +13,7 @@ namespace BlazeHarness.Core.Folders;
 internal static class ProjectContextLoader
 {
     /// <summary>
-    /// The most bytes of <c>AGENTS.md</c> text kept for one session, shared by all of its files.
+    /// The most bytes of <c>AGENTS.md</c> text kept for one chat, shared by all of its files.
     /// </summary>
     public const int MaxBytes = 32 * 1024;
 
@@ -31,7 +31,7 @@ internal static class ProjectContextLoader
 
         var folder = Path.GetFullPath(folderPath);
         var root = FindGitRoot(folder) ?? folder;
-        var boundary = WorkspacePath.CanonicalRoot(root);
+        var boundary = RootedPath.CanonicalRoot(root);
 
         var remaining = MaxBytes;
         List<ProjectFile> nearestFirst = [];
@@ -95,8 +95,8 @@ internal static class ProjectContextLoader
                     return null;
                 }
 
-                var real = WorkspacePath.CanonicalRoot(target.FullName);
-                return WorkspacePath.IsInside(boundary, real) && HasContent(target) ? real : null;
+                var real = RootedPath.CanonicalRoot(target.FullName);
+                return RootedPath.IsInside(boundary, real) && HasContent(target) ? real : null;
             }
 
             return info.Exists && HasContent(info) ? path : null;

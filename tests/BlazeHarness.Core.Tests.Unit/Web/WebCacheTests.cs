@@ -15,7 +15,7 @@ public sealed class WebCacheTests
     }
 
     [Fact]
-    public void Find_AfterAdd_ReturnsPageOnlyForSameSession()
+    public void Find_AfterAdd_ReturnsPageOnlyForSameChat()
     {
         // Arrange
         var address = new Uri("https://example.com/a");
@@ -44,7 +44,7 @@ public sealed class WebCacheTests
     public void Add_PastPageLimit_DropsOldest()
     {
         // Arrange
-        for (var i = 0; i <= WebCache.MaxPagesPerSession; i++)
+        for (var i = 0; i <= WebCache.MaxPagesPerChat; i++)
         {
             var address = new Uri($"https://example.com/{i}");
             _sut.Add("one", address, Page(address));
@@ -52,11 +52,11 @@ public sealed class WebCacheTests
 
         // Act / Assert
         _sut.Find("one", new Uri("https://example.com/0")).Should().BeNull();
-        _sut.Find("one", new Uri($"https://example.com/{WebCache.MaxPagesPerSession}")).Should().NotBeNull();
+        _sut.Find("one", new Uri($"https://example.com/{WebCache.MaxPagesPerChat}")).Should().NotBeNull();
     }
 
     [Fact]
-    public void Forget_RemovesSessionPages()
+    public void Forget_RemovesChatPages()
     {
         // Arrange
         var address = new Uri("https://example.com/a");

@@ -9,7 +9,7 @@ namespace BlazeHarness.Core.Tests.Integration.Permissions;
 
 public sealed class PermissionEngineTests : IDisposable
 {
-    private readonly TempWorkspace _workspace = new();
+    private readonly TempRoot _root = new();
     private readonly TempFolder _temp = new("bh-else-");
     private readonly PermissionEngine _sut = new();
 
@@ -25,7 +25,7 @@ public sealed class PermissionEngineTests : IDisposable
 
     public void Dispose()
     {
-        _workspace.Dispose();
+        _root.Dispose();
         _temp.Dispose();
     }
 
@@ -44,7 +44,7 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_ToolWithoutPathsOrCommands_Allows()
     {
         // Arrange
-        var attachments = new Core.Attachments.SessionAttachments(_workspace.Root);
+        var attachments = new Core.Attachments.ChatAttachments(_root.Root);
         _sut.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst);
 
         // Act
@@ -63,7 +63,7 @@ public sealed class PermissionEngineTests : IDisposable
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Ask);
         decision.AllowOutside.Should().BeTrue();
-        decision.GrantKey.Should().Be("file:" + Path.Combine(WorkspacePath.CanonicalRoot(_temp.Root), "note.txt"));
+        decision.GrantKey.Should().Be("file:" + Path.Combine(RootedPath.CanonicalRoot(_temp.Root), "note.txt"));
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class PermissionEngineTests : IDisposable
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Ask);
-        decision.GrantKey.Should().Be("dir:" + WorkspacePath.CanonicalRoot(_temp.Root));
+        decision.GrantKey.Should().Be("dir:" + RootedPath.CanonicalRoot(_temp.Root));
     }
 
     [Fact]
@@ -247,7 +247,7 @@ public sealed class PermissionEngineTests : IDisposable
         var decision = Evaluate(NewShell(), new { command = "ls" });
 
         // Assert
-        decision.ShellReadFolders.Should().ContainSingle().Which.Should().Be(WorkspacePath.CanonicalRoot(_temp.Root));
+        decision.ShellReadFolders.Should().ContainSingle().Which.Should().Be(RootedPath.CanonicalRoot(_temp.Root));
     }
 
     [Theory]
@@ -272,7 +272,7 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_SymlinkIntoProtectedFolder_Denies()
     {
         // Arrange
-        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "innocent"), _temp.Root);
+        Directory.CreateSymbolicLink(Path.Combine(_root.Root, "innocent"), _temp.Root);
         _sut.Sensitive = () => new SensitivePaths([_temp.Root]);
 
         // Act
@@ -286,7 +286,7 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_SymlinkOutOfTheFolder_CountsAsOutside()
     {
         // Arrange
-        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "link"), _temp.Root);
+        Directory.CreateSymbolicLink(Path.Combine(_root.Root, "link"), _temp.Root);
 
         // Act
         var read = Evaluate(new ReadFileTool(), new { path = "link/note.txt" });
@@ -416,7 +416,7 @@ public sealed class PermissionEngineTests : IDisposable
         var decision = Evaluate(NewShell(), new { command = "cat note.txt" });
 
         // Assert
-        decision.ShellReadFolders.Should().ContainSingle().Which.Should().Be(WorkspacePath.CanonicalRoot(_temp.Root));
+        decision.ShellReadFolders.Should().ContainSingle().Which.Should().Be(RootedPath.CanonicalRoot(_temp.Root));
     }
 
     [Fact]
@@ -547,7 +547,7 @@ public sealed class PermissionEngineTests : IDisposable
     {
         // The tool parses the same text with the same parser and refuses it, so allowing here cannot run anything.
         // Act
-        var decision = _sut.Evaluate(new ReadFileTool(), "{not json", _workspace.Context);
+        var decision = _sut.Evaluate(new ReadFileTool(), "{not json", _root.Context);
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Allow);
@@ -660,6 +660,6 @@ public sealed class PermissionEngineTests : IDisposable
 
     private PermissionDecision Evaluate(ITool tool, object arguments)
     {
-        return _sut.Evaluate(tool, JsonSerializer.Serialize(arguments), _workspace.Context);
+        return _sut.Evaluate(tool, JsonSerializer.Serialize(arguments), _root.Context);
     }
 }

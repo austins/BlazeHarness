@@ -15,7 +15,7 @@ public static class JsonDefaults
     public static JsonSerializerOptions Options { get; } = Create(indented: true);
 
     /// <summary>
-    /// Gets the same options with single-line output, for line-based files such as a session's message log.
+    /// Gets the same options with single-line output, for line-based files such as a chat's message log.
     /// </summary>
     public static JsonSerializerOptions Compact { get; } = Create(indented: false);
 

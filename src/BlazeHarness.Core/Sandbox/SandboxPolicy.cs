@@ -86,10 +86,10 @@ internal sealed class SandboxPolicy
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(protectedFolders);
 
-        var scratch = WorkspacePath.CanonicalRoot(launch.ScratchDirectory);
+        var scratch = RootedPath.CanonicalRoot(launch.ScratchDirectory);
         var home = Path.Combine(scratch, "home");
         var temp = Path.Combine(scratch, "tmp");
-        var workDirectory = WorkspacePath.CanonicalRoot(launch.WorkingDirectory);
+        var workDirectory = RootedPath.CanonicalRoot(launch.WorkingDirectory);
 
         List<string> readWrite = [scratch];
         List<string> readOnly = [];
@@ -102,19 +102,19 @@ internal sealed class SandboxPolicy
             readWrite.Add(workDirectory);
         }
 
-        var approved = (launch.ReadFolders ?? []).Where(Directory.Exists).Select(WorkspacePath.CanonicalRoot);
+        var approved = (launch.ReadFolders ?? []).Where(Directory.Exists).Select(RootedPath.CanonicalRoot);
         foreach (var path in approved.Concat(RuntimeFolders(platform, host)).Append(Path.GetDirectoryName(launch.Shell.Executable) ?? string.Empty).Concat(PathFolders(platform, host)))
         {
             if (path.Length > 0 && Directory.Exists(path) && !IsCovered(path, readOnly) && !IsCovered(path, readWrite))
             {
-                readOnly.Add(WorkspacePath.CanonicalRoot(path));
+                readOnly.Add(RootedPath.CanonicalRoot(path));
             }
         }
 
         var denied = protectedFolders
             .Where(folder => Directory.Exists(folder)
-                && (WorkspacePath.IsInside(workDirectory, folder) || readOnly.Exists(allowed => WorkspacePath.IsInside(allowed, folder))))
-            .Select(WorkspacePath.CanonicalRoot)
+                && (RootedPath.IsInside(workDirectory, folder) || readOnly.Exists(allowed => RootedPath.IsInside(allowed, folder))))
+            .Select(RootedPath.CanonicalRoot)
             .ToList();
 
         return new SandboxPolicy(readWrite, readOnly, denied, BuildEnvironment(platform, host, home, temp, launch.Command), QuotedCommandLine(launch.Shell, platform));
@@ -136,10 +136,10 @@ internal sealed class SandboxPolicy
         var entries = host.GetValueOrDefault("PATH", string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         // A relative entry means whatever folder the app runs in, and the home folder or a parent of it would expose files the protected list can't name.
-        return entries.Where(entry => Path.IsPathFullyQualified(entry) && (home.Length == 0 || !WorkspacePath.IsInside(WorkspacePath.CanonicalRoot(entry), WorkspacePath.CanonicalRoot(home))));
+        return entries.Where(entry => Path.IsPathFullyQualified(entry) && (home.Length == 0 || !RootedPath.IsInside(RootedPath.CanonicalRoot(entry), RootedPath.CanonicalRoot(home))));
     }
 
-    private static bool IsCovered(string path, List<string> allowed) => allowed.Exists(root => WorkspacePath.IsInside(root, path));
+    private static bool IsCovered(string path, List<string> allowed) => allowed.Exists(root => RootedPath.IsInside(root, path));
 
     private static Dictionary<string, string> BuildEnvironment(SandboxPlatform platform, IReadOnlyDictionary<string, string> host, string home, string temp, string command)
     {

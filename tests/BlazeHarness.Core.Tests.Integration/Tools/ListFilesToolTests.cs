@@ -5,20 +5,20 @@ namespace BlazeHarness.Core.Tests.Integration.Tools;
 
 public sealed class ListFilesToolTests : IDisposable
 {
-    private readonly TempWorkspace _workspace = new();
+    private readonly TempRoot _root = new();
     private readonly ListFilesTool _sut = new();
 
     public static bool IsWindows => OperatingSystem.IsWindows();
 
-    public void Dispose() => _workspace.Dispose();
+    public void Dispose() => _root.Dispose();
 
     [Fact]
     public async Task ExecuteAsync_NoArguments_ListsTheTopLevelOnlyWithFoldersMarked()
     {
         // Arrange
-        _workspace.Write("b.txt", "x");
-        _workspace.Write("a.txt", "x");
-        _workspace.Write("src/deep.cs", "x");
+        _root.Write("b.txt", "x");
+        _root.Write("a.txt", "x");
+        _root.Write("src/deep.cs", "x");
 
         // Act
         var result = await RunAsync(new { });
@@ -31,9 +31,9 @@ public sealed class ListFilesToolTests : IDisposable
     public async Task ExecuteAsync_PatternWithoutSlash_MatchesAtAnyDepth()
     {
         // Arrange
-        _workspace.Write("Program.cs", "x");
-        _workspace.Write("src/app/Service.cs", "x");
-        _workspace.Write("src/readme.md", "x");
+        _root.Write("Program.cs", "x");
+        _root.Write("src/app/Service.cs", "x");
+        _root.Write("src/readme.md", "x");
 
         // Act
         var result = await RunAsync(new { pattern = "*.cs" });
@@ -46,9 +46,9 @@ public sealed class ListFilesToolTests : IDisposable
     public async Task ExecuteAsync_PatternWithSlash_IsRelativeToThePath()
     {
         // Arrange
-        _workspace.Write("src/a.ts", "x");
-        _workspace.Write("src/inner/b.ts", "x");
-        _workspace.Write("other/c.ts", "x");
+        _root.Write("src/a.ts", "x");
+        _root.Write("src/inner/b.ts", "x");
+        _root.Write("other/c.ts", "x");
 
         // Act
         var result = await RunAsync(new { path = "src", pattern = "inner/*.ts" });
@@ -61,13 +61,13 @@ public sealed class ListFilesToolTests : IDisposable
     public async Task ExecuteAsync_Gitignore_HidesIgnoredFilesAndFolders()
     {
         // Arrange
-        _workspace.Write(".gitignore", "bin/\n*.log\n!keep.log\n");
-        _workspace.Write("bin/out.dll", "x");
-        _workspace.Write("run.log", "x");
-        _workspace.Write("keep.log", "x");
-        _workspace.Write("src/code.cs", "x");
-        _workspace.Write("src/.gitignore", "generated.cs\n");
-        _workspace.Write("src/generated.cs", "x");
+        _root.Write(".gitignore", "bin/\n*.log\n!keep.log\n");
+        _root.Write("bin/out.dll", "x");
+        _root.Write("run.log", "x");
+        _root.Write("keep.log", "x");
+        _root.Write("src/code.cs", "x");
+        _root.Write("src/.gitignore", "generated.cs\n");
+        _root.Write("src/generated.cs", "x");
 
         // Act
         var result = await RunAsync(new { recursive = true });
@@ -80,8 +80,8 @@ public sealed class ListFilesToolTests : IDisposable
     public async Task ExecuteAsync_IncludeIgnored_ListsThemAgain()
     {
         // Arrange
-        _workspace.Write(".gitignore", "bin/\n");
-        _workspace.Write("bin/out.dll", "x");
+        _root.Write(".gitignore", "bin/\n");
+        _root.Write("bin/out.dll", "x");
 
         // Act
         var result = await RunAsync(new { recursive = true, include_ignored = true });
@@ -94,8 +94,8 @@ public sealed class ListFilesToolTests : IDisposable
     public async Task ExecuteAsync_GitFolder_IsAlwaysSkipped()
     {
         // Arrange
-        _workspace.Write(".git/config", "x");
-        _workspace.Write("a.txt", "x");
+        _root.Write(".git/config", "x");
+        _root.Write("a.txt", "x");
 
         // Act
         var result = await RunAsync(new { recursive = true, include_ignored = true });
@@ -108,12 +108,12 @@ public sealed class ListFilesToolTests : IDisposable
     public async Task ExecuteAsync_ProtectedFolder_IsNotListedOrEntered()
     {
         // Arrange
-        _workspace.Write("keys/id_rsa", "x");
-        _workspace.Write("a.txt", "x");
-        var context = _workspace.Context.WithSensitive(new SensitivePaths([Path.Combine(_workspace.Root, "keys")]));
+        _root.Write("keys/id_rsa", "x");
+        _root.Write("a.txt", "x");
+        var context = _root.Context.WithSensitive(new SensitivePaths([Path.Combine(_root.Root, "keys")]));
 
         // Act
-        var result = await _sut.ExecuteAsync(TempWorkspace.Args(new { recursive = true, include_ignored = true }), context, TestContext.Current.CancellationToken);
+        var result = await _sut.ExecuteAsync(TempRoot.Args(new { recursive = true, include_ignored = true }), context, TestContext.Current.CancellationToken);
 
         // Assert
         Lines(result).Should().Equal("a.txt");
@@ -125,7 +125,7 @@ public sealed class ListFilesToolTests : IDisposable
         // Arrange
         for (var i = 0; i < 5; i++)
         {
-            _workspace.Write($"f{i}.txt", "x");
+            _root.Write($"f{i}.txt", "x");
         }
 
         // Act
@@ -140,8 +140,8 @@ public sealed class ListFilesToolTests : IDisposable
     public async Task ExecuteAsync_SymlinkedFolder_IsListedButNotEntered()
     {
         // Arrange
-        _workspace.Write("real/inner.txt", "x");
-        Directory.CreateSymbolicLink(Path.Combine(_workspace.Root, "alias"), Path.Combine(_workspace.Root, "real"));
+        _root.Write("real/inner.txt", "x");
+        Directory.CreateSymbolicLink(Path.Combine(_root.Root, "alias"), Path.Combine(_root.Root, "real"));
 
         // Act
         var result = await RunAsync(new { recursive = true });
@@ -157,7 +157,7 @@ public sealed class ListFilesToolTests : IDisposable
     public async Task ExecuteAsync_EmptyMissingOrOutside_SaysSo(string path, string message)
     {
         // Arrange
-        Directory.CreateDirectory(Path.Combine(_workspace.Root, "empty"));
+        Directory.CreateDirectory(Path.Combine(_root.Root, "empty"));
 
         // Act
         var result = await RunAsync(new { path });
@@ -170,7 +170,7 @@ public sealed class ListFilesToolTests : IDisposable
     public async Task ExecuteAsync_PatternMatchesNothing_SaysSo()
     {
         // Arrange
-        _workspace.Write("a.txt", "x");
+        _root.Write("a.txt", "x");
 
         // Act
         var result = await RunAsync(new { pattern = "*.zzz" });
@@ -179,7 +179,7 @@ public sealed class ListFilesToolTests : IDisposable
         result.Should().Be(ToolResult.Ok("[Nothing matches the pattern.]"));
     }
 
-    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), _workspace.Context, TestContext.Current.CancellationToken);
+    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempRoot.Args(args), _root.Context, TestContext.Current.CancellationToken);
 
     private static string[] Lines(ToolResult result) => result.Output.Split('\n');
 }

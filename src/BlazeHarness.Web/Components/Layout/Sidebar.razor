@@ -1,6 +1,7 @@
+@using BlazeHarness.Core.Chats
 @implements IDisposable
 @inject IJSRuntime JS
-@inject SessionService Sessions
+@inject ChatService ChatService
 @inject NavigationManager Navigation
 @inject FolderRegistry Folders
 @inject ToastService Toasts
@@ -12,19 +13,19 @@
     <NavLink class="btn btn-primary" href="" Match="NavLinkMatch.All" data-shortcut="new-chat" title="New chat (Ctrl+Shift+O)"><Icon Name="plus" /> New chat</NavLink>
 
     @{
-        var all = Sessions.Store.List(Filter);
+        var all = ChatService.Store.List(Filter);
         var folders = Folders.List();
-        var inFolder = folders.ToDictionary(f => f.Path, _ => new List<SessionInfo>(), FolderPaths.Comparer);
-        var chats = new List<SessionInfo>();
-        foreach (var session in all)
+        var inFolder = folders.ToDictionary(f => f.Path, _ => new List<ChatInfo>(), FolderPaths.Comparer);
+        var chats = new List<ChatInfo>();
+        foreach (var chat in all)
         {
-            if (session.FolderPath is { } path && inFolder.TryGetValue(path, out var group))
+            if (chat.FolderPath is { } path && inFolder.TryGetValue(path, out var group))
             {
-                group.Add(session);
+                group.Add(chat);
             }
             else
             {
-                chats.Add(session);
+                chats.Add(chat);
             }
         }
 
@@ -169,9 +170,9 @@
 
     protected override void OnInitialized()
     {
-        Sessions.Store.Changed += OnSessionsChanged;
-        Sessions.ActivityChanged += OnSessionsChanged;
-        Folders.Changed += OnSessionsChanged;
+        ChatService.Store.Changed += OnChatsChanged;
+        ChatService.ActivityChanged += OnChatsChanged;
+        Folders.Changed += OnChatsChanged;
     }
 
     private async Task ImportAsync(InputFileChangeEventArgs e)
@@ -186,7 +187,7 @@
         try
         {
             using var reader = new StreamReader(file.OpenReadStream(MaxImportBytes));
-            var info = await Sessions.ImportAsync(await reader.ReadToEndAsync());
+            var info = await ChatService.ImportAsync(await reader.ReadToEndAsync());
             Navigation.NavigateTo(Routes.Chat(info.Id));
         }
         catch (FormatException ex)
@@ -209,12 +210,12 @@
 
     public void Dispose()
     {
-        Sessions.Store.Changed -= OnSessionsChanged;
-        Sessions.ActivityChanged -= OnSessionsChanged;
-        Folders.Changed -= OnSessionsChanged;
+        ChatService.Store.Changed -= OnChatsChanged;
+        ChatService.ActivityChanged -= OnChatsChanged;
+        Folders.Changed -= OnChatsChanged;
     }
 
-    private void OnSessionsChanged(object? sender, EventArgs e)
+    private void OnChatsChanged(object? sender, EventArgs e)
     {
         _ = InvokeAsync(StateHasChanged);
     }
@@ -273,8 +274,8 @@
                 return;
             }
 
-            await Sessions.Store.RepointFolderAsync(old.Path, result.Folder.Path);
-            await Sessions.RefreshProjectsAsync();
+            await ChatService.Store.RepointFolderAsync(old.Path, result.Folder.Path);
+            await ChatService.RefreshProjectsAsync();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -294,8 +295,8 @@
         try
         {
             await Folders.RemoveAsync(folder.Path);
-            await Sessions.Store.RepointFolderAsync(folder.Path, null);
-            await Sessions.RefreshProjectsAsync();
+            await ChatService.Store.RepointFolderAsync(folder.Path, null);
+            await ChatService.RefreshProjectsAsync();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

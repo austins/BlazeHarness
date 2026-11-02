@@ -9,7 +9,7 @@ namespace BlazeHarness.Core.Attachments;
 /// </summary>
 internal static class AttachmentMessage
 {
-    public static ChatMessage Build(string text, IReadOnlyList<SentAttachment> attachments, SessionAttachments? store)
+    public static ChatMessage Build(string text, IReadOnlyList<SentAttachment> attachments, ChatAttachments? store)
     {
         if (attachments.Count == 0)
         {

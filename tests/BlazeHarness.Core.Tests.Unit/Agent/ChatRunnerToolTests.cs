@@ -303,11 +303,11 @@ public sealed class ChatRunnerToolTests
     }
 
     [Fact]
-    public async Task RunAsync_AllowedForTheSession_AsksOnlyOnce()
+    public async Task RunAsync_AllowedForTheChat_AsksOnlyOnce()
     {
         // Arrange
         var write = new FakeTool("write", isReadOnly: false);
-        var approver = Approver(ApprovalChoice.AllowForSession);
+        var approver = Approver(ApprovalChoice.AllowForChat);
         using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
             .Enqueue([ScriptedChatClient.Call("c2", "write")])
             .Enqueue([ScriptedChatClient.Text("fin")]);
@@ -322,11 +322,11 @@ public sealed class ChatRunnerToolTests
     }
 
     [Fact]
-    public async Task RunAsync_AllowForSessionWithoutAGrantKey_IsNotRemembered()
+    public async Task RunAsync_AllowForChatWithoutAGrantKey_IsNotRemembered()
     {
         // Arrange
         var write = new FakeTool("write", isReadOnly: false, pathArguments: ["path"]);
-        var approver = Approver(ApprovalChoice.AllowForSession);
+        var approver = Approver(ApprovalChoice.AllowForChat);
         var permissions = new PermissionEngine { Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Ask, "*")] };
         using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write", """{"path":"a.txt"}""")])
             .Enqueue([ScriptedChatClient.Call("c2", "write", """{"path":"a.txt"}""")])
@@ -360,11 +360,11 @@ public sealed class ChatRunnerToolTests
     }
 
     [Fact]
-    public async Task RunAsync_AllowedForTheSession_IsNotSharedWithAnotherEngine()
+    public async Task RunAsync_AllowedForTheChat_IsNotSharedWithAnotherEngine()
     {
         // Arrange
         var write = new FakeTool("write", isReadOnly: false);
-        var approver = Approver(ApprovalChoice.AllowForSession);
+        var approver = Approver(ApprovalChoice.AllowForChat);
         using var first = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")]).Enqueue([ScriptedChatClient.Text("fin")]);
         using var second = new ScriptedChatClient([ScriptedChatClient.Call("c2", "write")]).Enqueue([ScriptedChatClient.Text("fin")]);
 

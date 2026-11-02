@@ -1,7 +1,7 @@
 namespace BlazeHarness.Core.Permissions;
 
 /// <summary>
-/// What the tools of a session are allowed to do.
+/// What the tools of a chat are allowed to do.
 /// </summary>
 public enum AccessLevel
 {

@@ -1,5 +1,5 @@
 using BlazeHarness.Core;
-using BlazeHarness.Core.Sessions;
+using BlazeHarness.Core.Chats;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Web.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -11,13 +11,13 @@ namespace BlazeHarness.Web.Tests.Integration.Hosting;
 public sealed class AttachmentEndpointsTests : IDisposable
 {
     private readonly TempFolder _temp = new("bh-endpoint-");
-    private readonly SessionStore _store;
-    private readonly SessionService _service;
+    private readonly ChatStore _store;
+    private readonly ChatService _service;
 
     public AttachmentEndpointsTests()
     {
-        _store = new SessionStore(new AppPaths(_temp.Root, _temp.Root), NullLoggerFactory.Instance, TimeProvider.System);
-        _service = new SessionService(_store, (_, _) => throw new NotSupportedException(), NullLoggerFactory.Instance, TimeProvider.System);
+        _store = new ChatStore(new AppPaths(_temp.Root, _temp.Root), NullLoggerFactory.Instance, TimeProvider.System);
+        _service = new ChatService(_store, (_, _) => throw new NotSupportedException(), NullLoggerFactory.Instance, TimeProvider.System);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class AttachmentEndpointsTests : IDisposable
     }
 
     [Fact]
-    public void Serve_UnknownSession_IsNotFound()
+    public void Serve_UnknownChat_IsNotFound()
     {
         // Act
         var result = AttachmentEndpoints.Serve("nope", "0123abcd", _service, new DefaultHttpContext());
@@ -65,7 +65,7 @@ public sealed class AttachmentEndpointsTests : IDisposable
     }
 
     [Fact]
-    public async Task ServeFolderImage_ImageInTheSessionFolder_IsServedAndOtherFilesAreNot()
+    public async Task ServeFolderImage_ImageInTheChatFolder_IsServedAndOtherFilesAreNot()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
@@ -97,7 +97,7 @@ public sealed class AttachmentEndpointsTests : IDisposable
         var address = AttachmentEndpoints.FileAddressOf("s1", "my dir/a&b.png");
 
         // Assert
-        address.Should().Be("api/sessions/s1/files?path=my%20dir%2Fa%26b.png");
+        address.Should().Be("api/chats/s1/files?path=my%20dir%2Fa%26b.png");
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class AttachmentEndpointsTests : IDisposable
         var address = AttachmentEndpoints.AddressOf("a/b", "c d");
 
         // Assert
-        address.Should().Be("api/sessions/a%2Fb/attachments/c%20d");
+        address.Should().Be("api/chats/a%2Fb/attachments/c%20d");
     }
 
     public void Dispose()

@@ -10,7 +10,7 @@ namespace BlazeHarness.Core.Folders;
 /// <remarks>
 /// A folder is kept under its canonical path, so one folder reached by two routes (a link, a trailing slash,
 /// different letter case on Windows and macOS) is one entry. A folder that is later moved or deleted stays listed
-/// and reports itself as unavailable, so its sessions are never lost. Members are safe to call from any thread.
+/// and reports itself as unavailable, so its chats are never lost. Members are safe to call from any thread.
 /// </remarks>
 public sealed class FolderRegistry : IDisposable
 {
@@ -226,10 +226,10 @@ public sealed class FolderRegistry : IDisposable
     // Working in the root or home would let every tool reach everything the user owns, and the app's own folder holds provider keys.
     private bool IsTooBroad(string full)
     {
-        var real = WorkspacePath.CanonicalRoot(full);
+        var real = RootedPath.CanonicalRoot(full);
         return FolderPaths.Comparer.Equals(real, Path.GetPathRoot(real))
-            || FolderPaths.Comparer.Equals(real, WorkspacePath.CanonicalRoot(_paths.UserHome))
-            || WorkspacePath.IsInside(WorkspacePath.CanonicalRoot(_paths.Home), real);
+            || FolderPaths.Comparer.Equals(real, RootedPath.CanonicalRoot(_paths.UserHome))
+            || RootedPath.IsInside(RootedPath.CanonicalRoot(_paths.Home), real);
     }
 
     private static FolderError CheckFullPath(string full)

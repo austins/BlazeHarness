@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace BlazeHarness.Core.Tools;
 
 /// <summary>
-/// A tool that reaches the internet, so each call needs the user's approval unless the session is unrestricted.
+/// A tool that reaches the internet, so each call needs the user's approval unless the chat is unrestricted.
 /// </summary>
 internal interface IWebTool : ITool
 {

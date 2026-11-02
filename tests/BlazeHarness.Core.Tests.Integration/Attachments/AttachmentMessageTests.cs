@@ -9,11 +9,11 @@ public sealed class AttachmentMessageTests : IDisposable
     private static readonly byte[] PngBytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4];
 
     private readonly TempFolder _temp = new("bh-attachmsg-");
-    private readonly SessionAttachments _store;
+    private readonly ChatAttachments _store;
 
     public AttachmentMessageTests()
     {
-        _store = new SessionAttachments(_temp.Root);
+        _store = new ChatAttachments(_temp.Root);
     }
 
     public void Dispose()

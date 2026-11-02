@@ -1,7 +1,7 @@
 @using BlazeHarness.Core.Permissions
 @implements IDisposable
 @inject PermissionDefaults PermissionDefaults
-@inject SessionService Sessions
+@inject ChatService ChatService
 @inject FolderRegistry Folders
 @inject NavigationManager Navigation
 @inject TimeProvider Time
@@ -9,6 +9,7 @@
 @inject ToastService Toasts
 @inject ILogger<ChatView> Logger
 @using BlazeHarness.Core.Attachments
+@using BlazeHarness.Core.Chats
 
 @if (_missing)
 {
@@ -63,15 +64,15 @@ else
             {
                 <span class="chat-context-where" title="Files this chat creates are kept with the chat">
                     <Icon Name="file" />
-                    <span class="chat-context-name">Session files</span>
+                    <span class="chat-context-name">Chat files</span>
                 </span>
             }
 
             @if (_openId is { } mcpId)
             {
-                <McpPicker SessionId="@mcpId" />
-                <SkillPicker SessionId="@mcpId" />
-                <ExportMenu SessionId="@mcpId" />
+                <McpPicker ChatId="@mcpId" />
+                <SkillPicker ChatId="@mcpId" />
+                <ExportMenu ChatId="@mcpId" />
             }
             @if (_info is not null)
             {
@@ -132,7 +133,7 @@ else
                         previousLabel = entry.Label;
                     }
 
-                    <MessageView @key="entry.Id" Entry="entry" SessionId="@_openId" ShowLabel="showLabel" CanEdit="!(_session?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" />
+                    <MessageView @key="entry.Id" Entry="entry" ChatId="@_openId" ShowLabel="showLabel" CanEdit="!(_chat?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" />
                 }
             </div>
         </div>
@@ -141,7 +142,7 @@ else
 
         @if (!_loading)
         {
-            <Composer SessionId="@SessionId" FolderPath="@ContextPath" Remembered="_info" Running="_session?.IsRunning ?? false" CanRetry="_session?.CanRetry ?? false" CanCompact="_session?.CanCompact ?? false" ContextOf="_session is null ? null : _session.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop">
+            <Composer ChatId="@ChatId" FolderPath="@ContextPath" Remembered="_info" Running="_chat?.IsRunning ?? false" CanRetry="_chat?.CanRetry ?? false" CanCompact="_chat?.CanCompact ?? false" ContextOf="_chat is null ? null : _chat.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop">
                 <PermissionPicker Settings="CurrentPermissions" HasFolder="ContextPath is not null" OnChange="ChangePermissionsAsync" />
             </Composer>
             <ChatStats Entries="_entries" />
@@ -159,8 +160,8 @@ else
 
     private RenderThrottle _throttle = null!;
     private IReadOnlyList<ChatEntry> _entries = [];
-    private ChatSession? _session;
-    private SessionInfo? _info;
+    private Chat? _chat;
+    private ChatInfo? _info;
     private string? _openId;
     private bool _missing;
     private bool _loading;
@@ -181,7 +182,7 @@ else
     /// Gets or sets the id of the chat to show, or null for a new chat that is created on the first message.
     /// </summary>
     [Parameter]
-    public string? SessionId { get; set; }
+    public string? ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets the path of an opened folder for a new chat to work in; an open chat uses its own saved folder.
@@ -189,7 +190,7 @@ else
     [Parameter]
     public string? FolderPath { get; set; }
 
-    private SessionInfo? _moving;
+    private ChatInfo? _moving;
     private ChatEntry? _editing;
     private ProjectContext? _newProject;
     private string? _newProjectFolder;
@@ -198,9 +199,9 @@ else
 
     private PermissionSettings CurrentPermissions => _openId is null
         ? _newPermissions ?? PermissionDefaults.For(ContextPath is not null)
-        : _session?.Permissions.Settings ?? _info?.Permissions ?? PermissionSettings.Default;
+        : _chat?.Permissions.Settings ?? _info?.Permissions ?? PermissionSettings.Default;
 
-    private ProjectContext? Project => _openId is null ? _newProject : _session?.Project;
+    private ProjectContext? Project => _openId is null ? _newProject : _chat?.Project;
 
     private static readonly string[] GeneralExamples =
     [
@@ -223,22 +224,22 @@ else
     protected override void OnInitialized()
     {
         _throttle = new RenderThrottle(() => InvokeAsync(Refresh), RenderInterval, Logger, Time);
-        Sessions.Store.Changed += OnStoreChanged;
+        ChatService.Store.Changed += OnStoreChanged;
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        if (SessionId is null)
+        if (ChatId is null)
         {
             var folder = Folders.Find(FolderPath)?.Path;
             if (folder != _newProjectFolder)
             {
                 _newProjectFolder = folder;
-                _newProject = await SessionService.LoadProjectAsync(folder);
+                _newProject = await ChatService.LoadProjectAsync(folder);
             }
         }
 
-        var requested = SessionId;
+        var requested = ChatId;
         if (requested == _openId)
         {
             return;
@@ -261,10 +262,10 @@ else
         }
 
         _loading = true;
-        ChatSession? session;
+        Chat? chat;
         try
         {
-            session = await Sessions.OpenAsync(requested);
+            chat = await ChatService.OpenAsync(requested);
         }
         finally
         {
@@ -279,16 +280,16 @@ else
             return;
         }
 
-        if (session is null)
+        if (chat is null)
         {
             _missing = true;
             _watching = false;
             return;
         }
 
-        Attach(session);
+        Attach(chat);
         _windowStart = Math.Max(0, _entries.Count - InitialWindow);
-        _info = Sessions.Store.Find(requested);
+        _info = ChatService.Store.Find(requested);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -315,7 +316,7 @@ else
     public void Dispose()
     {
         _disposed = true;
-        Sessions.Store.Changed -= OnStoreChanged;
+        ChatService.Store.Changed -= OnStoreChanged;
         Detach();
         _throttle.Dispose();
     }
@@ -326,26 +327,26 @@ else
         {
             if (_openId is not null && !_loading)
             {
-                _info = Sessions.Store.Find(_openId);
+                _info = ChatService.Store.Find(_openId);
                 StateHasChanged();
             }
         });
     }
 
-    private void Attach(ChatSession session)
+    private void Attach(Chat chat)
     {
         Detach();
-        _session = session;
-        _entries = session.Entries;
-        session.Changed += OnChanged;
+        _chat = chat;
+        _entries = chat.Entries;
+        chat.Changed += OnChanged;
     }
 
     private void Detach()
     {
-        if (_session is not null)
+        if (_chat is not null)
         {
-            _session.Changed -= OnChanged;
-            _session = null;
+            _chat.Changed -= OnChanged;
+            _chat = null;
         }
     }
 
@@ -394,7 +395,7 @@ else
 
     private void Refresh()
     {
-        _entries = _session?.Entries ?? [];
+        _entries = _chat?.Entries ?? [];
         _windowStart = Math.Min(_windowStart, Math.Max(0, _entries.Count - 1));
         Announce();
         if (_editing is not null && !_entries.Any(e => e.Id == _editing.Id))
@@ -404,7 +405,7 @@ else
 
         if (_openId is not null)
         {
-            _info = Sessions.Store.Find(_openId);
+            _info = ChatService.Store.Find(_openId);
         }
 
         StateHasChanged();
@@ -412,7 +413,7 @@ else
 
     private void Announce()
     {
-        var running = _session?.IsRunning ?? false;
+        var running = _chat?.IsRunning ?? false;
         if (running == _wasRunning)
         {
             return;
@@ -436,18 +437,18 @@ else
 
     private async Task<string?> SendAsync(ComposerMessage message)
     {
-        if (message.Files.Sum(file => (long)file.Content.Length) > SessionAttachments.MaxMessageBytes)
+        if (message.Files.Sum(file => (long)file.Content.Length) > ChatAttachments.MaxMessageBytes)
         {
-            return $"The files of a message can add up to at most {FileSize.Format(SessionAttachments.MaxMessageBytes)}.";
+            return $"The files of a message can add up to at most {FileSize.Format(ChatAttachments.MaxMessageBytes)}.";
         }
 
         await FollowAsync();
         var id = _openId;
-        SessionInfo? created = null;
+        ChatInfo? created = null;
         if (id is null)
         {
             var folder = Folders.Find(FolderPath)?.Path;
-            created = await Sessions.CreateAsync(folder);
+            created = await ChatService.CreateAsync(folder);
             if (folder is not null)
             {
                 await Folders.TouchAsync(folder);
@@ -456,7 +457,7 @@ else
             id = created.Id;
             if (_newPermissions is { } chosen)
             {
-                await Sessions.SetPermissionsAsync(id, chosen);
+                await ChatService.SetPermissionsAsync(id, chosen);
             }
         }
 
@@ -467,7 +468,7 @@ else
             foreach (var file in message.Files)
             {
                 await using var content = file.OpenRead();
-                if (await Sessions.SaveAttachmentAsync(id, file.Name, content) is not { } saved)
+                if (await ChatService.SaveAttachmentAsync(id, file.Name, content) is not { } saved)
                 {
                     failure = "This chat no longer exists.";
                     break;
@@ -485,7 +486,7 @@ else
         {
             if (created is not null)
             {
-                await Sessions.DeleteAsync(id);
+                await ChatService.DeleteAsync(id);
             }
 
             return failure;
@@ -494,8 +495,8 @@ else
         if (created is not null)
         {
             _newPermissions = null;
-            var session = await Sessions.OpenAsync(id);
-            Attach(session!);
+            var chat = await ChatService.OpenAsync(id);
+            Attach(chat!);
             _openId = id;
             _info = created;
             Navigation.NavigateTo(Routes.Chat(id));
@@ -504,11 +505,11 @@ else
         if (_editing is { } editing)
         {
             _editing = null;
-            await Sessions.EditAsync(id, editing.Id, message.Text, message.Target);
+            await ChatService.EditAsync(id, editing.Id, message.Text, message.Target);
         }
         else
         {
-            await Sessions.SendAsync(id, message.Text, files, message.Target);
+            await ChatService.SendAsync(id, message.Text, files, message.Target);
         }
 
         return null;
@@ -529,7 +530,7 @@ else
         if (_openId is { } id)
         {
             await FollowAsync();
-            await Sessions.RetryAsync(id, target);
+            await ChatService.RetryAsync(id, target);
         }
     }
 
@@ -542,7 +543,7 @@ else
 
         try
         {
-            if (!await Sessions.CompactAsync(id, target))
+            if (!await ChatService.CompactAsync(id, target))
             {
                 Toasts.Show("There is not enough earlier conversation to summarize.", ToastKind.Info);
             }
@@ -562,7 +563,7 @@ else
     {
         if (_openId is { } id)
         {
-            await Toasts.TrySaveAsync(() => Sessions.SetPermissionsAsync(id, settings), "The permissions could not be saved because the chat's file could not be written.");
+            await Toasts.TrySaveAsync(() => ChatService.SetPermissionsAsync(id, settings), "The permissions could not be saved because the chat's file could not be written.");
         }
         else
         {
@@ -572,14 +573,14 @@ else
 
     private void Decide((string CallId, ApprovalChoice Choice) answer)
     {
-        _session?.Approve(answer.CallId, answer.Choice);
+        _chat?.Approve(answer.CallId, answer.Choice);
     }
 
     private void Stop()
     {
         if (_openId is { } id)
         {
-            Sessions.Stop(id);
+            ChatService.Stop(id);
         }
     }
 }

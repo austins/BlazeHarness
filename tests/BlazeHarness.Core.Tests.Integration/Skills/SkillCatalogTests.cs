@@ -176,7 +176,7 @@ public sealed class SkillCatalogTests : IDisposable
     }
 
     [Fact]
-    public async Task For_SessionOverrides_BeatTheGlobalChoice()
+    public async Task For_ChatOverrides_BeatTheGlobalChoice()
     {
         // Arrange
         _folders.Add("home/skills", "off-globally", "Disabled for everyone.");

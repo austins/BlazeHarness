@@ -64,7 +64,7 @@ public sealed class ToolCallEntry
     public string ApprovalReason { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets a value indicating whether the user may allow the same kind of call for the rest of the session. It is not saved.
+    /// Gets or sets a value indicating whether the user may allow the same kind of call for the rest of the chat. It is not saved.
     /// </summary>
     public bool CanRemember { get; set; }
 

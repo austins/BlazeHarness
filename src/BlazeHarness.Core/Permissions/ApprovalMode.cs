@@ -5,7 +5,7 @@ namespace BlazeHarness.Core.Permissions;
 /// </summary>
 public enum ApprovalMode
 {
-    /// <summary>Ask for risky actions, and for anything outside the session's folder. This is the default.</summary>
+    /// <summary>Ask for risky actions, and for anything outside the chat's folder. This is the default.</summary>
     AskFirst,
 
     /// <summary>Ask only when the access level would otherwise block the action or the call reads outside the folder.</summary>

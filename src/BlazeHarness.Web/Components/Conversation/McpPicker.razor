@@ -1,8 +1,9 @@
+@using BlazeHarness.Core.Chats
 @using BlazeHarness.Core.Mcp
 @implements IDisposable
 @inject McpManager Manager
 @inject SettingsDialogState SettingsState
-@inject SessionService Sessions
+@inject ChatService ChatService
 
 @if (_servers.Count > 0)
 {
@@ -40,7 +41,7 @@
     /// Gets or sets the id of the chat whose servers are shown.
     /// </summary>
     [Parameter, EditorRequired]
-    public string SessionId { get; set; } = string.Empty;
+    public string ChatId { get; set; } = string.Empty;
 
     public void Dispose()
     {
@@ -57,11 +58,11 @@
         _servers = Manager.Statuses();
     }
 
-    private bool IsOn(McpServerStatus status) => Sessions.IsMcpServerEnabled(SessionId, status.Config);
+    private bool IsOn(McpServerStatus status) => ChatService.IsMcpServerEnabled(ChatId, status.Config);
 
     private async Task SetAsync(string name, bool enabled)
     {
-        await Sessions.SetMcpServerAsync(SessionId, name, enabled);
+        await ChatService.SetMcpServerAsync(ChatId, name, enabled);
     }
 
     private void OnManagerChanged(object? sender, EventArgs e)

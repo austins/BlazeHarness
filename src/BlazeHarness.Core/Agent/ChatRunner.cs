@@ -380,7 +380,7 @@ internal static class ChatRunner
                     {
                         var choice = await answer;
                         allowed = choice != ApprovalChoice.Deny;
-                        if (choice == ApprovalChoice.AllowForSession && decision.GrantKey is { } key)
+                        if (choice == ApprovalChoice.AllowForChat && decision.GrantKey is { } key)
                         {
                             permissions.Remember(key);
                         }

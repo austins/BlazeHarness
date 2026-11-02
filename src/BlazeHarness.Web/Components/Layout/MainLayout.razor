@@ -13,7 +13,7 @@
         <button type="button" class="sidebar-backdrop" aria-label="Close sidebar" tabindex="-1" @onclick="() => _collapsed = true"></button>
     }
 
-    <div class="workspace">
+    <div class="app-shell">
         <header class="topbar">
             <button type="button" class="btn btn-ghost btn-icon" aria-label="@(_collapsed ? "Show sidebar" : "Hide sidebar")" aria-expanded="@(_collapsed ? "false" : "true")" @onclick="() => _collapsed = !_collapsed"><Icon Name="menu" /></button>
             <span class="title">BlazeHarness</span>

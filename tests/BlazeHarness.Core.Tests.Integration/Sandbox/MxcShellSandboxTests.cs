@@ -11,7 +11,7 @@ public sealed class MxcShellSandboxTests : IDisposable
 {
     private const string SkipReason = "The sandbox isn't available on this computer, or the test uses POSIX shell syntax.";
 
-    private readonly TempWorkspace _workspace = new();
+    private readonly TempRoot _root = new();
     private readonly TempFolder _outsideFolder = new("bh-outside-");
     private readonly TempFolder _scratchFolder = new("bh-scratch-");
     private readonly FakeTimeProvider _time = new();
@@ -25,7 +25,7 @@ public sealed class MxcShellSandboxTests : IDisposable
 
     public void Dispose()
     {
-        _workspace.Dispose();
+        _root.Dispose();
         _outsideFolder.Dispose();
         _scratchFolder.Dispose();
     }
@@ -38,14 +38,14 @@ public sealed class MxcShellSandboxTests : IDisposable
 
         // Assert
         result.Should().Be(ToolResult.Ok("made\n[exit code 0]"));
-        _workspace.Read("made.txt").Should().Be("made\n");
+        _root.Read("made.txt").Should().Be("made\n");
     }
 
     [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
     public async Task Run_ReadOnly_CanReadButNotChangeTheWorkingFolder()
     {
         // Arrange
-        _workspace.Write("keep.txt", "original");
+        _root.Write("keep.txt", "original");
 
         // Act
         var result = await RunAsync("cat keep.txt; echo changed > keep.txt; echo new > new.txt", ShellMode.ReadOnly);
@@ -53,8 +53,8 @@ public sealed class MxcShellSandboxTests : IDisposable
         // Assert
         result.Output.Should().Contain("original").And.Contain("Read-only file system");
         result.IsError.Should().BeTrue();
-        _workspace.Read("keep.txt").Should().Be("original");
-        File.Exists(Path.Combine(_workspace.Root, "new.txt")).Should().BeFalse();
+        _root.Read("keep.txt").Should().Be("original");
+        File.Exists(Path.Combine(_root.Root, "new.txt")).Should().BeFalse();
     }
 
     [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
@@ -86,7 +86,7 @@ public sealed class MxcShellSandboxTests : IDisposable
     public async Task Run_ParentPathEscape_CannotReachFilesOutside()
     {
         // Arrange
-        var relative = Path.GetRelativePath(_workspace.Root, Path.Combine(_outsideFolder.Root, "secret.txt"));
+        var relative = Path.GetRelativePath(_root.Root, Path.Combine(_outsideFolder.Root, "secret.txt"));
 
         // Act
         var result = await RunAsync($"cat '{relative}'", ShellMode.Writable);
@@ -101,7 +101,7 @@ public sealed class MxcShellSandboxTests : IDisposable
     {
         // Arrange
         var target = Path.Combine(_outsideFolder.Root, "secret.txt");
-        File.CreateSymbolicLink(Path.Combine(_workspace.Root, "link.txt"), target);
+        File.CreateSymbolicLink(Path.Combine(_root.Root, "link.txt"), target);
 
         // Act
         var result = await RunAsync("cat link.txt; echo overwritten > link.txt", ShellMode.Writable);
@@ -116,15 +116,15 @@ public sealed class MxcShellSandboxTests : IDisposable
     public async Task Run_ProtectedFolderInsideTheWorkingFolder_IsOutOfReach()
     {
         // Arrange
-        _workspace.Write(".keys/token.txt", "key-material");
-        var sensitive = new SensitivePaths([Path.Combine(_workspace.Root, ".keys")]);
+        _root.Write(".keys/token.txt", "key-material");
+        var sensitive = new SensitivePaths([Path.Combine(_root.Root, ".keys")]);
 
         // Act
         var result = await RunAsync("cat .keys/token.txt; echo x > .keys/other.txt", ShellMode.Writable, new MxcShellSandbox(() => sensitive));
 
         // Assert
         result.Output.Should().Contain("No such file").And.NotContain("key-material");
-        File.Exists(Path.Combine(_workspace.Root, ".keys", "other.txt")).Should().BeFalse();
+        File.Exists(Path.Combine(_root.Root, ".keys", "other.txt")).Should().BeFalse();
     }
 
     [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
@@ -180,7 +180,7 @@ public sealed class MxcShellSandboxTests : IDisposable
     public async Task Run_CommandThatOutlivesTheTimeout_IsStopped()
     {
         // Arrange
-        var ready = Path.Combine(_workspace.Root, "ready.txt");
+        var ready = Path.Combine(_root.Root, "ready.txt");
 
         // Act
         var run = RunAsync($"echo ready > '{ready}'; sleep 30", ShellMode.Writable, timeoutSeconds: 1);
@@ -206,8 +206,8 @@ public sealed class MxcShellSandboxTests : IDisposable
         var shell = ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false);
         var tool = new ShellTool(shell, sandbox ?? new MxcShellSandbox(() => SensitivePaths.None), _scratchFolder.Root, _time);
         return await tool.ExecuteAsync(
-            TempWorkspace.Args(new { command, timeout_seconds = timeoutSeconds }),
-            _workspace.Context.WithShell(mode).WithShellReadFolders(readFolders ?? []),
+            TempRoot.Args(new { command, timeout_seconds = timeoutSeconds }),
+            _root.Context.WithShell(mode).WithShellReadFolders(readFolders ?? []),
             TestContext.Current.CancellationToken);
     }
 }

@@ -68,7 +68,7 @@
     public PermissionSettings Settings { get; set; } = PermissionSettings.Default;
 
     /// <summary>
-    /// Gets or sets a value indicating whether the chat works in a folder the user opened, and not only in its own session files.
+    /// Gets or sets a value indicating whether the chat works in a folder the user opened, and not only in its own chat files.
     /// </summary>
     [Parameter]
     public bool HasFolder { get; set; } = true;
@@ -99,7 +99,7 @@
     {
         AccessLevel.ReadOnly => "Read only",
         AccessLevel.WriteInFolder when HasFolder => brief ? "Folder" : "Write in folder",
-        AccessLevel.WriteInFolder => brief ? "Session files" : "Write in session files",
+        AccessLevel.WriteInFolder => brief ? "Chat files" : "Write in chat files",
         _ => "Unrestricted",
     };
 

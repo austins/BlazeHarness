@@ -81,19 +81,19 @@ public sealed class PermissionDefaults
     /// <summary>
     /// Get the protected folders as they apply now.
     /// </summary>
-    /// <param name="currentSession">The id of the session that is running, whose own directory stays usable, or null.</param>
+    /// <param name="currentChat">The id of the chat that is running, whose own directory stays usable, or null.</param>
     /// <returns>The protected folders.</returns>
-    public SensitivePaths Sensitive(string? currentSession = null)
+    public SensitivePaths Sensitive(string? currentChat = null)
     {
         // Building the list resolves every folder's links, and this is asked on each tool call, so keep it until the saved list changes.
         var saved = _config.Current.ProtectedFolders;
-        var key = currentSession ?? string.Empty;
+        var key = currentChat ?? string.Empty;
         if (_sensitive.TryGetValue(key, out var cached) && ReferenceEquals(cached.Saved, saved))
         {
             return cached.Paths;
         }
 
-        var built = SensitivePaths.Default(_paths, currentSession, saved ?? SensitivePaths.DefaultFolders(_paths));
+        var built = SensitivePaths.Default(_paths, currentChat, saved ?? SensitivePaths.DefaultFolders(_paths));
         _sensitive[key] = new SensitiveCacheEntry(saved, built);
         return built;
     }

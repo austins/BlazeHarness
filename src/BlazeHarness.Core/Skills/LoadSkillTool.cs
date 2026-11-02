@@ -127,7 +127,7 @@ internal sealed class LoadSkillTool : ITool
 
     private static ToolResult LoadFile(SkillInfo skill, string path, int offset, int limit, CancellationToken cancellationToken)
     {
-        if (!WorkspacePath.TryResolve(skill.Directory, path, out var full, out var error))
+        if (!RootedPath.TryResolve(skill.Directory, path, out var full, out var error))
         {
             return ToolResult.Error(error);
         }
@@ -152,7 +152,7 @@ internal sealed class LoadSkillTool : ITool
             ShouldRecursePredicate = static (ref FileSystemEntry entry) => !entry.Attributes.HasFlag(FileAttributes.ReparsePoint),
         };
         var files = found
-            .Select(file => WorkspacePath.Relative(skill.Directory, file))
+            .Select(file => RootedPath.Relative(skill.Directory, file))
             .Where(file => !string.Equals(file, SkillInfo.FileName, StringComparison.Ordinal))
             .Order(StringComparer.Ordinal)
             .Take(MaxListedFiles + 1)

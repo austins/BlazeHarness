@@ -243,7 +243,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Problems.Should().ContainSingle().Which.Should().Contain("links outside");
     }
 
-    [Fact(Skip = "Named pipes are a Unix feature.", SkipUnless = nameof(TempWorkspace.CanMakeFifo), SkipType = typeof(TempWorkspace))]
+    [Fact(Skip = "Named pipes are a Unix feature.", SkipUnless = nameof(TempRoot.CanMakeFifo), SkipType = typeof(TempRoot))]
     public void Scan_SkillFileIsANamedPipe_IsSkippedWithoutReadingIt()
     {
         // Arrange

@@ -85,7 +85,7 @@ internal sealed class ListFilesTool : ITool
         var lines = new StringBuilder();
         var count = 0;
         var truncated = false;
-        foreach (var entry in WorkspaceWalker.Walk(context, start, recursive, !includeIgnored, cancellationToken))
+        foreach (var entry in RootWalker.Walk(context, start, recursive, !includeIgnored, cancellationToken))
         {
             if (matcher is not null && !matcher.IsMatch(Path.GetRelativePath(start, entry.FullPath).Replace('\\', '/')))
             {

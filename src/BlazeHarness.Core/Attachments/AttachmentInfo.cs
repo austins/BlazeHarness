@@ -1,7 +1,7 @@
 namespace BlazeHarness.Core.Attachments;
 
 /// <summary>
-/// A file saved in a session's attachments.
+/// A file saved in a chat's attachments.
 /// </summary>
 /// <param name="Id">The short identifier the file is referenced by.</param>
 /// <param name="Name">The file name, cleaned of any path.</param>

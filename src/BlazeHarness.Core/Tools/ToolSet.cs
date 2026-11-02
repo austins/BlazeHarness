@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace BlazeHarness.Core.Tools;
 
 /// <summary>
-/// The tools one session offers the model, and the code that runs a call safely.
+/// The tools one chat offers the model, and the code that runs a call safely.
 /// </summary>
 public sealed class ToolSet
 {

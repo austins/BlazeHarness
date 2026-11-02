@@ -42,14 +42,14 @@ public sealed record PendingFile(Guid Id, string Name, string ContentType, ReadO
     /// <summary>
     /// Read a file the browser handed over.
     /// </summary>
-    /// <param name="file">The picked file, which may not be larger than <see cref="SessionAttachments.MaxFileBytes"/>.</param>
+    /// <param name="file">The picked file, which may not be larger than <see cref="ChatAttachments.MaxFileBytes"/>.</param>
     /// <returns>The file with its content in memory.</returns>
     public static async Task<PendingFile> ReadAsync(IBrowserFile file)
     {
         ArgumentNullException.ThrowIfNull(file);
 
 #pragma warning disable S5693 // The size is capped by MaxFileBytes, which is above the default limit on purpose.
-        await using var stream = file.OpenReadStream(SessionAttachments.MaxFileBytes);
+        await using var stream = file.OpenReadStream(ChatAttachments.MaxFileBytes);
 #pragma warning restore S5693
         using var buffer = new MemoryStream();
         await stream.CopyToAsync(buffer);

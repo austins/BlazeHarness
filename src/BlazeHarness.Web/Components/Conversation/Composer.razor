@@ -2,10 +2,11 @@
 @inject ProviderService Providers
 @inject IJSRuntime JS
 @inject SkillCatalog Catalog
-@inject SessionService Sessions
+@inject ChatService ChatService
 @inject SettingsDialogState SettingsState
 @using System.Text
 @using BlazeHarness.Core.Attachments
+@using BlazeHarness.Core.Chats
 @using BlazeHarness.Core.Compaction
 @using BlazeHarness.Core.Skills
 
@@ -178,7 +179,7 @@ else
     /// Gets or sets the id of the open chat, or null for a new one.
     /// </summary>
     [Parameter]
-    public string? SessionId { get; set; }
+    public string? ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets the folder a new chat will work in, or null when it has none. It tells which skills to suggest.
@@ -190,7 +191,7 @@ else
     /// Gets or sets the saved details of the open chat, whose model and thinking level are restored.
     /// </summary>
     [Parameter]
-    public SessionInfo? Remembered { get; set; }
+    public ChatInfo? Remembered { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether a reply is being produced.
@@ -306,12 +307,12 @@ else
             _resize = true;
         }
 
-        if (!_applied || SessionId != _appliedFor)
+        if (!_applied || ChatId != _appliedFor)
         {
-            var createdByThisComposer = _creating && SessionId is not null;
+            var createdByThisComposer = _creating && ChatId is not null;
             _creating = false;
             _applied = true;
-            _appliedFor = SessionId;
+            _appliedFor = ChatId;
             _suggestedFor = null;
             if (!createdByThisComposer)
             {
@@ -322,7 +323,7 @@ else
         RefreshContext();
     }
 
-    // Reading the context takes the session lock and may estimate the whole history, so it is not done on every keystroke.
+    // Reading the context takes the chat lock and may estimate the whole history, so it is not done on every keystroke.
     private void RefreshContext()
     {
         _context = CurrentTarget() is { } target ? ContextOf?.Invoke(target) : null;
@@ -441,7 +442,7 @@ else
         }
 
         var typed = _text[1..];
-        var available = SessionId is null ? Catalog.For(FolderPath, null).Skills : Sessions.AvailableSkills(SessionId).Skills.Where(s => Sessions.IsSkillEnabled(SessionId, s.Name)).ToList();
+        var available = ChatId is null ? Catalog.For(FolderPath, null).Skills : ChatService.AvailableSkills(ChatId).Skills.Where(s => ChatService.IsSkillEnabled(ChatId, s.Name)).ToList();
         return [.. available.Where(skill => skill.Name.StartsWith(typed, StringComparison.Ordinal)).Take(MaxSuggestions)];
     }
 
@@ -462,7 +463,7 @@ else
 
         var text = _text;
         var files = _files.ToArray();
-        _creating = SessionId is null;
+        _creating = ChatId is null;
         _text = string.Empty;
         _files.Clear();
         _note = null;
@@ -483,21 +484,21 @@ else
         _note = null;
         foreach (var browserFile in e.GetMultipleFiles(int.MaxValue))
         {
-            if (_files.Count >= SessionAttachments.MaxFilesPerMessage)
+            if (_files.Count >= ChatAttachments.MaxFilesPerMessage)
             {
-                _note = $"A message can carry at most {SessionAttachments.MaxFilesPerMessage} files.";
+                _note = $"A message can carry at most {ChatAttachments.MaxFilesPerMessage} files.";
                 break;
             }
 
-            if (browserFile.Size > SessionAttachments.MaxFileBytes)
+            if (browserFile.Size > ChatAttachments.MaxFileBytes)
             {
-                _note = $"'{browserFile.Name}' is larger than {FileSize.Format(SessionAttachments.MaxFileBytes)}.";
+                _note = $"'{browserFile.Name}' is larger than {FileSize.Format(ChatAttachments.MaxFileBytes)}.";
                 continue;
             }
 
-            if (_files.Sum(f => (long)f.Content.Length) + browserFile.Size > SessionAttachments.MaxMessageBytes)
+            if (_files.Sum(f => (long)f.Content.Length) + browserFile.Size > ChatAttachments.MaxMessageBytes)
             {
-                _note = $"The files of a message can add up to at most {FileSize.Format(SessionAttachments.MaxMessageBytes)}.";
+                _note = $"The files of a message can add up to at most {FileSize.Format(ChatAttachments.MaxMessageBytes)}.";
                 continue;
             }
 

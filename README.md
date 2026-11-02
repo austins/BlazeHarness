@@ -25,25 +25,25 @@ The app listens on `127.0.0.1:5380`, prints its URL, and opens your browser. Opt
 
 There is no sign-in. With the default, only programs on this machine can reach the app. With `0.0.0.0`, anyone who can reach the port can use it, and it can run commands and edit files, so only do that on a trusted network and limit access with a firewall. The connection is plain HTTP, and the URL must use an IP address, `localhost`, or this machine's host name (also with a `.lan`, `.local`, `.localdomain`, `.home`, `.internal` or `.home.arpa` suffix). Other names are refused to block DNS rebinding.
 
-The app stores everything under `~/.blazeharness` (`%USERPROFILE%\.blazeharness` on Windows). Set `BLAZEHARNESS_HOME` to use another folder, for example a temp folder when experimenting. Providers and models are in `providers.json`, and defaults and permissions are in `config.json`.
+The app stores everything under `~/.blazeharness` (`%USERPROFILE%\.blazeharness` on Windows). Set `BLAZEHARNESS_HOME` to use another folder, for example a temp folder when experimenting. Providers and models are in `providers.json`, and defaults and permissions are in `config.json`. Each chat is kept in `chats/<id>/`.
 
-API keys are kept in your OS secret store (Windows Credential Manager, macOS Keychain or Linux Secret Service). If none is available, they fall back to an owner-only file. They are never written to `config.json`, `providers.json`, session files or logs.
+API keys are kept in your OS secret store (Windows Credential Manager, macOS Keychain or Linux Secret Service). If none is available, they fall back to an owner-only file. They are never written to `config.json`, `providers.json`, chat files or logs.
 
 ## Features
 
 * Chat and coding in one interface, with streamed replies and multiple providers.
 * Tools for shell commands, reading, writing and editing files, listing folders, and searching files. Read-only tools run in parallel.
 * A `search_chat` tool lets the agent look back through the full chat (including tool output) for something compaction summarized away, and optionally through the other chats of the same folder.
-* Attachments from the composer. Images go to the model as image input, and text files are added to the message, or read on demand with `read_attachment` when they are large. An image's path is in the message, and tools and sandboxed commands can read the session's attachments without asking, so a text-only model can still inspect an image.
+* Attachments from the composer. Images go to the model as image input, and text files are added to the message, or read on demand with `read_attachment` when they are large. An image's path is in the message, and tools and sandboxed commands can read the chat's attachments without asking, so a text-only model can still inspect an image.
 * Approvals let you decide, per tool and per action, what runs without asking.
 * Shell sandboxing where the platform supports it, so commands can stay inside the folder you opened. Otherwise commands run directly, behind approvals.
-* Folders and sessions. Open a folder and run sessions inside it, grouped by folder. Sessions can also exist without a folder, for general chat.
+* Folders and chats. Open a folder and run chats inside it, grouped by folder. A chat can also exist without a folder, as a general chat.
 * Persistent history in plain, human-readable files, with context compaction for long conversations. By default the model writes the summary; Settings > Context can switch to deterministic extraction (no model request), which lists the requests, changed and read files, and commands, and relies on `search_chat` for detail.
 * Diffs, syntax highlighting, and find in the chat, with smooth scrolling in very long chats.
-* Export and import of sessions.
-* MCP servers, added and edited in a form (secrets go in the OS keychain) or in a standard `mcp.json`, and enabled globally or per session. A server's tools are found by search when needed (`find_tools`, then `use_tool`) so a pile of servers doesn't fill the context window. Tick "Always load all of its tools" for a small server, or set `"alwaysLoad"` in `mcp.json` to `true` or a list of tool name patterns. List tool name patterns in `"excludeTools"` to keep a server's tools from the model entirely. The tool lists are remembered in `cache/mcp-tools.json`, which is safe to delete.
+* Export and import of chats.
+* MCP servers, added and edited in a form (secrets go in the OS keychain) or in a standard `mcp.json`, and enabled globally or per chat. A server's tools are found by search when needed (`find_tools`, then `use_tool`) so a pile of servers doesn't fill the context window. Tick "Always load all of its tools" for a small server, or set `"alwaysLoad"` in `mcp.json` to `true` or a list of tool name patterns. List tool name patterns in `"excludeTools"` to keep a server's tools from the model entirely. The tool lists are remembered in `cache/mcp-tools.json`, which is safe to delete.
 * Skills, loaded on demand from `SKILL.md` folders in `~/.blazeharness/skills`, `~/.agents/skills`, and a folder's own `.agents/skills`.
-* Web search and web fetch tools (Settings > Web). Search uses public providers that need no API key (DuckDuckGo, Exa, Parallel, Keenable), either in parallel or one at a time, with retries and a pause after repeated failures. Fetch reads HTML, PDF and text from the public internet only and caches pages in memory per session. Each use asks first, unless the chat is Unrestricted or set to never ask, and rules can match a host. JavaScript is not run, and system proxy settings are not used.
+* Web search and web fetch tools (Settings > Web). Search uses public providers that need no API key (DuckDuckGo, Exa, Parallel, Keenable), either in parallel or one at a time, with retries and a pause after repeated failures. Fetch reads HTML, PDF and text from the public internet only and caches pages in memory per chat. Each use asks first, unless the chat is Unrestricted or set to never ask, and rules can match a host. JavaScript is not run, and system proxy settings are not used.
 
 ## Planned and ideas
 

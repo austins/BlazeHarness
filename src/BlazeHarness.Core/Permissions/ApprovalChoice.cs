@@ -11,6 +11,6 @@ public enum ApprovalChoice
     /// <summary>The call runs this once.</summary>
     AllowOnce,
 
-    /// <summary>The call runs, and the same kind of call runs without asking for the rest of the session.</summary>
-    AllowForSession,
+    /// <summary>The call runs, and the same kind of call runs without asking for the rest of the chat.</summary>
+    AllowForChat,
 }

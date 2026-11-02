@@ -8,22 +8,22 @@ namespace BlazeHarness.Core.Tests.Integration.Tools;
 
 public sealed class ShellToolTests : IDisposable
 {
-    private readonly TempWorkspace _workspace = new();
+    private readonly TempRoot _root = new();
     private readonly FakeTimeProvider _time = new();
     private readonly ShellTool _sut;
 
     public ShellToolTests()
     {
-        _sut = new ShellTool(Sh, new NoShellSandbox("none"), _workspace.Root, _time);
+        _sut = new ShellTool(Sh, new NoShellSandbox("none"), _root.Root, _time);
     }
 
     public static bool IsWindows => OperatingSystem.IsWindows();
 
     private static ShellInfo Sh { get; } = new("sh", "/bin/sh", IsPowerShell: false);
 
-    private ToolContext Context => _workspace.Context.WithShell(ShellMode.Unconfined);
+    private ToolContext Context => _root.Context.WithShell(ShellMode.Unconfined);
 
-    public void Dispose() => _workspace.Dispose();
+    public void Dispose() => _root.Dispose();
 
     [Fact(Skip = "These tests use POSIX shell syntax.", SkipWhen = nameof(IsWindows))]
     public async Task ExecuteAsync_SuccessfulCommand_ReturnsOutputAndExitCode()
@@ -49,13 +49,13 @@ public sealed class ShellToolTests : IDisposable
     public async Task ExecuteAsync_Command_RunsInTheWorkingFolder()
     {
         // Arrange
-        _workspace.Write("marker.txt", "x");
+        _root.Write("marker.txt", "x");
 
         // Act
         var result = await RunAsync(new { command = "pwd; ls" });
 
         // Assert
-        result.Output.Should().Contain(_workspace.Root).And.Contain("marker.txt");
+        result.Output.Should().Contain(_root.Root).And.Contain("marker.txt");
     }
 
     [Fact(Skip = "These tests use POSIX shell syntax.", SkipWhen = nameof(IsWindows))]
@@ -72,7 +72,7 @@ public sealed class ShellToolTests : IDisposable
     public async Task ExecuteAsync_LongRunningCommand_StopsAtTheTimeoutAndKeepsOutputSoFar()
     {
         // Arrange
-        var ready = Path.Combine(_workspace.Root, "ready.txt");
+        var ready = Path.Combine(_root.Root, "ready.txt");
 
         // Act
         var run = RunAsync(new { command = $"echo started; echo ready > '{ready}'; sleep 30", timeout_seconds = 1 });
@@ -88,7 +88,7 @@ public sealed class ShellToolTests : IDisposable
     public async Task ExecuteAsync_Cancelled_KillsTheWholeProcessTree()
     {
         // Arrange
-        var ready = Path.Combine(_workspace.Root, "ready.txt");
+        var ready = Path.Combine(_root.Root, "ready.txt");
         var command = $"sleep 300 & echo ready > '{ready}'; wait";
 
         // Act
@@ -124,10 +124,10 @@ public sealed class ShellToolTests : IDisposable
     public async Task ExecuteAsync_ShellThatCannotStart_ReturnsAnError()
     {
         // Arrange
-        var sut = new ShellTool(new ShellInfo("bash", Path.Combine(_workspace.Root, "missing-shell"), IsPowerShell: false), new NoShellSandbox("none"), _workspace.Root, _time);
+        var sut = new ShellTool(new ShellInfo("bash", Path.Combine(_root.Root, "missing-shell"), IsPowerShell: false), new NoShellSandbox("none"), _root.Root, _time);
 
         // Act
-        var result = await sut.ExecuteAsync(TempWorkspace.Args(new { command = "true" }), Context, TestContext.Current.CancellationToken);
+        var result = await sut.ExecuteAsync(TempRoot.Args(new { command = "true" }), Context, TestContext.Current.CancellationToken);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -170,11 +170,11 @@ public sealed class ShellToolTests : IDisposable
     private async Task<ToolResult> RunUntilCancelledAsync(string command, string readyFile)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        var run = _sut.ExecuteAsync(TempWorkspace.Args(new { command }), Context, cts.Token);
+        var run = _sut.ExecuteAsync(TempRoot.Args(new { command }), Context, cts.Token);
         await WaitForFileAsync(readyFile);
         await cts.CancelAsync();
         return await run.Bounded();
     }
 
-    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), Context, TestContext.Current.CancellationToken);
+    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempRoot.Args(args), Context, TestContext.Current.CancellationToken);
 }

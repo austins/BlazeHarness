@@ -5,30 +5,30 @@ namespace BlazeHarness.Core.Tests.Integration.Tools;
 
 public sealed class EditFileToolTests : IDisposable
 {
-    private readonly TempWorkspace _workspace = new();
+    private readonly TempRoot _root = new();
     private readonly EditFileTool _sut = new();
 
-    public void Dispose() => _workspace.Dispose();
+    public void Dispose() => _root.Dispose();
 
     [Fact]
     public async Task ExecuteAsync_UniqueMatch_ReplacesIt()
     {
         // Arrange
-        _workspace.Write("a.txt", "alpha\nbeta\ngamma\n");
+        _root.Write("a.txt", "alpha\nbeta\ngamma\n");
 
         // Act
         var result = await RunAsync(new { path = "a.txt", old_string = "beta", new_string = "BETA" });
 
         // Assert
         result.Should().Be(ToolResult.Ok("Edited a.txt: replaced 1 occurrence."));
-        _workspace.Read("a.txt").Should().Be("alpha\nBETA\ngamma\n");
+        _root.Read("a.txt").Should().Be("alpha\nBETA\ngamma\n");
     }
 
     [Fact]
     public async Task ExecuteAsync_MultipleMatchesWithoutReplaceAll_ChangesNothing()
     {
         // Arrange
-        _workspace.Write("a.txt", "x x x");
+        _root.Write("a.txt", "x x x");
 
         // Act
         var result = await RunAsync(new { path = "a.txt", old_string = "x", new_string = "y" });
@@ -36,28 +36,28 @@ public sealed class EditFileToolTests : IDisposable
         // Assert
         result.IsError.Should().BeTrue();
         result.Output.Should().Contain("3 times").And.Contain("replace_all");
-        _workspace.Read("a.txt").Should().Be("x x x");
+        _root.Read("a.txt").Should().Be("x x x");
     }
 
     [Fact]
     public async Task ExecuteAsync_ReplaceAll_ReplacesEveryOccurrence()
     {
         // Arrange
-        _workspace.Write("a.txt", "x x x");
+        _root.Write("a.txt", "x x x");
 
         // Act
         var result = await RunAsync(new { path = "a.txt", old_string = "x", new_string = "yy", replace_all = true });
 
         // Assert
         result.Output.Should().Be("Edited a.txt: replaced 3 occurrences.");
-        _workspace.Read("a.txt").Should().Be("yy yy yy");
+        _root.Read("a.txt").Should().Be("yy yy yy");
     }
 
     [Fact]
     public async Task ExecuteAsync_NoMatch_IsAnErrorAndChangesNothing()
     {
         // Arrange
-        _workspace.Write("a.txt", "abc");
+        _root.Write("a.txt", "abc");
 
         // Act
         var result = await RunAsync(new { path = "a.txt", old_string = "zzz", new_string = "y" });
@@ -65,14 +65,14 @@ public sealed class EditFileToolTests : IDisposable
         // Assert
         result.IsError.Should().BeTrue();
         result.Output.Should().Contain("not found");
-        _workspace.Read("a.txt").Should().Be("abc");
+        _root.Read("a.txt").Should().Be("abc");
     }
 
     [Fact]
     public async Task ExecuteAsync_CrlfFileAndLfOldString_MatchesAndKeepsCrlf()
     {
         // Arrange
-        var path = _workspace.Write("crlf.txt", "one\r\ntwo\r\nthree\r\n");
+        var path = _root.Write("crlf.txt", "one\r\ntwo\r\nthree\r\n");
 
         // Act
         var result = await RunAsync(new { path = "crlf.txt", old_string = "one\ntwo", new_string = "1\n2\n2b" });
@@ -86,21 +86,21 @@ public sealed class EditFileToolTests : IDisposable
     public async Task ExecuteAsync_LfFileAndCrlfOldString_StillMatchesAndStaysLf()
     {
         // Arrange
-        _workspace.Write("lf.txt", "one\ntwo\n");
+        _root.Write("lf.txt", "one\ntwo\n");
 
         // Act
         var result = await RunAsync(new { path = "lf.txt", old_string = "one\r\ntwo", new_string = "x" });
 
         // Assert
         result.IsError.Should().BeFalse();
-        _workspace.Read("lf.txt").Should().Be("x\n");
+        _root.Read("lf.txt").Should().Be("x\n");
     }
 
     [Fact]
     public async Task ExecuteAsync_FileWithBom_KeepsTheBom()
     {
         // Arrange
-        var path = Path.Combine(_workspace.Root, "bom.txt");
+        var path = Path.Combine(_root.Root, "bom.txt");
         await File.WriteAllBytesAsync(path, [0xEF, 0xBB, 0xBF, .. "hello"u8.ToArray()], TestContext.Current.CancellationToken);
 
         // Act
@@ -116,7 +116,7 @@ public sealed class EditFileToolTests : IDisposable
     public async Task ExecuteAsync_UselessEdit_IsAnError(string oldText, string newText, string message)
     {
         // Arrange
-        _workspace.Write("a.txt", "same");
+        _root.Write("a.txt", "same");
 
         // Act
         var result = await RunAsync(new { path = "a.txt", old_string = oldText, new_string = newText });
@@ -130,7 +130,7 @@ public sealed class EditFileToolTests : IDisposable
     public async Task ExecuteAsync_InvalidUtf8_IsRefusedAndLeftAlone()
     {
         // Arrange
-        var path = _workspace.Write("bad.txt", new byte[] { (byte)'a', 0xC3, 0x28, (byte)'b' });
+        var path = _root.Write("bad.txt", new byte[] { (byte)'a', 0xC3, 0x28, (byte)'b' });
 
         // Act
         var result = await RunAsync(new { path = "bad.txt", old_string = "a", new_string = "c" });
@@ -158,7 +158,7 @@ public sealed class EditFileToolTests : IDisposable
     public async Task ExecuteAsync_SameTextExceptLineEndings_IsAnError()
     {
         // Arrange
-        _workspace.Write("a.txt", "a\nb\n");
+        _root.Write("a.txt", "a\nb\n");
 
         // Act
         var result = await RunAsync(new { path = "a.txt", old_string = "a\r\nb", new_string = "a\nb" });
@@ -172,7 +172,7 @@ public sealed class EditFileToolTests : IDisposable
     public async Task ExecuteAsync_MixedLineEndings_KeepsTheOtherLinesAsTheyWere()
     {
         // Arrange
-        var path = _workspace.Write("mixed.txt", "one\r\ntwo\nthree\r\n");
+        var path = _root.Write("mixed.txt", "one\r\ntwo\nthree\r\n");
 
         // Act
         var result = await RunAsync(new { path = "mixed.txt", old_string = "two", new_string = "2" });
@@ -186,7 +186,7 @@ public sealed class EditFileToolTests : IDisposable
     public async Task ExecuteAsync_FileOverTheSizeLimit_IsRefusedAndLeftAlone()
     {
         // Arrange
-        var path = _workspace.Write("big.txt", new string('a', (10 * 1024 * 1024) + 1));
+        var path = _root.Write("big.txt", new string('a', (10 * 1024 * 1024) + 1));
 
         // Act
         var result = await RunAsync(new { path = "big.txt", old_string = "a", new_string = "b" });
@@ -197,11 +197,11 @@ public sealed class EditFileToolTests : IDisposable
         new FileInfo(path).Length.Should().Be((10 * 1024 * 1024) + 1);
     }
 
-    [Fact(Skip = "Named pipes are a Unix feature.", SkipUnless = nameof(TempWorkspace.CanMakeFifo), SkipType = typeof(TempWorkspace))]
+    [Fact(Skip = "Named pipes are a Unix feature.", SkipUnless = nameof(TempRoot.CanMakeFifo), SkipType = typeof(TempRoot))]
     public async Task ExecuteAsync_NamedPipe_IsRefusedWithoutBlocking()
     {
         // Arrange
-        _workspace.MakeFifo("pipe");
+        _root.MakeFifo("pipe");
 
         // Act
         var result = await RunAsync(new { path = "pipe", old_string = "a", new_string = "b" }).WaitAsync(TestTimeouts.Default, TestContext.Current.CancellationToken);
@@ -211,5 +211,5 @@ public sealed class EditFileToolTests : IDisposable
         result.Output.Should().Contain("is empty");
     }
 
-    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), _workspace.Context, TestContext.Current.CancellationToken);
+    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempRoot.Args(args), _root.Context, TestContext.Current.CancellationToken);
 }

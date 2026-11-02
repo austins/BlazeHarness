@@ -90,7 +90,7 @@ public sealed class PermissionDefaultsTests : IDisposable
         again.Should().BeSameAs(first);
         other.Should().NotBeSameAs(first);
         changed.Should().NotBeSameAs(first);
-        changed.Folders.Should().Contain(WorkspacePath.CanonicalRoot(Path.Combine(_temp.Root, "mine")));
+        changed.Folders.Should().Contain(RootedPath.CanonicalRoot(Path.Combine(_temp.Root, "mine")));
     }
 
     [Fact]

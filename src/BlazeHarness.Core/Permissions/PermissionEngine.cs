@@ -9,12 +9,12 @@ using System.Text.Json;
 namespace BlazeHarness.Core.Permissions;
 
 /// <summary>
-/// Decides whether a tool call runs, needs the user's approval, or is refused, from the session's settings and what the call touches.
+/// Decides whether a tool call runs, needs the user's approval, or is refused, from the chat's settings and what the call touches.
 /// </summary>
 /// <remarks>
 /// <para>
 /// File paths are resolved first, with every link followed, so a link or <c>..</c> can't hide where a call really goes.
-/// A path on the protected list is always refused, at every level. Reads outside the working folder ask unless the session is
+/// A path on the protected list is always refused, at every level. Reads outside the working folder ask unless the chat is
 /// <see cref="AccessLevel.Unrestricted"/> or <see cref="ApprovalMode.NeverAsk"/>. Writes outside the folder need <see cref="AccessLevel.Unrestricted"/>.
 /// </para>
 /// <para>
@@ -27,9 +27,9 @@ namespace BlazeHarness.Core.Permissions;
 /// remembered. <see cref="AccessLevel.Unrestricted"/> skips the list, because the user has already accepted that commands run unconfined.
 /// </para>
 /// <para>
-/// An MCP tool is not covered by the access level, because the harness can't see what a server touches. It asks first, unless the session is
+/// An MCP tool is not covered by the access level, because the harness can't see what a server touches. It asks first, unless the chat is
 /// <see cref="ApprovalMode.NeverAsk"/>, or the user trusts the server and the server marks the tool read-only and not destructive. A Read only
-/// session never skips the question, and refuses under <see cref="ApprovalMode.NeverAsk"/>.
+/// chat never skips the question, and refuses under <see cref="ApprovalMode.NeverAsk"/>.
 /// </para>
 /// </remarks>
 public sealed class PermissionEngine
@@ -51,7 +51,7 @@ public sealed class PermissionEngine
     public Func<bool> BypassAllowed { get; set; } = static () => true;
 
     /// <summary>
-    /// Gets or sets the access level and approval mode, which can change while the session runs.
+    /// Gets or sets the access level and approval mode, which can change while the chat runs.
     /// </summary>
     public PermissionSettings Settings
     {
@@ -82,7 +82,7 @@ public sealed class PermissionEngine
     public Func<SensitivePaths> Sensitive { get; set; } = () => SensitivePaths.None;
 
     /// <summary>
-    /// Gets or sets the folders outside the working folder that calls may always read without asking, such as the session's attached files.
+    /// Gets or sets the folders outside the working folder that calls may always read without asking, such as the chat's attached files.
     /// </summary>
     /// <remarks>
     /// They are for reading only. Writes outside the working folder are decided as before, and the protected folders still win.
@@ -147,7 +147,7 @@ public sealed class PermissionEngine
     }
 
     /// <summary>
-    /// Remember an approval for the rest of the session.
+    /// Remember an approval for the rest of the chat.
     /// </summary>
     /// <param name="grantKey">The key from <see cref="PermissionDecision.GrantKey"/>.</param>
     public void Remember(string grantKey)
@@ -227,7 +227,7 @@ public sealed class PermissionEngine
             var paths = new List<string>();
             foreach (var name in tool.PathArguments)
             {
-                if (WorkspacePath.TryLocate(context.Root, Text(arguments, name), out var full))
+                if (RootedPath.TryLocate(context.Root, Text(arguments, name), out var full))
                 {
                     paths.Add(full);
                 }
@@ -255,7 +255,7 @@ public sealed class PermissionEngine
         if (settings.Access == AccessLevel.ReadOnly)
         {
             return settings.Approvals == ApprovalMode.NeverAsk
-                ? new PermissionDecision(PermissionVerdict.Deny, "This session is Read only, and an MCP tool can change things the harness can't see. Say what you wanted to do, and the user can change the access level.")
+                ? new PermissionDecision(PermissionVerdict.Deny, "This chat is Read only, and an MCP tool can change things the harness can't see. Say what you wanted to do, and the user can change the access level.")
                 : AskMcp(tool) with { Sticky = true, GrantKey = null };
         }
 
@@ -291,7 +291,7 @@ public sealed class PermissionEngine
         {
             return new PermissionDecision(
                 PermissionVerdict.Deny,
-                $"Commands can't run in this session because there is no sandbox to confine them. {Sandbox.Detail} Say what you wanted to run, and the user can choose the Unrestricted access level.");
+                $"Commands can't run in this chat because there is no sandbox to confine them. {Sandbox.Detail} Say what you wanted to run, and the user can choose the Unrestricted access level.");
         }
 
         var mode = settings.Access == AccessLevel.ReadOnly ? ShellMode.ReadOnly : ShellMode.Writable;
@@ -314,7 +314,7 @@ public sealed class PermissionEngine
         var paths = new List<string>();
         foreach (var name in tool.PathArguments)
         {
-            if (WorkspacePath.TryLocate(context.Root, Text(arguments, name), out var full))
+            if (RootedPath.TryLocate(context.Root, Text(arguments, name), out var full))
             {
                 paths.Add(full);
             }
@@ -325,7 +325,7 @@ public sealed class PermissionEngine
             return new PermissionDecision(PermissionVerdict.Deny, $"The path '{protectedPath}' holds credentials or settings that tools may not use.");
         }
 
-        var outside = paths.Find(p => !WorkspacePath.IsInside(context.Root, p));
+        var outside = paths.Find(p => !RootedPath.IsInside(context.Root, p));
         return tool.IsReadOnly
             ? EvaluateRead(outside, settings)
             : EvaluateWrite(tool, outside, settings);
@@ -354,14 +354,14 @@ public sealed class PermissionEngine
     {
         if (settings.Access == AccessLevel.ReadOnly)
         {
-            return new PermissionDecision(PermissionVerdict.Deny, "This session is Read only, so files can't be changed. Say what you wanted to change, and the user can change the access level.");
+            return new PermissionDecision(PermissionVerdict.Deny, "This chat is Read only, so files can't be changed. Say what you wanted to change, and the user can change the access level.");
         }
 
         if (outside is not null)
         {
             if (settings.Access != AccessLevel.Unrestricted)
             {
-                return new PermissionDecision(PermissionVerdict.Deny, $"The path '{outside}' is outside the working folder, and this session only writes inside it. Say what you wanted to change.");
+                return new PermissionDecision(PermissionVerdict.Deny, $"The path '{outside}' is outside the working folder, and this chat only writes inside it. Say what you wanted to change.");
             }
 
             return settings.Approvals == ApprovalMode.AskFirst
@@ -376,12 +376,12 @@ public sealed class PermissionEngine
 
     private List<string> GrantedFolders()
     {
-        return [.. _grants.Keys.Where(IsFolderGrant).Select(key => key[FolderGrantPrefix.Length..]), .. ReadableFolders().Select(WorkspacePath.CanonicalRoot)];
+        return [.. _grants.Keys.Where(IsFolderGrant).Select(key => key[FolderGrantPrefix.Length..]), .. ReadableFolders().Select(RootedPath.CanonicalRoot)];
     }
 
     private bool IsReadable(string fullPath)
     {
-        return ReadableFolders().Any(folder => WorkspacePath.IsInside(WorkspacePath.CanonicalRoot(folder), fullPath));
+        return ReadableFolders().Any(folder => RootedPath.IsInside(RootedPath.CanonicalRoot(folder), fullPath));
     }
 
     private static bool IsFolderGrant(string key) => key.StartsWith(FolderGrantPrefix, StringComparison.Ordinal);
@@ -390,7 +390,7 @@ public sealed class PermissionEngine
     {
         foreach (var key in _grants.Keys)
         {
-            if (key.StartsWith(FolderGrantPrefix, StringComparison.Ordinal) && WorkspacePath.IsInside(key[FolderGrantPrefix.Length..], fullPath))
+            if (key.StartsWith(FolderGrantPrefix, StringComparison.Ordinal) && RootedPath.IsInside(key[FolderGrantPrefix.Length..], fullPath))
             {
                 return true;
             }

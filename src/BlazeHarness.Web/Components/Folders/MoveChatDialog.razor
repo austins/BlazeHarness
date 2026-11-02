@@ -1,5 +1,6 @@
+@using BlazeHarness.Core.Chats
 @inject FolderRegistry Folders
-@inject SessionService Sessions
+@inject ChatService ChatService
 @inject ToastService Toasts
 
 <Dialog Title="Move chat to" Open="Chat is not null" OnClose="CloseAsync">
@@ -32,7 +33,7 @@
     /// Gets or sets the chat to move, or null while the dialog is closed.
     /// </summary>
     [Parameter]
-    public SessionInfo? Chat { get; set; }
+    public ChatInfo? Chat { get; set; }
 
     /// <summary>
     /// Gets or sets the callback for when the dialog is dismissed or the chat was moved.
@@ -55,13 +56,13 @@
 
         try
         {
-            await Sessions.Store.UpdateAsync(chat.Id, s => s with { FolderPath = folderPath });
+            await ChatService.Store.UpdateAsync(chat.Id, s => s with { FolderPath = folderPath });
             if (folderPath is not null)
             {
                 await Folders.TouchAsync(folderPath);
             }
 
-            await Sessions.RefreshProjectsAsync();
+            await ChatService.RefreshProjectsAsync();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

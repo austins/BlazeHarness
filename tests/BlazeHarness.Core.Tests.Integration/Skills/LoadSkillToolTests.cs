@@ -146,7 +146,7 @@ public sealed class LoadSkillToolTests : IDisposable
         var sut = new LoadSkillTool(new SkillSet([new SkillInfo("huge", "Big.", huge, SkillSource.App)]));
 
         // Act
-        var result = await sut.ExecuteAsync(TempWorkspace.Args(new { name = "huge" }), _context, TestContext.Current.CancellationToken);
+        var result = await sut.ExecuteAsync(TempRoot.Args(new { name = "huge" }), _context, TestContext.Current.CancellationToken);
 
         // Assert
         result.Output.Should().Contain("cut off after 65,536 characters");
@@ -269,7 +269,7 @@ public sealed class LoadSkillToolTests : IDisposable
         return new LoadSkillTool(skills, started);
     }
 
-    private Task<ToolResult> RunAsync(LoadSkillTool tool, object args) => tool.ExecuteAsync(TempWorkspace.Args(args), _context, TestContext.Current.CancellationToken);
+    private Task<ToolResult> RunAsync(LoadSkillTool tool, object args) => tool.ExecuteAsync(TempRoot.Args(args), _context, TestContext.Current.CancellationToken);
 
-    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempWorkspace.Args(args), _context, TestContext.Current.CancellationToken);
+    private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempRoot.Args(args), _context, TestContext.Current.CancellationToken);
 }

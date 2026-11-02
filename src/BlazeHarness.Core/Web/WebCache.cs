@@ -1,21 +1,21 @@
 namespace BlazeHarness.Core.Web;
 
 /// <summary>
-/// Keeps the pages a session fetched in memory, so reading the next piece of a long page doesn't download it again.
+/// Keeps the pages a chat fetched in memory, so reading the next piece of a long page doesn't download it again.
 /// </summary>
 /// <remarks>
-/// Each session has its own small, least-recently-used set that expires after a while. Nothing is written to disk, and a session's pages are
+/// Each chat has its own small, least-recently-used set that expires after a while. Nothing is written to disk, and a chat's pages are
 /// dropped when it ends.
 /// </remarks>
 internal sealed class WebCache
 {
-    internal const int MaxPagesPerSession = 8;
-    internal const int MaxCharactersPerSession = 2_000_000;
+    internal const int MaxPagesPerChat = 8;
+    internal const int MaxCharactersPerChat = 2_000_000;
     internal static readonly TimeSpan Lifetime = TimeSpan.FromMinutes(15);
 
     private readonly TimeProvider _time;
     private readonly Lock _lock = new();
-    private readonly Dictionary<string, List<Entry>> _sessions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<Entry>> _chats = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WebCache"/> class.
@@ -27,17 +27,17 @@ internal sealed class WebCache
     }
 
     /// <summary>
-    /// Get a page a session fetched earlier.
+    /// Get a page a chat fetched earlier.
     /// </summary>
-    /// <param name="sessionId">The session id.</param>
+    /// <param name="chatId">The chat id.</param>
     /// <param name="address">The address that was asked for.</param>
     /// <returns>The page, or null when it was not fetched or has expired.</returns>
-    public CachedPage? Find(string sessionId, Uri address)
+    public CachedPage? Find(string chatId, Uri address)
     {
         var key = UrlCanonicalizer.Canonical(address);
         lock (_lock)
         {
-            if (!_sessions.TryGetValue(sessionId, out var entries))
+            if (!_chats.TryGetValue(chatId, out var entries))
             {
                 return null;
             }
@@ -59,22 +59,22 @@ internal sealed class WebCache
     /// <summary>
     /// Keep a page.
     /// </summary>
-    /// <param name="sessionId">The session id.</param>
+    /// <param name="chatId">The chat id.</param>
     /// <param name="address">The address that was asked for.</param>
     /// <param name="page">The page.</param>
-    public void Add(string sessionId, Uri address, CachedPage page)
+    public void Add(string chatId, Uri address, CachedPage page)
     {
         var key = UrlCanonicalizer.Canonical(address);
         lock (_lock)
         {
-            if (!_sessions.TryGetValue(sessionId, out var entries))
+            if (!_chats.TryGetValue(chatId, out var entries))
             {
                 entries = [];
-                _sessions[sessionId] = entries;
+                _chats[chatId] = entries;
             }
 
-            // Pages of other sessions that have expired are dropped too, so a session that is no longer used doesn't hold memory.
-            foreach (var other in _sessions.Values)
+            // Pages of other chats that have expired are dropped too, so a chat that is no longer used doesn't hold memory.
+            foreach (var other in _chats.Values)
             {
                 other.RemoveAll(entry => _time.GetUtcNow() - entry.At > Lifetime);
             }
@@ -82,7 +82,7 @@ internal sealed class WebCache
             entries.RemoveAll(entry => entry.Key == key);
             entries.Add(new Entry(key, page, _time.GetUtcNow()));
             var total = entries.Sum(entry => entry.Page.Document.Text.Length);
-            while (entries.Count > MaxPagesPerSession || (entries.Count > 1 && total > MaxCharactersPerSession))
+            while (entries.Count > MaxPagesPerChat || (entries.Count > 1 && total > MaxCharactersPerChat))
             {
                 total -= entries[0].Page.Document.Text.Length;
                 entries.RemoveAt(0);
@@ -91,14 +91,14 @@ internal sealed class WebCache
     }
 
     /// <summary>
-    /// Drop everything a session fetched.
+    /// Drop everything a chat fetched.
     /// </summary>
-    /// <param name="sessionId">The session id.</param>
-    public void Forget(string sessionId)
+    /// <param name="chatId">The chat id.</param>
+    public void Forget(string chatId)
     {
         lock (_lock)
         {
-            _sessions.Remove(sessionId);
+            _chats.Remove(chatId);
         }
     }
 

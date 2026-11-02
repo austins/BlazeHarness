@@ -1,8 +1,9 @@
+@using BlazeHarness.Core.Chats
 @using BlazeHarness.Core.Skills
 @implements IDisposable
 @inject SkillCatalog Catalog
 @inject SettingsDialogState SettingsState
-@inject SessionService Sessions
+@inject ChatService ChatService
 
 @if (_available.Skills.Count > 0)
 {
@@ -35,7 +36,7 @@
     /// Gets or sets the id of the chat whose skills are shown.
     /// </summary>
     [Parameter, EditorRequired]
-    public string SessionId { get; set; } = string.Empty;
+    public string ChatId { get; set; } = string.Empty;
 
     public void Dispose()
     {
@@ -49,21 +50,21 @@
 
     protected override void OnParametersSet()
     {
-        _available = Sessions.AvailableSkills(SessionId);
+        _available = ChatService.AvailableSkills(ChatId);
     }
 
-    private bool IsOn(SkillInfo skill) => Sessions.IsSkillEnabled(SessionId, skill.Name);
+    private bool IsOn(SkillInfo skill) => ChatService.IsSkillEnabled(ChatId, skill.Name);
 
     private async Task SetAsync(string name, bool enabled)
     {
-        await Sessions.SetSkillAsync(SessionId, name, enabled);
+        await ChatService.SetSkillAsync(ChatId, name, enabled);
     }
 
     private void OnCatalogChanged(object? sender, EventArgs e)
     {
         _ = InvokeAsync(() =>
         {
-            _available = Sessions.AvailableSkills(SessionId);
+            _available = ChatService.AvailableSkills(ChatId);
             StateHasChanged();
         });
     }

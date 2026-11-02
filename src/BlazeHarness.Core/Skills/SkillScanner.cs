@@ -44,7 +44,7 @@ internal static partial class SkillScanner
             return SkillScan.Empty;
         }
 
-        if (boundary is not null && !WorkspacePath.IsInside(WorkspacePath.CanonicalRoot(boundary), WorkspacePath.CanonicalRoot(directory)))
+        if (boundary is not null && !RootedPath.IsInside(RootedPath.CanonicalRoot(boundary), RootedPath.CanonicalRoot(directory)))
         {
             return new SkillScan([], [$"{directory}: skipped because it links outside the project folder."]);
         }
@@ -169,7 +169,7 @@ internal static partial class SkillScanner
             }
 
             var target = info.ResolveLinkTarget(returnFinalTarget: true)?.FullName;
-            return target is null || !WorkspacePath.IsInside(WorkspacePath.CanonicalRoot(boundary), target);
+            return target is null || !RootedPath.IsInside(RootedPath.CanonicalRoot(boundary), target);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

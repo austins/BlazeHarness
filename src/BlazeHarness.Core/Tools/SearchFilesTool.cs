@@ -121,7 +121,7 @@ internal sealed class SearchFilesTool : ITool
 
         var entries = File.Exists(start)
             ? [new WalkEntry(start, context.Relative(start), IsDirectory: false, IsLink: false)]
-            : WorkspaceWalker.Walk(context, start, recursive: true, respectIgnore: !includeIgnored, cancellationToken);
+            : RootWalker.Walk(context, start, recursive: true, respectIgnore: !includeIgnored, cancellationToken);
         foreach (var entry in entries)
         {
             if (entry.IsDirectory || entry.IsLink

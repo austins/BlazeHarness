@@ -100,7 +100,7 @@ public sealed class PermissionEngineMcpTests
     }
 
     [Fact]
-    public void Evaluate_ReadOnlySession_AsksEvenForATrustedReadOnlyTool()
+    public void Evaluate_ReadOnlyChat_AsksEvenForATrustedReadOnlyTool()
     {
         // Arrange
         _sut.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst);
@@ -114,7 +114,7 @@ public sealed class PermissionEngineMcpTests
     }
 
     [Fact]
-    public void Evaluate_ReadOnlySessionWithARememberedApproval_StillAsksAndCannotBeRemembered()
+    public void Evaluate_ReadOnlyChatWithARememberedApproval_StillAsksAndCannotBeRemembered()
     {
         // Arrange
         _sut.Remember("mcp:files/read");
@@ -129,7 +129,7 @@ public sealed class PermissionEngineMcpTests
     }
 
     [Fact]
-    public void Evaluate_ReadOnlySessionThatNeverAsks_Denies()
+    public void Evaluate_ReadOnlyChatThatNeverAsks_Denies()
     {
         // Arrange
         _sut.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.NeverAsk);
@@ -194,7 +194,7 @@ public sealed class PermissionEngineMcpTests
     }
 
     [Fact]
-    public void Evaluate_AllowRuleInAReadOnlySession_StillAsks()
+    public void Evaluate_AllowRuleInAReadOnlyChat_StillAsks()
     {
         // Arrange
         _sut.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst);

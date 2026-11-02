@@ -1,7 +1,7 @@
 namespace BlazeHarness.Core.Folders;
 
 /// <summary>
-/// One <c>AGENTS.md</c> file that was read for a session.
+/// One <c>AGENTS.md</c> file that was read for a chat.
 /// </summary>
 /// <param name="Path">The full path of the file.</param>
 /// <param name="Content">The text that was read, which is empty when the size cap left no room for it.</param>
