@@ -25,6 +25,9 @@
 
 - Log IDs and counts only, never message or file contents. Pass an exception as the logger's exception argument; `FileLoggerProvider` writes only its type and HTTP status. Keep `ex.Message` out of log messages: it can echo a prompt or reply.
 - One type per file, and the namespace matches the folder (enums, records and event types included).
+- Keep folders small: when a folder in `src/` passes about 20 files and falls into clear groups (as `Tools/Files`, `Tools/Shell`, `Tools/Web`, `Mcp/Config`, `Agent/Events` do), split it into sub-folders. Keep the types most callers use at the top level.
+- Put a type next to what it belongs to, not next to a similar name: the live `Chat` is in `Agent/`, its saved log and events are in `Chats/`. Before adding a helper, search for an existing one; don't keep two classes of the same name (`AtomicFile` lives only in `Config/`).
+- When moving files, use `git mv`, then update the `namespace` line in each moved file and the `using` directives of everything that references it (an IDE refactoring helps but isn't required). `dotnet build` finds what is missed, including unused `using` directives. Move the tests to the mirrored folder in the same change.
 - Make types `internal` unless another project uses them. `BlazeHarness.Core` exposes internals only to its two test projects (`InternalsVisibleTo`).
 - Persistence is plain files under `AppPaths` (no database, no migrations). Prefer Microsoft packages (`Microsoft.Extensions.*`, `System.Text.Json`, `System.Threading.Channels`); add another package only when no real alternative exists.
 - Say "chat", never "session" or "workspace", in code and UI names (`Chat`, `ChatService`, `chats/`); a chat in a Folder is a folder chat, one without a Folder is a general chat. Say "folder" for the directory a chat works in (`Folder`, `FolderRegistry`, `folders.json`).
