@@ -5,25 +5,25 @@
 {
     <dl class="chat-stats" aria-label="Usage of this chat">
         <div title="Prompt tokens sent, over all responses of this chat">
-            <dt>In</dt>
+            <dt><Icon Name="arrow-down" />In</dt>
             <dd>@TokenFormat.Of(totals.PromptTokens)</dd>
         </div>
         @if (totals.CacheHitRate is { } hit && totals.CachedTokens > 0)
         {
             <div title="@($"{totals.CachedTokens:N0} prompt tokens were served from the provider's cache")">
-                <dt>Cached</dt>
+                <dt><Icon Name="database" />Cached</dt>
                 <dd>@hit.ToString("P0", CultureInfo.CurrentCulture)</dd>
             </div>
         }
 
         <div title="@(totals.ReasoningTokens > 0 ? $"{totals.ReasoningTokens:N0} of them were thinking" : "Tokens the model generated")">
-            <dt>Out</dt>
+            <dt><Icon Name="arrow-up" />Out</dt>
             <dd>@TokenFormat.Of(totals.CompletionTokens)</dd>
         </div>
         @if (totals.DecodeTokensPerSecond is { } decode)
         {
             <div title="Tokens generated per second while streaming">
-                <dt>Decode</dt>
+                <dt><Icon Name="gauge" />Decode</dt>
                 <dd>@TokenFormat.Rate(decode)</dd>
             </div>
         }
@@ -31,7 +31,7 @@
         @if (totals.PrefillTokensPerSecond is { } prefill)
         {
             <div title="Uncached prompt tokens processed per second before the first output">
-                <dt>Prefill</dt>
+                <dt><Icon Name="bolt" />Prefill</dt>
                 <dd>@TokenFormat.Rate(prefill)</dd>
             </div>
         }
@@ -39,7 +39,7 @@
         @if (totals.TimeToFirstToken is { } wait)
         {
             <div title="Average wait until the first output arrived">
-                <dt>First token</dt>
+                <dt><Icon Name="timer" />First token</dt>
                 <dd>@TokenFormat.Duration(wait)</dd>
             </div>
         }
@@ -47,13 +47,13 @@
         @if (totals.GenerationTime > TimeSpan.Zero)
         {
             <div title="Time spent streaming output, over all responses">
-                <dt>Streaming</dt>
+                <dt><Icon Name="clock" />Streaming</dt>
                 <dd>@TokenFormat.Duration(totals.GenerationTime)</dd>
             </div>
         }
 
         <div title="Responses the model gave, tool rounds included">
-            <dt>Responses</dt>
+            <dt><Icon Name="chat" />Responses</dt>
             <dd>@totals.Responses</dd>
         </div>
     </dl>

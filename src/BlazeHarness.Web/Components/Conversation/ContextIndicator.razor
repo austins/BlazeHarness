@@ -1,15 +1,40 @@
 @using BlazeHarness.Core.Compaction
 
-<span class="context" data-level="@_level" title="@_details" role="status">
-    @if (_share is { } share)
+<button type="button" class="menu-trigger context-trigger" popovertarget="@_id" aria-haspopup="dialog" style="anchor-name: --@_id">
+    <span class="context" data-level="@_level">
+        @if (_share is { } share)
+        {
+            <svg class="context-ring" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <circle class="context-ring-track" cx="10" cy="10" r="@RingRadius" />
+                <circle class="context-ring-fill" cx="10" cy="10" r="@RingRadius" stroke-dasharray="@Dash(share)" />
+            </svg>
+        }
+        <span class="context-text">@_text</span><span class="sr-only"> tokens</span>
+    </span>
+</button>
+<div id="@_id" class="menu context-panel" popover="auto" role="dialog" aria-label="Context" style="position-anchor: --@_id">
+    <div class="menu-heading">Context</div>
+    @foreach (var line in _details)
     {
-        <svg class="context-ring" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-            <circle class="context-ring-track" cx="10" cy="10" r="@RingRadius" />
-            <circle class="context-ring-fill" cx="10" cy="10" r="@RingRadius" stroke-dasharray="@Dash(share)" />
-        </svg>
+        <p class="context-detail">@line</p>
     }
-    <span class="context-text">@_text</span><span class="sr-only"> tokens</span>
-</span>
+    @if (Entries.Count > 0)
+    {
+        <div class="menu-sep"></div>
+        <ChatStats Entries="Entries" />
+    }
+    @if (CanCompact)
+    {
+        <div class="menu-sep"></div>
+        <button type="button" class="menu-item" popovertarget="@_id" popovertargetaction="hide" @onclick="OnCompact">
+            <Icon Name="compress" />
+            <span class="menu-item-text">
+                <span class="menu-item-label">Compact now</span>
+                <span class="menu-item-description">Replace older messages with a summary</span>
+            </span>
+        </button>
+    }
+</div>
 
 @code {
     private const double HighShare = 0.8;
@@ -18,7 +43,8 @@
 
     private string _level = "ok";
     private string _text = string.Empty;
-    private string _details = string.Empty;
+    private readonly string _id = $"context-{Guid.NewGuid():N}";
+    private IReadOnlyList<string> _details = [];
     private double? _share;
     private ContextStatus? _shown;
 
@@ -27,6 +53,24 @@
     /// </summary>
     [Parameter, EditorRequired]
     public ContextStatus Status { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the entries of the chat, whose usage the panel totals.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<ChatEntry> Entries { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the panel offers to compact the chat.
+    /// </summary>
+    [Parameter]
+    public bool CanCompact { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user choosing to compact.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnCompact { get; set; }
 
     protected override void OnParametersSet()
     {
@@ -65,7 +109,7 @@
         return status.Window > 0 ? $"{tokens} / {TokenFormat.Of(status.Window)}" : tokens;
     }
 
-    private static string DetailsOf(ContextStatus status)
+    private static List<string> DetailsOf(ContextStatus status)
     {
         var lines = new List<string>
         {
@@ -81,6 +125,6 @@
             lines.Add($"Cache hits: {rate.ToString("P0", System.Globalization.CultureInfo.CurrentCulture)} of the last request");
         }
 
-        return string.Join('\n', lines);
+        return lines;
     }
 }

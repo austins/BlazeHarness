@@ -139,10 +139,9 @@ else
 
         @if (!_loading)
         {
-            <Composer ChatId="@ChatId" FolderPath="@ContextPath" Remembered="_info" Running="_chat?.IsRunning ?? false" CanRetry="_chat?.CanRetry ?? false" CanCompact="_chat?.CanCompact ?? false" ContextOf="_chat is null ? null : _chat.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop">
+            <Composer ChatId="@ChatId" Entries="_entries" FolderPath="@ContextPath" Remembered="_info" Running="_chat?.IsRunning ?? false" CanRetry="_chat?.CanRetry ?? false" CanCompact="_chat?.CanCompact ?? false" ContextOf="_chat is null ? null : _chat.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop">
                 <PermissionPicker Settings="CurrentPermissions" HasFolder="ContextPath is not null" OnChange="ChangePermissionsAsync" />
             </Composer>
-            <ChatStats Entries="_entries" />
         }
 
         <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
