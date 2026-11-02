@@ -1,4 +1,4 @@
-using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
 using System.Text.RegularExpressions;
 
 namespace BlazeHarness.Core.Skills;

@@ -1,4 +1,4 @@
-using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Agent.Events;
 using Microsoft.Extensions.AI;
 
 namespace BlazeHarness.Core.Compaction;

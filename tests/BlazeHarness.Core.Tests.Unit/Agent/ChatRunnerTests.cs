@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Tests.Shared.Agent;
 using Microsoft.Extensions.AI;
 

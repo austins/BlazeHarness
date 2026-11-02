@@ -1,5 +1,5 @@
 using BlazeHarness.Core.Sandbox;
-using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Shell;
 
 namespace BlazeHarness.Core.Tests.Unit.Sandbox;
 

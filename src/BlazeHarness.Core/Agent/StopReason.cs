@@ -1,3 +1,5 @@
+using BlazeHarness.Core.Agent.Events;
+
 namespace BlazeHarness.Core.Agent;
 
 /// <summary>

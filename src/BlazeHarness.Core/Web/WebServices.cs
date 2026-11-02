@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Web;
 using BlazeHarness.Core.Web.Content;
 using BlazeHarness.Core.Web.Search;
 using BlazeHarness.Core.Web.Search.Providers;

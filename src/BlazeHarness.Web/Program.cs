@@ -4,6 +4,8 @@ using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Logging;
 using BlazeHarness.Core.Mcp;
+using BlazeHarness.Core.Mcp.Config;
+using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sandbox;

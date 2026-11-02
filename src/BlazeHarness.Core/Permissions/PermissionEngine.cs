@@ -1,7 +1,9 @@
 using BlazeHarness.Core.Folders;
-using BlazeHarness.Core.Mcp;
+using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
+using BlazeHarness.Core.Tools.Web;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;

@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Tools;
 
 namespace BlazeHarness.Core.Mcp;
@@ -67,7 +68,7 @@ public sealed partial class McpManager
         List<McpToolListing> tools = [];
         foreach (var info in infos.OrderBy(t => t.Name, StringComparer.Ordinal))
         {
-            var name = McpToolNames.Build(server, info.Name, taken);
+            var name = Tools.McpToolNames.Build(server, info.Name, taken);
             if (!config.IsExcluded(info.Name) && !config.LoadsAlways(info.Name))
             {
                 tools.Add(new McpToolListing(name, server, info.Name, McpTool.TrimDescription(info.Description), McpTool.NormalizeSchema(info.InputSchema)));
@@ -88,7 +89,7 @@ public sealed partial class McpManager
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(servers);
-        if (!McpToolNames.TrySplit(name, out var server, out _) || !servers.Contains(server))
+        if (!Tools.McpToolNames.TrySplit(name, out var server, out _) || !servers.Contains(server))
         {
             return new McpToolLookup(null, $"There is no tool named '{name}'. Use find_tools to get the exact name.");
         }

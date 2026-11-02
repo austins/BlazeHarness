@@ -2,6 +2,8 @@ using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tests.Integration.Tools;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
+using BlazeHarness.Core.Tools.Shell;
 using BlazeHarness.Tests.Shared;
 using System.Text.Json;
 

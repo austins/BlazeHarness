@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Agent.Events;
 
 namespace BlazeHarness.Core.Tests.Unit.Agent;
 

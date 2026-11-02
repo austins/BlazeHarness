@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Tests.Shared;

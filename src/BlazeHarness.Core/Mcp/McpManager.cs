@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Secrets;
 using BlazeHarness.Core.Tools;
@@ -17,7 +18,7 @@ public sealed partial class McpManager : IAsyncDisposable
 {
     internal static readonly TimeSpan RetryAfterFailure = TimeSpan.FromSeconds(30);
 
-    private readonly McpConfigFile _config;
+    private readonly Config.McpConfigFile _config;
     private readonly IMcpConnector _connector;
     private readonly ILogger _log;
     private readonly Func<string, string?> _environment;
@@ -45,7 +46,7 @@ public sealed partial class McpManager : IAsyncDisposable
     /// <param name="secrets">Where the secrets of a server's environment and headers are kept; when null, only environment variables fill in a reference.</param>
     /// <param name="toolCache">Where the tools of each server are remembered between runs; when null, a server's tools are known only while it is connected.</param>
     public McpManager(
-        McpConfigFile config,
+        Config.McpConfigFile config,
         IMcpConnector connector,
         ILogger<McpManager> log,
         TimeProvider time,
@@ -191,7 +192,7 @@ public sealed partial class McpManager : IAsyncDisposable
 
             foreach (var info in entry.Tools.OrderBy(t => t.Name, StringComparer.Ordinal))
             {
-                var name = McpToolNames.Build(serverName, info.Name, taken);
+                var name = Tools.McpToolNames.Build(serverName, info.Name, taken);
                 if (config.IsExcluded(info.Name))
                 {
                     continue;
@@ -569,9 +570,9 @@ public sealed partial class McpManager : IAsyncDisposable
 
         // A variable that is set in the environment wins over the secret store.
         Dictionary<string, string> found = new(StringComparer.Ordinal);
-        foreach (var variable in McpSecretVariables.Referenced(config).Where(v => _environment(v) is null))
+        foreach (var variable in Config.McpSecretVariables.Referenced(config).Where(v => _environment(v) is null))
         {
-            if (await _secrets.GetAsync(McpSecretVariables.StoreKey(variable), cancellationToken) is { } value)
+            if (await _secrets.GetAsync(Config.McpSecretVariables.StoreKey(variable), cancellationToken) is { } value)
             {
                 found[variable] = value;
             }

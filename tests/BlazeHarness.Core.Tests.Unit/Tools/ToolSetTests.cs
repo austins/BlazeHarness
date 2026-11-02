@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Time.Testing;
 using System.Text.Json;

@@ -1,3 +1,6 @@
+using BlazeHarness.Core.Mcp.Config;
+using BlazeHarness.Core.Mcp.Tools;
+
 namespace BlazeHarness.Core.Mcp;
 
 /// <summary>

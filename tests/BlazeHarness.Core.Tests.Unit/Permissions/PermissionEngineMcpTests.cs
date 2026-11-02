@@ -1,6 +1,8 @@
 using BlazeHarness.Core.Mcp;
+using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
+using McpToolNames = BlazeHarness.Core.Mcp.Tools.McpToolNames;
 
 namespace BlazeHarness.Core.Tests.Unit.Permissions;
 

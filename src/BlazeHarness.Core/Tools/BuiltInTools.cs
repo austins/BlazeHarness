@@ -1,5 +1,7 @@
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Tools.Files;
+using BlazeHarness.Core.Tools.Shell;
 
 namespace BlazeHarness.Core.Tools;
 

@@ -1,4 +1,4 @@
-using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;

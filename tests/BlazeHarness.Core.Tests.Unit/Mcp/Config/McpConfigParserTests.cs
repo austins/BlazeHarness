@@ -1,0 +1,215 @@
+using BlazeHarness.Core.Mcp;
+using McpConfigParser = BlazeHarness.Core.Mcp.Config.McpConfigParser;
+
+namespace BlazeHarness.Core.Tests.Unit.Mcp.Config;
+
+public sealed class McpConfigParserTests
+{
+    [Fact]
+    public void Parse_StdioServer_ReadsEveryField()
+    {
+        // Arrange
+        const string json = """
+            {"mcpServers": {"files": {"command": "npx", "args": ["-y", "server"], "env": {"A": "1"}, "cwd": "/work", "disabled": true}}}
+            """;
+
+        // Act
+        var result = McpConfigParser.Parse(json);
+
+        // Assert
+        result.Errors.Should().BeEmpty();
+        var server = result.Servers.Should().ContainSingle().Subject;
+        server.Name.Should().Be("files");
+        server.Transport.Should().Be(McpTransport.Stdio);
+        server.Command.Should().Be("npx");
+        server.Args.Should().Equal("-y", "server");
+        server.Env.Should().Equal(new Dictionary<string, string> { ["A"] = "1" });
+        server.Cwd.Should().Be("/work");
+        server.Disabled.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("""{"mcpServers": {"s": {"url": "https://x.test/mcp"}}}""", McpTransport.Http)]
+    [InlineData("""{"mcpServers": {"s": {"url": "https://x.test/mcp", "type": "http"}}}""", McpTransport.Http)]
+    [InlineData("""{"mcpServers": {"s": {"url": "https://x.test/mcp", "type": "streamable-http"}}}""", McpTransport.Http)]
+    [InlineData("""{"mcpServers": {"s": {"url": "https://x.test/sse", "type": "SSE"}}}""", McpTransport.Sse)]
+    [InlineData("""{"mcpServers": {"s": {"command": "run", "type": "stdio"}}}""", McpTransport.Stdio)]
+    public void Parse_Transport_IsTakenFromTheTypeOrInferred(string json, McpTransport expected)
+    {
+        // Act
+        var result = McpConfigParser.Parse(json);
+
+        // Assert
+        result.Errors.Should().BeEmpty();
+        result.Servers.Single().Transport.Should().Be(expected);
+    }
+
+    [Fact]
+    public void Parse_RemoteServerHeaders_AreCaseInsensitive()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"s": {"url": "https://x.test", "headers": {"Authorization": "Bearer ${TOKEN}"}}}}""");
+
+        // Assert
+        result.Servers.Single().Headers["authorization"].Should().Be("Bearer ${TOKEN}");
+    }
+
+    [Fact]
+    public void Parse_TheServersKey_IsAcceptedToo()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"servers": {"s": {"command": "run"}}}""");
+
+        // Assert
+        result.Servers.Should().ContainSingle().Which.Name.Should().Be("s");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   \n")]
+    [InlineData("{}")]
+    [InlineData("""{"mcpServers": {}}""")]
+    public void Parse_NothingConfigured_IsEmptyWithoutErrors(string json)
+    {
+        // Act
+        var result = McpConfigParser.Parse(json);
+
+        // Assert
+        result.Servers.Should().BeEmpty();
+        result.Errors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Parse_ServerPlacedBesideMcpServers_ReportsItAsOutside()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"a": {"command": "x"}}, "b": {"command": "y"}, "note": {"text": "z"}}""");
+
+        // Assert
+        result.Servers.Should().ContainSingle().Which.Name.Should().Be("a");
+        result.Errors.Should().ContainSingle().Which.Should().Contain("\"b\"").And.Contain("outside");
+    }
+
+    [Fact]
+    public void Parse_InvalidJson_NamesTheLineAndColumn()
+    {
+        // Act
+        var result = McpConfigParser.Parse("{\n  \"mcpServers\": {,}\n}");
+
+        // Assert
+        result.Errors.Should().ContainSingle().Which.Should().Contain("line 2, column");
+    }
+
+    [Theory]
+    [InlineData("{", "not valid JSON")]
+    [InlineData("[]", "must be a JSON object")]
+    [InlineData("""{"other": 1}""", "no \"mcpServers\"")]
+    [InlineData("""{"mcpServers": []}""", "must be an object")]
+    [InlineData("""{"mcpServers": {"s": {}}}""", "needs a \"command\"")]
+    [InlineData("""{"mcpServers": {"s": {"type": "http"}}}""", "needs a \"url\"")]
+    [InlineData("""{"mcpServers": {"s": {"url": "ftp://x"}}}""", "http or https")]
+    [InlineData("""{"mcpServers": {"s": {"url": "not a url"}}}""", "http or https")]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "type": "grpc"}}}""", "not supported")]
+    [InlineData("""{"mcpServers": {"s": {"command": 1}}}""", "\"command\" must be a string")]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "args": "a"}}}""", "\"args\" must be a list")]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "args": [1]}}}""", "\"args\" must be a list")]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "env": {"A": 1}}}}""", "\"A\" is not a string")]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "disabled": "yes"}}}""", "true or false")]
+    [InlineData("""{"mcpServers": {"s": 5}}""", "must be an object")]
+    [InlineData("""{"mcpServers": {"bad name": {"command": "x"}}}""", "letters, digits")]
+    [InlineData("""{"mcpServers": {"a/b": {"command": "x"}}}""", "letters, digits")]
+    [InlineData("""{"mcpServers": {"a__b": {"command": "x"}}}""", "letters, digits")]
+    [InlineData("""{"mcpServers": {"a_": {"command": "x"}}}""", "letters, digits")]
+    [InlineData("""{"mcpServers": {"aaaaaaaaaabbbbbbbbbbccccccccccddd": {"command": "x"}}}""", "up to 32")]
+    public void Parse_BadInput_ReportsOneErrorAndNoServers(string json, string message)
+    {
+        // Act
+        var result = McpConfigParser.Parse(json);
+
+        // Assert
+        result.Servers.Should().BeEmpty();
+        result.Errors.Should().ContainSingle().Which.Should().Contain(message);
+    }
+
+    [Fact]
+    public void Parse_InvalidJson_NamesTheLine()
+    {
+        // Act
+        var result = McpConfigParser.Parse("{\n\"mcpServers\": {\n\"a\": nope\n}}");
+
+        // Assert
+        result.Errors.Should().ContainSingle().Which.Should().Contain("line 3");
+    }
+
+    [Fact]
+    public void Parse_OneBadServer_DoesNotHideTheOthers()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"good": {"command": "x"}, "bad": {}, "also": {"url": "https://x.test"}}}""");
+
+        // Assert
+        result.Servers.Select(s => s.Name).Should().Equal("good", "also");
+        result.Errors.Should().ContainSingle().Which.Should().StartWith("Server \"bad\"");
+    }
+
+    [Fact]
+    public void Parse_UrlWithAVariable_IsAcceptedBeforeExpansion()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"s": {"url": "${BASE:-https://x.test}/mcp"}}}""");
+
+        // Assert
+        result.Errors.Should().BeEmpty();
+        result.Servers.Single().Url.Should().Be("${BASE:-https://x.test}/mcp");
+    }
+
+    [Theory]
+    [InlineData("""{"mcpServers": {"s": {"command": "x"}}}""", new string[0])]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "alwaysLoad": false}}}""", new string[0])]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "alwaysLoad": true}}}""", new[] { "*" })]
+    [InlineData("""{"mcpServers": {"s": {"command": "x", "alwaysLoad": ["get_*", "ping"]}}}""", new[] { "get_*", "ping" })]
+    public void Parse_AlwaysLoad_IsOffUnlessAskedFor(string json, string[] expected)
+    {
+        // Act
+        var result = McpConfigParser.Parse(json);
+
+        // Assert
+        result.Errors.Should().BeEmpty();
+        result.Servers.Single().AlwaysLoad.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void Parse_AlwaysLoadOfTheWrongType_IsReported()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"s": {"command": "x", "alwaysLoad": "yes"}}}""");
+
+        // Assert
+        result.Servers.Should().BeEmpty();
+        result.Errors.Should().ContainSingle().Which.Should().Contain("alwaysLoad");
+    }
+
+    [Fact]
+    public void Parse_ExcludeTools_AreMatchedByPattern()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"s": {"command": "x", "excludeTools": ["get_thread", "old_*"]}}}""");
+
+        // Assert
+        result.Errors.Should().BeEmpty();
+        var server = result.Servers.Single();
+        server.IsExcluded("get_thread").Should().BeTrue();
+        server.IsExcluded("old_name").Should().BeTrue();
+        server.IsExcluded("search").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Parse_ExcludeToolsThatIsNotAList_IsReported()
+    {
+        // Act
+        var result = McpConfigParser.Parse("""{"mcpServers": {"s": {"command": "x", "excludeTools": "get_thread"}}}""");
+
+        // Assert
+        result.Errors.Should().ContainSingle().Which.Should().Contain("excludeTools");
+    }
+}

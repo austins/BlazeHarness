@@ -1,4 +1,4 @@
-using BlazeHarness.Core.Mcp;
+using McpConfigParser = BlazeHarness.Core.Mcp.Config.McpConfigParser;
 
 namespace BlazeHarness.Core.Tests.Unit.Mcp;
 

@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Web;
 
 namespace BlazeHarness.Core.Tests.Unit.Permissions;
 

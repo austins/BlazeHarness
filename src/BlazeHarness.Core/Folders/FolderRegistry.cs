@@ -1,5 +1,5 @@
 using BlazeHarness.Core.Config;
-using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
 using Microsoft.Extensions.Logging;
 
 namespace BlazeHarness.Core.Folders;

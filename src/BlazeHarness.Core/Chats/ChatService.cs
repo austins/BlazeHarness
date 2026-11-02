@@ -7,6 +7,8 @@ using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
+using BlazeHarness.Core.Tools.Shell;
 using BlazeHarness.Core.Web;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;

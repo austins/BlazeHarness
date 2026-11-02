@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Chats;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;

@@ -1,5 +1,6 @@
 @using BlazeHarness.Core.Mcp
 @using System.Collections.ObjectModel
+@using BlazeHarness.Core.Mcp.Config
 @inject McpServerEditor Editor
 
 <form class="stack" @onsubmit="SaveAsync" autocomplete="off" novalidate aria-label="@(Draft.IsNew ? "Add a server" : "Edit " + Draft.Name)">

@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Chats;
 using BlazeHarness.Core.Compaction;

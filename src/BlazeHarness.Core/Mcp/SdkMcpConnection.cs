@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Tools;
 using ModelContextProtocol;
 using ModelContextProtocol.Client;

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
 using System.Globalization;
 using System.IO.Enumeration;
 using System.Text;

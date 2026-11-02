@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Tests.Shared.Agent;

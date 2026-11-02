@@ -1,10 +1,12 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Mcp;
+using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Tests.Shared.Agent;
 using Microsoft.Extensions.Logging.Abstractions;
 using ChatService = BlazeHarness.Core.Chats.ChatService;
+using McpConfigFile = BlazeHarness.Core.Mcp.Config.McpConfigFile;
 
 #pragma warning disable IDISP001 // The service disposes the chats it opens.
 

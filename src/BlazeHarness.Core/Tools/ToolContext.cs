@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Tools.Files;
 
 namespace BlazeHarness.Core.Tools;
 

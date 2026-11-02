@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Sandbox;
-using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
+using BlazeHarness.Core.Tools.Shell;
 using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Sandbox;

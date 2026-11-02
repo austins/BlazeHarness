@@ -1,6 +1,6 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Permissions;
-using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 

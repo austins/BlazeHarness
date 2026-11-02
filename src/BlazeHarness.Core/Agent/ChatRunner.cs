@@ -1,11 +1,13 @@
+using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Compaction;
-using BlazeHarness.Core.Mcp;
+using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using McpToolNames = BlazeHarness.Core.Mcp.Tools.McpToolNames;
 
 namespace BlazeHarness.Core.Agent;
 

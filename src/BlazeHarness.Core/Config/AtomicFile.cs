@@ -12,6 +12,39 @@ internal static class AtomicFile
     private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
 
     /// <summary>
+    /// Write bytes to a file atomically, keeping the Unix permissions of the file it replaces.
+    /// </summary>
+    /// <param name="path">The full path of the file to create or replace.</param>
+    /// <param name="bytes">The content.</param>
+    public static void Write(string path, byte[] bytes)
+    {
+        var folder = Path.GetDirectoryName(path)!;
+        Directory.CreateDirectory(folder);
+        var temp = Path.Combine(folder, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                stream.Write(bytes);
+
+                // Without this a power cut after the rename can leave an empty file.
+                stream.Flush(flushToDisk: true);
+            }
+
+            if (!OperatingSystem.IsWindows() && File.Exists(path))
+            {
+                File.SetUnixFileMode(temp, File.GetUnixFileMode(path));
+            }
+
+            File.Move(temp, path, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(temp);
+        }
+    }
+
+    /// <summary>
     /// Write text to a file atomically, creating its folder when needed.
     /// </summary>
     /// <param name="path">The target file.</param>

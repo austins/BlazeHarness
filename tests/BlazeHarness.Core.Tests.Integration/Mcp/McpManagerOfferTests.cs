@@ -1,7 +1,9 @@
 using BlazeHarness.Core.Mcp;
+using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
+using McpConfigFile = BlazeHarness.Core.Mcp.Config.McpConfigFile;
 
 namespace BlazeHarness.Core.Tests.Integration.Mcp;
 

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Tools.Files;
 using System.Text.Json;
 
 namespace BlazeHarness.Core.Tools;
