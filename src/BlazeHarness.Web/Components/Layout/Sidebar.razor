@@ -42,11 +42,11 @@
         <div class="sidebar-heading">
             <Icon Name="chat" /><span id="chats-heading">Chats</span>
             <div class="sidebar-heading-actions">
-                <a class="btn btn-ghost btn-sm btn-icon" href="" title="New chat without a folder" aria-label="New chat without a folder"><Icon Name="plus" /></a>
                 <label class="btn btn-ghost btn-sm btn-icon import-chat" title="Import a chat from a JSON file">
                     <InputFile @ref="_importInput" OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="Import a chat from a JSON file" />
                     <Icon Name="import" />
                 </label>
+                <a class="btn btn-ghost btn-sm btn-icon" href="" title="New chat without a folder" aria-label="New chat without a folder"><Icon Name="plus" /></a>
             </div>
         </div>
         @if (chats.Count == 0)
