@@ -192,10 +192,10 @@ kbd {
     border-bottom: 1px solid var(--border); font-size: var(--text-sm); color: var(--fg-muted); min-width: 0;
 }
 .chat-context .icon { width: 1rem; height: 1rem; flex: none; }
-.chat-context-name { font-weight: 600; color: var(--fg); white-space: nowrap; }
+.chat-context-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: var(--fg); white-space: nowrap; }
 .chat-context-path { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: start; font-size: var(--text-xs); }
 .chat-context { flex-wrap: wrap; }
-.chat-context-where { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-2); }
+.chat-context-where { flex: 1 1 12rem; min-width: 0; display: flex; align-items: center; gap: var(--space-2); }
 .chat-context > .btn { gap: var(--space-1); color: var(--fg-muted); }
 .chat-context > .btn:hover:not(:disabled) { color: var(--fg); }
 .chat-context .btn .icon { width: 0.9rem; height: 0.9rem; }
