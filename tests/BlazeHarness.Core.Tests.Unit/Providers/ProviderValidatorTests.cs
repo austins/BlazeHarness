@@ -179,4 +179,43 @@ public sealed class ProviderValidatorTests
         // Assert
         issues.Should().ContainSingle(i => i.Path.Contains("levels.high", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void Validate_DefaultLevelTheModelDoesNotSupport_ReportsIssue()
+    {
+        // Arrange
+        var model = new ModelConfig
+        {
+            Id = "m",
+            ContextWindow = 8000,
+            MaxOutputTokens = 1000,
+            DefaultLevel = ThinkingLevel.High,
+            Levels = new Dictionary<ThinkingLevel, LevelConfig> { [ThinkingLevel.Low] = new() },
+        };
+
+        // Act
+        var issues = ProviderValidator.Validate(Valid with { Models = [model] });
+
+        // Assert
+        issues.Should().ContainSingle(i => i.Path.EndsWith("defaultLevel", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Validate_LevelsWithoutADefaultLevel_ReportsIssue()
+    {
+        // Arrange
+        var model = new ModelConfig
+        {
+            Id = "m",
+            ContextWindow = 8000,
+            MaxOutputTokens = 1000,
+            Levels = new Dictionary<ThinkingLevel, LevelConfig> { [ThinkingLevel.Low] = new() },
+        };
+
+        // Act
+        var issues = ProviderValidator.Validate(Valid with { Models = [model] });
+
+        // Assert
+        issues.Should().ContainSingle(i => i.Path.EndsWith("defaultLevel", StringComparison.Ordinal));
+    }
 }

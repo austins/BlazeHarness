@@ -59,6 +59,11 @@ public sealed class ModelEditModel
     public Dictionary<ThinkingLevel, LevelEditModel> Levels { get; } = NewLevels();
 
     /// <summary>
+    /// Gets or sets the level new chats start with, or null when no level is supported.
+    /// </summary>
+    public ThinkingLevel? DefaultLevel { get; set; }
+
+    /// <summary>
     /// Gets or sets a value indicating whether this model sends thinking levels differently from its provider.
     /// </summary>
     public bool OverrideSend { get; set; }
@@ -93,6 +98,7 @@ public sealed class ModelEditModel
             MaxOutputTokens = model.MaxOutputTokens,
             Reasoning = model.Reasoning,
             Image = model.Input.HasFlag(InputTypes.Image),
+            DefaultLevel = model.DefaultLevel,
             Sampling = SamplingEditModel.FromConfig(model.SamplingParams),
             OverrideSend = model.ThinkingSend is not null,
             SendMode = model.ThinkingSend?.Mode ?? ThinkingSendMode.ReasoningEffort,
@@ -103,6 +109,8 @@ public sealed class ModelEditModel
         {
             edit.Levels[level] = LevelEditModel.FromConfig(model.Levels is not null && model.Levels.TryGetValue(level, out var config) ? config : null);
         }
+
+        edit.DefaultLevel = model.DefaultLevel is { } saved && edit.Levels[saved].Supported ? saved : edit.SupportedLevels.Cast<ThinkingLevel?>().FirstOrDefault();
 
         var thinking = model.Levels?.Where(l => l.Key != ThinkingLevel.Off).Select(l => l.Value.Overrides).FirstOrDefault(o => o is not null);
         edit.ThinkingSampling = SamplingEditModel.FromConfig(thinking);
@@ -155,6 +163,7 @@ public sealed class ModelEditModel
             Input = Image ? InputTypes.Text | InputTypes.Image : InputTypes.Text,
             SamplingParams = Sampling.ToConfig(),
             Levels = levels.Count == 0 ? null : levels,
+            DefaultLevel = DefaultLevel is { } defaultLevel && levels.ContainsKey(defaultLevel) ? defaultLevel : null,
             ThinkingSend = OverrideSend
                 ? new ThinkingSend { Mode = SendMode, Field = SendMode == ThinkingSendMode.BodyField ? SendField.Trim() : null }
                 : null,
@@ -180,10 +189,17 @@ public sealed class ModelEditModel
     {
         var edit = Levels[level];
         edit.Supported = supported;
+        if (!supported && DefaultLevel == level)
+        {
+            DefaultLevel = SupportedLevels.Cast<ThinkingLevel?>().FirstOrDefault();
+        }
+
         if (supported && string.IsNullOrWhiteSpace(edit.Value))
         {
             edit.Value = SuggestedValue(level);
         }
+
+        DefaultLevel ??= SupportedLevels.Cast<ThinkingLevel?>().FirstOrDefault();
     }
 
     private static Dictionary<ThinkingLevel, LevelEditModel> NewLevels()

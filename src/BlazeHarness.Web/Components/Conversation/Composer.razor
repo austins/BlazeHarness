@@ -95,10 +95,9 @@ else
             @if (_levels.Count > 0)
             {
                 <Menu Label="Thinking" Title="How much the model thinks before answering">
-                    <Trigger><Icon Name="bulb" /> <span class="menu-trigger-text">@(_level.Length > 0 ? _level : "Default")</span></Trigger>
+                    <Trigger><Icon Name="bulb" /> <span class="menu-trigger-text">@_level</span></Trigger>
                     <ChildContent>
                         <div class="menu-heading">Thinking</div>
-                        <MenuItem Label="Default" Description="The model's own setting" Checked="_level.Length == 0" OnSelect="() => SelectLevel(string.Empty)" />
                         @foreach (var level in _levels)
                         {
                             var name = level.ToString();
@@ -280,9 +279,9 @@ else
             if (_models.Exists(m => m.Key == _selected))
             {
                 LoadLevels();
-                if (_level.Length > 0 && !_levels.Any(l => l.ToString() == _level))
+                if (!_levels.Any(l => l.ToString() == _level))
                 {
-                    _level = string.Empty;
+                    _level = DefaultLevelName();
                 }
             }
             else
@@ -367,7 +366,10 @@ else
         var preferred = remembered ?? _models.Find(m => m.Provider.Id == config.DefaultProviderId && m.Model.Id == config.DefaultModelId);
         _selected = (preferred ?? _models.FirstOrDefault())?.Key ?? string.Empty;
         LoadLevels();
-        _level = remembered is not null && Remembered?.Level is { } level && _levels.Contains(level) ? level.ToString() : string.Empty;
+        _level = remembered is null || Remembered?.Level is not { } level || !_levels.Contains(level)
+            ? DefaultLevelName()
+            : level.ToString();
+
         _note = null;
     }
 
@@ -387,6 +389,11 @@ else
         _levels = levels is null ? [] : [.. levels.Keys.Order()];
     }
 
+    private string DefaultLevelName()
+    {
+        return SelectedChoice?.Model.DefaultLevel?.ToString() ?? string.Empty;
+    }
+
     private Choice? SelectedChoice => _models.Find(m => m.Key == _selected);
 
     private void SelectModel(string key)
@@ -396,8 +403,13 @@ else
         _note = null;
         if (_level.Length > 0 && !_levels.Any(l => l.ToString() == _level))
         {
-            _note = $"{_level} is not available for this model, so the default will be used.";
-            _level = string.Empty;
+            var previous = _level;
+            _level = DefaultLevelName();
+            _note = _level.Length > 0 ? $"{previous} is not available for this model, so {_level} will be used." : null;
+        }
+        else if (_level.Length == 0)
+        {
+            _level = DefaultLevelName();
         }
 
         RefreshContext();

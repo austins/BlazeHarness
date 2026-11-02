@@ -79,4 +79,63 @@ public sealed class ModelEditModelTests
         // Assert
         sut.Levels[ThinkingLevel.Low].Value.Should().Be("true");
     }
+
+    [Fact]
+    public void ToConfig_DefaultLevelSupported_RoundTrips()
+    {
+        // Arrange
+        var sut = new ModelEditModel { Id = "m", Reasoning = true };
+        sut.SetLevelSupported(ThinkingLevel.Medium, true);
+        sut.DefaultLevel = ThinkingLevel.Medium;
+
+        // Act
+        var result = ModelEditModel.FromConfig(sut.ToConfig());
+
+        // Assert
+        result.DefaultLevel.Should().Be(ThinkingLevel.Medium);
+    }
+
+    [Fact]
+    public void SetLevelSupported_FirstLevel_BecomesTheDefault()
+    {
+        // Arrange
+        var sut = new ModelEditModel { Id = "m", Reasoning = true };
+
+        // Act
+        sut.SetLevelSupported(ThinkingLevel.Low, true);
+        sut.SetLevelSupported(ThinkingLevel.High, true);
+
+        // Assert
+        sut.DefaultLevel.Should().Be(ThinkingLevel.Low);
+    }
+
+    [Fact]
+    public void SetLevelSupported_TurningOffTheDefaultLevel_MovesTheDefaultToAnotherSupportedLevel()
+    {
+        // Arrange
+        var sut = new ModelEditModel { Id = "m", Reasoning = true };
+        sut.SetLevelSupported(ThinkingLevel.Low, true);
+        sut.SetLevelSupported(ThinkingLevel.High, true);
+        sut.DefaultLevel = ThinkingLevel.High;
+
+        // Act
+        sut.SetLevelSupported(ThinkingLevel.High, false);
+
+        // Assert
+        sut.DefaultLevel.Should().Be(ThinkingLevel.Low);
+    }
+
+    [Fact]
+    public void SetLevelSupported_TurningOffTheLastLevel_ClearsTheDefault()
+    {
+        // Arrange
+        var sut = new ModelEditModel { Id = "m", Reasoning = true };
+        sut.SetLevelSupported(ThinkingLevel.High, true);
+
+        // Act
+        sut.SetLevelSupported(ThinkingLevel.High, false);
+
+        // Assert
+        sut.DefaultLevel.Should().BeNull();
+    }
 }

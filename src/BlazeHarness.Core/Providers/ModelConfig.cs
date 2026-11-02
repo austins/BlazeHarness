@@ -41,6 +41,11 @@ public sealed record ModelConfig
     public SamplingParams? SamplingParams { get; init; }
 
     /// <summary>
+    /// Gets the thinking level a new chat starts with, or null when the model has no thinking levels.
+    /// </summary>
+    public ThinkingLevel? DefaultLevel { get; init; }
+
+    /// <summary>
     /// Gets the supported thinking levels and how each one is sent, or null when thinking is not configurable.
     /// </summary>
     public IReadOnlyDictionary<ThinkingLevel, LevelConfig>? Levels { get; init; }

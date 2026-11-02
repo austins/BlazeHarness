@@ -85,6 +85,11 @@ internal static class ProviderValidator
         }
 
         ValidateSampling(model.SamplingParams, $"{path}.samplingParams", issues);
+        if (model.DefaultLevel is { } defaultLevel ? model.Levels?.ContainsKey(defaultLevel) != true : model.Levels is { Count: > 0 })
+        {
+            issues.Add(new ValidationIssue($"{path}.defaultLevel", "Pick a default thinking level from the ones the model supports."));
+        }
+
         if (model.Levels is null)
         {
             return;
