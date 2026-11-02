@@ -33,7 +33,7 @@ else
                 <span class="chat-context-where" title="@folderPath">
                     <Icon Name="folder" />
                     <span class="chat-context-name">@(Folders.Find(folderPath)?.Name ?? FolderPaths.DisplayName(folderPath))</span>
-                    <span class="chat-context-path mono">@folderPath</span>
+                    <span class="chat-context-path mono"><bdi>@folderPath</bdi></span>
                 </span>
                 @if (Project is { Files.Count: > 0 } project)
                 {
