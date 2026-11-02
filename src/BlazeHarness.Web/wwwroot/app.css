@@ -186,7 +186,7 @@ kbd {
 .folder-toggle .icon { width: 0.9rem; height: 0.9rem; flex: none; }
 .folder-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .folder-warning { display: inline-flex; color: var(--danger); }
-.folder-chats { padding-inline-start: var(--space-3); }
+.folder-chats { padding-inline-start: var(--space-3); padding-block-start: 2px; }
 .chat-context {
     display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4);
     border-bottom: 1px solid var(--border); font-size: var(--text-sm); color: var(--fg-muted); min-width: 0;

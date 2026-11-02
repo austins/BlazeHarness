@@ -83,7 +83,7 @@
                     var available = FolderRegistry.IsAvailable(folder);
                     var expanded = filtering || !_collapsed.Contains(folder.Path);
                     <li @key="folder.Path" class="folder-item">
-                        <div class="folder-head">
+                        <div class="folder-head" @oncontextmenu="e => OpenMenu(folder, e)" @oncontextmenu:preventDefault>
                             <button type="button" class="folder-toggle" aria-expanded="@expanded.ToString().ToLowerInvariant()"
                                     title="@folder.Path" @onclick="() => ToggleFolder(folder)">
                                 <Icon Name="@(expanded ? "chevron-down" : "chevron-right")" />
@@ -104,8 +104,6 @@
                                     <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Find this folder"
                                             aria-label="@("Find " + folder.Name)" @onclick="() => _locating = folder"><Icon Name="folder" /></button>
                                 }
-                                <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Remove from list"
-                                        aria-label="@("Remove " + folder.Name + " from the list")" @onclick="() => _removing = folder"><Icon Name="close" /></button>
                             </div>
                         </div>
                         @if (!available)
@@ -146,6 +144,26 @@
 
 <OpenFolderDialog Open="_picking" OnClose="() => _picking = false" OnPicked="OnFolderPickedAsync" />
 
+<div @ref="_menu" id="@_menuId" class="menu context-menu" popover="auto" role="menu" aria-label="@(_menuFolder?.Name ?? "Folder actions")" data-bh-menu>
+    @if (_menuFolder is { } target)
+    {
+        @if (FolderRegistry.IsAvailable(target))
+        {
+            <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                    @onclick="() => Navigation.NavigateTo(NewChatHref(target))"><Icon Name="plus" />New chat</button>
+        }
+        else
+        {
+            <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                    @onclick="() => _locating = target"><Icon Name="folder" />Find folder</button>
+        }
+
+        <div class="menu-sep" role="separator"></div>
+        <button type="button" class="menu-item menu-item-danger" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                @onclick="() => _removing = target"><Icon Name="close" />Remove folder</button>
+    }
+</div>
+
 <OpenFolderDialog Open="_locating is not null" OnClose="() => _locating = null" OnPicked="RelocateAsync"
                   Title="Find folder" Hint="Choose where this folder is now. Its chats move with it." ConfirmText="Use this folder" />
 
@@ -159,6 +177,10 @@
     private bool _picking;
     private FolderInfo? _locating;
     private FolderInfo? _removing;
+    private FolderInfo? _menuFolder;
+    private ElementReference _menu;
+    private readonly string _menuId = $"folder-menu-{Guid.NewGuid():N}";
+    private (double X, double Y)? _showMenuAt;
     private InputFile? _importInput;
 
     private const long MaxImportBytes = 8 * 1024 * 1024;
@@ -230,6 +252,18 @@
             _dark = await JS.InvokeAsync<bool>("bhTheme.isDark");
             StateHasChanged();
         }
+
+        if (_showMenuAt is var (x, y))
+        {
+            _showMenuAt = null;
+            await JS.InvokeVoidAsync("bhUi.showContextMenu", _menu, x, y);
+        }
+    }
+
+    private void OpenMenu(FolderInfo folder, MouseEventArgs e)
+    {
+        _menuFolder = folder;
+        _showMenuAt = (e.ClientX, e.ClientY);
     }
 
     private static string NewChatHref(FolderInfo folder)
