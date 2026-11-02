@@ -121,6 +121,21 @@ public sealed class ListFilesToolTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_FileTheUserRefuses_IsNotListed()
+    {
+        // Arrange
+        _root.Write(".env", "x");
+        _root.Write("a.txt", "x");
+        var context = _root.Context.WithRefused(path => Path.GetFileName(path) == ".env");
+
+        // Act
+        var result = await _sut.ExecuteAsync(TempRoot.Args(new { include_ignored = true }), context, TestContext.Current.CancellationToken);
+
+        // Assert
+        Lines(result).Should().Equal("a.txt");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_MoreThanTheLimit_StopsAndSaysSo()
     {
         // Arrange

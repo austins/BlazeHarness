@@ -36,6 +36,16 @@ public sealed class SystemPromptTests
     }
 
     [Fact]
+    public void Build_Default_AsksForVerificationOnlyWhenTheProjectHasACheck()
+    {
+        // Act
+        var prompt = SystemPrompt.Build("Linux", "bash", "/work");
+
+        // Assert
+        prompt.Should().Contain("if the project has an obvious way to").And.Contain("say you could not verify");
+    }
+
+    [Fact]
     public void Build_Default_HasNoVolatileContent()
     {
         // Act

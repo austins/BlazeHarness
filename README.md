@@ -51,13 +51,13 @@ Not built yet, and not promised:
 
 * A touch-friendly layout for use from a phone or tablet. `--host 0.0.0.0` already lets other devices connect, but the layout isn't made for small screens.
 * Localization of the web UI, starting with English.
-* An in-app browser that the agent can use to open a running service, read the page, and take a screenshot.
+* An in-app browser that the agent can use to open a running service, read the page, and take a screenshot, so it can check its own UI changes (for example a click-through or a download) instead of only running tests.
 * Reading Office documents (docx, xlsx, pptx) in the web fetch tool, which reads HTML, PDF and text.
-* An "Ask user" tool that lets the agent pause and ask you a question, with free text or choices.
-* Subagents that work in their own context and return a summary.
+* An "Ask user" tool that lets the agent pause and ask you a question, with free text or choices. It is also the way for the agent to stop and ask for help when it is stuck, instead of retrying. A limit on repeated failed attempts, after which the run pauses and asks, could build on it; today a run has no round limit and the user stops it.
+* Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
-* Smaller additions: a command palette, per-tool MCP toggles, a sandbox network allow-list, message search across all folders, a duplicate-provider action, and a per-folder `.mcp.json`.
+* Smaller additions: a command palette, per-tool MCP toggles, a sandbox network allow-list (so commands can only reach hosts you list), message search across all folders, a duplicate-provider action, and a per-folder `.mcp.json`.
 
 ## Not goals
 
