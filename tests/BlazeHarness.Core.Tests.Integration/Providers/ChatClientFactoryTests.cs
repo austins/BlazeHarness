@@ -56,6 +56,27 @@ public sealed class ChatClientFactoryTests
     }
 
     [Fact]
+    public async Task Streaming_StoppedAtTheOutputLimit_ReportsAFinishReasonOfLength()
+    {
+        // Arrange
+        const string cutOff = """{"id":"1","object":"chat.completion.chunk","model":"m","choices":[{"index":0,"delta":{},"finish_reason":"length"}]}""";
+        using var server = new FakeOpenAiServer([Chunk2, cutOff, UsageChunk]);
+        var (provider, model) = CreateProvider(server.BaseUrl);
+        using var http = new HttpClient();
+        using var client = ChatClientFactory.Create(provider, model.Id, "key", http);
+
+        // Act
+        var updates = new List<ChatResponseUpdate>();
+        await foreach (var update in client.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "hi")], null, TestContext.Current.CancellationToken))
+        {
+            updates.Add(update);
+        }
+
+        // Assert
+        updates.Select(u => u.FinishReason).Should().Contain(ChatFinishReason.Length);
+    }
+
+    [Fact]
     public async Task Request_SamplingAndThinking_AreSerializedAsConfigured()
     {
         // Arrange

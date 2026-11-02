@@ -2,6 +2,8 @@ using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Chats;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Providers;
+using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Tests.Shared.Agent;
 using BlazeHarness.Tests.Shared.Chats;
 using Microsoft.Extensions.AI;
@@ -277,6 +279,26 @@ public sealed class ChatCompactionTests
     }
 
     [Fact]
+    public async Task GetContextStatus_NoUsageReported_CountsTheToolDefinitions()
+    {
+        // Arrange
+        using var plainClient = new ScriptedChatClient([ScriptedChatClient.Text("a")]);
+        using var toolClient = new ScriptedChatClient([ScriptedChatClient.Text("a")]);
+        using var plain = Create(plainClient);
+        using var withTools = Create(toolClient);
+        withTools.Tools = new ToolSet([new ReadFileTool()], new ToolContext(Path.GetTempPath()), TimeProvider.System);
+        await plain.SendAsync("hello", TestTargets.Create());
+        await withTools.SendAsync("hello", TestTargets.Create());
+
+        // Act
+        var without = plain.GetContextStatus(TestTargets.Create());
+        var with = withTools.GetContextStatus(TestTargets.Create());
+
+        // Assert
+        with.Tokens.Should().BeGreaterThan(without.Tokens + 20);
+    }
+
+    [Fact]
     public async Task GetContextStatus_AfterCompacting_IsEstimatedFromTheSmallerPrompt()
     {
         // Arrange
@@ -294,6 +316,25 @@ public sealed class ChatCompactionTests
         // Assert
         status.Approximate.Should().BeTrue();
         status.Tokens.Should().BeLessThan(100);
+    }
+
+    [Fact]
+    public async Task SendAsync_TheLastReplyReportedAFullPrompt_CompactsAtTheStartOfTheNextReply()
+    {
+        // Arrange
+        var usage = new UsageContent(new UsageDetails { InputTokenCount = 6_000, OutputTokenCount = 10 });
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("a"), new ChatResponseUpdate(ChatRole.Assistant, [usage])])
+            .Enqueue([ScriptedChatClient.Text("sum")])
+            .Enqueue([ScriptedChatClient.Text("b")]);
+        using var sut = Create(client);
+        await sut.SendAsync(new string('x', 8_000), TestTargets.Create());
+
+        // Act
+        await sut.SendAsync("two", TestTargets.Create());
+
+        // Assert
+        sut.Entries.Should().Contain(e => e.Compaction != null);
+        client.Requests.Should().HaveCount(3);
     }
 
     private static ChatTarget SmallWindow()

@@ -51,7 +51,6 @@ public sealed class ExtractiveSummarizerTests
             "[Later asks]",
             "- fix the bug",
             "[Latest actions]",
-            "- user: fix the bug",
             "- read_file src/a.cs",
             "- edit_file src/a.cs",
             "- shell dotnet test (failed)",
@@ -130,7 +129,17 @@ public sealed class ExtractiveSummarizerTests
         lines.Count(l => l.StartsWith("- request ", StringComparison.Ordinal)).Should().Be(13, "the newest 12 and the first request, which is kept as an early request");
         lines.Count(l => l.StartsWith("- run ", StringComparison.Ordinal)).Should().Be(12);
         lines.Should().Contain("- request 49").And.NotContain("- request 1");
-        lines.Count(l => l.StartsWith("- user: ", StringComparison.Ordinal) || l.StartsWith("- assistant: ", StringComparison.Ordinal) || l.StartsWith("- shell ", StringComparison.Ordinal)).Should().Be(30);
+        lines.Count(l => l.StartsWith("- assistant: ", StringComparison.Ordinal) || l.StartsWith("- shell ", StringComparison.Ordinal)).Should().Be(30);
+    }
+
+    [Fact]
+    public async Task SummarizeAsync_UserMessages_AreNotRepeatedAmongTheLatestActions()
+    {
+        // Act
+        var summary = await Summarize(null, [new(ChatRole.User, "fix the bug"), Call("c1", "read_file", "path", "a.cs"), new(ChatRole.User, "and the docs")]);
+
+        // Assert
+        summary.Split('\n').Should().NotContain(l => l.StartsWith("- user: ", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -140,7 +149,23 @@ public sealed class ExtractiveSummarizerTests
         var summary = await Summarize("The user wants a parser.\nNext: tests.", [new(ChatRole.User, "go on")]);
 
         // Assert
-        summary.Should().Contain("The user wants a parser. Next: tests.");
+        summary.Should().Contain("- (earlier notes) The user wants a parser. / Next: tests.");
+    }
+
+    [Fact]
+    public async Task SummarizeAsync_LongPreviousSummaryFromAModel_IsKeptWholeAndStaysTheSameOnTheNextRound()
+    {
+        // Arrange
+        var notes = string.Join("\n", Enumerable.Range(0, 200).Select(i => $"Decision {i}: keep the old API."));
+
+        // Act
+        var first = await Summarize(notes, [new(ChatRole.User, "go on")]);
+        var second = await Summarize(first, []);
+
+        // Assert
+        first.Should().Contain("Decision 0: keep the old API.").And.Contain("Decision 199: keep the old API.");
+        second.Should().Contain("Decision 199: keep the old API.").And.Contain("- go on");
+        second.Split('\n').Count(l => l.StartsWith("- (earlier notes)", StringComparison.Ordinal)).Should().Be(1);
     }
 
     [Fact]

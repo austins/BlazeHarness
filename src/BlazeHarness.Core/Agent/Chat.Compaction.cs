@@ -14,6 +14,9 @@ public sealed partial class Chat
     // The newest entry when the conversation was last compacted. Its prompt size, and that of the ones before it, was reported for a request that was not compacted.
     private ChatEntry? _compactedAfter;
 
+    // The estimated size of the tool definitions the last reply sent, used while no reported size covers them. Read with Interlocked.
+    private long _toolTokens;
+
     /// <summary>
     /// Get whether the conversation can be compacted by the user now.
     /// </summary>
@@ -45,16 +48,16 @@ public sealed partial class Chat
         lock (_gate)
         {
             var lastUsage = _entries.FindLastIndex(e => e.Usage is { PromptTokens: > 0 });
-            var stale = lastUsage >= 0 && (lastUsage < _entries.FindLastIndex(e => e.Compaction is not null) || (_compactedAfter is not null && lastUsage <= _entries.IndexOf(_compactedAfter)));
+            var stale = UsageIsStale(lastUsage);
             long tokens;
             if (lastUsage >= 0 && !stale)
             {
                 var last = _entries[lastUsage];
-                tokens = last.Usage!.PromptTokens + TokenEstimate.Of(_history.Skip(last.HistoryIndex));
+                tokens = last.Usage!.PromptTokens + TokenEstimate.OfRequest(_history, last.HistoryIndex);
             }
             else
             {
-                tokens = TokenEstimate.Of(SystemPromptText()) + TokenEstimate.Of(_history.Skip(_compaction?.KeptFrom ?? 0));
+                tokens = TokenEstimate.Of(SystemPromptText()) + ToolTokens() + TokenEstimate.OfRequest(_history, _compaction?.KeptFrom ?? 0);
                 tokens += _compaction is { } compaction ? TokenEstimate.Of(ConversationContext.SummaryMessage(compaction.Summary)) : 0;
             }
 
@@ -109,7 +112,7 @@ public sealed partial class Chat
                 summarizer = ModelSummarizer.For(client, target, _time);
             }
 
-            var context = new ConversationContext(ContextBudget.Limit(target.Model), summarizer, 0, state?.Summary, state?.KeptFrom ?? 0);
+            var context = new ConversationContext(ContextBudget.Limit(target.Model), summarizer, 0, state?.Summary, state?.KeptFrom ?? 0, TokenEstimate.Of(SystemPromptText()) + ToolTokens());
             if (await context.CompactAsync(working, manual: true, run.Token) is not { } result)
             {
                 return false;
@@ -136,15 +139,41 @@ public sealed partial class Chat
         return string.Join(Environment.NewLine, new[] { BasePrompt, Project?.ToPrompt(), Tools is null ? null : Skills?.ToPrompt() }.Where(p => !string.IsNullOrWhiteSpace(p)));
     }
 
-    private ConversationContext CreateContext(IChatClient client, ChatTarget target, int leadingMessages)
+    private long ToolTokens()
+    {
+        var last = Interlocked.Read(ref _toolTokens);
+        return last > 0 ? last : Tools is { } tools ? TokenEstimate.OfTools(tools.Tools) : 0;
+    }
+
+    private ConversationContext CreateContext(IChatClient client, ChatTarget target, int leadingMessages, long toolTokens)
     {
         (string Summary, int KeptFrom)? state;
+        (long PromptTokens, int HistoryIndex)? usage = null;
         lock (_gate)
         {
             state = _compaction;
+            var lastUsage = _entries.FindLastIndex(e => e.Usage is { PromptTokens: > 0 });
+            if (lastUsage >= 0 && !UsageIsStale(lastUsage))
+            {
+                usage = (_entries[lastUsage].Usage!.PromptTokens, _entries[lastUsage].HistoryIndex);
+            }
         }
 
-        return new ConversationContext(ContextBudget.Limit(target.Model), UsesExtractiveCompaction ? new ExtractiveSummarizer() : ModelSummarizer.For(client, target, _time), leadingMessages, state?.Summary, state?.KeptFrom ?? 0);
+        var context = new ConversationContext(ContextBudget.Limit(target.Model), UsesExtractiveCompaction ? new ExtractiveSummarizer() : ModelSummarizer.For(client, target, _time), leadingMessages, state?.Summary, state?.KeptFrom ?? 0, toolTokens);
+
+        // The size the server reported for the last request is more exact than an estimate, even at the start of a reply.
+        if (usage is { } reported)
+        {
+            context.RecordUsage(reported.PromptTokens, leadingMessages + reported.HistoryIndex);
+        }
+
+        return context;
+    }
+
+    // Must be called with the gate held. A reported size from before a compaction describes a request that no longer exists.
+    private bool UsageIsStale(int lastUsage)
+    {
+        return lastUsage >= 0 && (lastUsage < _entries.FindLastIndex(e => e.Compaction is not null) || (_compactedAfter is not null && lastUsage <= _entries.IndexOf(_compactedAfter)));
     }
 
     // Must be called with the gate held, after the entries or the history changed.

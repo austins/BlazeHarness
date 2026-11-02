@@ -1,6 +1,9 @@
+@using BlazeHarness.Core.Compaction
+@using BlazeHarness.Core.Config
 @using BlazeHarness.Core.Permissions
 @implements IDisposable
 @inject PermissionDefaults PermissionDefaults
+@inject JsonFileStore<AppConfig> Config
 @inject ChatService ChatService
 @inject FolderRegistry Folders
 @inject NavigationManager Navigation
@@ -550,7 +553,8 @@ else
         }
         catch (InvalidOperationException ex)
         {
-            Toasts.Show($"The conversation could not be summarized: {ex.Message}", ToastKind.Error);
+            var hint = Config.Current.Compaction == CompactionMode.Model ? " You can turn on \"Compact without asking the model\" under Settings > Context." : string.Empty;
+            Toasts.Show($"The conversation could not be summarized: {ex.Message}{hint}", ToastKind.Error);
         }
     }
 

@@ -71,6 +71,39 @@ public sealed class TokenEstimateTests
     }
 
     [Fact]
+    public void OfRequest_ThinkingBeforeTheLastUserMessage_IsNotCounted()
+    {
+        // Arrange
+        var thinking = new string('t', 4_000);
+        List<ChatMessage> messages =
+        [
+            new(ChatRole.User, "first"),
+            new(ChatRole.Assistant, [new TextReasoningContent(thinking), new TextContent("answer")]),
+            new(ChatRole.User, "second"),
+            new(ChatRole.Assistant, [new TextReasoningContent(thinking), new TextContent("answer")]),
+        ];
+
+        // Act
+        var result = TokenEstimate.OfRequest(messages);
+
+        // Assert
+        result.Should().Be(TokenEstimate.Of(messages[0]) + TokenEstimate.Of(messages[1], includeReasoning: false) + TokenEstimate.Of(messages[2]) + TokenEstimate.Of(messages[3]));
+    }
+
+    [Fact]
+    public void OfRequest_FromAnIndex_CountsTheMessagesFromThereOn()
+    {
+        // Arrange
+        List<ChatMessage> messages = [new(ChatRole.User, "abcd"), new(ChatRole.Assistant, "abcdefgh"), new(ChatRole.User, "abcdefghijkl")];
+
+        // Act
+        var result = TokenEstimate.OfRequest(messages, 1);
+
+        // Assert
+        result.Should().Be(TokenEstimate.Of(messages[1]) + TokenEstimate.Of(messages[2]));
+    }
+
+    [Fact]
     public void Of_Messages_IsTheSumOfTheMessages()
     {
         // Arrange

@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Compaction;
 using Microsoft.Extensions.AI;
 
@@ -346,10 +347,158 @@ public sealed class ConversationContextTests
         tokens.Should().Be(400 + TokenEstimate.Of(messages[3]));
     }
 
+    [Fact]
+    public void Size_WithOverhead_AddsItToTheEstimate()
+    {
+        // Arrange
+        var sut = new ConversationContext(10_000, _summarizer, overheadTokens: 700);
+        var messages = Conversation(4);
+
+        // Act
+        var (tokens, approximate) = sut.Size(messages);
+
+        // Assert
+        approximate.Should().BeTrue();
+        tokens.Should().Be(700 + TokenEstimate.OfRequest(messages));
+    }
+
+    [Fact]
+    public async Task CompactAsync_WithOverhead_CountsItInTheSizeAfter()
+    {
+        // Arrange
+        var sut = new ConversationContext(2_000, _summarizer, overheadTokens: 700);
+        var messages = Conversation(10);
+
+        // Act
+        var result = await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.TokensAfter.Should().BeGreaterThanOrEqualTo(700);
+        sut.Size(messages).Tokens.Should().Be(result.TokensAfter);
+    }
+
+    [Fact]
+    public async Task CompactAsync_Automatic_TurnFitsInTheTail_KeepsTheWholeTurnWithItsRequest()
+    {
+        // Arrange
+        var sut = new ConversationContext(1_000, _summarizer);
+        var messages = Conversation(5);
+        AddToolRounds(messages, 2, resultTokens: 100);
+
+        // Act
+        var result = await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.FirstKept.Should().Be(4);
+    }
+
+    [Fact]
+    public async Task CompactAsync_Automatic_TurnTooBigToKeep_CutsInsideIt()
+    {
+        // Arrange
+        var sut = new ConversationContext(1_000, _summarizer);
+        var messages = Conversation(5);
+        AddToolRounds(messages, 2, resultTokens: 300);
+
+        // Act
+        var result = await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.FirstKept.Should().Be(7);
+        messages[result.FirstKept].Role.Should().Be(ChatRole.Assistant);
+    }
+
+    [Fact]
+    public async Task CompactAsync_AfterATextCallNotice_NeverCutsAtTheNotice()
+    {
+        // Arrange
+        var sut = new ConversationContext(1_000, _summarizer);
+        List<ChatMessage> messages =
+        [
+            new(ChatRole.User, Text(100)),
+            new(ChatRole.Assistant, Text(100)),
+            new(ChatRole.User, Text(100)),
+            new(ChatRole.Assistant, Text(800)),
+            new(ChatRole.User, ChatRunner.TextCallNotice),
+            new(ChatRole.Assistant, Text(100)),
+        ];
+
+        // Act
+        var result = await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.FirstKept.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task CompactAsync_OverheadLeavesLittleRoom_KeepsASmallerTail()
+    {
+        // Arrange
+        var withoutOverhead = new ConversationContext(1_000, _summarizer);
+        var withOverhead = new ConversationContext(1_000, _summarizer, overheadTokens: 500);
+        var messages = Conversation(10);
+
+        // Act
+        var plain = await withoutOverhead.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+        var crowded = await withOverhead.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        plain.Should().NotBeNull();
+        crowded.Should().NotBeNull();
+        crowded.FirstKept.Should().BeGreaterThan(plain.FirstKept);
+    }
+
+    [Fact]
+    public async Task ShouldCompact_JustAfterCompactingStillOverTheLimit_WaitsForSomeGrowth()
+    {
+        // Arrange
+        var sut = new ConversationContext(1_000, _summarizer, overheadTokens: 950);
+        var messages = Conversation(10);
+        await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+        messages.Add(new ChatMessage(ChatRole.User, Text(10)));
+        messages.Add(new ChatMessage(ChatRole.Assistant, Text(10)));
+
+        // Act
+        var result = sut.ShouldCompact(messages);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ShouldCompact_AfterCompactingAndGrowingEnough_IsTrue()
+    {
+        // Arrange
+        var sut = new ConversationContext(1_000, _summarizer, overheadTokens: 950);
+        var messages = Conversation(10);
+        await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+        messages.Add(new ChatMessage(ChatRole.User, Text(100)));
+        messages.Add(new ChatMessage(ChatRole.Assistant, Text(100)));
+
+        // Act
+        var result = sut.ShouldCompact(messages);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
     // Messages that alternate between user and assistant and are about 100 tokens each.
     private static List<ChatMessage> Conversation(int count, int tokens = 100)
     {
         return [.. Enumerable.Range(0, count).Select(i => new ChatMessage(i % 2 == 0 ? ChatRole.User : ChatRole.Assistant, Text(tokens)))];
+    }
+
+    private static void AddToolRounds(List<ChatMessage> messages, int rounds, int resultTokens)
+    {
+        for (var i = 0; i < rounds; i++)
+        {
+            messages.Add(new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("c" + i, "read_file", new Dictionary<string, object?> { ["path"] = "a" })]));
+            messages.Add(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("c" + i, Text(resultTokens))]));
+        }
     }
 
     private static string Text(int tokens) => new('x', tokens * TokenEstimate.CharactersPerToken);

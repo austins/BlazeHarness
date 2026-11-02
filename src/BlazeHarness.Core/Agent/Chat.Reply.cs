@@ -51,9 +51,11 @@ public sealed partial class Chat
         {
             using var client = await _clientFactory(target, cancellation);
             var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level);
-            var context = CreateContext(client, target, prompt.Length > 0 ? 1 : 0);
             var tools = await TurnToolsAsync(cancellation);
-            EnsureToolsFit(target, prompt, tools);
+            var toolTokens = tools is null ? 0 : TokenEstimate.OfTools(tools.Tools);
+            Interlocked.Exchange(ref _toolTokens, toolTokens);
+            EnsureToolsFit(target, prompt, toolTokens);
+            var context = CreateContext(client, target, prompt.Length > 0 ? 1 : 0, toolTokens);
             await foreach (var e in ChatRunner.RunAsync(client, working, options, _time, tools, this, Permissions, context: context, cancellationToken: cancellation))
             {
                 await ApplyAsync(reply, e);
@@ -76,15 +78,15 @@ public sealed partial class Chat
         }
     }
 
-    private static void EnsureToolsFit(ChatTarget target, string prompt, ToolSet? tools)
+    private static void EnsureToolsFit(ChatTarget target, string prompt, long toolTokens)
     {
         var limit = ContextBudget.Limit(target.Model);
-        if (tools is null || limit <= 0)
+        if (toolTokens == 0 || limit <= 0)
         {
             return;
         }
 
-        var fixedTokens = TokenEstimate.Of(prompt) + TokenEstimate.OfCharacters(tools.Tools.Sum(t => t.Name.Length + t.Description.Length + t.InputSchema.Length));
+        var fixedTokens = TokenEstimate.Of(prompt) + toolTokens;
         if (fixedTokens > limit)
         {
             throw new InvalidOperationException(

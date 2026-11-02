@@ -35,7 +35,7 @@ internal sealed class ExtractiveSummarizer : ISummarizer
     private const int MessageCharacters = 240;
     private const int StepCharacters = 140;
     private const int PathCharacters = 200;
-    private const int EarlierNotesCharacters = 2_000;
+    private const int EarlierNotesCharacters = 20_000;
     private const string ChangedPrefix = "- changed ";
     private const string ReadPrefix = "- read ";
 
@@ -73,10 +73,11 @@ internal sealed class ExtractiveSummarizer : ISummarizer
             }
         }
 
-        // A summary written by the model has no sections, so it is kept as it was instead of being dropped.
+        // A summary written by the model has no sections, so it is kept whole, on one line, instead of being dropped.
         if (sections.Values.All(entries => entries.Count == 0))
         {
-            sections[Requests].Add("- (earlier notes) " + Flatten(summary, EarlierNotesCharacters));
+            var lines = summary.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            sections[Requests].Add("- (earlier notes) " + Flatten(string.Join(" / ", lines), EarlierNotesCharacters));
         }
 
         return sections;
@@ -103,7 +104,6 @@ internal sealed class ExtractiveSummarizer : ISummarizer
                         }
 
                         sections[UserMessages].Add("- " + Flatten(text, MessageCharacters));
-                        sections[Steps].Add("- user: " + Flatten(text, StepCharacters));
                         break;
                     case TextContent { Text: { Length: > 0 } text } when message.Role == ChatRole.Assistant:
                         sections[Steps].Add("- assistant: " + Flatten(text, StepCharacters));

@@ -16,10 +16,14 @@ namespace BlazeHarness.Core.Agent;
 /// </summary>
 internal static class ChatRunner
 {
+    /// <summary>
+    /// The user message added when a reply wrote a tool call as plain text. It has no chat entry of its own.
+    /// </summary>
+    internal const string TextCallNotice =
+        "Your last reply wrote a tool call as plain text, so it was not run. Call the tool through the tool interface instead.";
+
     private const int MaxTextCallRetries = 3;
     private const string TextCallMarker = "<tool_call>";
-    private const string TextCallNotice =
-        "Your last reply wrote a tool call as plain text, so it was not run. Call the tool through the tool interface instead.";
 
     private static readonly JsonSerializerOptions CompactJson = new(AIJsonUtilities.DefaultOptions) { WriteIndented = false };
 
@@ -63,6 +67,13 @@ internal static class ChatRunner
         ArgumentNullException.ThrowIfNull(time);
         return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), context, time, cancellationToken);
     }
+
+    /// <summary>
+    /// Get whether a reply wrote a tool call as plain text, which makes the runner add <see cref="TextCallNotice"/> and ask again.
+    /// </summary>
+    /// <param name="text">The reply text.</param>
+    /// <returns>True when the reply starts with the tool call marker.</returns>
+    internal static bool WroteCallAsText(string text) => text.AsSpan().TrimStart().StartsWith(TextCallMarker, StringComparison.Ordinal);
 
     private static TimeSpan? Positive(TimeSpan span)
     {
@@ -139,6 +150,7 @@ internal static class ChatRunner
             var thinking = new StringBuilder();
             var calls = new List<FunctionCallContent>();
             var reason = StopReason.Completed;
+            var truncated = false;
             string? error = null;
 
             UsageDetails? usageDetails = null;
@@ -172,6 +184,7 @@ internal static class ChatRunner
                     break;
                 }
 
+                truncated |= update.FinishReason == ChatFinishReason.Length;
                 foreach (var content in update.Contents)
                 {
                     if (content is TextReasoningContent or TextContent or FunctionCallContent)
@@ -214,6 +227,11 @@ internal static class ChatRunner
                     firstOutput is { } start ? Positive(time.GetElapsedTime(start, lastOutput)) : null);
             }
 
+            if (reason == StopReason.Completed && truncated)
+            {
+                yield return new ResponseTruncated();
+            }
+
             if (reason != StopReason.Completed)
             {
                 // Calls that arrived before a failure are dropped, since nothing would answer them.
@@ -254,7 +272,7 @@ internal static class ChatRunner
                 // Some models write the call as text when the server's parser misses it; nothing ran, so tell the model.
                 if (tools is { Declarations.Count: > 0 }
                     && textCallRetries < MaxTextCallRetries
-                    && reply.ToString().AsSpan().TrimStart().StartsWith(TextCallMarker, StringComparison.Ordinal))
+                    && WroteCallAsText(reply.ToString()))
                 {
                     textCallRetries++;
                     history.Add(new ChatMessage(ChatRole.User, TextCallNotice));

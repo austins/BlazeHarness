@@ -37,6 +37,24 @@ public sealed class ChatRunnerTests
     }
 
     [Fact]
+    public async Task RunAsync_ReplyCutOffAtTheOutputLimit_ReportsItBeforeDone()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient(
+            [
+                Update(new TextContent("partial")),
+                new ChatResponseUpdate { FinishReason = ChatFinishReason.Length },
+            ]);
+        var history = new List<ChatMessage> { new(ChatRole.User, "hi") };
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken);
+
+        // Assert
+        events.Should().Equal(new TextDelta("partial"), new ResponseTruncated(), new Done(StopReason.Completed));
+    }
+
+    [Fact]
     public async Task RunAsync_ThinkingWithoutAnAnswer_AddsNothingToHistory()
     {
         // Arrange

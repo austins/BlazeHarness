@@ -122,6 +122,71 @@ public sealed class ModelSummarizerTests
     }
 
     [Fact]
+    public async Task SummarizeAsync_CutOffAtTheOutputLimit_ThrowsInsteadOfReturningHalfASummary()
+    {
+        // Arrange
+        ChatResponseUpdate cutOff = new(ChatRole.Assistant, [new TextContent("Goal: fix")]) { FinishReason = ChatFinishReason.Length };
+        using var client = new ScriptedChatClient([cutOff]);
+        var sut = new ModelSummarizer(client, new ChatOptions(), 0, TimeProvider.System);
+
+        // Act
+        var act = async () => await sut.SummarizeAsync(null, [new ChatMessage(ChatRole.User, "hi")], TestContext.Current.CancellationToken);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*cut off*");
+    }
+
+    [Fact]
+    public void Transcript_ALongToolResult_KeepsItsStartAndItsEnd()
+    {
+        // Arrange
+        List<ChatMessage> messages = [new(ChatRole.Tool, [new FunctionResultContent("1", "build started" + new string('x', 10_000) + "error CS1002 exit code 2")])];
+
+        // Act
+        var text = ModelSummarizer.Transcript(null, messages, 0);
+
+        // Assert
+        text.Should().Contain("build started").And.Contain("error CS1002 exit code 2").And.Contain("more characters left out");
+    }
+
+    [Fact]
+    public void Transcript_ACutInsideASurrogatePair_StaysValidText()
+    {
+        // Arrange
+        var emoji = string.Concat(Enumerable.Repeat("\U0001F600", 5_000));
+        List<ChatMessage> messages = [new(ChatRole.Tool, [new FunctionResultContent("1", "a" + emoji + "z")])];
+
+        // Act
+        var text = ModelSummarizer.Transcript(null, messages, 0);
+
+        // Assert
+        var strict = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        var act = () => strict.GetBytes(text);
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Transcript_TooLongForTheInputLimit_ShrinksToolResultsBeforeLeavingOutMessages()
+    {
+        // Arrange
+        List<ChatMessage> messages = [];
+        for (var i = 0; i < 20; i++)
+        {
+            messages.Add(new ChatMessage(ChatRole.User, "message " + i));
+            messages.Add(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("c" + i, new string('x', 3_000))]));
+        }
+
+        // Act
+        var text = ModelSummarizer.Transcript(null, messages, 4_000);
+
+        // Assert
+        text.Should().NotContain("earlier messages are left out");
+        text.Should().Contain("message 0");
+        text.Should().Contain("message 19");
+        TokenEstimate.Of(text).Should().BeLessThan(4_000);
+    }
+
+    [Fact]
     public void Transcript_TooLongForTheInputLimit_LeavesOutTheOldestMessages()
     {
         // Arrange
