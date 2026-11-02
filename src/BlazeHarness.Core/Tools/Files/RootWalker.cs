@@ -77,7 +77,7 @@ internal static class RootWalker
                 continue;
             }
 
-            if (IsIgnored(rules, child.FullName, isDirectory) || (isDirectory && context.Sensitive.IsProtected(child.FullName)) || context.IsRefused(child.FullName))
+            if (IsIgnored(rules, child.FullName, isDirectory) || (isDirectory && context.Sensitive.IsProtected(child.FullName)) || context.Refused.IsRefused(child.FullName))
             {
                 continue;
             }

@@ -18,14 +18,14 @@ public sealed class ToolContext
         Root = RootedPath.CanonicalRoot(folder);
     }
 
-    private ToolContext(string root, bool allowsOutside, ShellMode shell, IReadOnlyList<string> shellReadFolders, SensitivePaths sensitive, Func<string, bool> isRefused)
+    private ToolContext(string root, bool allowsOutside, ShellMode shell, IReadOnlyList<string> shellReadFolders, SensitivePaths sensitive, RefusedPaths refused)
     {
         Root = root;
         AllowsOutside = allowsOutside;
         Shell = shell;
         ShellReadFolders = shellReadFolders;
         Sensitive = sensitive;
-        IsRefused = isRefused;
+        Refused = refused;
     }
 
     /// <summary>
@@ -57,12 +57,12 @@ public sealed class ToolContext
     public SensitivePaths Sensitive { get; } = SensitivePaths.None;
 
     /// <summary>
-    /// Gets whether a full path is refused by one of the user's rules, which the listing and search tools skip while they walk.
+    /// Gets the paths the user's rules refuse, which the listing and search tools skip while they walk and a sandboxed command can't read.
     /// </summary>
     /// <remarks>
     /// Like <see cref="Sensitive"/>, a refuse rule is only checked against the path a call names, so a walk must apply it to every file it reaches.
     /// </remarks>
-    public Func<string, bool> IsRefused { get; } = static _ => false;
+    public RefusedPaths Refused { get; } = RefusedPaths.None;
 
     /// <summary>
     /// Get a copy of this context that accepts paths outside the working folder.
@@ -71,14 +71,14 @@ public sealed class ToolContext
     /// Only for a call that has already passed the permission check.
     /// </remarks>
     /// <returns>A context with the same root that accepts any path.</returns>
-    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true, Shell, ShellReadFolders, Sensitive, IsRefused);
+    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true, Shell, ShellReadFolders, Sensitive, Refused);
 
     /// <summary>
     /// Get a copy of this context with a different shell mode.
     /// </summary>
     /// <param name="shell">How far a shell command may reach.</param>
     /// <returns>A context with the same root and path rules.</returns>
-    public ToolContext WithShell(ShellMode shell) => new(Root, AllowsOutside, shell, ShellReadFolders, Sensitive, IsRefused);
+    public ToolContext WithShell(ShellMode shell) => new(Root, AllowsOutside, shell, ShellReadFolders, Sensitive, Refused);
 
     /// <summary>
     /// Get a copy of this context with the folders a shell command may also read.
@@ -88,7 +88,7 @@ public sealed class ToolContext
     public ToolContext WithShellReadFolders(IReadOnlyList<string> folders)
     {
         ArgumentNullException.ThrowIfNull(folders);
-        return new(Root, AllowsOutside, Shell, folders, Sensitive, IsRefused);
+        return new(Root, AllowsOutside, Shell, folders, Sensitive, Refused);
     }
 
     /// <summary>
@@ -99,18 +99,18 @@ public sealed class ToolContext
     public ToolContext WithSensitive(SensitivePaths sensitive)
     {
         ArgumentNullException.ThrowIfNull(sensitive);
-        return new(Root, AllowsOutside, Shell, ShellReadFolders, sensitive, IsRefused);
+        return new(Root, AllowsOutside, Shell, ShellReadFolders, sensitive, Refused);
     }
 
     /// <summary>
     /// Get a copy of this context that skips the paths a rule refuses while walking.
     /// </summary>
-    /// <param name="isRefused">Tells whether a full path is refused.</param>
+    /// <param name="refused">The paths the user's rules refuse.</param>
     /// <returns>A context with the same root and path rules.</returns>
-    public ToolContext WithRefused(Func<string, bool> isRefused)
+    public ToolContext WithRefused(RefusedPaths refused)
     {
-        ArgumentNullException.ThrowIfNull(isRefused);
-        return new(Root, AllowsOutside, Shell, ShellReadFolders, Sensitive, isRefused);
+        ArgumentNullException.ThrowIfNull(refused);
+        return new(Root, AllowsOutside, Shell, ShellReadFolders, Sensitive, refused);
     }
 
     /// <summary>

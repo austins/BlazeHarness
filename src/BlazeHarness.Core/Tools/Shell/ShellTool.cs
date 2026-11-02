@@ -89,7 +89,20 @@ internal sealed class ShellTool : ITool
         var command = arguments.RequiredString("command");
         var seconds = arguments.OptionalInt("timeout_seconds", 1, MaxTimeoutSeconds) ?? DefaultTimeoutSeconds;
 
-        var launch = new ShellLaunch(_shell, command, context.Root, context.Shell, _scratchDirectory, TimeSpan.FromSeconds(seconds), context.ShellReadFolders);
+        IReadOnlyList<string>? refused = null;
+        if (context.Shell != ShellMode.Unconfined && context.Refused.Any)
+        {
+            List<string> found = [];
+            var complete = await Task.Run(() => RefusedFiles.TryFind(context, RefusedFiles.MaxEntries, RefusedFiles.MaxPaths, out found, cancellationToken), cancellationToken);
+            if (!complete)
+            {
+                return ToolResult.Error("This command was not run: the working folder has too many files, or too many refused ones, to keep the files a rule of the user's refuses out of its reach. Use the file tools instead, or say what you wanted to do. The user can narrow or remove the rule in Settings > Permissions.");
+            }
+
+            refused = found;
+        }
+
+        var launch = new ShellLaunch(_shell, command, context.Root, context.Shell, _scratchDirectory, TimeSpan.FromSeconds(seconds), context.ShellReadFolders, refused);
         IShellProcess process;
         try
         {

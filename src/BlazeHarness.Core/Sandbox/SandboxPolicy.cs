@@ -112,9 +112,11 @@ internal sealed class SandboxPolicy
             }
         }
 
+        // The protected list holds files such as .netrc as well as folders, so only existence is checked.
         var denied = protectedFolders
-            .Where(folder => Directory.Exists(folder)
-                && (RootedPath.IsInside(workDirectory, folder) || readOnly.Exists(allowed => RootedPath.IsInside(allowed, folder))))
+            .Concat(launch.DeniedPaths ?? [])
+            .Where(path => Path.Exists(path)
+                && (RootedPath.IsInside(workDirectory, path) || readOnly.Exists(allowed => RootedPath.IsInside(allowed, path))))
             .Select(RootedPath.CanonicalRoot)
             .ToList();
 

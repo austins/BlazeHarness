@@ -149,14 +149,14 @@ public sealed class PermissionEngine
     }
 
     /// <summary>
-    /// Get a test for whether one of the user's rules refuses a path, for the tools that walk folders and so see paths no call named.
+    /// Get the paths the user's rules refuse, for the tools that walk folders and so see paths no call named.
     /// </summary>
     /// <param name="root">The working folder.</param>
-    /// <returns>A function that takes a full path. It reads the rules on every call, so edits apply at once.</returns>
-    public Func<string, bool> RefusesPath(string root)
+    /// <returns>The refused paths, from the rules as they are now.</returns>
+    public RefusedPaths Refused(string root)
     {
         ArgumentNullException.ThrowIfNull(root);
-        return path => RuleMatcher.ForPaths(Rules(), [path], root) is { Action: PermissionVerdict.Deny };
+        return new RefusedPaths(Rules(), root);
     }
 
     /// <summary>

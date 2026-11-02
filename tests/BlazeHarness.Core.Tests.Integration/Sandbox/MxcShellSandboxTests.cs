@@ -129,6 +129,38 @@ public sealed class MxcShellSandboxTests : IDisposable
     }
 
     [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
+    public async Task Run_RefusedFiles_AreOutOfReach()
+    {
+        // Arrange
+        _root.Write(".env", "api-password");
+        _root.Write("api/.env", "nested-password");
+        _root.Write("readme.txt", "hello");
+        var refused = new RefusedPaths([new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Deny, "**/.env")], _root.Root);
+
+        // Act
+        var result = await RunAsync("cat .env api/.env readme.txt; echo changed > .env; echo changed > api/.env", ShellMode.Writable, refused: refused);
+
+        // Assert
+        result.Output.Should().Contain("hello").And.NotContain("password");
+        _root.Read(".env").Should().Be("api-password");
+        _root.Read("api/.env").Should().Be("nested-password");
+    }
+
+    [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
+    public async Task Run_RefusedFilesAndNoRefusingRule_LeavesTheFileReadable()
+    {
+        // Arrange
+        _root.Write(".env", "api-password");
+        var onlyAsks = new RefusedPaths([new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Ask, "**/.env")], _root.Root);
+
+        // Act
+        var result = await RunAsync("cat .env", ShellMode.Writable, refused: onlyAsks);
+
+        // Assert
+        result.Output.Should().Contain("api-password");
+    }
+
+    [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
     public async Task Run_Writable_DoesNotPassSecretEnvironmentVariables()
     {
         // Arrange
@@ -202,13 +234,13 @@ public sealed class MxcShellSandboxTests : IDisposable
         }
     }
 
-    private async Task<ToolResult> RunAsync(string command, ShellMode mode, IShellSandbox? sandbox = null, int timeoutSeconds = 30, IReadOnlyList<string>? readFolders = null)
+    private async Task<ToolResult> RunAsync(string command, ShellMode mode, IShellSandbox? sandbox = null, int timeoutSeconds = 30, IReadOnlyList<string>? readFolders = null, RefusedPaths? refused = null)
     {
         var shell = ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false);
         var tool = new ShellTool(shell, sandbox ?? new MxcShellSandbox(() => SensitivePaths.None), _scratchFolder.Root, _time);
         return await tool.ExecuteAsync(
             TempRoot.Args(new { command, timeout_seconds = timeoutSeconds }),
-            _root.Context.WithShell(mode).WithShellReadFolders(readFolders ?? []),
+            _root.Context.WithShell(mode).WithShellReadFolders(readFolders ?? []).WithRefused(refused ?? RefusedPaths.None),
             TestContext.Current.CancellationToken);
     }
 }

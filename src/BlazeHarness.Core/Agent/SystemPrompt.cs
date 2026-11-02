@@ -46,6 +46,7 @@ internal static class SystemPrompt
         prompt.AppendLine("When an action is blocked or denied:");
         prompt.AppendLine("- Do not retry it or look for a way around the restriction.");
         prompt.AppendLine("- Tell the user what you could not do and why, and suggest a safer alternative.");
+        prompt.AppendLine("- A file the user refused can look empty or unreadable in a shell command. Do not rewrite it or work around that.");
         return prompt.ToString();
     }
 }

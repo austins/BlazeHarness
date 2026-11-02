@@ -492,7 +492,7 @@ internal static class ChatRunner
 
     private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision, PermissionEngine permissions)
     {
-        var context = (decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context).WithSensitive(permissions.Sensitive()).WithRefused(permissions.RefusesPath(tools.Context.Root));
+        var context = (decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context).WithSensitive(permissions.Sensitive()).WithRefused(permissions.Refused(tools.Context.Root));
         if (decision.ShellReadFolders is { Count: > 0 } folders)
         {
             context = context.WithShellReadFolders(folders);

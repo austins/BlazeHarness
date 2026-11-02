@@ -126,7 +126,7 @@ public sealed class ListFilesToolTests : IDisposable
         // Arrange
         _root.Write(".env", "x");
         _root.Write("a.txt", "x");
-        var context = _root.Context.WithRefused(path => Path.GetFileName(path) == ".env");
+        var context = _root.Context.WithRefused(new RefusedPaths([new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Deny, "**/.env")], _root.Root));
 
         // Act
         var result = await _sut.ExecuteAsync(TempRoot.Args(new { include_ignored = true }), context, TestContext.Current.CancellationToken);

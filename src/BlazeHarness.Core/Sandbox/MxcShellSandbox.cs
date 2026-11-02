@@ -200,7 +200,8 @@ public sealed class MxcShellSandbox : IShellSandbox
         }
         catch (MxcException ex)
         {
-            throw new IOException($"The sandbox could not start the command ({ex.Code}): {ex.Message}", ex);
+            var hint = launch.DeniedPaths is { Count: > 0 } ? " It may not be able to keep files out of reach on this system, which a rule of the user's needs." : string.Empty;
+            throw new IOException($"The sandbox could not start the command ({ex.Code}): {ex.Message}{hint}", ex);
         }
     }
 }

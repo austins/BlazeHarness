@@ -167,6 +167,36 @@ public sealed class SandboxPolicyTests : IDisposable
     }
 
     [Fact]
+    public void Create_ProtectedFileInsideTheWorkingFolder_IsDenied()
+    {
+        // Arrange
+        var file = Path.Combine(_work, ".netrc");
+        File.WriteAllText(file, "machine x");
+
+        // Act
+        var policy = Create(ShellMode.Writable, protectedFolders: [file]);
+
+        // Assert
+        policy.Denied.Should().ContainSingle().Which.Should().Be(Canonical(file));
+    }
+
+    [Fact]
+    public void Create_RefusedFiles_AreDeniedWhenTheyAreInsideAFolderTheCommandReaches()
+    {
+        // Arrange
+        var inside = Path.Combine(_work, ".env");
+        File.WriteAllText(inside, "x");
+        var outside = Path.Combine(_temp.Root, "other.env");
+        File.WriteAllText(outside, "x");
+
+        // Act
+        var policy = Create(ShellMode.Writable, refused: [inside, outside, Path.Combine(_work, "missing.env")]);
+
+        // Assert
+        policy.Denied.Should().ContainSingle().Which.Should().Be(Canonical(inside));
+    }
+
+    [Fact]
     public void Create_PosixCommandLine_QuotesTheShellPathAndReadsTheCommandFromTheEnvironment()
     {
         // Act
@@ -195,9 +225,10 @@ public sealed class SandboxPolicyTests : IDisposable
         IEnumerable<string>? protectedFolders = null,
         string command = "true",
         ShellInfo? shell = null,
-        IReadOnlyList<string>? readFolders = null)
+        IReadOnlyList<string>? readFolders = null,
+        IReadOnlyList<string>? refused = null)
     {
-        var launch = new ShellLaunch(shell ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false), command, _work, mode, _scratch, TimeSpan.FromSeconds(10), readFolders);
+        var launch = new ShellLaunch(shell ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false), command, _work, mode, _scratch, TimeSpan.FromSeconds(10), readFolders, refused);
         return SandboxPolicy.Create(launch, platform, host ?? new Dictionary<string, string>(), protectedFolders ?? []);
     }
 }
