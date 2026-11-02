@@ -18,11 +18,6 @@ public sealed class LevelEditModel
     public string Value { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the sampling values that apply only while this level is selected.
-    /// </summary>
-    public SamplingEditModel Overrides { get; set; } = new();
-
-    /// <summary>
     /// Create an editable copy of a level.
     /// </summary>
     /// <param name="level">The level to copy, or null for an unsupported level.</param>
@@ -35,21 +30,21 @@ public sealed class LevelEditModel
             {
                 Supported = true,
                 Value = level.Value ?? string.Empty,
-                Overrides = SamplingEditModel.FromConfig(level.Overrides),
             };
     }
 
     /// <summary>
     /// Convert back to the stored form.
     /// </summary>
+    /// <param name="overrides">The sampling values that apply while this level is selected.</param>
     /// <returns>The level, or null when the model does not support it.</returns>
-    public LevelConfig? ToConfig()
+    public LevelConfig? ToConfig(SamplingParams? overrides)
     {
         return Supported
             ? new LevelConfig
             {
                 Value = string.IsNullOrWhiteSpace(Value) ? null : Value.Trim(),
-                Overrides = Overrides.ToConfig(),
+                Overrides = overrides,
             }
             : null;
     }

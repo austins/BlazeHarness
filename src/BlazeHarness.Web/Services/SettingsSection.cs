@@ -31,14 +31,9 @@ public enum SettingsSection
     Web,
 
     /// <summary>
-    /// How a chat that grows too long is compacted.
+    /// Compaction, text size and keyboard shortcuts.
     /// </summary>
-    Context,
-
-    /// <summary>
-    /// The text size.
-    /// </summary>
-    Appearance,
+    General,
 
     /// <summary>
     /// Paths, versions and status of the app.

@@ -1,0 +1,20 @@
+@using System.Collections.ObjectModel
+@using BlazeHarness.Web.Settings
+
+@foreach (var row in Rows)
+{
+    <div class="input-group" @key="row">
+        <input class="input mono" aria-label="Field name" placeholder="mirostat" @bind="row.Name" />
+        <input class="input mono" aria-label="Field value as JSON" placeholder="2" @bind="row.Json" />
+        <button type="button" class="btn btn-ghost btn-danger btn-sm" aria-label="Remove field @row.Name" @onclick="() => Rows.Remove(row)">Remove</button>
+    </div>
+}
+<div><button type="button" class="btn btn-sm" @onclick="() => Rows.Add(new ExtraParamRow())">＋ Add field</button></div>
+
+@code {
+    /// <summary>
+    /// Gets or sets the custom request fields being edited.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Collection<ExtraParamRow> Rows { get; set; } = null!;
+}

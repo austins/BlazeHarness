@@ -21,25 +21,7 @@ public sealed class ModelEditModelTests
     }
 
     [Fact]
-    public void Apply_Qwen3Preset_MarksThinkingAndSetsLevelsAndSend()
-    {
-        // Arrange
-        var sut = new ModelEditModel { Id = "qwen3-32b" };
-
-        // Act
-        sut.Apply(ThinkingPreset.Find("qwen3")!);
-        var result = sut.ToConfig();
-
-        // Assert
-        result.Reasoning.Should().BeTrue();
-        result.SamplingParams!.TopK.Should().Be(20);
-        result.Levels![ThinkingLevel.Off].Value.Should().Be("false");
-        result.ThinkingSend!.Mode.Should().Be(ThinkingSendMode.BodyField);
-        result.ThinkingSend.Field.Should().Be("chat_template_kwargs.enable_thinking");
-    }
-
-    [Fact]
-    public void ToConfig_RoundTrip_PreservesLevelOverrides()
+    public void ToConfig_RoundTrip_SharesThinkingSamplingAcrossNonOffLevels()
     {
         // Arrange
         var original = new ModelConfig
@@ -48,8 +30,9 @@ public sealed class ModelEditModelTests
             Reasoning = true,
             Levels = new Dictionary<ThinkingLevel, LevelConfig>
             {
-                [ThinkingLevel.Off] = new LevelConfig { Value = "none", Overrides = new SamplingParams { Temperature = 0.7 } },
-                [ThinkingLevel.High] = new LevelConfig { Value = "high" },
+                [ThinkingLevel.Off] = new LevelConfig { Value = "none" },
+                [ThinkingLevel.Low] = new LevelConfig { Value = "low", Overrides = new SamplingParams { Temperature = 0.7 } },
+                [ThinkingLevel.High] = new LevelConfig { Value = "high", Overrides = new SamplingParams { Temperature = 0.7 } },
             },
         };
 
@@ -59,25 +42,41 @@ public sealed class ModelEditModelTests
 
         // Assert
         sut.Levels[ThinkingLevel.Off].Supported.Should().BeTrue();
-        sut.Levels[ThinkingLevel.Low].Supported.Should().BeFalse();
-        result.Levels![ThinkingLevel.Off].Overrides!.Temperature.Should().Be(0.7);
+        sut.Levels[ThinkingLevel.Minimal].Supported.Should().BeFalse();
+        result.Levels![ThinkingLevel.Off].Overrides.Should().BeNull();
+        result.Levels[ThinkingLevel.Low].Overrides!.Temperature.Should().Be(0.7);
+        result.Levels[ThinkingLevel.High].Overrides!.Temperature.Should().Be(0.7);
         result.Levels[ThinkingLevel.High].Value.Should().Be("high");
-        result.Levels.Should().NotContainKey(ThinkingLevel.Low);
+        result.Levels.Should().NotContainKey(ThinkingLevel.Minimal);
     }
 
-    [Fact]
-    public void Apply_ValidImport_ReplacesSamplingAndLevels()
+    [Theory]
+    [InlineData(ThinkingLevel.Off, "none")]
+    [InlineData(ThinkingLevel.Xhigh, "xhigh")]
+    public void SetLevelSupported_EmptyValue_FillsSuggestedValue(ThinkingLevel level, string expected)
     {
         // Arrange
         var sut = new ModelEditModel { Id = "m" };
-        var import = SamplingImport.Parse("""{"samplingParams":{"temperature":0.3,"top_k":10}}""");
 
         // Act
-        sut.Apply(import);
+        sut.SetLevelSupported(level, true);
 
         // Assert
-        import.Errors.Should().BeEmpty();
-        sut.Sampling.Get("temperature").Should().Be(0.3);
-        sut.Sampling.Get("topK").Should().Be(10);
+        sut.Levels[level].Supported.Should().BeTrue();
+        sut.Levels[level].Value.Should().Be(expected);
+    }
+
+    [Fact]
+    public void SetLevelSupported_ExistingValue_KeepsIt()
+    {
+        // Arrange
+        var sut = new ModelEditModel { Id = "m" };
+        sut.Levels[ThinkingLevel.Low].Value = "true";
+
+        // Act
+        sut.SetLevelSupported(ThinkingLevel.Low, true);
+
+        // Assert
+        sut.Levels[ThinkingLevel.Low].Value.Should().Be("true");
     }
 }

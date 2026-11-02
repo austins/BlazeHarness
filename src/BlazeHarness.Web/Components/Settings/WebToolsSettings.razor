@@ -46,8 +46,11 @@
                 {
                     <span class="badge">@(status.Working ? "Working" : status.Detail)</span>
                 }
-                <button type="button" class="btn btn-sm btn-icon" aria-label="Move @info.Name up" disabled="@(index == 0)" @onclick="() => MoveAsync(index, -1)"><Icon Name="arrow-up" /></button>
-                <button type="button" class="btn btn-sm btn-icon" aria-label="Move @info.Name down" disabled="@(index == Providers.Count - 1)" @onclick="() => MoveAsync(index, 1)"><Icon Name="arrow-down" /></button>
+                @if (Current.SearchMode == WebSearchMode.Sequential)
+                {
+                    <button type="button" class="btn btn-sm btn-icon" aria-label="Move @info.Name up" disabled="@(index == 0)" @onclick="() => MoveAsync(index, -1)"><Icon Name="arrow-up" /></button>
+                    <button type="button" class="btn btn-sm btn-icon" aria-label="Move @info.Name down" disabled="@(index == Providers.Count - 1)" @onclick="() => MoveAsync(index, 1)"><Icon Name="arrow-down" /></button>
+                }
             </div>
         }
     </section>

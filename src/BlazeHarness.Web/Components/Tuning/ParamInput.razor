@@ -1,0 +1,71 @@
+@using System.Globalization
+@using BlazeHarness.Core.Providers
+
+<input type="number" class="input num param-input" data-set="@(Value is not null ? "true" : "false")"
+       min="@Format(Range.Min)" max="@(Range.Max < int.MaxValue ? Format(Range.Max) : null)" step="@Format(Range.Step)"
+       value="@(Value is { } value ? Format(value) : null)" placeholder="@Placeholder()" title="@Title()"
+       @onchange="OnInput" aria-label="@Label" aria-invalid="@(Value is { } v && OutOfRange(v) ? "true" : null)" />
+
+@code {
+    /// <summary>
+    /// Gets or sets the parameter this input edits.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public SamplingRange Range { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the accessible name of the input.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the value, or null when the parameter is not set.
+    /// </summary>
+    [Parameter]
+    public double? Value { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the value changing, with null when the user clears it.
+    /// </summary>
+    [Parameter]
+    public EventCallback<double?> ValueChanged { get; set; }
+
+    /// <summary>
+    /// Gets or sets the value used when this input is empty, or null when the server decides.
+    /// </summary>
+    [Parameter]
+    public double? Inherited { get; set; }
+
+    private static string Format(double value) => value.ToString(CultureInfo.InvariantCulture);
+
+    private bool OutOfRange(double value) => double.IsNaN(value) || value < Range.Min || value > Range.Max;
+
+    private string Placeholder() => Inherited is { } inherited ? $"↳ {Format(inherited)}" : "default";
+
+    private string Title()
+    {
+        if (Value is not null)
+        {
+            return Inherited is { } inherited ? $"Replaces {Format(inherited)}. Clear to use it again." : "Clear to leave it to the server.";
+        }
+
+        return Inherited is not null ? "Uses the Thinking off value. Type to replace it." : "Not sent; the server default applies.";
+    }
+
+    private Task OnInput(ChangeEventArgs e)
+    {
+        var text = e.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return ValueChanged.InvokeAsync(null);
+        }
+
+        if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+        {
+            return Task.CompletedTask;
+        }
+
+        return ValueChanged.InvokeAsync(Range.IsInteger ? Math.Round(parsed) : parsed);
+    }
+}

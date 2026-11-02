@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Providers;
+using System.Text.Json;
 
 namespace BlazeHarness.Web.Settings;
 
@@ -41,6 +42,16 @@ public sealed class ModelEditModel
     /// Gets or sets the model's default sampling values.
     /// </summary>
     public SamplingEditModel Sampling { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the sampling values applied on top of <see cref="Sampling"/> whenever a thinking level other than off is selected.
+    /// </summary>
+    public SamplingEditModel ThinkingSampling { get; set; } = new();
+
+    /// <summary>
+    /// Gets a value indicating whether any level other than off is supported.
+    /// </summary>
+    public bool HasThinkingLevels => Reasoning && Levels.Any(l => l.Key != ThinkingLevel.Off && l.Value.Supported);
 
     /// <summary>
     /// Gets the thinking levels, keyed by level; every level is present, and only supported ones are stored.
@@ -93,6 +104,9 @@ public sealed class ModelEditModel
             edit.Levels[level] = LevelEditModel.FromConfig(model.Levels is not null && model.Levels.TryGetValue(level, out var config) ? config : null);
         }
 
+        var thinking = model.Levels?.Where(l => l.Key != ThinkingLevel.Off).Select(l => l.Value.Overrides).FirstOrDefault(o => o is not null);
+        edit.ThinkingSampling = SamplingEditModel.FromConfig(thinking);
+
         return edit;
     }
 
@@ -122,9 +136,10 @@ public sealed class ModelEditModel
     public ModelConfig ToConfig()
     {
         var levels = new Dictionary<ThinkingLevel, LevelConfig>();
+        var thinking = ThinkingSampling.ToConfig();
         foreach (var (level, edit) in Levels)
         {
-            if (edit.ToConfig() is { } config)
+            if (edit.ToConfig(level == ThinkingLevel.Off ? null : thinking) is { } config)
             {
                 levels[level] = config;
             }
@@ -147,47 +162,32 @@ public sealed class ModelEditModel
     }
 
     /// <summary>
-    /// Replace the sampling and thinking setup with a preset.
+    /// Gets the value most servers expect for a level.
     /// </summary>
-    /// <param name="preset">The preset to apply.</param>
-    public void Apply(ThinkingPreset preset)
+    /// <param name="level">The level.</param>
+    /// <returns>"none" for <see cref="ThinkingLevel.Off"/>, otherwise the level's lowercase name.</returns>
+    public static string SuggestedValue(ThinkingLevel level)
     {
-        Sampling = SamplingEditModel.FromConfig(preset.Sampling);
-        SetLevels(preset.Levels);
-        OverrideSend = preset.ThinkingSend is not null;
-        SendMode = preset.ThinkingSend?.Mode ?? ThinkingSendMode.ReasoningEffort;
-        SendField = preset.ThinkingSend?.Field ?? string.Empty;
-        Reasoning = true;
+        return level == ThinkingLevel.Off ? "none" : JsonNamingPolicy.CamelCase.ConvertName(level.ToString());
     }
 
     /// <summary>
-    /// Replace the sampling and thinking setup with an imported snippet, keeping what the snippet leaves out.
+    /// Turn a level on or off, filling in <see cref="SuggestedValue"/> when it has no value yet.
     /// </summary>
-    /// <param name="import">A snippet that was read without errors.</param>
-    public void Apply(SamplingImportResult import)
+    /// <param name="level">The level.</param>
+    /// <param name="supported">Whether the model supports the level.</param>
+    public void SetLevelSupported(ThinkingLevel level, bool supported)
     {
-        if (import.Sampling is not null)
+        var edit = Levels[level];
+        edit.Supported = supported;
+        if (supported && string.IsNullOrWhiteSpace(edit.Value))
         {
-            Sampling = SamplingEditModel.FromConfig(import.Sampling);
-        }
-
-        if (import.Levels is not null)
-        {
-            SetLevels(import.Levels);
-            Reasoning = true;
+            edit.Value = SuggestedValue(level);
         }
     }
 
     private static Dictionary<ThinkingLevel, LevelEditModel> NewLevels()
     {
         return Enum.GetValues<ThinkingLevel>().ToDictionary(l => l, _ => new LevelEditModel());
-    }
-
-    private void SetLevels(IReadOnlyDictionary<ThinkingLevel, LevelConfig> levels)
-    {
-        foreach (var level in Enum.GetValues<ThinkingLevel>())
-        {
-            Levels[level] = LevelEditModel.FromConfig(levels.TryGetValue(level, out var config) ? config : null);
-        }
     }
 }

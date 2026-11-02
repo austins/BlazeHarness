@@ -13,12 +13,17 @@
 @inject McpManager Mcp
 @inject SkillCatalog Skills
 @inject IShellSandbox Sandbox
+@inject IJSRuntime JS
+@inject ToastService Toasts
 
 <div class="page">
     <PageHeader Title="Diagnostics">What to look at when something doesn't work, and what to include when you report it.</PageHeader>
 
     <section class="card stack" aria-labelledby="about-heading">
-        <h2 id="about-heading">About this install</h2>
+        <div class="card-header">
+            <h2 id="about-heading">About this install</h2>
+            <button type="button" class="btn btn-sm" @onclick="CopyAsync"><Icon Name="copy" /> Copy for a bug report</button>
+        </div>
         <dl class="facts">
             <dt>Version</dt>
             <dd>@Version</dd>
@@ -32,22 +37,22 @@
             <dd class="mono">@Paths.LogsDirectory</dd>
             <dt>Shell sandbox</dt>
             <dd>
-                @(Sandbox.Status.IsAvailable ? Sandbox.Status.Name : "Not available")
+                @SandboxName
                 <div class="hint">@Sandbox.Status.Detail</div>
             </dd>
             <dt>Chats</dt>
-            <dd>@ChatService.Store.List().Count</dd>
+            <dd>@ChatCount</dd>
             <dt>Folders</dt>
-            <dd>@Folders.List().Count</dd>
+            <dd>@FolderCount</dd>
             <dt>MCP servers</dt>
-            <dd>@_servers.Count(s => s.State == McpServerState.Connected) connected of @_servers.Count</dd>
+            <dd>@McpSummary</dd>
             <dt>Skills</dt>
             <dd>@_skillCount</dd>
         </dl>
     </section>
 
     <section class="card stack" aria-labelledby="log-heading">
-        <div class="row">
+        <div class="card-header">
             <h2 id="log-heading">Recent log</h2>
             <button type="button" class="btn btn-sm" @onclick="LoadAsync"><Icon Name="retry" /> Refresh</button>
         </div>
@@ -72,6 +77,14 @@
 
     private static string Version => typeof(DiagnosticsSettings).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "unknown";
 
+    private int ChatCount => ChatService.Store.List().Count;
+
+    private int FolderCount => Folders.List().Count;
+
+    private string McpSummary => $"{_servers.Count(s => s.State == McpServerState.Connected)} connected of {_servers.Count}";
+
+    private string SandboxName => Sandbox.Status.IsAvailable ? Sandbox.Status.Name : "Not available";
+
     protected override async Task OnInitializedAsync()
     {
         _servers = Mcp.Statuses();
@@ -82,5 +95,22 @@
     private async Task LoadAsync()
     {
         _lines = await LogTail.ReadAsync(Paths.LogsDirectory, TailLines);
+    }
+
+    private async Task CopyAsync()
+    {
+        await LoadAsync();
+        var report = $"""
+            Version: {Version}
+            Runtime: {RuntimeInformation.FrameworkDescription}
+            System: {RuntimeInformation.OSDescription}
+            Shell sandbox: {SandboxName}
+            Chats: {ChatCount}, folders: {FolderCount}, MCP servers: {McpSummary}, skills: {_skillCount}
+
+            Recent log:
+            {string.Join('\n', _lines)}
+            """;
+        var copied = await JS.InvokeAsync<bool>("bhChat.copyText", report);
+        Toasts.Show(copied ? "Copied. Paste it into your report." : "Couldn't copy. Select the text and copy it by hand.", copied ? ToastKind.Success : ToastKind.Error);
     }
 }

@@ -1,10 +1,27 @@
+@using BlazeHarness.Core.Compaction
+@using BlazeHarness.Core.Config
 @inject IJSRuntime JS
+@inject JsonFileStore<AppConfig> Config
+@inject ToastService Toasts
 
 <div class="page">
-    <PageHeader Title="Appearance">Text sizes are kept in this browser and apply right away. Browser zoom still works on top of them.</PageHeader>
+    <PageHeader Title="General">How long chats are handled, text size and keyboard shortcuts.</PageHeader>
+
+    <section class="card stack" aria-labelledby="compaction-heading">
+        <h2 id="compaction-heading">Long chats</h2>
+        <label class="check">
+            <input type="checkbox" checked="@(Config.Current.Compaction == CompactionMode.Extractive)" @onchange="OnCompactionChangedAsync" />
+            <span>Compact without asking the model</span>
+        </label>
+        <p class="hint">
+            When a chat gets too long, the model normally summarizes the older messages. With this on, the summary is built from your requests,
+            the files touched and the latest steps instead: instant and free, but less thorough. The agent can still look up what was left out.
+        </p>
+    </section>
 
     <section class="card stack" aria-labelledby="text-size-heading">
         <h2 id="text-size-heading">Text size</h2>
+        <p class="hint">Kept in this browser and applied right away. Browser zoom still works on top.</p>
 
         <fieldset class="size-group">
             <legend class="label">Interface size</legend>
@@ -98,6 +115,12 @@ var reversed = new string(chars);</code></pre>
             _chat = await JS.InvokeAsync<string>("bhSize.get", ChatKind);
             StateHasChanged();
         }
+    }
+
+    private Task OnCompactionChangedAsync(ChangeEventArgs e)
+    {
+        var mode = e.Value is true ? CompactionMode.Extractive : CompactionMode.Model;
+        return Toasts.TrySaveAsync(() => Config.UpdateAsync(config => config with { Compaction = mode }), "The setting could not be saved because the settings file could not be written.");
     }
 
     private async Task SetAsync(string kind, string step)

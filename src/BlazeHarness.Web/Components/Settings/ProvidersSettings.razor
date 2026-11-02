@@ -1,3 +1,5 @@
+@using System.Text.Json
+@using BlazeHarness.Core.Config
 @implements IDisposable
 @inject ProviderService Service
 @inject IHttpClientFactory HttpFactory
@@ -7,6 +9,8 @@
     <PageHeader Title="Providers">Connect any OpenAI-compatible endpoint. Keys are kept in @Service.Secrets.Name@(Service.Secrets.IsSecure ? "." : ", which is not encrypted. Install a system keyring to store keys more securely.")</PageHeader>
 
     <div class="split">
+        @if (ShowList)
+        {
         <aside class="stack" aria-label="Configured providers">
             <div class="list">
                 @foreach (var provider in Service.Configured)
@@ -20,6 +24,7 @@
             </div>
             <button type="button" class="btn btn-add" @onclick="() => StartNew(null, null)"><Icon Name="plus" /> Add provider</button>
         </aside>
+        }
 
         <section>
             @if (_edit is null)
@@ -46,7 +51,13 @@
             {
                 <form @onsubmit="SaveAsync" class="stack" autocomplete="off" novalidate>
                     <div class="card stack">
-                        <div class="card-header"><h2>@(_edit.IsNew ? "New provider" : _edit.DisplayName)</h2></div>
+                        <div class="card-header">
+                            <h2>@(_edit.IsNew ? "New provider" : _edit.DisplayName)</h2>
+                            @if (!ShowList)
+                            {
+                                <button type="button" class="btn btn-sm" @onclick="() => StartNew(null, null)"><Icon Name="plus" /> Add provider</button>
+                            }
+                        </div>
 
                         <div class="form-grid">
                             <div class="field">
@@ -62,12 +73,18 @@
                             <div class="field">
                                 <label for="p-key">API key <span class="muted">(optional)</span></label>
                                 <SecretInput Id="p-key" @bind-Value="_edit.NewApiKey" HasStoredKey="_hasStoredKey" OnRemoveStored="ClearKeyAsync" Placeholder="Optional for local servers" />
-                                <span class="hint">Optional. Local servers usually need none. A key is stored in the secret store and never shown again; leave blank to keep the current one.</span>
+                                <span class="hint">Local servers usually need none. A stored key is never shown again; leave blank to keep it.</span>
+                                <details class="key-env" open="@(!string.IsNullOrWhiteSpace(_edit.ApiKeyEnvVar))">
+                                    <summary>Read it from an environment variable</summary>
+                                    <input id="p-env" class="input mono" aria-label="Environment variable name" @bind="_edit.ApiKeyEnvVar" placeholder="DEEPSEEK_API_KEY" />
+                                    <span class="hint">When set, this replaces the stored key.</span>
+                                    @Error("apiKeyRef")
+                                </details>
                             </div>
                         </div>
 
                         <div class="row">
-                            <button type="button" class="btn" aria-busy="@Flag(_testing)" disabled="@_testing" @onclick="TestAsync">Test connection</button>
+                            <button type="button" class="btn" aria-busy="@Flag(_testing)" disabled="@_testing" @onclick="TestAsync">Check connection &amp; list models</button>
                             @if (_test is not null)
                             {
                                 <span class="alert @(_test.Success ? "alert-success" : "alert-error")" role="status">@_test.Message</span>
@@ -79,16 +96,9 @@
                     <div class="card stack">
                         <div class="card-header">
                             <h2>Models</h2>
-                            <span class="row">
-                                <button type="button" class="btn btn-sm" aria-busy="@Flag(_testing)" disabled="@_testing" @onclick="TestAsync">Fetch from server</button>
-                                <button type="button" class="btn btn-sm" @onclick="AddModel">＋ Add model</button>
-                            </span>
+                            <button type="button" class="btn btn-sm" @onclick="AddModel">＋ Add model</button>
                         </div>
-                        @if (_test is { Success: false })
-                        {
-                            <span class="alert alert-error" role="status">@_test.Message</span>
-                        }
-                        else if (_test is { Success: true })
+                        @if (_test is { Success: true })
                         {
                             var available = _test.ModelIds.Where(id => _edit.Models.All(m => m.Id != id)).ToList();
                             if (available.Count > 0)
@@ -116,46 +126,55 @@
                         }
                         @if (_edit.Models.Count == 0)
                         {
-                            <p class="muted">No models yet. Fetch them from the server, or add one by hand.</p>
+                            <p class="muted">No models yet. Use Check connection &amp; list models above, or add one by hand.</p>
                         }
                         else
                         {
                             <p class="hint">Servers rarely report limits, so check these. Context window feeds compaction, and max output must be smaller than it.</p>
-                            <div class="table-wrap">
-                                <table class="table">
-                                    <thead>
-                                        <tr><th>Model id</th><th>Name</th><th>Context</th><th>Max output</th><th>Thinking</th><th>Images</th><th><span class="sr-only">Actions</span></th></tr>
-                                    </thead>
-                                    <tbody>
-                                        @for (var i = 0; i < _edit.Models.Count; i++)
-                                        {
-                                            var index = i;
-                                            var model = _edit.Models[i];
-                                            <tr @key="model">
-                                                <td><input class="input mono" aria-label="Model id" aria-invalid="@Invalid($"models[{index}].id")" @bind="model.Id" @bind:after="() => ApplyPreset(model)" /></td>
-                                                <td><input class="input" aria-label="Display name" @bind="model.DisplayName" placeholder="@model.Id" /></td>
-                                                <td><input class="input num" type="number" min="1" aria-label="Context window" aria-invalid="@Invalid($"models[{index}].contextWindow")" @bind="model.ContextWindow" /></td>
-                                                <td><input class="input num" type="number" min="1" aria-label="Max output tokens" aria-invalid="@Invalid($"models[{index}].maxOutputTokens")" @bind="model.MaxOutputTokens" /></td>
-                                                <td><input type="checkbox" aria-label="Thinking model" @bind="model.Reasoning" /></td>
-                                                <td><input type="checkbox" aria-label="Accepts images" @bind="model.Image" /></td>
-                                                <td>
-                                                    <div class="row">
-                                                        <button type="button" class="btn btn-sm" aria-label="Tune @model.Id" @onclick="() => _tuning = model">Tune</button>
-                                                        @if (IsDefault(model))
-                                                        {
-                                                            <span class="badge badge-accent">default</span>
-                                                        }
-                                                        else if (IsSaved(model))
-                                                        {
-                                                            <button type="button" class="btn btn-sm" @onclick="() => MakeDefaultAsync(model)">Make default</button>
-                                                        }
-                                                        <button type="button" class="btn btn-sm btn-ghost btn-danger" aria-label="Remove model @model.Id" @onclick="() => _edit.Models.Remove(model)">Remove</button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
+                            <div class="models">
+                                @for (var i = 0; i < _edit.Models.Count; i++)
+                                {
+                                    var index = i;
+                                    var model = _edit.Models[i];
+                                    <div class="model" @key="model">
+                                        <div class="model-main">
+                                            <div class="field">
+                                                <label for="m-id-@index">Model id</label>
+                                                <input id="m-id-@index" class="input mono" aria-invalid="@Invalid($"models[{index}].id")" @bind="model.Id" @bind:after="() => ApplyPreset(model)" />
+                                            </div>
+                                            <div class="field">
+                                                <label for="m-name-@index">Name <span class="muted">(optional)</span></label>
+                                                <input id="m-name-@index" class="input" @bind="model.DisplayName" placeholder="@model.Id" />
+                                            </div>
+                                            <div class="field">
+                                                <label for="m-ctx-@index">Context window</label>
+                                                <input id="m-ctx-@index" class="input num" type="number" min="1" aria-invalid="@Invalid($"models[{index}].contextWindow")" @bind="model.ContextWindow" />
+                                            </div>
+                                            <div class="field">
+                                                <label for="m-out-@index">Max output</label>
+                                                <input id="m-out-@index" class="input num" type="number" min="1" aria-invalid="@Invalid($"models[{index}].maxOutputTokens")" @bind="model.MaxOutputTokens" />
+                                            </div>
+                                        </div>
+                                        <div class="row row-spread">
+                                            <span class="row">
+                                                <label class="check"><input type="checkbox" @bind="model.Reasoning" /> Thinking</label>
+                                                <label class="check"><input type="checkbox" @bind="model.Image" /> Images</label>
+                                                @if (IsDefault(model))
+                                                {
+                                                    <span class="badge badge-accent">default</span>
+                                                }
+                                            </span>
+                                            <span class="row">
+                                                <button type="button" class="btn btn-sm" aria-label="Tune @model.Id" @onclick="() => _tuning = model">Tune thinking &amp; sampling</button>
+                                                @if (!IsDefault(model) && IsSaved(model))
+                                                {
+                                                    <button type="button" class="btn btn-sm" @onclick="() => MakeDefaultAsync(model)">Make default</button>
+                                                }
+                                                <button type="button" class="btn btn-sm btn-ghost btn-danger" aria-label="Remove model @model.Id" @onclick="() => _edit.Models.Remove(model)">Remove</button>
+                                            </span>
+                                        </div>
+                                    </div>
+                                }
                             </div>
                             @foreach (var issue in ModelIssues())
                             {
@@ -165,21 +184,18 @@
                     </div>
 
                     <details class="card stack">
-                        <summary class="label">Advanced</summary>
+                        <summary class="label">Compatibility</summary>
+                        <span class="hint">Only change these if the server rejects requests or ignores thinking.</span>
                         <div class="form-grid">
                             <div class="field">
-                                <label for="p-env">Read key from environment variable</label>
-                                <input id="p-env" class="input mono" @bind="_edit.ApiKeyEnvVar" placeholder="e.g. DEEPSEEK_API_KEY" />
-                                <span class="hint">When set, the key is read from this variable and the stored key is ignored.</span>
-                                @Error("apiKeyRef")
-                            </div>
-                            <div class="field">
-                                <label for="p-think">How thinking levels are sent</label>
+                                <label for="p-think">Thinking level sent as</label>
                                 <select id="p-think" class="select" @bind="_edit.ThinkingMode">
-                                    <option value="@ThinkingSendMode.ReasoningEffort">reasoning_effort (OpenAI)</option>
-                                    <option value="@ThinkingSendMode.ReasoningObject">reasoning.effort</option>
-                                    <option value="@ThinkingSendMode.BodyField">Custom body field</option>
+                                    @foreach (var mode in Enum.GetValues<ThinkingSendMode>())
+                                    {
+                                        <option value="@mode">@ThinkingSendLabels.Option(mode)</option>
+                                    }
                                 </select>
+                                <span class="hint">For every model, unless a model picks its own when you tune it.</span>
                             </div>
                             @if (_edit.ThinkingMode == ThinkingSendMode.BodyField)
                             {
@@ -194,7 +210,7 @@
                         <label class="check"><input type="checkbox" @bind="_edit.LegacyMaxTokens" /> Send <code>max_tokens</code> (most compatible servers) instead of <code>max_completion_tokens</code></label>
                         <div class="stack">
                             <div class="row row-spread">
-                                <span class="label">Extra headers</span>
+                                <span class="label">Extra headers <span class="muted">(optional)</span></span>
                                 <button type="button" class="btn btn-sm" @onclick="() => _edit.Headers.Add(new HeaderRow())">＋ Add header</button>
                             </div>
                             @foreach (var header in _edit.Headers)
@@ -216,16 +232,21 @@
                         </Alert>
                     }
 
-                    <div class="row row-spread">
-                        <span class="row">
-                            <button type="submit" class="btn btn-primary" aria-busy="@Flag(_saving)" disabled="@_saving">Save provider</button>
-                            <button type="button" class="btn btn-ghost" @onclick="Cancel">Cancel</button>
-                        </span>
-                        @if (!_edit.IsNew)
-                        {
-                            <button type="button" class="btn btn-danger" @onclick="() => _confirmDelete = true">Remove provider</button>
-                        }
-                    </div>
+                    @if (!_edit.IsNew)
+                    {
+                        <div><button type="button" class="btn btn-danger" @onclick="() => _confirmDelete = true">Remove provider</button></div>
+                    }
+
+                    @if (IsDirty)
+                    {
+                        <div class="save-bar" role="region" aria-label="Unsaved changes">
+                            <span>@(_edit.IsNew ? "This provider isn't saved yet." : "You have unsaved changes.")</span>
+                            <span class="row">
+                                <button type="button" class="btn btn-ghost" @onclick="Cancel">@(_edit.IsNew ? "Cancel" : "Discard")</button>
+                                <button type="submit" class="btn btn-primary" aria-busy="@Flag(_saving)" disabled="@_saving">Save provider</button>
+                            </span>
+                        </div>
+                    }
                 </form>
             }
         </section>
@@ -259,6 +280,13 @@
 
     private bool _saving;
     private bool _confirmDelete;
+    private string? _baseline;
+
+    private bool ShowList => Service.Configured.Count > 1 || _edit is null or { IsNew: true };
+
+    private bool IsDirty => _edit is not null && (_edit.IsNew || _edit.NewApiKey.Length > 0 || Snapshot(_edit) != _baseline);
+
+    private static string Snapshot(ProviderEditModel edit) => JsonSerializer.Serialize(edit.ToConfig(), JsonDefaults.Compact);
 
     public void Dispose()
     {
@@ -272,7 +300,7 @@
         var first = Service.Configured.FirstOrDefault(p => p.Id == cfg.DefaultProviderId) ?? Service.Configured.FirstOrDefault();
         if (first is not null)
         {
-            _edit = ProviderEditModel.FromConfig(first);
+            Load(first);
             await RefreshKeyAsync();
         }
     }
@@ -285,9 +313,15 @@
             && await Service.HasKeyAsync(saved);
     }
 
+    private void Load(ProviderConfig? provider)
+    {
+        _edit = provider is null ? null : ProviderEditModel.FromConfig(provider);
+        _baseline = _edit is null ? null : Snapshot(_edit);
+    }
+
     private async Task Select(ProviderConfig provider)
     {
-        _edit = ProviderEditModel.FromConfig(provider);
+        Load(provider);
         ResetFeedback();
         await RefreshKeyAsync();
     }
@@ -302,7 +336,7 @@
     private async Task Cancel()
     {
         var saved = _edit is { IsNew: false } ? Service.Configured.FirstOrDefault(p => p.Id == _edit.Id) : null;
-        _edit = saved is null ? null : ProviderEditModel.FromConfig(saved);
+        Load(saved ?? Service.Configured.FirstOrDefault(p => p.Id == Service.Config.DefaultProviderId) ?? Service.Configured.FirstOrDefault());
         ResetFeedback();
         await RefreshKeyAsync();
     }
@@ -414,6 +448,7 @@
 
             _edit.IsNew = false;
             _edit.NewApiKey = string.Empty;
+            _baseline = Snapshot(_edit);
             await RefreshKeyAsync();
             Toasts.Show("Provider saved.", ToastKind.Success);
         }
@@ -449,8 +484,9 @@
                 return;
             }
 
-            _edit = null;
+            Load(Service.Configured.FirstOrDefault(p => p.Id == Service.Config.DefaultProviderId) ?? Service.Configured.FirstOrDefault());
             ResetFeedback();
+            await RefreshKeyAsync();
             Toasts.Show($"Removed {name}.", ToastKind.Success);
         }
     }

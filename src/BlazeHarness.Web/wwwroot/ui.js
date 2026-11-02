@@ -21,15 +21,14 @@ window.bhUi = {
         if (dialog && !dialog.open) {
             openers.push(document.activeElement);
             dialog.showModal();
-        }
-    },
-    fillComposer: (text) => {
-        const input = document.querySelector(".composer-input");
-        if (input) {
-            input.value = text;
-            input.dispatchEvent(new Event("input", { bubbles: true }));
-            input.focus();
-            input.setSelectionRange(text.length, text.length);
+            // A click on the dialog element itself lands on its backdrop; ignore drags that started inside it.
+            let pressedOnBackdrop = false;
+            dialog.addEventListener("mousedown", (e) => { pressedOnBackdrop = e.target === dialog; });
+            dialog.addEventListener("click", (e) => {
+                if (e.target === dialog && pressedOnBackdrop) {
+                    dialog.dispatchEvent(new Event("cancel", { cancelable: true }));
+                }
+            });
         }
     },
     // Opens a popover menu at the pointer, then nudges it back inside the viewport.

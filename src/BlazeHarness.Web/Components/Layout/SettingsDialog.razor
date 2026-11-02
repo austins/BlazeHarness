@@ -30,11 +30,8 @@
                 case SettingsSection.Web:
                     <WebToolsSettings />
                     break;
-                case SettingsSection.Context:
-                    <ContextSettings />
-                    break;
-                case SettingsSection.Appearance:
-                    <AppearanceSettings />
+                case SettingsSection.General:
+                    <GeneralSettings />
                     break;
                 case SettingsSection.Diagnostics:
                     <DiagnosticsSettings />
@@ -54,8 +51,7 @@
         (SettingsSection.Mcp, "MCP servers", "plug"),
         (SettingsSection.Skills, "Skills", "book"),
         (SettingsSection.Web, "Web", "search"),
-        (SettingsSection.Context, "Context", "compress"),
-        (SettingsSection.Appearance, "Appearance", "text-size"),
+        (SettingsSection.General, "General", "settings"),
         (SettingsSection.Diagnostics, "Diagnostics", "wrench"),
     ];
 

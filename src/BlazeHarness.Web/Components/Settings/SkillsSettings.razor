@@ -86,11 +86,11 @@
     <section class="card stack" aria-labelledby="places-heading">
         <h2 id="places-heading">Where skills are read from</h2>
         <ul class="stack">
-            <li><span class="mono">&lt;chat folder&gt;/.agents/skills</span> <span class="muted">for the chat's own folder. It wins over the others.</span></li>
-            <li><span class="mono">@Paths.SkillsDirectory</span> <span class="muted">for BlazeHarness.</span></li>
-            <li><span class="mono">@Paths.UserAgentsSkillsDirectory</span> <span class="muted">shared with other tools.</span></li>
+            <li><span class="mono">&lt;chat folder&gt;/.agents/skills</span> <span class="muted">Folder skills, for chats in that folder.</span></li>
+            <li><span class="mono">@Paths.SkillsDirectory</span> <span class="muted">BlazeHarness skills, for every chat here.</span></li>
+            <li><span class="mono">@Paths.UserAgentsSkillsDirectory</span> <span class="muted">Global skills, for every chat here and in other AI agent apps that read this folder.</span></li>
         </ul>
-        <p class="hint">Changes to the shared folders show up here by themselves. Skills in a chat's folder are read each time the chat sends a message.</p>
+        <p class="hint">Skills from all three are used. If two have the same name, the one from the folder higher in this list is used and the other is hidden. Changes to the BlazeHarness and global folders show up here by themselves. Skills in a chat's folder are read each time the chat sends a message.</p>
     </section>
 </div>
 
@@ -112,7 +112,7 @@
     {
         SkillSource.Project => "Chat folder",
         SkillSource.App => "BlazeHarness",
-        _ => "Shared",
+        _ => "Global",
     };
 
     private Task SetEnabledAsync(string name, bool enabled) => Toasts.TrySaveAsync(() => Catalog.SetDisabledAsync(name, !enabled), "The skill setting could not be saved because the settings file could not be written.");
