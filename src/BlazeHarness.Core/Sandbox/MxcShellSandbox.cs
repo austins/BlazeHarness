@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Core.Tools.Shell;
 using Microsoft.Mxc.Sdk.V1;
 using System.Runtime.InteropServices;
@@ -19,6 +20,7 @@ public sealed class MxcShellSandbox : IShellSandbox
     private readonly Func<SensitivePaths> _sensitive;
     private readonly Func<IReadOnlyDictionary<string, string>> _hostEnvironment;
     private readonly Lazy<SandboxStatus> _status;
+    private readonly Lazy<string?> _fileDenyProblem;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MxcShellSandbox"/> class.
@@ -31,6 +33,7 @@ public sealed class MxcShellSandbox : IShellSandbox
         _sensitive = sensitive;
         _hostEnvironment = hostEnvironment ?? HostEnvironment;
         _status = new Lazy<SandboxStatus>(Probe, LazyThreadSafetyMode.ExecutionAndPublication);
+        _fileDenyProblem = new Lazy<string?>(ProbeFileDeny, LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <inheritdoc />
@@ -110,7 +113,7 @@ public sealed class MxcShellSandbox : IShellSandbox
         {
             Directory.CreateDirectory(folder);
             var launch = new ShellLaunch(shell, ProbeCommand(shell, outside), folder, ShellMode.Writable, folder, ProbeTimeout);
-            var result = MxcContainer.Run(BuildRequest(launch));
+            var result = MxcContainer.Run(BuildRequest(launch).Request);
             if (result is not { ExitCode: 0, TimedOut: false })
             {
                 return SandboxStatus.Unavailable($"The {BackendName()} sandbox failed its self-test (exit code {result.ExitCode}). Commands can only run with the Unrestricted access level.");
@@ -130,6 +133,43 @@ public sealed class MxcShellSandbox : IShellSandbox
         {
             TryDelete(folder);
             TryDeleteFile(outside);
+        }
+    }
+
+    /// <summary>
+    /// Find out once whether the backend really keeps a single file out of reach: some only accept denied folders, and a deny
+    /// the backend accepted but didn't apply would leave a refused file readable.
+    /// </summary>
+    /// <returns>Why commands that need a file kept out of reach can't run, or null when they can.</returns>
+    private string? ProbeFileDeny()
+    {
+        const string Secret = "blazeharness-probe-secret";
+        var cannot = $"This command was not run: the {BackendName()} sandbox on this system can't keep a single file out of a command's reach, which a file path rule of the user's or a protected file needs. Say what you wanted to do; the user can narrow the rule or choose the Unrestricted access level.";
+        if (ShellInfo.DetectCurrent() is not { } shell)
+        {
+            return cannot;
+        }
+
+        var folder = Path.Combine(Path.GetTempPath(), "blazeharness-probe-deny-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(folder);
+            folder = RootedPath.CanonicalRoot(folder);
+            var secret = Path.Combine(folder, "secret.txt");
+            File.WriteAllText(secret, Secret);
+            var command = shell.IsPowerShell ? "Get-Content -Raw -Path secret.txt -ErrorAction SilentlyContinue; exit 0" : "cat secret.txt 2>/dev/null; exit 0";
+            var launch = new ShellLaunch(shell, command, folder, ShellMode.Writable, folder, ProbeTimeout, DeniedPaths: [secret]);
+            var result = MxcContainer.Run(BuildRequest(launch).Request);
+            return result.TimedOut || result.Stdout.Contains(Secret, StringComparison.Ordinal) ? cannot : null;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // A backend that rejects the request, rather than run it unprotected, can't keep the file out either.
+            return cannot;
+        }
+        finally
+        {
+            TryDelete(folder);
         }
     }
 
@@ -169,7 +209,7 @@ public sealed class MxcShellSandbox : IShellSandbox
         }
     }
 
-    private ContainerRequest BuildRequest(ShellLaunch launch)
+    private (ContainerRequest Request, SandboxPolicy Policy) BuildRequest(ShellLaunch launch)
     {
         var platform = SandboxPolicy.CurrentPlatform();
         Directory.CreateDirectory(Path.Combine(launch.ScratchDirectory, "home"));
@@ -180,7 +220,7 @@ public sealed class MxcShellSandbox : IShellSandbox
         filesystem.ReadwritePaths.AddRange(policy.ReadWrite);
         filesystem.ReadonlyPaths.AddRange(policy.ReadOnly);
         filesystem.DeniedPaths.AddRange(policy.Denied);
-        return new ContainerRequest(policy.CommandLine)
+        var request = new ContainerRequest(policy.CommandLine)
         {
             Containment = ContainmentFor(platform),
             Filesystem = filesystem,
@@ -189,18 +229,24 @@ public sealed class MxcShellSandbox : IShellSandbox
             Network = new NetworkPolicy { Egress = new NetworkEgressPolicy { Default = NetworkAction.Allow } },
             TimeoutMs = (uint)Math.Clamp(launch.Timeout.TotalMilliseconds + 5_000, 1, uint.MaxValue),
         };
+        return (request, policy);
     }
 
     private async Task<IShellProcess> SpawnAsync(ShellLaunch launch, CancellationToken cancellationToken)
     {
-        var request = BuildRequest(launch);
+        var (request, policy) = BuildRequest(launch);
+        if (policy.Denied.Any(File.Exists) && _fileDenyProblem.Value is { } problem)
+        {
+            throw new IOException(problem);
+        }
+
         try
         {
             return new MxcShellProcess(await MxcContainer.SpawnAsync(request, cancellationToken: cancellationToken));
         }
         catch (MxcException ex)
         {
-            var hint = launch.DeniedPaths is { Count: > 0 } ? " It may not be able to keep files out of reach on this system, which a rule of the user's needs." : string.Empty;
+            var hint = policy.Denied.Count > 0 ? " It may not be able to keep files out of reach on this system, which a rule of the user's or a protected path needs." : string.Empty;
             throw new IOException($"The sandbox could not start the command ({ex.Code}): {ex.Message}{hint}", ex);
         }
     }

@@ -296,7 +296,7 @@ public sealed class PermissionEngine
         if (settings.Access == AccessLevel.Unrestricted)
         {
             return settings.Approvals == ApprovalMode.AskFirst
-                ? new PermissionDecision(PermissionVerdict.Ask, "Runs a command on your computer.", key, Shell: ShellMode.Unconfined)
+                ? new PermissionDecision(PermissionVerdict.Ask, Rules().Any(r => r is { Target: RuleTarget.FilePath, Action: PermissionVerdict.Deny, Pattern.Length: > 0 }) ? "Runs a command on your computer, outside the sandbox, so the files your rules refuse are in its reach." : "Runs a command on your computer.", key, Shell: ShellMode.Unconfined)
                 : PermissionDecision.Allow with { Shell = ShellMode.Unconfined };
         }
 

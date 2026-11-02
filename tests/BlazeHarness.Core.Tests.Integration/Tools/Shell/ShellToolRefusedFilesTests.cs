@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Tools;
 using BlazeHarness.Core.Tools.Shell;
 using Microsoft.Extensions.Time.Testing;
 
@@ -68,10 +69,30 @@ public sealed class ShellToolRefusedFilesTests : IDisposable
         _launch!.DeniedPaths.Should().BeNull();
     }
 
+    [Fact]
+    public async Task ExecuteAsync_TooManyRefusedFiles_ReturnsAnErrorNamingTheRuleWithoutStartingTheCommand()
+    {
+        // Arrange
+        for (var i = 0; i <= RefusedFiles.MaxPaths; i++)
+        {
+            _root.Write($"keys/{i}.env", "x");
+        }
+
+        var refused = new RefusedPaths([new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Deny, "**/*.env")], _root.Root);
+
+        // Act
+        var result = await RunAsync(ShellMode.Writable, refused);
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.Output.Should().Contain("**/*.env");
+        _launch.Should().BeNull();
+    }
+
     private RefusedPaths RefuseEnv() => new([new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Deny, "**/.env")], _root.Root);
 
-    private async Task RunAsync(ShellMode mode, RefusedPaths refused)
+    private async Task<ToolResult> RunAsync(ShellMode mode, RefusedPaths refused)
     {
-        await _sut.ExecuteAsync(TempRoot.Args(new { command = "true" }), _root.Context.WithShell(mode).WithRefused(refused), TestContext.Current.CancellationToken);
+        return await _sut.ExecuteAsync(TempRoot.Args(new { command = "true" }), _root.Context.WithShell(mode).WithRefused(refused), TestContext.Current.CancellationToken);
     }
 }

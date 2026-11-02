@@ -32,6 +32,16 @@ public sealed class RefusedPaths
     public bool Any => _refusing.Length > 0;
 
     /// <summary>
+    /// Gets the patterns of the refusing rules, so a walk can tell where they can match.
+    /// </summary>
+    internal IEnumerable<string> Patterns => _refusing.Select(rule => rule.Pattern);
+
+    /// <summary>
+    /// Gets the working folder that relative patterns resolve against.
+    /// </summary>
+    internal string Root => _root;
+
+    /// <summary>
     /// Get whether a rule refuses a path.
     /// </summary>
     /// <param name="fullPath">The real full path of a file or folder.</param>

@@ -93,10 +93,11 @@ internal sealed class ShellTool : ITool
         if (context.Shell != ShellMode.Unconfined && context.Refused.Any)
         {
             List<string> found = [];
-            var complete = await Task.Run(() => RefusedFiles.TryFind(context, RefusedFiles.MaxEntries, RefusedFiles.MaxPaths, out found, cancellationToken), cancellationToken);
+            string? tooBroad = null;
+            var complete = await Task.Run(() => RefusedFiles.TryFind(context, RefusedFiles.MaxEntries, RefusedFiles.MaxPaths, out found, out tooBroad, cancellationToken), cancellationToken);
             if (!complete)
             {
-                return ToolResult.Error("This command was not run: the working folder has too many files, or too many refused ones, to keep the files a rule of the user's refuses out of its reach. Use the file tools instead, or say what you wanted to do. The user can narrow or remove the rule in Settings > Permissions.");
+                return ToolResult.Error($"This command was not run: the user's rule refusing '{tooBroad}' covers too many files, or too many to look through, to keep them out of the command's reach. Use the file tools instead, or say what you wanted to do. The user can narrow or remove the rule in Settings > Permissions.");
             }
 
             refused = found;

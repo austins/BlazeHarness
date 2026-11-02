@@ -66,9 +66,9 @@
             A rule that refuses always wins. Otherwise the last matching rule decides. An allow rule skips the question but never gets a call out of the sandbox or into a protected folder.
             Use * for any text and ? for one character. In a path, * stays inside one folder and ** crosses folders.
             An MCP tool rule matches the server name and the tool name written as server/tool.
-            A rule that refuses a file path also hides those files from listing and search. In a sandboxed shell command, those files inside the working folder and the folders you approved are kept out of reach when the command starts, so they look empty or unreadable.
+            A rule that refuses a file path also hides those files from listing and search. In a sandboxed shell command, those files are kept out of reach when the command starts, so they look empty or unreadable: an exact path wherever it is, and a pattern with a wildcard inside the working folder and the folders you approved.
             It is best effort: the shell can still read a refused file from git history, a file made later is not covered, on macOS renaming a folder above a refused file may get around it, and a command with Unrestricted access is not sandboxed.
-            A folder with a very large number of files, or too many refused files, makes shell commands refuse to run while a rule of this kind applies.
+            Shell commands don't run while a rule matches too many files, or a ** rule would need a look through a very large folder; a rule such as secrets/** or *.pem stays quick. They also don't run where this system's sandbox can't keep a single file out of reach.
         </p>
         @if (_rules.Count == 0)
         {

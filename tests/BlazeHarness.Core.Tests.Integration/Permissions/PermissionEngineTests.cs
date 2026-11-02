@@ -379,6 +379,21 @@ public sealed class PermissionEngineTests : IDisposable
     }
 
     [Fact]
+    public void Evaluate_ShellUnrestrictedWithARefusedFilePath_SaysRefusedFilesAreInReach()
+    {
+        // Arrange
+        _sut.Settings = new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.AskFirst);
+        _sut.Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Deny, "**/.env")];
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "ls" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Ask);
+        decision.Reason.Should().Contain("outside the sandbox").And.Contain("refuse");
+    }
+
+    [Fact]
     public void Settings_BypassNotAllowed_ReadsAsTheSaferOptions()
     {
         // Arrange
