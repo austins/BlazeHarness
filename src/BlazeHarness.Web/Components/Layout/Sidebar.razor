@@ -41,10 +41,13 @@
     <section class="sidebar-section" aria-labelledby="chats-heading">
         <div class="sidebar-heading">
             <Icon Name="chat" /><span id="chats-heading">Chats</span>
-            <label class="btn btn-ghost btn-sm btn-icon sidebar-heading-action import-chat" title="Import a chat from a JSON file">
-                <InputFile @ref="_importInput" OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="Import a chat from a JSON file" />
-                <Icon Name="arrow-down" />
-            </label>
+            <div class="sidebar-heading-actions">
+                <a class="btn btn-ghost btn-sm btn-icon" href="" title="New chat without a folder" aria-label="New chat without a folder"><Icon Name="plus" /></a>
+                <label class="btn btn-ghost btn-sm btn-icon import-chat" title="Import a chat from a JSON file">
+                    <InputFile @ref="_importInput" OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="Import a chat from a JSON file" />
+                    <Icon Name="import" />
+                </label>
+            </div>
         </div>
         @if (chats.Count == 0)
         {
@@ -60,7 +63,7 @@
         <div class="sidebar-heading">
             <Icon Name="folder" /><span id="folders-heading">Folders</span>
             <button type="button" class="btn btn-ghost btn-sm btn-icon sidebar-heading-action" title="Open folder"
-                    aria-label="Open folder" @onclick="() => _picking = true"><Icon Name="plus" /></button>
+                    aria-label="Open folder" @onclick="() => _picking = true"><Icon Name="folder-plus" /></button>
         </div>
         @if (folders.Count == 0)
         {
