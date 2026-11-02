@@ -1,12 +1,15 @@
+@using BlazeHarness.Core
 @inject IJSRuntime JS
 @inject SessionService Sessions
 @inject NavigationManager Navigation
 @inject ToastService Toasts
+@inject AppPaths Paths
+@using System.Diagnostics
 
 <ul class="chat-list">
     @foreach (var chat in Chats)
     {
-        <li @key="chat.Id" class="chat-item">
+        <li @key="chat.Id" class="chat-item" @oncontextmenu="e => OpenMenu(chat, e)" @oncontextmenu:preventDefault="_renaming != chat.Id">
             @if (_renaming == chat.Id)
             {
                 <input class="input input-sm" @ref="_renameInput" aria-label="Chat name" maxlength="@MaxTitleLength"
@@ -22,18 +25,25 @@
                         <span class="chat-busy" role="status" title="Replying" aria-label="Replying"><Icon Name="spinner" Spin="true" /></span>
                     }
                 </NavLink>
-                <div class="chat-actions">
-                    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@("Rename " + DisplayTitle(chat))"
-                            title="Rename" @onclick="() => StartRename(chat)"><Icon Name="pencil" /></button>
-                    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@("Move " + DisplayTitle(chat) + " to a folder")"
-                            title="Move to folder" @onclick="() => _moving = chat"><Icon Name="arrow-right" /></button>
-                    <button type="button" class="btn btn-ghost btn-sm btn-icon btn-danger" aria-label="@("Delete " + DisplayTitle(chat))"
-                            title="Delete" @onclick="() => _deleting = chat"><Icon Name="trash" /></button>
-                </div>
             }
         </li>
     }
 </ul>
+
+<div @ref="_menu" id="@_menuId" class="menu context-menu" popover="auto" role="menu" aria-label="@(_menuChat is null ? "Chat actions" : DisplayTitle(_menuChat))" data-bh-menu>
+    @if (_menuChat is { } target)
+    {
+        <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                @onclick="() => StartRename(target)"><Icon Name="pencil" />Rename</button>
+        <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                @onclick="() => _moving = target"><Icon Name="arrow-right" />Move to folder</button>
+        <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                @onclick="() => OpenSessionFolder(target)"><Icon Name="folder" />Open session folder</button>
+        <div class="menu-sep" role="separator"></div>
+        <button type="button" class="menu-item menu-item-danger" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                @onclick="() => _deleting = target"><Icon Name="trash" />Delete</button>
+    }
+</div>
 
 <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
 
@@ -50,6 +60,10 @@
     private SessionInfo? _deleting;
     private SessionInfo? _moving;
     private ElementReference _renameInput;
+    private ElementReference _menu;
+    private readonly string _menuId = $"chat-menu-{Guid.NewGuid():N}";
+    private SessionInfo? _menuChat;
+    private (double X, double Y)? _showMenuAt;
 
     /// <summary>
     /// Gets or sets the chats to list, in display order.
@@ -63,6 +77,42 @@
         {
             _focusRename = false;
             await JS.InvokeVoidAsync("bhUi.focusSelect", _renameInput);
+        }
+
+        if (_showMenuAt is var (x, y))
+        {
+            _showMenuAt = null;
+            await JS.InvokeVoidAsync("bhUi.showContextMenu", _menu, x, y);
+        }
+    }
+
+    private void OpenMenu(SessionInfo chat, MouseEventArgs e)
+    {
+        if (_renaming == chat.Id)
+        {
+            return;
+        }
+
+        _menuChat = chat;
+        _showMenuAt = (e.ClientX, e.ClientY);
+    }
+
+    private void OpenSessionFolder(SessionInfo chat)
+    {
+        var path = Paths.SessionDirectory(chat.Id);
+        try
+        {
+            if (!Directory.Exists(path))
+            {
+                Toasts.Show("This chat has no folder on disk yet.", ToastKind.Error);
+                return;
+            }
+
+            using var process = Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            Toasts.Show("The session folder could not be opened.", ToastKind.Error);
         }
     }
 

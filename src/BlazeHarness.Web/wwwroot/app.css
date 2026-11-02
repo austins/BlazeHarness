@@ -163,13 +163,6 @@ kbd {
 }
 .chat-item { position: relative; display: flex; align-items: center; }
 .chat-item .chat-link { flex: 1; min-width: 0; }
-.chat-actions {
-    display: flex; position: absolute; inset-inline-end: 2px;
-    background: var(--bg-hover); border-radius: var(--radius-sm);
-    opacity: 0; pointer-events: none;
-}
-.chat-item:hover .chat-actions, .chat-item:focus-within .chat-actions { opacity: 1; pointer-events: auto; }
-@media (hover: none) { .chat-actions { opacity: 1; pointer-events: auto; } }
 .chat-item > .input { width: 100%; }
 .chat-link:hover { background: var(--bg-hover); }
 .chat-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
@@ -415,6 +408,10 @@ dialog.dialog.dialog-settings { width: min(68rem, calc(100vw - 2rem)); height: m
     background: none; color: var(--fg); font: inherit; text-align: start; cursor: pointer;
 }
 .menu-item:hover, .menu-item:focus-visible { background: var(--bg-hover); outline: none; }
+.context-menu { position: fixed; position-area: none; position-try-fallbacks: none; margin: 0; min-width: 11rem; }
+.context-menu .icon { width: 1rem; height: 1rem; flex: none; }
+.menu-item-danger { color: var(--danger); }
+.menu-item-danger:hover, .menu-item-danger:focus-visible { background: var(--danger-soft); }
 .menu-check { display: inline-flex; flex: none; width: 1rem; padding-block-start: 0.15rem; color: var(--accent); visibility: hidden; }
 .menu-check .icon { width: 1rem; height: 1rem; }
 .menu-item[aria-checked="true"] .menu-check { visibility: visible; }

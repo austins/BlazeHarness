@@ -32,6 +32,23 @@ window.bhUi = {
             input.setSelectionRange(text.length, text.length);
         }
     },
+    // Opens a popover menu at the pointer, then nudges it back inside the viewport.
+    showContextMenu: (menu, x, y) => {
+        if (!menu) {
+            return;
+        }
+
+        if (menu.matches(":popover-open")) {
+            menu.hidePopover();
+        }
+
+        menu.style.left = `${x}px`;
+        menu.style.top = `${y}px`;
+        menu.showPopover();
+        const box = menu.getBoundingClientRect();
+        menu.style.left = `${Math.max(0, Math.min(x, window.innerWidth - box.width))}px`;
+        menu.style.top = `${Math.max(0, Math.min(y, window.innerHeight - box.height))}px`;
+    },
     restoreFocus: () => {
         const opener = openers.pop();
         if (opener instanceof HTMLElement && opener.isConnected) {
