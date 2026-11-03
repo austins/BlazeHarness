@@ -206,7 +206,7 @@ window.bhChat = {
         picker.dispatchEvent(new Event("change", { bubbles: true }));
     },
 
-    // Enter sends, Shift+Enter adds a line; the box grows with its text.
+    // Enter sends, Alt+Enter queues while a reply runs, Shift+Enter adds a line; the box grows with its text.
     initComposer: (input, form) => {
         if (!input) {
             return;
@@ -304,7 +304,8 @@ window.bhChat = {
 
             if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
                 e.preventDefault();
-                const send = input.form && input.form.querySelector("button[type=submit]");
+                const queue = e.altKey && input.form && input.form.querySelector("[data-bh-queue] [role=menuitem]");
+                const send = queue || (input.form && input.form.querySelector("button[type=submit]"));
                 if (send) {
                     send.click();
                 }

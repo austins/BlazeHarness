@@ -133,27 +133,31 @@ else
             }
             @if (Running)
             {
-                @if (CanQueue && !Asked)
-                {
-                    <span class="composer-send">
-                        <Menu Label="@WebStrings.ComposerQueueModeMenuLabel" Title="@WebStrings.ComposerQueueModeTooltip">
-                            <Trigger><span class="menu-trigger-text">@(_mode == QueueMode.Steer ? WebStrings.ComposerQueueModeSteer : WebStrings.ComposerQueueModeAfterReply)</span></Trigger>
-                            <ChildContent>
-                                <MenuItem Label="@WebStrings.ComposerQueueModeSteer" Description="@WebStrings.ComposerQueueModeSteerDescription" Checked="_mode == QueueMode.Steer" OnSelect="() => SelectMode(QueueMode.Steer)" />
-                                <MenuItem Label="@WebStrings.ComposerQueueModeAfterReply" Description="@WebStrings.ComposerQueueModeAfterReplyDescription" Checked="_mode == QueueMode.AfterReply" OnSelect="() => SelectMode(QueueMode.AfterReply)" />
-                            </ChildContent>
-                        </Menu>
-                        @if (!string.IsNullOrWhiteSpace(_text))
+                <span class="composer-send">
+                    @if (CanQueue && !string.IsNullOrWhiteSpace(_text))
+                    {
+                        @if (Asked)
                         {
-                            <button type="submit" class="btn btn-primary btn-send" aria-label="@SendButtonLabel" title="@SendButtonTitle"><Icon Name="arrow-up" /></button>
+                            <button type="submit" class="btn btn-primary btn-send" aria-label="@WebStrings.ComposerSendAnswer" title="@WebStrings.ComposerSendAnswerEnter"><Icon Name="arrow-up" /></button>
                         }
-                    </span>
-                }
-                else if (CanQueue && !string.IsNullOrWhiteSpace(_text))
-                {
-                    <button type="submit" class="btn btn-primary btn-send" aria-label="@SendButtonLabel" title="@SendButtonTitle"><Icon Name="arrow-up" /></button>
-                }
-                <button type="button" class="btn btn-send btn-stop" aria-label="@WebStrings.ComposerStopLabel" title="@WebStrings.ComposerStopTooltip" @onclick="OnStop"><Icon Name="stop" /></button>
+                        else
+                        {
+                            <span class="send-split" data-bh-queue>
+                                <button type="submit" class="btn btn-primary btn-send" aria-label="@WebStrings.ComposerQueueMessage" title="@WebStrings.ComposerQueueMessageEnter"><Icon Name="arrow-up" /></button>
+                                <Menu Label="@WebStrings.ComposerQueueModeMenuLabel" Title="@WebStrings.ComposerQueueModeTooltip" IconOnly="true">
+                                    <Trigger><Icon Name="chevron-up" /></Trigger>
+                                    <ChildContent>
+                                        <MenuItem Label="@WebStrings.ComposerQueueModeAfterReply" Title="@WebStrings.ComposerQueueModeAfterReplyDescription" IsAction="true" OnSelect="() => Enqueue(QueueMode.AfterReply)" />
+                                    </ChildContent>
+                                </Menu>
+                            </span>
+                        }
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-send btn-stop" aria-label="@WebStrings.ComposerStopLabel" title="@WebStrings.ComposerStopTooltip" @onclick="OnStop"><Icon Name="stop" /></button>
+                    }
+                </span>
             }
             else
             {
@@ -184,7 +188,6 @@ else
     private List<ThinkingLevel> _levels = [];
     private ElementReference _input;
     private string _text = string.Empty;
-    private QueueMode _mode = QueueMode.Steer;
     private string _selected = string.Empty;
     private string _level = string.Empty;
     private const int PreviewBytes = 2000;
@@ -562,19 +565,9 @@ else
                 return WebStrings.ComposerPlaceholder;
             }
 
-            return _mode == QueueMode.Steer ? WebStrings.ComposerQueuePlaceholder : WebStrings.ComposerAfterReplyPlaceholder;
+            return WebStrings.ComposerQueuePlaceholder;
         }
     }
-
-    private string SendButtonLabel => Asked ? WebStrings.ComposerSendAnswer : ModeLabel;
-
-    private string SendButtonTitle => Asked ? WebStrings.ComposerSendAnswerEnter : ModeTitle;
-
-    private string ModeLabel => _mode == QueueMode.Steer ? WebStrings.ComposerQueueMessage : WebStrings.ComposerAfterReplyMessage;
-
-    private string ModeTitle => _mode == QueueMode.Steer ? WebStrings.ComposerQueueMessageEnter : WebStrings.ComposerAfterReplyMessageEnter;
-
-    private void SelectMode(QueueMode mode) => _mode = mode;
 
     private static string FileRemoveLabel(string name) =>
         ResourceMessageFormatter.Web.Format(nameof(WebStrings.ComposerRemoveFile), new Dictionary<string, object?> { ["name"] = name });
@@ -586,7 +579,7 @@ else
     {
         if (Running)
         {
-            Enqueue();
+            Enqueue(QueueMode.Steer);
             return;
         }
 
@@ -614,7 +607,7 @@ else
         }
     }
 
-    private void Enqueue()
+    private void Enqueue(QueueMode mode)
     {
         if (!CanQueue || OnQueue is null || string.IsNullOrWhiteSpace(_text))
         {
@@ -627,7 +620,7 @@ else
             return;
         }
 
-        if (OnQueue(_text, Asked ? QueueMode.Steer : _mode))
+        if (OnQueue(_text, Asked ? QueueMode.Steer : mode))
         {
             _text = string.Empty;
             _note = null;
