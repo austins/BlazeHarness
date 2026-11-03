@@ -315,7 +315,12 @@ public sealed class ConversationContext
     // A message a cut can start at: one that has an entry in the chat, and not a tool result, which must stay with its call.
     private static bool IsCuttable(ChatMessage message)
     {
-        return message.Role != ChatRole.Tool && !(message.Role == ChatRole.User && message.Text == ChatRunner.TextCallNotice);
+        if (message.Role == ChatRole.Tool)
+        {
+            return false;
+        }
+
+        return message.Role != ChatRole.User || (message.Text != ChatRunner.TextCallNotice && message.Text != ChatRunner.FailureNotice);
     }
 
     // Returns the index after the leading messages where the kept messages should begin, or 0 when there is nothing to fold in.

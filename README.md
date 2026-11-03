@@ -35,6 +35,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 * Tools for shell commands, reading, writing and editing files, listing folders, and searching files. Read-only tools run in parallel.
 * A to-do list the agent keeps up to date with `update_todos` during long tasks. It is shown above the message box (collapsed to "n of m done" and the current step) and survives compaction. It needs no approval, because it only changes what the chat shows.
 * An `ask_user` tool for questions the agent can't settle itself: a question with up to 8 options (single or multiple choice) or free text. The run pauses until you answer, choose "You decide" or skip, and the chat shows "Needs you" in the list. Text typed in the message box answers the question. It works at every access level, needs no approval, and is limited to 3 questions per run. A question still open when the app restarts is marked as not answered.
+* A limit on repeated failures: after 5 rounds in a row in which every tool call failed, the agent is told to stop retrying and to use `ask_user` (or reply) to say what went wrong. A message you send during the run replaces that note. A run has no other round limit; you can stop it.
 * Messages sent while a reply is running (text only). They wait above the message box as "Queued" and are added as one message after the next tool results, or when the reply would end, so the reply continues with them without changing the start of the request. Stop does not send them; it puts the text back in the message box.
 * A `search_chat` tool lets the agent look back through the full chat (including tool output) for something compaction summarized away, and optionally through the other chats of the same folder.
 * Attachments from the composer. Images go to the model as image input, and text files are added to the message, or read on demand with `read_attachment` when they are large. An image's path is in the message, and tools and sandboxed commands can read the chat's attachments without asking, so a text-only model can still inspect an image.
@@ -54,7 +55,6 @@ Not built yet, and not promised:
 
 * An in-app browser that the agent can use to open a running service, read the page, and take a screenshot, so it can check its own UI changes (for example a click-through or a download) instead of only running tests.
 * Reading Office documents (docx, xlsx, pptx) in the web fetch tool, which reads HTML, PDF and text.
-* A limit on repeated failed attempts, after which the run pauses and uses `ask_user` to ask for help instead of retrying; today a run has no round limit and the user stops it.
 * Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits. A subagent would run the same loop at the same or a lower access level, and its approval requests would go to the parent chat's approver, never be granted on their own.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.

@@ -5,6 +5,7 @@ using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -22,6 +23,18 @@ internal static class ChatRunner
     /// </summary>
     internal const string TextCallNotice =
         "Your last reply wrote a tool call as plain text, so it was not run. Call the tool through the tool interface instead.";
+
+    /// <summary>
+    /// The number of rounds in a row in which every tool call failed before the runner tells the model to stop retrying.
+    /// </summary>
+    internal const int MaxFailedRounds = 5;
+
+    /// <summary>
+    /// The user message added after <see cref="MaxFailedRounds"/> rounds in a row in which every tool call failed. It has no chat entry of its own.
+    /// </summary>
+    internal static readonly string FailureNotice = string.Create(
+        CultureInfo.InvariantCulture,
+        $"The last {MaxFailedRounds} rounds of tool calls all failed. Stop retrying. If {UserQuestion.ToolName} is available, use it to tell the user what failed and ask how to proceed; otherwise reply with what failed and what you need.");
 
     private const int MaxTextCallRetries = 3;
     private const string TextCallMarker = "<tool_call>";
@@ -106,6 +119,7 @@ internal static class ChatRunner
         // There is no limit on rounds: the user can stop a run, and compaction keeps the context in bounds.
         var firstResponse = true;
         var textCallRetries = 0;
+        var failedRounds = 0;
         var questions = new QuestionBudget();
         while (true)
         {
@@ -318,10 +332,19 @@ internal static class ChatRunner
                 yield break;
             }
 
+            failedRounds = outcome.AllFailed ? failedRounds + 1 : 0;
+
             // The tool results are in the history now, so a user message can follow them.
+            // A message from the user steers the run already, so it takes the place of the notice.
             if (AddQueuedMessages(inbox, history, false) is { } steering)
             {
+                failedRounds = 0;
                 yield return steering;
+            }
+            else if (failedRounds >= MaxFailedRounds)
+            {
+                failedRounds = 0;
+                history.Add(new ChatMessage(ChatRole.User, FailureNotice));
             }
         }
     }
@@ -553,6 +576,7 @@ internal static class ChatRunner
             }
 
             history.Add(new ChatMessage(ChatRole.Tool, answers));
+            outcome.AllFailed = statuses.All(status => status == ToolCallStatus.Failed);
         }
     }
 
@@ -659,6 +683,8 @@ internal static class ChatRunner
     private sealed class RoundOutcome
     {
         public bool Cancelled { get; set; }
+
+        public bool AllFailed { get; set; }
     }
 
     // Json holds the arguments of the tool that runs, which for a forwarded call are not the ones the model sent (RawJson).
