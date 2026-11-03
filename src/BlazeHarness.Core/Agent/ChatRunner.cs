@@ -36,14 +36,19 @@ internal static class ChatRunner
     internal const int TodoReminderCalls = 10;
 
     /// <summary>
-    /// The user message added after <see cref="MaxFailedRounds"/> rounds in a row in which every tool call failed. It has no chat entry of its own.
+    /// The text that sets a runner notice apart from the tool output it is appended to.
+    /// </summary>
+    internal const string NoticePrefix = "[Harness notice] ";
+
+    /// <summary>
+    /// The notice added to the last tool result after <see cref="MaxFailedRounds"/> rounds in a row in which every tool call failed. It has no chat entry of its own.
     /// </summary>
     internal static readonly string FailureNotice = string.Create(
         CultureInfo.InvariantCulture,
         $"The last {MaxFailedRounds} rounds of tool calls all failed. Stop retrying. If {UserQuestion.ToolName} is available, use it to tell the user what failed and ask how to proceed; otherwise reply with what failed and what you need.");
 
     /// <summary>
-    /// The user message added after <see cref="TodoReminderCalls"/> tool calls in which the model left an unfinished to-do list unchanged. It has no chat entry of its own.
+    /// The notice added to the last tool result after <see cref="TodoReminderCalls"/> tool calls in which the model left an unfinished to-do list unchanged. It has no chat entry of its own.
     /// </summary>
     internal static readonly string TodoReminder = string.Create(
         CultureInfo.InvariantCulture,
@@ -352,6 +357,8 @@ internal static class ChatRunner
 
             // The tool results are in the history now, so a user message can follow them.
             // A message from the user steers the run already, so it takes the place of the notice.
+            // A notice goes into the last tool result rather than a user message: a new user message makes chat templates such as Qwen's
+            // drop the thinking of the earlier steps, which changes the prompt from there on and throws away the server's prompt cache.
             if (AddQueuedMessages(inbox, history, false) is { } steering)
             {
                 failedRounds = 0;
@@ -360,14 +367,35 @@ internal static class ChatRunner
             else if (failedRounds >= MaxFailedRounds)
             {
                 failedRounds = 0;
-                history.Add(new ChatMessage(ChatRole.User, FailureNotice));
+                AddNotice(history, FailureNotice);
             }
             else if (tracksTodos && callsSinceTodos >= TodoReminderCalls)
             {
                 callsSinceTodos = 0;
                 if (TodoList.From(history).Items.Any(item => item.Status != TodoStatus.Completed))
                 {
-                    history.Add(new ChatMessage(ChatRole.User, TodoReminder));
+                    AddNotice(history, TodoReminder);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Append a runner notice to the last tool result in the history.
+    /// </summary>
+    /// <param name="history">The history of the run, which holds the results of the round that just ended.</param>
+    /// <param name="notice">The notice.</param>
+    private static void AddNotice(IList<ChatMessage> history, string notice)
+    {
+        for (var m = history.Count - 1; m >= 0; m--)
+        {
+            var contents = history[m].Contents;
+            for (var c = contents.Count - 1; history[m].Role == ChatRole.Tool && c >= 0; c--)
+            {
+                if (contents[c] is FunctionResultContent result)
+                {
+                    contents[c] = new FunctionResultContent(result.CallId, $"{result.Result}\n\n{NoticePrefix}{notice}");
+                    return;
                 }
             }
         }

@@ -460,29 +460,6 @@ public sealed class ConversationContextTests
     }
 
     [Fact]
-    public async Task CompactAsync_AfterAFailureNotice_NeverCutsAtTheNotice()
-    {
-        // Arrange
-        var sut = new ConversationContext(1_000, _summarizer);
-        List<ChatMessage> messages =
-        [
-            new(ChatRole.User, Text(100)),
-            new(ChatRole.Assistant, Text(100)),
-            new(ChatRole.User, Text(100)),
-            new(ChatRole.Assistant, Text(800)),
-            new(ChatRole.User, ChatRunner.FailureNotice),
-            new(ChatRole.Assistant, Text(100)),
-        ];
-
-        // Act
-        var result = await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.FirstKept.Should().Be(5);
-    }
-
-    [Fact]
     public async Task CompactAsync_OverheadLeavesLittleRoom_KeepsASmallerTail()
     {
         // Arrange

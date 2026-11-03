@@ -52,9 +52,9 @@ public sealed class ChatRunnerToolTests
         // Assert
         events.OfType<ToolCallFinished>().Single().Image.Should().BeSameAs(image);
         history.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.Tool, ChatRole.User, ChatRole.Assistant);
-        history[3].Contents.Should().HaveCount(2);
-        history[3].Text.Should().Be("[Picture from shot call c1:]");
-        history[3].Contents[1].Should().BeSameAs(image);
+        history[3].Contents.Should().HaveCount(4);
+        history[3].Text.Should().Be("<tool_response>\n[Picture from shot call c1:]\n</tool_response>");
+        history[3].Contents[2].Should().BeSameAs(image);
         client.Requests[1].Should().Contain(history[3]);
     }
 

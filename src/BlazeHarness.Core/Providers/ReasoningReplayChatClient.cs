@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Attachments;
 using Microsoft.Extensions.AI;
 using OpenAI.Chat;
 using System.Text.Json;
@@ -13,6 +14,7 @@ namespace BlazeHarness.Core.Providers;
 /// The OpenAI client reads <c>reasoning_content</c> from the stream but leaves <see cref="TextReasoningContent"/> out of requests,
 /// so without this a model would lose what it worked out after every tool call. Chat templates such as Qwen's keep that thinking for the
 /// assistant messages after the last user message, which is where this sends it; thinking from earlier turns stays out, as those templates drop it too.
+/// The message that carries the pictures of tool calls is part of the step, not a new request, so it doesn't count as a user message here.
 /// </para>
 /// <para>
 /// Thinking only exists when the server sent it in that field, so a server that doesn't know the field never receives it.
@@ -34,14 +36,14 @@ internal sealed class ReasoningReplayChatClient(IChatClient inner) : DelegatingC
     }
 
     /// <summary>
-    /// Give each assistant message after the last user message that carries thinking a raw form with <c>reasoning_content</c> set.
+    /// Give each assistant message after the last user message (other than the pictures of tool calls) that carries thinking a raw form with <c>reasoning_content</c> set.
     /// </summary>
     /// <param name="messages">The messages of the request.</param>
     /// <returns>The messages to send.</returns>
     internal static List<ChatMessage> WithReasoning(IEnumerable<ChatMessage> messages)
     {
         var list = messages.ToList();
-        var lastUser = list.FindLastIndex(m => m.Role == ChatRole.User);
+        var lastUser = list.FindLastIndex(m => m.Role == ChatRole.User && !AttachmentMessage.IsToolImages(m));
         for (var i = lastUser + 1; i < list.Count; i++)
         {
             var message = list[i];

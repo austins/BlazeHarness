@@ -21,10 +21,11 @@ public sealed class ChatRunnerTodoReminderTests
         await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools());
 
         // Assert
-        history.Count(m => m.Text == ChatRunner.TodoReminder).Should().Be(1);
-        history[^2].Text.Should().Be(ChatRunner.TodoReminder);
-        history[^2].Role.Should().Be(ChatRole.User);
-        client.Requests[^1][^1].Text.Should().Be(ChatRunner.TodoReminder);
+        history.Count(m => HasNotice(m, ChatRunner.TodoReminder)).Should().Be(1);
+        history[^2].Role.Should().Be(ChatRole.Tool);
+        HasNotice(history[^2], ChatRunner.TodoReminder).Should().BeTrue();
+        HasNotice(client.Requests[^1][^1], ChatRunner.TodoReminder).Should().BeTrue();
+        history.Should().ContainSingle(m => m.Role == ChatRole.User);
     }
 
     [Fact]
@@ -38,7 +39,7 @@ public sealed class ChatRunnerTodoReminderTests
         await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools());
 
         // Assert
-        history.Should().NotContain(m => m.Text == ChatRunner.TodoReminder);
+        history.Should().NotContain(m => HasNotice(m, ChatRunner.TodoReminder));
     }
 
     [Fact]
@@ -52,7 +53,7 @@ public sealed class ChatRunnerTodoReminderTests
         await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools());
 
         // Assert
-        history.Should().NotContain(m => m.Text == ChatRunner.TodoReminder);
+        history.Should().NotContain(m => HasNotice(m, ChatRunner.TodoReminder));
     }
 
     [Fact]
@@ -73,7 +74,7 @@ public sealed class ChatRunnerTodoReminderTests
         await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools());
 
         // Assert
-        history.Should().NotContain(m => m.Text == ChatRunner.TodoReminder);
+        history.Should().NotContain(m => HasNotice(m, ChatRunner.TodoReminder));
     }
 
     [Fact]
@@ -93,7 +94,7 @@ public sealed class ChatRunnerTodoReminderTests
         await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(withTodos: false));
 
         // Assert
-        history.Should().NotContain(m => m.Text == ChatRunner.TodoReminder);
+        history.Should().NotContain(m => HasNotice(m, ChatRunner.TodoReminder));
     }
 
     // One update_todos round that sets the list, then the given number of rounds with one other tool call each.
@@ -107,6 +108,9 @@ public sealed class ChatRunnerTodoReminderTests
 
         return client;
     }
+
+    private static bool HasNotice(ChatMessage message, string notice) =>
+        message.Contents.OfType<FunctionResultContent>().Any(r => r.Result is string text && text.EndsWith(ChatRunner.NoticePrefix + notice, StringComparison.Ordinal));
 
     private static List<ChatMessage> NewHistory() => [new(ChatRole.User, "hi")];
 

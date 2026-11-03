@@ -19,10 +19,11 @@ public sealed class ChatRunnerFailureTests
         await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(fail));
 
         // Assert
-        history.Count(m => m.Text == ChatRunner.FailureNotice).Should().Be(1);
-        history[^2].Text.Should().Be(ChatRunner.FailureNotice);
-        history[^2].Role.Should().Be(ChatRole.User);
-        client.Requests[^1][^1].Text.Should().Be(ChatRunner.FailureNotice);
+        history.Count(m => HasNotice(m, ChatRunner.FailureNotice)).Should().Be(1);
+        history[^2].Role.Should().Be(ChatRole.Tool);
+        HasNotice(history[^2], ChatRunner.FailureNotice).Should().BeTrue();
+        HasNotice(client.Requests[^1][^1], ChatRunner.FailureNotice).Should().BeTrue();
+        history.Should().ContainSingle(m => m.Role == ChatRole.User);
     }
 
     [Fact]
@@ -37,7 +38,7 @@ public sealed class ChatRunnerFailureTests
         await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(fail));
 
         // Assert
-        history.Should().NotContain(m => m.Text == ChatRunner.FailureNotice);
+        history.Should().NotContain(m => HasNotice(m, ChatRunner.FailureNotice));
     }
 
     [Fact]
@@ -56,7 +57,7 @@ public sealed class ChatRunnerFailureTests
         await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(tool));
 
         // Assert
-        history.Should().NotContain(m => m.Text == ChatRunner.FailureNotice);
+        history.Should().NotContain(m => HasNotice(m, ChatRunner.FailureNotice));
     }
 
     [Fact]
@@ -72,7 +73,7 @@ public sealed class ChatRunnerFailureTests
         await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(fail), inbox: inbox);
 
         // Assert
-        history.Should().NotContain(m => m.Text == ChatRunner.FailureNotice);
+        history.Should().NotContain(m => HasNotice(m, ChatRunner.FailureNotice));
         history[^2].Text.Should().Be("try this");
     }
 
@@ -86,6 +87,9 @@ public sealed class ChatRunnerFailureTests
 
         return client;
     }
+
+    private static bool HasNotice(ChatMessage message, string notice) =>
+        message.Contents.OfType<FunctionResultContent>().Any(r => r.Result is string text && text.EndsWith(ChatRunner.NoticePrefix + notice, StringComparison.Ordinal));
 
     private static List<ChatMessage> NewHistory() => [new(ChatRole.User, "hi")];
 

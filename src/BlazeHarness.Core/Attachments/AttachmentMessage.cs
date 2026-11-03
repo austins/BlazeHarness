@@ -10,6 +10,9 @@ namespace BlazeHarness.Core.Attachments;
 /// </summary>
 internal static class AttachmentMessage
 {
+    private const string ToolImagesStart = "<tool_response>\n";
+    private const string ToolImagesEnd = "\n</tool_response>";
+
     public static ChatMessage Build(string text, IReadOnlyList<SentAttachment> attachments, ChatAttachments? store)
     {
         if (attachments.Count == 0)
@@ -72,7 +75,7 @@ internal static class AttachmentMessage
             }
         }
 
-        return contents.Count == 0 ? null : new ChatMessage(ChatRole.User, contents);
+        return ToolImages(contents);
     }
 
     /// <summary>
@@ -102,7 +105,17 @@ internal static class AttachmentMessage
             }
         }
 
-        return contents.Count == 0 ? null : new ChatMessage(ChatRole.User, contents);
+        return ToolImages(contents);
+    }
+
+    /// <summary>
+    /// Get whether a message is one that <see cref="ForToolImages(IEnumerable{ValueTuple{string, string, DataContent}})"/> built.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <returns>True when the message only carries the pictures of tool calls.</returns>
+    public static bool IsToolImages(ChatMessage message)
+    {
+        return message.Role == ChatRole.User && message.Contents is [TextContent { Text: ToolImagesStart }, ..];
     }
 
     public static void OmitImages(List<ChatMessage> messages)
@@ -129,6 +142,13 @@ internal static class AttachmentMessage
         }
 
         return longest;
+    }
+
+    // The tags make chat templates such as Qwen's read the message as a tool result rather than a new request from the user,
+    // which would drop the thinking of the earlier steps and with it the server's prompt cache.
+    private static ChatMessage? ToolImages(List<AIContent> contents)
+    {
+        return contents.Count == 0 ? null : new ChatMessage(ChatRole.User, [new TextContent(ToolImagesStart), .. contents, new TextContent(ToolImagesEnd)]);
     }
 
     private static string ToolImageLabel(string name, string callId) => $"[Picture from {name} call {callId}:]";
