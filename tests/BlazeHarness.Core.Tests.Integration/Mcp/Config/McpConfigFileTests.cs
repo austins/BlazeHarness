@@ -191,6 +191,40 @@ public sealed class McpConfigFileTests : IDisposable
     }
 
     [Fact]
+    public async Task SetToolExcludedAsync_KnownServer_WritesTheListAndTheServerSeesIt()
+    {
+        // Arrange
+        await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, TimeProvider.System, watch: false);
+
+        // Act
+        var excluded = await sut.SetToolExcludedAsync("files", "read", excluded: true, TestContext.Current.CancellationToken);
+        var excludedNow = sut.Servers.Single().IsExcluded("read");
+        var offered = await sut.SetToolExcludedAsync("files", "read", excluded: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        excluded.Should().BeTrue();
+        excludedNow.Should().BeTrue();
+        offered.Should().BeTrue();
+        sut.Servers.Single().IsExcluded("read").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SetToolExcludedAsync_UnknownServer_ReturnsFalse()
+    {
+        // Arrange
+        await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, TimeProvider.System, watch: false);
+
+        // Act
+        var saved = await sut.SetToolExcludedAsync("other", "read", excluded: true, TestContext.Current.CancellationToken);
+
+        // Assert
+        saved.Should().BeFalse();
+        sut.Text.Should().Be(OneServer);
+    }
+
+    [Fact]
     public async Task ExternalEdit_IsPickedUpAndRaisesChanged()
     {
         // Arrange

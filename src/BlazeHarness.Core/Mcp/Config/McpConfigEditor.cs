@@ -53,6 +53,58 @@ public static class McpConfigEditor
     }
 
     /// <summary>
+    /// Keep one tool of a server from the model, or offer it again, by changing the server's <c>excludeTools</c> list.
+    /// </summary>
+    /// <remarks>
+    /// Only an entry that is exactly the tool's name is added or removed. Patterns written by hand stay as they are, so a tool that one of
+    /// them matches stays excluded.
+    /// </remarks>
+    /// <param name="json">The file's text.</param>
+    /// <param name="server">The name of the server.</param>
+    /// <param name="tool">The name of the tool as the server calls it.</param>
+    /// <param name="excluded">True to keep the tool from the model. Offering it again removes the field when the list becomes empty.</param>
+    /// <returns>The new text, or null when the text is not valid, has no such server, or has an <c>excludeTools</c> that is not a list.</returns>
+    public static string? SetToolExcluded(string json, string server, string tool, bool excluded)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        ArgumentNullException.ThrowIfNull(server);
+        ArgumentException.ThrowIfNullOrEmpty(tool);
+
+        if (ParseObject(json) is not { } top || ((top["mcpServers"] ?? top["servers"]) as JsonObject)?[server] is not JsonObject entry)
+        {
+            return null;
+        }
+
+        List<string> names = [];
+        if (entry["excludeTools"] is { } node)
+        {
+            if (node is not JsonArray array)
+            {
+                return null;
+            }
+
+            foreach (var item in array)
+            {
+                if (item is not JsonValue value || !value.TryGetValue<string>(out var name))
+                {
+                    return null;
+                }
+
+                names.Add(name);
+            }
+        }
+
+        names.RemoveAll(n => n == tool);
+        if (excluded)
+        {
+            names.Add(tool);
+        }
+
+        SetList(entry, "excludeTools", names);
+        return top.ToJsonString(Indented);
+    }
+
+    /// <summary>
     /// Add a server to the text of the file, or change the one with the same name.
     /// </summary>
     /// <remarks>

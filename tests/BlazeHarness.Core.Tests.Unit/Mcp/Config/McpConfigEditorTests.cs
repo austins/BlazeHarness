@@ -73,6 +73,65 @@ public sealed class McpConfigEditorTests
     }
 
     [Fact]
+    public void SetToolExcluded_True_AddsTheNameAndKeepsTheRest()
+    {
+        // Arrange
+        const string json = """{"note": "keep", "mcpServers": {"a": {"command": "x", "excludeTools": ["old_*"], "extra": 1}}}""";
+
+        // Act
+        var text = McpConfigEditor.SetToolExcluded(json, "a", "get_thread", excluded: true);
+
+        // Assert
+        var root = JsonNode.Parse(text!)!;
+        root["note"]!.GetValue<string>().Should().Be("keep");
+        root["mcpServers"]!["a"]!["extra"]!.GetValue<int>().Should().Be(1);
+        McpConfigParser.Parse(text!).Servers.Single().ExcludeTools.Should().Equal("old_*", "get_thread");
+    }
+
+    [Fact]
+    public void SetToolExcluded_AlreadyExcluded_DoesNotListItTwice()
+    {
+        // Arrange
+        const string json = """{"mcpServers": {"a": {"command": "x", "excludeTools": ["get_thread"]}}}""";
+
+        // Act
+        var text = McpConfigEditor.SetToolExcluded(json, "a", "get_thread", excluded: true);
+
+        // Assert
+        McpConfigParser.Parse(text!).Servers.Single().ExcludeTools.Should().Equal("get_thread");
+    }
+
+    [Fact]
+    public void SetToolExcluded_False_RemovesOnlyTheExactNameAndDropsAnEmptyList()
+    {
+        // Arrange
+        const string json = """{"mcpServers": {"a": {"command": "x", "excludeTools": ["get_thread", "old_*"]}, "b": {"command": "y", "excludeTools": ["get_thread"]}}}""";
+
+        // Act
+        var kept = McpConfigEditor.SetToolExcluded(json, "a", "get_thread", excluded: false);
+        var emptied = McpConfigEditor.SetToolExcluded(json, "b", "get_thread", excluded: false);
+
+        // Assert
+        McpConfigParser.Parse(kept!).Servers[0].ExcludeTools.Should().Equal("old_*");
+        JsonNode.Parse(emptied!)!["mcpServers"]!["b"]!.AsObject().ContainsKey("excludeTools").Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("{", "a")]
+    [InlineData("[]", "a")]
+    [InlineData("""{"mcpServers": {"a": {}}}""", "missing")]
+    [InlineData("""{"mcpServers": {"a": {"excludeTools": "get_thread"}}}""", "a")]
+    [InlineData("""{"mcpServers": {"a": {"excludeTools": [1]}}}""", "a")]
+    public void SetToolExcluded_NothingToChange_ReturnsNull(string json, string server)
+    {
+        // Act
+        var text = McpConfigEditor.SetToolExcluded(json, server, "get_thread", excluded: true);
+
+        // Assert
+        text.Should().BeNull();
+    }
+
+    [Fact]
     public void Upsert_NewServer_IsAddedAndTheRestIsKept()
     {
         // Arrange

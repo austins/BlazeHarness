@@ -56,6 +56,13 @@ public sealed record McpServerConfig(
     public bool IsExcluded(string tool) => McpToolPatterns.Matches(ExcludeTools, tool);
 
     /// <summary>
+    /// Check whether a tool is kept from the model by a pattern, or by <c>*</c>, rather than by an entry that is its own name.
+    /// </summary>
+    /// <param name="tool">The name of the tool as the server calls it.</param>
+    /// <returns>True when offering the tool again needs a hand edit of the file, because removing its own entry would not be enough.</returns>
+    public bool IsExcludedByPattern(string tool) => McpToolPatterns.Matches([.. ExcludeTools.Where(p => p != tool)], tool);
+
+    /// <summary>
     /// Check whether another configuration starts the same server, comparing lists and maps by content.
     /// </summary>
     /// <param name="other">The configuration to compare with.</param>

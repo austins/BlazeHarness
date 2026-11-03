@@ -46,6 +46,23 @@ public sealed class McpServerConfigTests
         expanded.Should().BeSameAs(server);
     }
 
+    [Theory]
+    [InlineData("own", false)]
+    [InlineData("old_x", true)]
+    [InlineData("pinned", true)]
+    [InlineData("other", false)]
+    public void IsExcludedByPattern_OnlyAWildcardCounts_NotTheToolsOwnName(string tool, bool expected)
+    {
+        // Arrange
+        var server = McpConfigParser.Parse("""{"mcpServers": {"s": {"command": "x", "excludeTools": ["own", "old_*", "pinned", "pin*"]}}}""").Servers.Single();
+
+        // Act
+        var result = server.IsExcludedByPattern(tool);
+
+        // Assert
+        result.Should().Be(expected);
+    }
+
     [Fact]
     public void TryExpand_DoesNotChangeTheOriginal()
     {

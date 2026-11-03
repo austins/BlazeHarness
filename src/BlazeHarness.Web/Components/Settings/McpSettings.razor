@@ -95,7 +95,11 @@
                                 var loaded = visible.Count(t => server.LoadsAlways(t.Name));
                                 <p class="hint">
                                     @ToolCountLabel(visible.Count):
-                                    @if (loaded == visible.Count)
+                                    @if (visible.Count == 0)
+                                    {
+                                        <text>@WebStrings.McpSettingsNoToolsOffered</text>
+                                    }
+                                    else if (loaded == visible.Count)
                                     {
                                         <text>@AlwaysLoadedHint(status.PromptCharacters)</text>
                                     }
@@ -105,11 +109,18 @@
                                     }
                                 </p>
                                 <details>
-                                    <summary><Icon Name="chevron-right" /> @ToolsSummary(visible.Count)</summary>
-                                    <ul class="stack">
-                                        @foreach (var tool in visible)
+                                    <summary><Icon Name="chevron-right" /> @ToolsSummary(visible.Count, status.Tools.Count)</summary>
+                                    <ul class="stack tool-list">
+                                        @foreach (var tool in status.Tools)
                                         {
-                                            <li><code class="mono">@tool.Name</code> <span class="muted">@FirstLine(tool.Description)</span></li>
+                                            var excluded = server.IsExcluded(tool.Name);
+                                            var byPattern = excluded && server.IsExcludedByPattern(tool.Name);
+                                            <li>
+                                                <label class="check tool-row" title="@(byPattern ? WebStrings.McpSettingsToolPatternTooltip : null)">
+                                                    <input type="checkbox" aria-label="@ToolOfferedLabel(tool.Name)" checked="@(!excluded)" disabled="@byPattern" @onchange="e => SetToolOfferedAsync(server.Name, tool.Name, (bool)e.Value!)" />
+                                                    <span><code class="mono">@tool.Name</code> <span class="muted">@FirstLine(tool.Description)</span></span>
+                                                </label>
+                                            </li>
                                         }
                                     </ul>
                                 </details>
@@ -246,10 +257,15 @@
                 ["formattedCount"] = count.ToString("N0", CultureInfo.CurrentCulture),
             });
 
-    private static string ToolsSummary(int count) =>
+    private static string ToolsSummary(int offered, int total) =>
         ResourceMessageFormatter.Web.Format(
             nameof(WebStrings.McpSettingsToolsSummary),
-            new Dictionary<string, object?> { ["count"] = count });
+            new Dictionary<string, object?> { ["offered"] = offered, ["total"] = total });
+
+    private static string ToolOfferedLabel(string tool) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.McpSettingsToolOfferedLabel),
+            new Dictionary<string, object?> { ["tool"] = tool });
 
     private static string AlwaysLoadedHint(int characters) =>
         ResourceMessageFormatter.Web.Format(
@@ -303,6 +319,16 @@
             Say(ResourceMessageFormatter.Web.Format(
                 nameof(WebStrings.McpSettingsChangeFailed),
                 new Dictionary<string, object?> { ["name"] = name }), error: true);
+        }
+    }
+
+    private async Task SetToolOfferedAsync(string server, string tool, bool offered)
+    {
+        if (!await File.SetToolExcludedAsync(server, tool, !offered))
+        {
+            Say(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.McpSettingsChangeFailed),
+                new Dictionary<string, object?> { ["name"] = server }), error: true);
         }
     }
 

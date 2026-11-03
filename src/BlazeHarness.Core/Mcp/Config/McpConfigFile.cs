@@ -138,6 +138,25 @@ public sealed partial class McpConfigFile : IDisposable
         return (await SaveAsync(edited, cancellationToken)).Errors.Count == 0;
     }
 
+    /// <summary>
+    /// Keep one tool of a server from the model, or offer it again, by changing the server's <c>excludeTools</c> field.
+    /// </summary>
+    /// <param name="server">The server name.</param>
+    /// <param name="tool">The name of the tool as the server calls it.</param>
+    /// <param name="excluded">True to keep the tool from the model.</param>
+    /// <param name="cancellationToken">A token to cancel the write.</param>
+    /// <returns>True when the file was changed or already had that state; false when the server or the file could not be edited.</returns>
+    public async Task<bool> SetToolExcludedAsync(string server, string tool, bool excluded, CancellationToken cancellationToken = default)
+    {
+        var edited = McpConfigEditor.SetToolExcluded(Text, server, tool, excluded);
+        if (edited is null)
+        {
+            return false;
+        }
+
+        return (await SaveAsync(edited, cancellationToken)).Errors.Count == 0;
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {
