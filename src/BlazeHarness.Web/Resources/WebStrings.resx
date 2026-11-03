@@ -760,6 +760,10 @@
     <value>Remove folder</value>
     <comment>Folder context menu item that starts removing the folder from the sidebar; a confirmation dialog follows.</comment>
   </data>
+  <data name="SidebarOpenFolderMenuItem" xml:space="preserve">
+    <value>Open folder</value>
+    <comment>Folder context menu item that shows the folder in the operating system's file manager.</comment>
+  </data>
   <data name="SidebarFindFolderMenuItem" xml:space="preserve">
     <value>Find folder</value>
     <comment>Folder context menu item that opens the dialog for locating a moved or deleted folder.</comment>

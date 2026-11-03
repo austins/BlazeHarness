@@ -1,3 +1,4 @@
+@using System.Diagnostics
 @using BlazeHarness.Core.Chats
 @using BlazeHarness.Web.Services
 @implements IDisposable
@@ -171,6 +172,8 @@
         {
             <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
                     @onclick="() => Navigation.NavigateTo(NewChatHref(target))"><Icon Name="plus" />@WebStrings.SidebarNewChatMenuItem</button>
+            <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                    @onclick="() => OpenFolder(target)"><Icon Name="folder" />@WebStrings.SidebarOpenFolderMenuItem</button>
         }
         else
         {
@@ -380,6 +383,18 @@
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Toasts.Show(WebStrings.SidebarRelocateWriteFailed, ToastKind.Error);
+        }
+    }
+
+    private void OpenFolder(FolderInfo folder)
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo(folder.Path) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            Toasts.Show(WebStrings.SidebarOpenFolderFailed, ToastKind.Error);
         }
     }
 

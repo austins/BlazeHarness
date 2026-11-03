@@ -1,5 +1,24 @@
 // Small helpers for UI primitives that need the DOM.
 const openers = [];
+let rightButtonDown = false;
+let pendingContextMenu = null;
+
+document.addEventListener("pointerdown", (event) => {
+    rightButtonDown = (event.buttons & 2) !== 0;
+}, true);
+document.addEventListener("pointerup", (event) => {
+    rightButtonDown = (event.buttons & 2) !== 0;
+    if (!rightButtonDown && pendingContextMenu) {
+        const show = pendingContextMenu;
+        pendingContextMenu = null;
+        // Firefox light-dismisses popovers on right-button release; open after that event finishes.
+        requestAnimationFrame(show);
+    }
+}, true);
+window.addEventListener("blur", () => {
+    rightButtonDown = false;
+    pendingContextMenu = null;
+});
 
 window.bhUi = {
     // Keep in sync with the @media (max-width: 48rem) breakpoint in app.css.
@@ -37,20 +56,28 @@ window.bhUi = {
     },
     // Opens a popover menu at the pointer, then nudges it back inside the viewport.
     showContextMenu: (menu, x, y) => {
-        if (!menu) {
-            return;
-        }
+        const show = () => {
+            if (!menu?.isConnected) {
+                return;
+            }
 
-        if (menu.matches(":popover-open")) {
-            menu.hidePopover();
-        }
+            if (menu.matches(":popover-open")) {
+                menu.hidePopover();
+            }
 
-        menu.style.left = `${x}px`;
-        menu.style.top = `${y}px`;
-        menu.showPopover();
-        const box = menu.getBoundingClientRect();
-        menu.style.left = `${Math.max(0, Math.min(x, window.innerWidth - box.width))}px`;
-        menu.style.top = `${Math.max(0, Math.min(y, window.innerHeight - box.height))}px`;
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+            menu.showPopover();
+            const box = menu.getBoundingClientRect();
+            menu.style.left = `${Math.max(0, Math.min(x, window.innerWidth - box.width))}px`;
+            menu.style.top = `${Math.max(0, Math.min(y, window.innerHeight - box.height))}px`;
+        };
+
+        if (rightButtonDown) {
+            pendingContextMenu = show;
+        } else {
+            show();
+        }
     },
     restoreFocus: () => {
         const opener = openers.pop();
