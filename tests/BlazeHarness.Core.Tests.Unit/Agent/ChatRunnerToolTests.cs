@@ -37,6 +37,28 @@ public sealed class ChatRunnerToolTests
     }
 
     [Fact]
+    public async Task RunAsync_CallReturnsAnImage_SendsItInAUserMessageAfterTheResults()
+    {
+        // Arrange
+        var image = new DataContent(new byte[] { 1, 2, 3 }, "image/png");
+        var shot = new FakeTool("shot", isReadOnly: true, (_, _) => Task.FromResult(ToolResult.Ok("saved") with { Image = image }));
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "shot")])
+            .Enqueue([ScriptedChatClient.Text("Looks fine")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(shot));
+
+        // Assert
+        events.OfType<ToolCallFinished>().Single().Image.Should().BeSameAs(image);
+        history.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.Tool, ChatRole.User, ChatRole.Assistant);
+        history[3].Contents.Should().HaveCount(2);
+        history[3].Text.Should().Be("[Picture from shot call c1:]");
+        history[3].Contents[1].Should().BeSameAs(image);
+        client.Requests[1].Should().Contain(history[3]);
+    }
+
+    [Fact]
     public async Task RunAsync_TwoReadOnlyCalls_RunThemAtTheSameTime()
     {
         // Arrange

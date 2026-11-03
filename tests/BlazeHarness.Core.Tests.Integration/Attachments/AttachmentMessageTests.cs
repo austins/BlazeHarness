@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.AI;
@@ -121,5 +122,29 @@ public sealed class AttachmentMessageTests : IDisposable
         messages[0].Text.Should().Be("sys");
         messages[1].Contents.OfType<DataContent>().Should().BeEmpty();
         messages[1].Text.Should().Contain("look").And.Contain("this model can't view images");
+    }
+
+    [Fact]
+    public void ForToolImages_NoCallHasAnImage_ReturnsNull()
+    {
+        // Act
+        var message = AttachmentMessage.ForToolImages([("read", "c1", null)]);
+
+        // Assert
+        message.Should().BeNull();
+    }
+
+    [Fact]
+    public void ForToolImages_PictureNoLongerSaved_SaysSo()
+    {
+        // Arrange
+        var call = new ToolCallEntry("c1", "browser_screenshot", "{}", "x") { Image = new AttachmentInfo("0123abcd", "browser_screenshot.png", "image/png", 3, 0) };
+
+        // Act
+        var message = AttachmentMessage.ForToolImages([call], _store);
+
+        // Assert
+        message!.Text.Should().Be("[The picture from browser_screenshot call c1 is no longer available.]");
+        message.Contents.OfType<DataContent>().Should().BeEmpty();
     }
 }

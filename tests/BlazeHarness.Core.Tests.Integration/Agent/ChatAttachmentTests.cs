@@ -3,6 +3,7 @@ using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Tests.Integration.Attachments;
+using BlazeHarness.Core.Tools;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Tests.Shared.Agent;
 using BlazeHarness.Tests.Shared.Chats;
@@ -94,6 +95,48 @@ public sealed class ChatAttachmentTests : IDisposable
         sent.Contents.OfType<DataContent>().Should().BeEmpty();
         sent.Text.Should().Contain("this model can't view images");
         sut.History[0].Contents.OfType<DataContent>().Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task SendAsync_ToolReturnsAnImage_KeepsACopyThatRestoreSendsAgain()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "shot")])
+            .Enqueue([ScriptedChatClient.Text("looks right")]);
+        using var first = Create(client, ImageTool());
+        await first.SendAsync("check", TestTargets.Create(input: InputTypes.Text | InputTypes.Image));
+        using var restored = Create(client);
+
+        // Act
+        restored.Restore(_log.Events);
+
+        // Assert
+        var kept = first.Entries[1].ToolCalls.Single().Image;
+        kept.Should().NotBeNull();
+        _attachments.Find(kept.Id).Should().NotBeNull();
+        _log.Events.OfType<ToolResultEvent>().Single().Image.Should().Be(kept);
+        client.Requests[1][^1].Contents.OfType<DataContent>().Single().Data.ToArray().Should().Equal(PngBytes);
+        var picture = restored.History[3];
+        picture.Text.Should().Be(first.History[3].Text);
+        picture.Contents.OfType<DataContent>().Single().Data.ToArray().Should().Equal(PngBytes);
+    }
+
+    [Fact]
+    public async Task SendAsync_ToolReturnsAnImageForATextOnlyModel_SendsANoteInsteadAndKeepsTheHistoryIntact()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "shot")])
+            .Enqueue([ScriptedChatClient.Text("ok")]);
+        using var sut = Create(client, ImageTool());
+
+        // Act
+        await sut.SendAsync("check", TestTargets.Create());
+
+        // Assert
+        var sent = client.Requests[1][^1];
+        sent.Contents.OfType<DataContent>().Should().BeEmpty();
+        sent.Text.Should().Contain("this model can't view images");
+        sut.History[3].Contents.OfType<DataContent>().Should().ContainSingle();
     }
 
     [Fact]
@@ -232,11 +275,26 @@ public sealed class ChatAttachmentTests : IDisposable
 
     public static bool IsWindows => OperatingSystem.IsWindows();
 
-    private Chat Create(ScriptedChatClient client)
+    private static ITool ImageTool()
+    {
+        var tool = Substitute.For<ITool>();
+        tool.Name.Returns("shot");
+        tool.Description.Returns("Takes a picture.");
+        tool.InputSchema.Returns("""{"type":"object","properties":{}}""");
+        tool.IsReadOnly.Returns(true);
+        tool.PathArguments.Returns([]);
+        tool.Timeout.Returns(TestTimeouts.Default);
+        tool.Summarize(default).ReturnsForAnyArgs("shot");
+        tool.ExecuteAsync(default!, default!, default).ReturnsForAnyArgs(ToolResult.Ok("saved") with { Image = new DataContent(PngBytes, "image/png") });
+        return tool;
+    }
+
+    private Chat Create(ScriptedChatClient client, params ITool[] tools)
     {
         return new Chat((_, _) => Task.FromResult<IChatClient>(client), TimeProvider.System, _log)
         {
             Attachments = _attachments,
+            Tools = tools.Length == 0 ? null : new ToolSet(tools, new ToolContext(_temp.Root), TimeProvider.System),
         };
     }
 }

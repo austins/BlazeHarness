@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Agent.Questions;
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Permissions;
@@ -576,6 +577,11 @@ internal static class ChatRunner
             }
 
             history.Add(new ChatMessage(ChatRole.Tool, answers));
+            if (AttachmentMessage.ForToolImages([.. calls.Select((c, i) => (c.Name, c.CallId, results[i]?.Image))]) is { } pictures)
+            {
+                history.Add(pictures);
+            }
+
             outcome.AllFailed = statuses.All(status => status == ToolCallStatus.Failed);
         }
     }
@@ -632,7 +638,7 @@ internal static class ChatRunner
 
     private static ToolCallFinished Finished(PlannedCall call, ToolResult result, ToolCallStatus status)
     {
-        return new ToolCallFinished(call.Call.CallId, call.Call.Name, result.Output, status);
+        return new ToolCallFinished(call.Call.CallId, call.Call.Name, result.Output, status, result.Image);
     }
 
     private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision, PermissionEngine permissions)

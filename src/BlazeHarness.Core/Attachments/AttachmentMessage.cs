@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Agent;
 using Microsoft.Extensions.AI;
 using System.Globalization;
 using System.Text;
@@ -54,6 +55,56 @@ internal static class AttachmentMessage
         return new ChatMessage(ChatRole.User, [new TextContent(string.Join("\n\n", parts)), .. images]);
     }
 
+    /// <summary>
+    /// Build the message that shows the model the pictures tool calls produced, sent after the results of the calls.
+    /// </summary>
+    /// <param name="calls">The calls of one response, with the picture each produced or null.</param>
+    /// <returns>The message, or null when no call produced a picture.</returns>
+    public static ChatMessage? ForToolImages(IEnumerable<(string Name, string CallId, DataContent? Image)> calls)
+    {
+        List<AIContent> contents = [];
+        foreach (var (name, callId, image) in calls)
+        {
+            if (image is not null)
+            {
+                contents.Add(new TextContent(ToolImageLabel(name, callId)));
+                contents.Add(image);
+            }
+        }
+
+        return contents.Count == 0 ? null : new ChatMessage(ChatRole.User, contents);
+    }
+
+    /// <summary>
+    /// Build the same message as <see cref="ForToolImages(IEnumerable{ValueTuple{string, string, DataContent}})"/> from saved calls, reading the pictures from the chat's attachments.
+    /// </summary>
+    /// <param name="calls">The calls of one response.</param>
+    /// <param name="store">The chat's attachments, or null when it has none.</param>
+    /// <returns>The message, or null when no call produced a picture.</returns>
+    public static ChatMessage? ForToolImages(IReadOnlyList<ToolCallEntry> calls, ChatAttachments? store)
+    {
+        List<AIContent> contents = [];
+        foreach (var call in calls)
+        {
+            if (call.Image is not { } info)
+            {
+                continue;
+            }
+
+            if (store?.Find(info.Id) is { } file)
+            {
+                contents.Add(new TextContent(ToolImageLabel(call.Name, call.CallId)));
+                contents.Add(new DataContent(File.ReadAllBytes(file.Path), info.MediaType));
+            }
+            else
+            {
+                contents.Add(new TextContent($"[The picture from {call.Name} call {call.CallId} is no longer available.]"));
+            }
+        }
+
+        return contents.Count == 0 ? null : new ChatMessage(ChatRole.User, contents);
+    }
+
     public static void OmitImages(List<ChatMessage> messages)
     {
         for (var i = 0; i < messages.Count; i++)
@@ -79,6 +130,8 @@ internal static class AttachmentMessage
 
         return longest;
     }
+
+    private static string ToolImageLabel(string name, string callId) => $"[Picture from {name} call {callId}:]";
 
     private static bool IsImage(AIContent content) => content is DataContent { MediaType: var type } && type.StartsWith("image/", StringComparison.Ordinal);
 

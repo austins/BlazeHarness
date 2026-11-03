@@ -1,15 +1,17 @@
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Web.Browser;
+using Microsoft.Extensions.AI;
 using System.Text.Json;
 
 namespace BlazeHarness.Core.Tools.Web;
 
 /// <summary>
-/// Saves a picture of the page the browser has open into the working folder and shows it to the user in the chat.
+/// Saves a picture of the page the browser has open into the working folder and shows it to the user in the chat,
+/// and to the model when it accepts images.
 /// </summary>
 /// <remarks>
-/// The model does not see the picture; it reads the page through <c>browser_snapshot</c>.
+/// A picture larger than <see cref="MaxViewableBytes"/> is only saved; the model reads the page through <c>browser_snapshot</c>.
 /// </remarks>
 public sealed class BrowserScreenshotTool : ITool
 {
@@ -22,6 +24,11 @@ public sealed class BrowserScreenshotTool : ITool
     /// The name of the argument that holds the path of the picture.
     /// </summary>
     public const string PathArgument = "path";
+
+    /// <summary>
+    /// The largest picture, in bytes, that is shown to the model. Some providers refuse larger images.
+    /// </summary>
+    public const int MaxViewableBytes = 5 * 1024 * 1024;
 
     private readonly IBrowserEngine _engine;
     private readonly string _chatId;
@@ -38,7 +45,7 @@ public sealed class BrowserScreenshotTool : ITool
     /// <inheritdoc />
     public string Description =>
         "Save a PNG picture of the page browser_navigate opened to a file in the working folder; it also appears in the chat for the user. " +
-        "You can't see the picture yourself: read the page with browser_snapshot.";
+        "If you can view images, the picture follows the result so you can check the layout; read text and find elements with browser_snapshot.";
 
     /// <inheritdoc />
     public string InputSchema => """
@@ -90,7 +97,10 @@ public sealed class BrowserScreenshotTool : ITool
         {
             var png = await _engine.ScreenshotAsync(_chatId, arguments.OptionalBool("full_page"), cancellationToken);
             AtomicFile.Write(full, png);
-            return ToolResult.Ok($"Saved {context.Relative(full)} ({FileSize.Format(png.Length)}) and showed it to the user.");
+            var saved = $"Saved {context.Relative(full)} ({FileSize.Format(png.Length)}) and showed it to the user.";
+            return png.Length > MaxViewableBytes
+                ? ToolResult.Ok(saved + " It is too large to show you; capture the window rather than the full page to see it.")
+                : ToolResult.Ok(saved) with { Image = new DataContent(png, "image/png") };
         }
         catch (BrowserException ex)
         {

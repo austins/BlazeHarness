@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent.Questions;
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Tools;
 
 namespace BlazeHarness.Core.Agent;
@@ -60,6 +61,11 @@ public sealed class ToolCallEntry
     /// Gets or sets the text the call returned, or the reason it did not run.
     /// </summary>
     public string Output { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the copy, in the chat's attachments, of a picture the call produced, or null.
+    /// </summary>
+    public AttachmentInfo? Image { get; set; }
 
     /// <summary>
     /// Gets or sets what the user is asked to allow while <see cref="Status"/> is <see cref="ToolCallStatus.AwaitingApproval"/>. It is not saved.

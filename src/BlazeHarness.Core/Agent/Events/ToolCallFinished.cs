@@ -1,3 +1,5 @@
+using Microsoft.Extensions.AI;
+
 namespace BlazeHarness.Core.Agent.Events;
 
 /// <summary>
@@ -7,4 +9,5 @@ namespace BlazeHarness.Core.Agent.Events;
 /// <param name="Name">The name of the tool that was called.</param>
 /// <param name="Output">The text of the result, or the reason the call did not run.</param>
 /// <param name="Status">How the call ended.</param>
-internal sealed record ToolCallFinished(string CallId, string Name, string Output, ToolCallStatus Status) : AgentEvent;
+/// <param name="Image">A picture the call produced, or null.</param>
+internal sealed record ToolCallFinished(string CallId, string Name, string Output, ToolCallStatus Status, DataContent? Image = null) : AgentEvent;

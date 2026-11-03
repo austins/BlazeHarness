@@ -748,6 +748,10 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         if (entry.ToolCalls.Count > 0)
         {
             history.Add(new ChatMessage(ChatRole.Tool, [.. entry.ToolCalls.Select(c => new FunctionResultContent(c.CallId, ToolCallEntry.ForModel(c.Status, c.Output)))]));
+            if (AttachmentMessage.ForToolImages(entry.ToolCalls, attachments) is { } pictures)
+            {
+                history.Add(pictures);
+            }
         }
     }
 

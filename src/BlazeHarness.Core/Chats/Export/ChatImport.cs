@@ -80,7 +80,7 @@ internal static class ChatImport
         UserMessageEvent user => user with { Text = user.Text ?? string.Empty, Attachments = null },
         AssistantDeltaEvent delta => delta with { Text = delta.Text ?? string.Empty, Reasoning = delta.Reasoning ?? string.Empty },
         ToolCallEvent call => call with { CallId = call.CallId ?? string.Empty, Name = call.Name ?? string.Empty, ArgumentsJson = call.ArgumentsJson ?? "{}", Summary = call.Summary ?? string.Empty },
-        ToolResultEvent result => result with { CallId = result.CallId ?? string.Empty, Output = result.Output ?? string.Empty, OutputFile = null },
+        ToolResultEvent result => result with { CallId = result.CallId ?? string.Empty, Output = result.Output ?? string.Empty, OutputFile = null, Image = null },
         CompactionEvent compaction => compaction with { Summary = compaction.Summary ?? string.Empty },
         _ => e,
     };

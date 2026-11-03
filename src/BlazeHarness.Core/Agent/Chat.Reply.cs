@@ -42,15 +42,10 @@ public sealed partial class Chat
             before++;
         }
 
-        if (!AttachmentPolicy.AcceptsImages(target.Model))
-        {
-            AttachmentMessage.OmitImages(working);
-        }
-
         var reply = new Reply(entry, target, working, before, _time.GetTimestamp());
         try
         {
-            using var client = await _clientFactory(target, cancellation);
+            using var client = new ImageOmittingChatClient(await _clientFactory(target, cancellation), AttachmentPolicy.AcceptsImages(target.Model));
             var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level);
             var tools = await TurnToolsAsync(setup.Tools, cancellation);
             var toolTokens = tools is null ? 0 : TokenEstimate.OfTools(tools.Tools);
@@ -183,7 +178,7 @@ public sealed partial class Chat
                 SetStatus(entry, running.CallId, ToolCallStatus.Running);
                 break;
             case ToolCallFinished finished:
-                await FinishCallAsync(entry, finished.CallId, finished.Status, finished.Output);
+                await FinishCallAsync(entry, finished);
                 break;
             default:
                 break;
@@ -198,16 +193,37 @@ public sealed partial class Chat
         }
     }
 
-    private async Task FinishCallAsync(ChatEntry entry, string callId, ToolCallStatus status, string output)
+    private async Task FinishCallAsync(ChatEntry entry, ToolCallFinished finished)
     {
-        if (entry.ToolCalls.FirstOrDefault(c => c.CallId == callId) is not { } call)
+        if (entry.ToolCalls.FirstOrDefault(c => c.CallId == finished.CallId) is not { } call)
         {
             return;
         }
 
-        call.Output = output;
-        call.Status = status;
-        await SaveAsync([new ToolResultEvent(_time.GetUtcNow(), entry.Id, callId, status, output)]);
+        call.Image = finished.Image is { } image ? await KeepImageAsync(finished.Name, image) : null;
+        call.Output = finished.Output;
+        call.Status = finished.Status;
+        await SaveAsync([new ToolResultEvent(_time.GetUtcNow(), entry.Id, finished.CallId, finished.Status, finished.Output, Image: call.Image)]);
+    }
+
+    // The copy lets a resumed chat show the model the same picture, even after the tool's own file changes.
+    private async Task<AttachmentInfo?> KeepImageAsync(string toolName, DataContent image)
+    {
+        if (Attachments is not { } store)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var content = new MemoryStream(image.Data.ToArray(), writable: false);
+            return await store.SaveAsync(toolName + ".png", content);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or AttachmentException)
+        {
+            LogImageNotKept(ex);
+            return null;
+        }
     }
 
     private async Task FlushIfDueAsync(Reply reply)
@@ -335,6 +351,9 @@ public sealed partial class Chat
             LogSaveFailed(ex);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not keep a picture a tool call produced; a resumed chat won't show it to the model.")]
+    private partial void LogImageNotKept(Exception ex);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "A reply failed.")]
     private partial void LogReplyFailed(Exception ex);

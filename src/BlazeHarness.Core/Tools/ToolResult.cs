@@ -1,3 +1,5 @@
+using Microsoft.Extensions.AI;
+
 namespace BlazeHarness.Core.Tools;
 
 /// <summary>
@@ -7,6 +9,11 @@ namespace BlazeHarness.Core.Tools;
 /// <param name="IsError">Whether the call failed, so the model should adjust rather than rely on the output.</param>
 public sealed record ToolResult(string Output, bool IsError = false)
 {
+    /// <summary>
+    /// Gets a picture the call produced, or null. The chat keeps a copy and shows it to the model after the results, when the model accepts images.
+    /// </summary>
+    public DataContent? Image { get; init; }
+
     /// <summary>
     /// Create a successful result.
     /// </summary>
