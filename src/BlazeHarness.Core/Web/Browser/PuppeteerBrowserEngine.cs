@@ -342,7 +342,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         var code = message[(start + "net::".Length)..].Split(' ', 2)[0];
         return code == "ERR_BLOCKED_BY_CLIENT"
             ? "The page led somewhere the browser may not open. Only localhost pages that were opened with browser_navigate are loaded."
-            : $"Could not open {origin} ({code}). Check that the service is running and listening on that port.";
+            : $"Could not open {origin} ({code}). Check that the service is running and listening on that port. A server a sandboxed shell command starts is only reachable here when it was started with the shell tool's background option.";
     }
 
     private static async Task SettleAsync(IPage page, CancellationToken cancellationToken)

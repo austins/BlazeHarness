@@ -108,7 +108,7 @@ internal sealed class ShellJobsTool : ITool
         var now = _time.GetUtcNow();
         return string.Join('\n', jobs.Select(job => string.Create(
             CultureInfo.InvariantCulture,
-            $"{job.Id}  {Status(job)}  started {(now - job.StartedAt).TotalSeconds:0}s ago  {FirstLine(job.Command)}")));
+            $"{job.Id}  {Status(job)}  started {(now - job.StartedAt).TotalSeconds:0}s ago{Ports(job)}  {FirstLine(job.Command)}")));
     }
 
     private async Task<ToolResult> OutputAsync(BackgroundShell job, int wait, CancellationToken cancellationToken)
@@ -158,6 +158,12 @@ internal sealed class ShellJobsTool : ITool
             BackgroundShellStatus.TimedOut => "stopped at its time limit",
             _ => string.Create(CultureInfo.InvariantCulture, $"exited with code {job.ExitCode}"),
         };
+    }
+
+    private string Ports(BackgroundShellInfo info)
+    {
+        var ports = info.Status == BackgroundShellStatus.Running && _background.Find(info.Id) is { } job ? job.Ports : [];
+        return ports.Count == 0 ? string.Empty : "  ports " + ShellTool.DescribePorts(ports);
     }
 
     private static string FirstLine(string command)

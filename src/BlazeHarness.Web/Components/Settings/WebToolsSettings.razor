@@ -1,7 +1,9 @@
 @using BlazeHarness.Core.Config
+@using BlazeHarness.Core.Sandbox
 @using BlazeHarness.Core.Web
 @inject JsonFileStore<AppConfig> Config
 @inject WebServices Web
+@inject IShellSandbox Sandbox
 @inject ToastService Toasts
 
 <div class="page">
@@ -23,6 +25,10 @@
             <span>@WebStrings.WebToolsSettingsBrowserLabel</span>
         </label>
         <p class="hint">@WebStrings.WebToolsSettingsBrowserHint</p>
+        @if (!Sandbox.Status.ForwardsPorts)
+        {
+            <p class="hint">@(OperatingSystem.IsLinux() ? WebStrings.WebToolsSettingsBrowserNeedsForwarding : WebStrings.WebToolsSettingsBrowserNeedsUnrestricted)</p>
+        }
         @if (_browserInstalled is { } installed)
         {
             <div class="row">

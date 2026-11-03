@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Sandbox.Ports;
 using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Core.Tools.Shell;
 using Microsoft.Mxc.Sdk.V1;
@@ -11,7 +12,8 @@ namespace BlazeHarness.Core.Sandbox;
 /// </summary>
 /// <remarks>
 /// The policy is set explicitly on every command and doesn't depend on MXC defaults (see <see cref="SandboxPolicy"/>).
-/// The network is not restricted. Whether the backend works is found out once, by running a trivial command.
+/// The network is not restricted, but each command has its own on Linux; <see cref="SandboxPorts"/> forwards the ports of
+/// background commands. Whether the backend works is found out once, by running a trivial command.
 /// </remarks>
 public sealed class MxcShellSandbox : IShellSandbox
 {
@@ -124,7 +126,7 @@ public sealed class MxcShellSandbox : IShellSandbox
             // Running isn't enough: the sandbox is only worth trusting if a write outside the working folder didn't land.
             return File.Exists(outside)
                 ? SandboxStatus.Unavailable($"The {BackendName()} sandbox did not keep a command out of a folder it should not change. Commands can only run with the Unrestricted access level.")
-                : new SandboxStatus(true, BackendName(), $"Commands run in a {BackendName()} sandbox that can only change the working folder. The network is not restricted.");
+                : Available();
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -136,6 +138,18 @@ public sealed class MxcShellSandbox : IShellSandbox
             TryDelete(folder);
             TryDeleteFile(outside);
         }
+    }
+
+    private static SandboxStatus Available()
+    {
+        var detail = $"Commands run in a {BackendName()} sandbox that can only change the working folder. The network is not restricted.";
+        if (ForwardingTools.Find() is not null)
+        {
+            return new SandboxStatus(true, BackendName(), detail + " A server a background command starts is forwarded to localhost, where the browser tools and later commands reach it.", ForwardsPorts: true);
+        }
+
+        var missing = OperatingSystem.IsLinux() ? " Install socat and nsenter (util-linux) to have them forwarded." : string.Empty;
+        return new SandboxStatus(true, BackendName(), detail + $" A server a command starts can only be reached from inside that command, so the browser tools need the Unrestricted access level.{missing}");
     }
 
     /// <summary>

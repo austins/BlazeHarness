@@ -66,7 +66,7 @@ public sealed record ShellInfo(string Name, string Executable, bool IsPowerShell
         return IsPowerShell ? ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command] : ["-c", command];
     }
 
-    private static string? FindOnPath(string fileName, string? pathVariable)
+    internal static string? FindOnPath(string fileName, string? pathVariable)
     {
         return (pathVariable ?? string.Empty)
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)

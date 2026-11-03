@@ -7,6 +7,7 @@ using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Sandbox.Ports;
 using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Core.Tools.Files;
@@ -788,6 +789,13 @@ public sealed partial class ChatService : IDisposable
         chat.Permissions.Sensitive = () => _defaults?.Sensitive(id) ?? SensitivePaths.Default(_store.Paths, id);
         chat.Permissions.ReadableFolders = () => [_store.AttachmentsDirectory(id)];
         chat.Permissions.Sandbox = await Task.Run(() => _sandbox.Status, CancellationToken.None);
+        if (chat.Permissions.Sandbox.ForwardsPorts && ForwardingTools.Find() is { } forwarding)
+        {
+#pragma warning disable CA2000, IDISP003 // The chat's background commands own the forwarding and dispose it with the chat; a new chat has none yet.
+            chat.BackgroundShells.Ports = new SandboxPorts(forwarding, _time, _loggers.CreateLogger<SandboxPorts>());
+#pragma warning restore CA2000, IDISP003
+        }
+
         if (_defaults is { } defaults)
         {
             chat.Permissions.BypassAllowed = () => defaults.AllowBypass;
@@ -800,7 +808,9 @@ public sealed partial class ChatService : IDisposable
         {
             chat.ExtraTools = async cancellation =>
             {
-                List<ITool> tools = [.. web?.ToolsFor(id) ?? []];
+                // A sandboxed command's server is only reachable from the browser when its ports are forwarded.
+                var browser = chat.Permissions.Settings.Access == AccessLevel.Unrestricted || chat.Permissions.Sandbox.ForwardsPorts;
+                List<ITool> tools = [.. web?.ToolsFor(id, browser) ?? []];
                 if (mcp is not null)
                 {
                     var overrides = _store.Find(id)?.McpServers;

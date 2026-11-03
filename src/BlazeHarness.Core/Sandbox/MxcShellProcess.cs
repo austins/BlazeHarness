@@ -18,6 +18,11 @@ internal sealed class MxcShellProcess : IShellProcess
 
     public Stream Error => _process.StandardError ?? Stream.Null;
 
+    /// <summary>
+    /// Gets the id of the process the container was started as, which is outside the sandbox's network.
+    /// </summary>
+    internal int HostProcessId => (int)_process.Id;
+
     public async Task<int> WaitAsync(CancellationToken cancellationToken)
     {
         var result = await _process.WaitAsync(cancellationToken);

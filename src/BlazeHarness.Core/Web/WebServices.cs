@@ -155,8 +155,9 @@ public sealed class WebServices : IDisposable
     /// Get the web tools a chat can use right now.
     /// </summary>
     /// <param name="chatId">The chat id, which scopes the page cache.</param>
+    /// <param name="browserAllowed">Whether the chat may have the browser tools, which it can't use for its own servers when they run in a sandbox whose ports aren't forwarded.</param>
     /// <returns>The tools that are turned on in the settings.</returns>
-    internal IReadOnlyList<ITool> ToolsFor(string chatId)
+    internal IReadOnlyList<ITool> ToolsFor(string chatId, bool browserAllowed = true)
     {
         var settings = _settings();
         List<ITool> tools = [];
@@ -170,7 +171,7 @@ public sealed class WebServices : IDisposable
             tools.Add(new WebFetchTool(_reader, chatId));
         }
 
-        if (settings.BrowserEnabled)
+        if (settings.BrowserEnabled && browserAllowed)
         {
             tools.Add(new BrowserNavigateTool(_browser, chatId, _appPort));
             tools.Add(new BrowserSnapshotTool(_browser, chatId));

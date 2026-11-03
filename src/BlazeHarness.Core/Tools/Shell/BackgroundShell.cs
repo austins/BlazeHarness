@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Sandbox.Ports;
 using System.Globalization;
 
 namespace BlazeHarness.Core.Tools.Shell;
@@ -10,11 +11,12 @@ internal sealed class BackgroundShell
 {
     private readonly Lock _gate = new();
     private readonly IShellProcess _process;
+    private readonly SandboxMember? _ports;
     private BackgroundShellStatus _reason = BackgroundShellStatus.Exited;
     private bool _finished;
     private int _exitCode;
 
-    public BackgroundShell(string id, string command, TimeSpan timeLimit, DateTimeOffset startedAt, IShellProcess process, ShellOutput output, Task readers, TimeProvider time, Action ended)
+    public BackgroundShell(string id, string command, TimeSpan timeLimit, DateTimeOffset startedAt, IShellProcess process, SandboxMember? ports, ShellOutput output, Task readers, TimeProvider time, Action ended)
     {
         Id = id;
         Command = command;
@@ -22,6 +24,7 @@ internal sealed class BackgroundShell
         StartedAt = startedAt;
         Output = output;
         _process = process;
+        _ports = ports;
         Exit = RunAsync(readers, timeLimit, time);
 
         // After the task is complete, so a listener that reads the status sees the end.
@@ -42,6 +45,11 @@ internal sealed class BackgroundShell
     /// Gets a task that completes once the command has ended and its output was read.
     /// </summary>
     public Task Exit { get; }
+
+    /// <summary>
+    /// Gets the command's ports that are forwarded out of its sandbox.
+    /// </summary>
+    public IReadOnlyList<ForwardedPort> Ports => _ports?.Ports ?? [];
 
     public int ExitCode => Volatile.Read(ref _exitCode);
 
@@ -106,6 +114,7 @@ internal sealed class BackgroundShell
                 _finished = true;
 #pragma warning disable IDISP007 // This object owns the process it is given.
                 _process.Dispose();
+                _ports?.Dispose();
 #pragma warning restore IDISP007
             }
         }

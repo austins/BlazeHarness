@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Sandbox.Ports;
 using System.Globalization;
 
 namespace BlazeHarness.Core.Tools.Shell;
@@ -50,6 +51,12 @@ public sealed class BackgroundShells : IDisposable
         }
     }
 
+    /// <summary>
+    /// Gets or sets the forwarding of the sandboxed commands' ports, or null when this computer can't forward them.
+    /// The registry disposes it.
+    /// </summary>
+    internal SandboxPorts? Ports { get; set; }
+
     internal int RunningCount
     {
         get
@@ -84,6 +91,10 @@ public sealed class BackgroundShells : IDisposable
         {
             job.Stop();
         }
+
+#pragma warning disable IDISP007 // The registry owns the forwarding it is given.
+        Ports?.Dispose();
+#pragma warning restore IDISP007
     }
 
     internal BackgroundShell? Find(string id)
@@ -110,8 +121,9 @@ public sealed class BackgroundShells : IDisposable
     /// <param name="timeLimit">How long it may run.</param>
     /// <param name="output">Collects what it prints.</param>
     /// <param name="readers">The task that fills <paramref name="output"/>.</param>
-    /// <returns>The tracked command, or null when the registry was disposed, in which case the process is left to the caller.</returns>
-    internal BackgroundShell? Start(IShellProcess process, string command, TimeSpan timeLimit, ShellOutput output, Task readers)
+    /// <param name="ports">The command's part in port forwarding, which the command disposes when it ends, or null.</param>
+    /// <returns>The tracked command, or null when the registry was disposed, in which case the process and <paramref name="ports"/> are left to the caller.</returns>
+    internal BackgroundShell? Start(IShellProcess process, string command, TimeSpan timeLimit, ShellOutput output, Task readers, SandboxMember? ports = null)
     {
         BackgroundShell job;
         lock (_gate)
@@ -128,6 +140,7 @@ public sealed class BackgroundShells : IDisposable
                 timeLimit,
                 _time.GetUtcNow(),
                 process,
+                ports,
                 output,
                 readers,
                 _time,

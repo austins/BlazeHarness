@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Sandbox.Ports;
 using BlazeHarness.Core.Tools.Files;
 using System.Globalization;
 using System.Text;
@@ -15,6 +16,8 @@ internal sealed class ShellTool : ITool
     private const int MaxTimeoutSeconds = 600;
     private const int DefaultBackgroundSeconds = 3600;
     private const int MaxBackgroundSeconds = 8 * 3600;
+    private const string SandboxNetworkNote = " It runs in the sandbox, which has its own network: a port it opens can't be reached from other commands or the browser tools. Ask the user to set the access level to Unrestricted if they need to.";
+    private const string ForwardedNote = " The ports it listens on are forwarded to localhost at the same number, for later commands and the browser tools; shell_jobs list shows them.";
 
     private static readonly TimeSpan OutputGrace = TimeSpan.FromSeconds(2);
 
@@ -59,6 +62,7 @@ internal sealed class ShellTool : ITool
         "The command cannot read input, so avoid anything interactive. " +
         "A command that should keep running after the call, such as a dev server, a watcher or a database, must be started with background=true: " +
         "anything started with & or nohup is stopped when the call ends. A background call returns an id at once; read its output, wait for it or stop it with the shell_jobs tool, and stop it when you are done. " +
+        Network +
         "Unless the user turned it off, the command runs in a sandbox that can only change the working folder and can't see the rest of the computer's files. " +
         "Each command starts fresh: /tmp is private to it and emptied when it ends, so keep files that later commands need under $TMPDIR, which lasts for the whole chat.";
 
@@ -83,6 +87,12 @@ internal sealed class ShellTool : ITool
 
     /// <inheritdoc />
     public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(MaxTimeoutSeconds + 30);
+
+    private string Network => _background.Ports is null
+        ? "A sandboxed command has a network of its own: a server it starts can't be reached from other commands or from the browser tools, only from inside the same command (for example start it with &, wait, curl it, then kill it). " +
+          "To open a server in the browser or call it from later commands, the user must set the chat's access level to Unrestricted, which turns the sandbox off. "
+        : "A sandboxed command has a network of its own, but the ports a background command listens on are forwarded at the same number to localhost, where later commands and the browser tools reach them. " +
+          "A server started without background can only be reached from inside its own command. ";
 
     /// <inheritdoc />
     public string Summarize(JsonElement arguments)
@@ -123,21 +133,34 @@ internal sealed class ShellTool : ITool
         }
 
         var launch = new ShellLaunch(_shell, command, context.Root, context.Shell, _scratchDirectory, TimeSpan.FromSeconds(seconds), context.ShellReadFolders, refused);
+        var ports = _background.Ports?.Prepare(launch, publishes: background);
         IShellProcess process;
         try
         {
-            process = await _sandbox.StartAsync(launch, cancellationToken);
+            process = await _sandbox.StartAsync(ports?.Launch ?? launch, cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException)
         {
+            ports?.Dispose();
             return ToolResult.Error(ex.Message);
+        }
+        catch
+        {
+            ports?.Dispose();
+            throw;
+        }
+
+        if (ports is not null)
+        {
+            await ports.AttachAsync(process, cancellationToken);
         }
 
         if (background)
         {
-            return await RunInBackgroundAsync(process, command, TimeSpan.FromSeconds(seconds), cancellationToken);
+            return await RunInBackgroundAsync(process, command, TimeSpan.FromSeconds(seconds), context.Shell != ShellMode.Unconfined, ports, cancellationToken);
         }
 
+        using (ports)
         using (process)
         {
             var output = new ShellOutput();
@@ -181,16 +204,45 @@ internal sealed class ShellTool : ITool
         }
     }
 
-    private async Task<ToolResult> RunInBackgroundAsync(IShellProcess process, string command, TimeSpan limit, CancellationToken cancellationToken)
+    /// <summary>
+    /// Describe forwarded ports for the model.
+    /// </summary>
+    /// <param name="ports">The ports.</param>
+    /// <returns>The ports, separated by commas, each noting when it is only forwarded to other commands.</returns>
+    internal static string DescribePorts(IReadOnlyList<ForwardedPort> ports)
+    {
+        return string.Join(", ", ports.Select(port => port.OnHost
+            ? port.Port.ToString(CultureInfo.InvariantCulture)
+            : string.Create(CultureInfo.InvariantCulture, $"{port.Port} (only for other commands: another program uses it on this computer)")));
+    }
+
+    private static string NetworkNote(bool sandboxed, BackgroundShell job, SandboxMember? ports)
+    {
+        if (!sandboxed)
+        {
+            return string.Empty;
+        }
+
+        if (ports is null)
+        {
+            return SandboxNetworkNote;
+        }
+
+        var forwarded = job.Ports;
+        return forwarded.Count == 0 ? ForwardedNote : $"{ForwardedNote} So far: {DescribePorts(forwarded)}.";
+    }
+
+    private async Task<ToolResult> RunInBackgroundAsync(IShellProcess process, string command, TimeSpan limit, bool sandboxed, SandboxMember? ports, CancellationToken cancellationToken)
     {
         var output = new ShellOutput();
         var readers = Task.WhenAll(PumpAsync(process.Output, output), PumpAsync(process.Error, output));
-        var job = _background.Start(process, command, limit, output, readers);
+        var job = _background.Start(process, command, limit, output, readers, ports);
         if (job is null)
         {
             process.Kill();
 #pragma warning disable IDISP007 // The caller hands the process over, and nothing else will dispose it.
             process.Dispose();
+            ports?.Dispose();
 #pragma warning restore IDISP007
             return ToolResult.Error("This command was not run: the chat is closing.");
         }
@@ -203,7 +255,7 @@ internal sealed class ShellTool : ITool
         {
             return ToolResult.Ok(string.Create(
                 CultureInfo.InvariantCulture,
-                $"{output}[Started in the background as {job.Id}; it is stopped after {limit.TotalSeconds:0} seconds, or when the chat is closed. Read its output, wait for it or stop it with the shell_jobs tool. To keep it longer, stop it and start it again with a larger timeout_seconds.]"));
+                $"{output}[Started in the background as {job.Id}; it is stopped after {limit.TotalSeconds:0} seconds, or when the chat is closed. Read its output, wait for it or stop it with the shell_jobs tool. To keep it longer, stop it and start it again with a larger timeout_seconds.{NetworkNote(sandboxed, job, ports)}]"));
         }
         catch (OperationCanceledException)
         {

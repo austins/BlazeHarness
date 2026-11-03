@@ -45,6 +45,19 @@ public sealed class WebServicesTests : IDisposable
     }
 
     [Fact]
+    public void ToolsFor_BrowserNotAllowed_LeavesBrowserToolsOut()
+    {
+        // Arrange
+        using var sut = Create();
+
+        // Act
+        var names = sut.ToolsFor("c1", browserAllowed: false).Select(t => t.Name).ToList();
+
+        // Assert
+        names.Should().Equal("web_search", "web_fetch");
+    }
+
+    [Fact]
     public void Forget_Chat_ClosesItsBrowserPage()
     {
         // Arrange

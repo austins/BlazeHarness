@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Sandbox.Ports;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Core.Tools.Shell;
 using BlazeHarness.Tests.Shared;
@@ -56,8 +57,31 @@ public sealed class BackgroundShellTests : IDisposable
 
         // Assert
         result.IsError.Should().BeFalse();
-        result.Output.Should().StartWith("up").And.Contain("Started in the background as bg1").And.Contain("120 seconds");
+        result.Output.Should().StartWith("up").And.Contain("Started in the background as bg1").And.Contain("120 seconds").And.NotContain("own network");
         _background.Jobs.Should().ContainSingle().Which.Status.Should().Be(BackgroundShellStatus.Running);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_BackgroundCommandInTheSandboxWithoutForwarding_WarnsThatItsPortsAreNotReachable()
+    {
+        // Act
+        var result = await StartInFakeSandboxAsync();
+
+        // Assert
+        result.Output.Should().Contain("own network").And.Contain("Unrestricted");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_BackgroundCommandInTheSandboxWithForwarding_SaysItsPortsAreForwarded()
+    {
+        // Arrange
+        _background.Ports = new SandboxPorts(new ForwardingTools("nsenter", "socat"), _time, new LoggerFake<SandboxPorts>());
+
+        // Act
+        var result = await StartInFakeSandboxAsync();
+
+        // Assert
+        result.Output.Should().Contain("forwarded to localhost").And.NotContain("own network");
     }
 
     [Fact(Skip = "These tests use POSIX shell syntax.", SkipWhen = nameof(IsWindows))]
@@ -296,6 +320,22 @@ public sealed class BackgroundShellTests : IDisposable
         // Assert
         _jobs.Name.Should().Be("shell_jobs");
         _jobs.IsReadOnly.Should().BeTrue();
+    }
+
+    private async Task<ToolResult> StartInFakeSandboxAsync()
+    {
+        var sandbox = Substitute.For<IShellSandbox>();
+        var process = Substitute.For<IShellProcess>();
+        process.Output.Returns(Stream.Null);
+        process.Error.Returns(Stream.Null);
+        var never = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        process.WaitAsync(Arg.Any<CancellationToken>()).Returns(never.Task);
+        sandbox.StartAsync(Arg.Any<ShellLaunch>(), Arg.Any<CancellationToken>()).Returns(process);
+        var sut = new ShellTool(Sh, sandbox, _root.Root, _background, _time);
+        var run = sut.ExecuteAsync(TempRoot.Args(new { command = "server", background = true }), _root.Context.WithShell(ShellMode.Writable), TestContext.Current.CancellationToken);
+        var result = await _time.AdvanceUntilAsync(run, Step);
+        never.SetResult(0);
+        return result;
     }
 
     private async Task<ToolResult> StartSleepAsync(int timeoutSeconds = 3600)
