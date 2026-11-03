@@ -110,7 +110,7 @@ public sealed class ChatClientFactoryTests
     }
 
     [Fact]
-    public async Task Request_ThinkingOfThisTurn_IsSentBackAsReasoningContent()
+    public async Task Request_EarlierThinking_IsSentBackAsReasoningContent()
     {
         // Arrange
         using var server = new FakeOpenAiServer([Chunk2]);
@@ -133,7 +133,7 @@ public sealed class ChatClientFactoryTests
         // Assert
         using var body = JsonDocument.Parse(server.RequestBodies.Single());
         var messages = body.RootElement.GetProperty("messages");
-        messages[1].TryGetProperty("reasoning_content", out _).Should().BeFalse();
+        messages[1].GetProperty("reasoning_content").GetString().Should().Be("old thought");
         messages[1].GetProperty("content").ToString().Should().Contain("answer");
         messages[3].GetProperty("reasoning_content").GetString().Should().Be("plan");
         var call = messages[3].GetProperty("tool_calls")[0];

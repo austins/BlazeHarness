@@ -1,4 +1,3 @@
-using BlazeHarness.Core.Agent;
 using Microsoft.Extensions.AI;
 using OpenAI.Chat;
 using System.Text.Json;
@@ -7,14 +6,14 @@ using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 namespace BlazeHarness.Core.Providers;
 
 /// <summary>
-/// Sends the model's earlier thinking back as <c>reasoning_content</c> on the assistant messages of the current turn.
+/// Sends the model's earlier thinking back as <c>reasoning_content</c> on every assistant message that has it.
 /// </summary>
 /// <remarks>
 /// <para>
 /// The OpenAI client reads <c>reasoning_content</c> from the stream but leaves <see cref="TextReasoningContent"/> out of requests,
-/// so without this a model would lose what it worked out after every tool call. Chat templates such as Qwen's keep that thinking for the
-/// assistant messages after the last user message, which is where this sends it; thinking from earlier turns stays out, as those templates drop it too.
-/// A <see cref="StepMessage"/>, such as the pictures of tool calls, is part of the step, not a new request, so it doesn't count as a user message here.
+/// so without this a model would lose what it worked out after every tool call. The chat template decides which thinking the model sees:
+/// some keep it only after the last user message, others (Qwen with <c>preserve_thinking</c>) keep all of it. Sending it for every message
+/// keeps earlier messages the same from one turn to the next, so the server's prompt cache still matches after a new user message.
 /// </para>
 /// <para>
 /// Thinking only exists when the server sent it in that field, so a server that doesn't know the field never receives it.
@@ -36,15 +35,14 @@ internal sealed class ReasoningReplayChatClient(IChatClient inner) : DelegatingC
     }
 
     /// <summary>
-    /// Give each assistant message after the last user message (other than a step message) that carries thinking a raw form with <c>reasoning_content</c> set.
+    /// Give each assistant message that carries thinking a raw form with <c>reasoning_content</c> set.
     /// </summary>
     /// <param name="messages">The messages of the request.</param>
     /// <returns>The messages to send.</returns>
     internal static List<ChatMessage> WithReasoning(IEnumerable<ChatMessage> messages)
     {
         var list = messages.ToList();
-        var lastUser = list.FindLastIndex(m => m.Role == ChatRole.User && !StepMessage.Is(m));
-        for (var i = lastUser + 1; i < list.Count; i++)
+        for (var i = 0; i < list.Count; i++)
         {
             var message = list[i];
             if (message.Role == ChatRole.Assistant && message.RawRepresentation is null && Reasoning(message) is { Length: > 0 } reasoning)

@@ -306,7 +306,7 @@ internal static class ChatRunner
             contents.AddRange(calls);
             if (contents.Count > 0)
             {
-                // Kept so the next call of this run can see what the model worked out; see ReasoningReplayChatClient.
+                // Kept so later calls can see what the model worked out; see ReasoningReplayChatClient.
                 if (thinking.Length > 0)
                 {
                     contents.Insert(0, new TextReasoningContent(thinking.ToString()));

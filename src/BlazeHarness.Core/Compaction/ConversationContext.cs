@@ -130,8 +130,8 @@ public sealed class ConversationContext
         ArgumentNullException.ThrowIfNull(messages);
 
         return _promptTokens is { } reported && _promptMessages <= messages.Count
-            ? (reported + TokenEstimate.OfRequest(messages, _promptMessages), false)
-            : (_overhead + TokenEstimate.OfRequest(View(messages)), true);
+            ? (reported + TokenEstimate.Of(messages.Skip(_promptMessages)), false)
+            : (_overhead + TokenEstimate.Of(View(messages)), true);
     }
 
     /// <summary>
@@ -179,7 +179,7 @@ public sealed class ConversationContext
         }
 
         var before = Size(messages).Tokens;
-        var saved = TokenEstimate.OfRequest(View(messages)) - TokenEstimate.OfRequest(BuildView(messages, cut));
+        var saved = TokenEstimate.Of(View(messages)) - TokenEstimate.Of(BuildView(messages, cut));
         if (saved <= 0 || before - saved > (long)(_limit * TargetAfterFraction))
         {
             return null;
@@ -187,7 +187,7 @@ public sealed class ConversationContext
 
         _stubbedBefore = cut;
         _promptTokens = null;
-        var after = _overhead + TokenEstimate.OfRequest(View(messages));
+        var after = _overhead + TokenEstimate.Of(View(messages));
         _compactedSize = after;
         return new ContextTrimmed(cut, before, after);
     }
@@ -220,7 +220,7 @@ public sealed class ConversationContext
         _summary = summary;
         _keptFrom = cut;
         _promptTokens = null;
-        var after = _overhead + TokenEstimate.OfRequest(View(messages));
+        var after = _overhead + TokenEstimate.Of(View(messages));
         _compactedSize = after;
         return new ContextCompacted(summary, cut, before, after);
     }
@@ -345,7 +345,7 @@ public sealed class ConversationContext
         }
 
         // What every request carries besides the kept messages takes from the room the tail has to grow in.
-        var fixedTokens = _overhead + TokenEstimate.Of(_summary) + messages.Take(_leading).Sum(m => TokenEstimate.Of(m, includeReasoning: false));
+        var fixedTokens = _overhead + TokenEstimate.Of(_summary) + messages.Take(_leading).Sum(TokenEstimate.Of);
         var roomAfter = (long)(_limit * TargetAfterFraction) - fixedTokens;
         var budget = UnknownLimitTail;
         if (_limit > 0)
@@ -358,7 +358,7 @@ public sealed class ConversationContext
         long tail = 0;
         for (var i = count - 1; i >= _keptFrom; i--)
         {
-            tail += TokenEstimate.Of(messages[_leading + i], includeReasoning: i > lastUser);
+            tail += TokenEstimate.Of(messages[_leading + i]);
             if (tail > budget)
             {
                 break;
@@ -381,7 +381,7 @@ public sealed class ConversationContext
             long turn = 0;
             for (var i = lastUser; i < count; i++)
             {
-                turn += TokenEstimate.Of(messages[_leading + i], includeReasoning: i > lastUser);
+                turn += TokenEstimate.Of(messages[_leading + i]);
             }
 
             if (turn <= Math.Max(budget, roomAfter))

@@ -71,36 +71,17 @@ public sealed class TokenEstimateTests
     }
 
     [Fact]
-    public void OfRequest_ThinkingBeforeTheLastUserMessage_IsNotCounted()
+    public void Of_MessageWithThinking_CountsTheThinking()
     {
         // Arrange
-        var thinking = new string('t', 4_000);
-        List<ChatMessage> messages =
-        [
-            new(ChatRole.User, "first"),
-            new(ChatRole.Assistant, [new TextReasoningContent(thinking), new TextContent("answer")]),
-            new(ChatRole.User, "second"),
-            new(ChatRole.Assistant, [new TextReasoningContent(thinking), new TextContent("answer")]),
-        ];
+        var withThinking = new ChatMessage(ChatRole.Assistant, [new TextReasoningContent(new string('t', 4_000)), new TextContent("answer")]);
+        var without = new ChatMessage(ChatRole.Assistant, "answer");
 
         // Act
-        var result = TokenEstimate.OfRequest(messages);
+        var result = TokenEstimate.Of(withThinking) - TokenEstimate.Of(without);
 
         // Assert
-        result.Should().Be(TokenEstimate.Of(messages[0]) + TokenEstimate.Of(messages[1], includeReasoning: false) + TokenEstimate.Of(messages[2]) + TokenEstimate.Of(messages[3]));
-    }
-
-    [Fact]
-    public void OfRequest_FromAnIndex_CountsTheMessagesFromThereOn()
-    {
-        // Arrange
-        List<ChatMessage> messages = [new(ChatRole.User, "abcd"), new(ChatRole.Assistant, "abcdefgh"), new(ChatRole.User, "abcdefghijkl")];
-
-        // Act
-        var result = TokenEstimate.OfRequest(messages, 1);
-
-        // Assert
-        result.Should().Be(TokenEstimate.Of(messages[1]) + TokenEstimate.Of(messages[2]));
+        result.Should().Be(TokenEstimate.Of(new string('t', 4_000)));
     }
 
     [Fact]

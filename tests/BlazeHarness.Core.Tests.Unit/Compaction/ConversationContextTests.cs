@@ -384,7 +384,7 @@ public sealed class ConversationContextTests
 
         // Assert
         approximate.Should().BeTrue();
-        tokens.Should().Be(700 + TokenEstimate.OfRequest(messages));
+        tokens.Should().Be(700 + TokenEstimate.Of(messages));
     }
 
     [Fact]

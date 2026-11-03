@@ -57,15 +57,7 @@ public static class TokenEstimate
     /// </summary>
     /// <param name="message">The message to measure.</param>
     /// <returns>The estimate, rounded up.</returns>
-    public static long Of(ChatMessage message) => Of(message, includeReasoning: true);
-
-    /// <summary>
-    /// Estimate the tokens in a message, including its tool calls, tool results and images.
-    /// </summary>
-    /// <param name="message">The message to measure.</param>
-    /// <param name="includeReasoning">True to count the message's thinking; false when the request leaves it out.</param>
-    /// <returns>The estimate, rounded up.</returns>
-    public static long Of(ChatMessage message, bool includeReasoning)
+    public static long Of(ChatMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
 
@@ -75,7 +67,7 @@ public static class TokenEstimate
             total += content switch
             {
                 TextContent text => Of(text.Text),
-                TextReasoningContent reasoning => includeReasoning ? Of(reasoning.Text) : 0,
+                TextReasoningContent reasoning => Of(reasoning.Text),
                 FunctionCallContent call => Of(call.Name) + Of(JsonSerializer.Serialize(call.Arguments, AIJsonUtilities.DefaultOptions)),
                 FunctionResultContent result => Of(result.Result?.ToString()),
                 DataContent data when data.HasTopLevelMediaType("image") => ImageTokens,
@@ -96,33 +88,5 @@ public static class TokenEstimate
     {
         ArgumentNullException.ThrowIfNull(messages);
         return messages.Sum(Of);
-    }
-
-    /// <summary>
-    /// Estimate the tokens that messages add to a request, counting thinking only where the request sends it.
-    /// </summary>
-    /// <remarks>
-    /// Thinking is sent back to the server only for the messages after the last user message, so older thinking costs nothing.
-    /// </remarks>
-    /// <param name="messages">The messages of the request.</param>
-    /// <param name="from">The index of the first message to count.</param>
-    /// <returns>The sum of the estimates for the messages from that index on.</returns>
-    public static long OfRequest(IList<ChatMessage> messages, int from = 0)
-    {
-        ArgumentNullException.ThrowIfNull(messages);
-
-        var lastUser = -1;
-        for (var i = 0; i < messages.Count; i++)
-        {
-            lastUser = messages[i].Role == ChatRole.User ? i : lastUser;
-        }
-
-        long total = 0;
-        for (var i = Math.Max(0, from); i < messages.Count; i++)
-        {
-            total += Of(messages[i], includeReasoning: i > lastUser);
-        }
-
-        return total;
     }
 }
