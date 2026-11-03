@@ -154,7 +154,7 @@
   </data>
   <data name="ChatViewJumpToLatest" xml:space="preserve">
     <value>Jump to latest</value>
-    <comment>Button in the chat transcript that scrolls back to the newest message after the user scrolled up.</comment>
+    <comment>Tooltip and accessible name of the down-arrow button in the chat transcript that scrolls back to the newest message after the user scrolled up.</comment>
   </data>
   <data name="ChatViewEmptyHint" xml:space="preserve">
     <value>Pick a model below and send a message. Press Enter to send and Shift+Enter for a new line.</value>

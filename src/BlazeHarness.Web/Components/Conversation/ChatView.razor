@@ -137,7 +137,9 @@ else
             </div>
         </div>
 
-        <button type="button" class="btn btn-sm chat-jump" data-bh-action="toBottom">@WebStrings.ChatViewJumpToLatest</button>
+        <div class="chat-jump-anchor">
+            <button type="button" class="btn btn-icon chat-jump" data-bh-action="toBottom" aria-label="@WebStrings.ChatViewJumpToLatest" title="@WebStrings.ChatViewJumpToLatest"><Icon Name="arrow-down" /></button>
+        </div>
 
         @if (!_loading)
         {
