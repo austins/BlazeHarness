@@ -34,7 +34,7 @@ else
                 @foreach (var skill in suggestions)
                 {
                     <li>
-                        <button type="button" class="btn btn-ghost btn-sm" @onclick="() => ChooseSkillAsync(skill)">
+                        <button type="button" id="skill-suggestion-@skill.Name" class="btn btn-ghost btn-sm" tabindex="-1" @onclick="() => ChooseSkillAsync(skill)">
                             <strong>/@skill.Name</strong> <span class="muted">@ShortDescription(skill)</span>
                         </button>
                     </li>

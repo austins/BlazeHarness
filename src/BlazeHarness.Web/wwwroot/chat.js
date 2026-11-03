@@ -261,7 +261,47 @@ window.bhChat = {
             }
         });
 
+        // The suggestion list stays mouse-driven markup; the arrows move a highlight through it while focus stays in the box.
+        const suggestions = () => [...(form.querySelector(".composer-suggestions")?.querySelectorAll("button") ?? [])];
+        const highlight = (index) => {
+            const items = suggestions();
+            items.forEach((item, at) => {
+                if (at === index) {
+                    item.dataset.active = "true";
+                    item.scrollIntoView({ block: "nearest" });
+                } else {
+                    delete item.dataset.active;
+                }
+            });
+            if (items[index]) {
+                input.setAttribute("aria-activedescendant", items[index].id);
+            } else {
+                input.removeAttribute("aria-activedescendant");
+            }
+        };
+        const highlighted = () => suggestions().findIndex((item) => item.dataset.active === "true");
+        const choose = (index) => {
+            suggestions()[index]?.click();
+            input.removeAttribute("aria-activedescendant");
+        };
+
         input.addEventListener("keydown", (e) => {
+            const count = suggestions().length;
+            if (count > 0 && !e.isComposing && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                const at = highlighted();
+                if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                    e.preventDefault();
+                    highlight(e.key === "ArrowDown" ? (at + 1) % count : (at <= 0 ? count - 1 : at - 1));
+                    return;
+                }
+
+                if (e.key === "Tab" || (e.key === "Enter" && at >= 0)) {
+                    e.preventDefault();
+                    choose(Math.max(at, 0));
+                    return;
+                }
+            }
+
             if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
                 e.preventDefault();
                 const send = input.form && input.form.querySelector("button[type=submit]");
@@ -270,7 +310,10 @@ window.bhChat = {
                 }
             }
         });
-        input.addEventListener("input", () => window.bhChat.resize(input));
+        input.addEventListener("input", () => {
+            highlight(-1);
+            window.bhChat.resize(input);
+        });
         input.focus();
     },
     // The page's script policy blocks inline handlers, so buttons name an action and one listener runs it.
