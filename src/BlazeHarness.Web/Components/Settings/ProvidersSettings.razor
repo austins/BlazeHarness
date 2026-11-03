@@ -23,7 +23,7 @@
                     </button>
                 }
             </div>
-            <button type="button" class="btn btn-add" @onclick="() => StartNew(null, null)"><Icon Name="plus" /> @WebStrings.ProvidersSettingsAddProviderButton</button>
+            <button type="button" class="btn btn-add" @onclick="StartNew"><Icon Name="plus" /> @WebStrings.ProvidersSettingsAddProviderButton</button>
         </aside>
         }
 
@@ -35,12 +35,6 @@
                     {
                         <h2>@WebStrings.ProvidersSettingsEmptyStateHeading</h2>
                         <p>@WebStrings.ProvidersSettingsEmptyStateDescription</p>
-                        <div class="row">
-                            @foreach (var (name, url) in QuickStarts)
-                            {
-                                <button type="button" class="btn" @onclick="() => StartNew(name, url)">@name</button>
-                            }
-                        </div>
                     }
                     else
                     {
@@ -56,7 +50,7 @@
                             <h2>@(_edit.IsNew ? WebStrings.ProvidersSettingsNewProvider : _edit.DisplayName)</h2>
                             @if (!ShowList)
                             {
-                                <button type="button" class="btn btn-sm" @onclick="() => StartNew(null, null)"><Icon Name="plus" /> @WebStrings.ProvidersSettingsAddProviderEditorButton</button>
+                                <button type="button" class="btn btn-sm" @onclick="StartNew"><Icon Name="plus" /> @WebStrings.ProvidersSettingsAddProviderEditorButton</button>
                             }
                         </div>
 
@@ -141,7 +135,7 @@
                                         <div class="model-main">
                                             <div class="field">
                                                 <label for="m-id-@index">@WebStrings.ProvidersSettingsModelIdLabel</label>
-                                                <input id="m-id-@index" class="input mono" aria-invalid="@Invalid($"models[{index}].id")" @bind="model.Id" @bind:after="() => ApplyPreset(model)" />
+                                                <input id="m-id-@index" class="input mono" aria-invalid="@Invalid($"models[{index}].id")" @bind="model.Id" />
                                             </div>
                                             <div class="field">
                                                 <label for="m-name-@index">@WebStrings.ProvidersSettingsModelNameLabel <span class="muted">(@WebStrings.McpServerFormOptional)</span></label>
@@ -261,15 +255,6 @@
 </ConfirmDialog>
 
 @code {
-    private static readonly (string Name, string Url)[] QuickStarts =
-    [
-        ("OpenAI", "https://api.openai.com/v1"),
-        ("DeepSeek", "https://api.deepseek.com"),
-        ("llama.cpp (local)", "http://localhost:8080/v1"),
-        ("vLLM (local)", "http://localhost:8000/v1"),
-        ("Ollama (local)", "http://localhost:11434/v1"),
-    ];
-
     private readonly HashSet<string> _picked = [];
     private ProviderEditModel? _edit;
     private IReadOnlyList<ValidationIssue> _issues = [];
@@ -351,9 +336,9 @@
         await RefreshKeyAsync();
     }
 
-    private void StartNew(string? name, string? url)
+    private void StartNew()
     {
-        _edit = new ProviderEditModel { IsNew = true, DisplayName = name ?? string.Empty, BaseUrl = url ?? string.Empty };
+        _edit = new ProviderEditModel { IsNew = true };
         _hasStoredKey = false;
         ResetFeedback();
     }
@@ -410,24 +395,13 @@
     {
         foreach (var id in _picked.Order(StringComparer.OrdinalIgnoreCase))
         {
-            _edit!.Models.Add(ModelEditModel.FromId(id));
+            _edit!.Models.Add(new ModelEditModel { Id = id });
         }
 
         _picked.Clear();
     }
 
     private void AddModel() => _edit!.Models.Add(new ModelEditModel());
-
-    private static void ApplyPreset(ModelEditModel model)
-    {
-        if (model.ContextWindow == 0 && model.MaxOutputTokens == 0 && ModelPreset.Find(model.Id) is { } preset)
-        {
-            model.ContextWindow = preset.ContextWindow;
-            model.MaxOutputTokens = preset.MaxOutputTokens;
-            model.Reasoning = preset.Reasoning;
-            model.Image = preset.Image;
-        }
-    }
 
     private bool IsSaved(ModelEditModel model) =>
         _edit is { IsNew: false } && Service.Configured.Any(p => p.Id == _edit.Id && p.Models.Any(m => m.Id == model.Id));

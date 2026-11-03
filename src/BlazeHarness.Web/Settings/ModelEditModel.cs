@@ -119,25 +119,6 @@ public sealed class ModelEditModel
     }
 
     /// <summary>
-    /// Create a model with the limits of a well-known model prefilled.
-    /// </summary>
-    /// <param name="id">The model id.</param>
-    /// <returns>The new editing model; limits are left at zero when the model is not known.</returns>
-    public static ModelEditModel FromId(string id)
-    {
-        var model = new ModelEditModel { Id = id };
-        if (ModelPreset.Find(id) is { } preset)
-        {
-            model.ContextWindow = preset.ContextWindow;
-            model.MaxOutputTokens = preset.MaxOutputTokens;
-            model.Reasoning = preset.Reasoning;
-            model.Image = preset.Image;
-        }
-
-        return model;
-    }
-
-    /// <summary>
     /// Convert back to the stored form.
     /// </summary>
     /// <returns>The model config.</returns>

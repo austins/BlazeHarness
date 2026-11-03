@@ -1938,8 +1938,8 @@
     <comment>Message shown in place of the editor when providers exist but none is selected.</comment>
   </data>
   <data name="ProvidersSettingsEmptyStateDescription" xml:space="preserve">
-    <value>Pick a starting point, or add any OpenAI-compatible endpoint.</value>
-    <comment>Text under the first-provider heading. Buttons for well-known providers follow it. OpenAI is a product name and is not translated.</comment>
+    <value>Add any OpenAI-compatible endpoint, such as OpenAI, llama.cpp, vLLM or Ollama.</value>
+    <comment>Text under the first-provider heading on the providers page. OpenAI, llama.cpp, vLLM and Ollama are product names and are not translated.</comment>
   </data>
   <data name="ProvidersSettingsEmptyStateHeading" xml:space="preserve">
     <value>Connect your first provider</value>

@@ -99,29 +99,6 @@ public sealed class ProviderEditModelTests
     }
 
     [Fact]
-    public void FromId_KnownModel_AppliesPreset()
-    {
-        // Act
-        var result = ModelEditModel.FromId("openai/gpt-4o");
-
-        // Assert
-        result.ContextWindow.Should().BeGreaterThan(0);
-        result.MaxOutputTokens.Should().BeGreaterThan(0);
-        result.Image.Should().BeTrue();
-    }
-
-    [Fact]
-    public void FromId_UnknownModel_LeavesLimitsAtZero()
-    {
-        // Act
-        var result = ModelEditModel.FromId("mystery");
-
-        // Assert
-        result.ContextWindow.Should().Be(0);
-        result.MaxOutputTokens.Should().Be(0);
-    }
-
-    [Fact]
     public void ToConfig_ModelWithoutImage_IsTextOnly()
     {
         // Arrange
