@@ -3,6 +3,7 @@ using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Time.Testing;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.RegularExpressions;
 
 namespace BlazeHarness.Core.Tests.Integration.Web.Browser;
 
@@ -244,15 +245,166 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
         first.Snapshot.Should().Contain("cookie: seen=1");
     }
 
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task NavigateAsync_Controls_ShowRefs()
+    {
+        // Arrange
+        using var sut = Create();
+
+        // Act
+        var view = await sut.NavigateAsync(Chat, Url("/form"), TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        view.Snapshot.Should().MatchRegex("button \"Greet\" \\[ref=e\\d+\\]").And.MatchRegex("textbox \"Name\" \\[ref=e\\d+\\]");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task ClickAsync_Button_RunsItsScriptAndShowsTheResult()
+    {
+        // Arrange
+        using var sut = Create();
+        var page = await sut.NavigateAsync(Chat, Url("/form"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        var view = await sut.ClickAsync(Chat, RefOf(page, "button \"Greet\""), TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        view.Snapshot.Should().Contain("Hello r");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task TypeAsync_FieldAndDropDown_FillsThemForTheNextClick()
+    {
+        // Arrange
+        using var sut = Create();
+        var page = await sut.NavigateAsync(Chat, Url("/form"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        await sut.TypeAsync(Chat, RefOf(page, "textbox \"Name\""), "Ada", submit: false, TestContext.Current.CancellationToken).Bounded();
+        await sut.TypeAsync(Chat, RefOf(page, "combobox \"Color\""), "Green", submit: false, TestContext.Current.CancellationToken).Bounded();
+        var view = await sut.ClickAsync(Chat, RefOf(page, "button \"Greet\""), TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        view.Snapshot.Should().Contain("Hello Ada g");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task TypeAsync_Button_ExplainsItDoesNotTakeText()
+    {
+        // Arrange
+        using var sut = Create();
+        var page = await sut.NavigateAsync(Chat, Url("/form"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        var act = async () => await sut.TypeAsync(Chat, RefOf(page, "button \"Greet\""), "x", submit: false, TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        await act.Should().ThrowAsync<BrowserException>().WithMessage("*browser_click*");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task ClickAsync_RefOfRemovedElement_AsksForFreshRefs()
+    {
+        // Arrange
+        using var sut = Create();
+        await sut.NavigateAsync(Chat, Url("/form"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        var act = async () => await sut.ClickAsync(Chat, "e99999", TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        await act.Should().ThrowAsync<BrowserException>().WithMessage("*browser_snapshot*");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task ClickAsync_NotARef_Throws()
+    {
+        // Arrange
+        using var sut = Create();
+
+        // Act
+        var act = async () => await sut.ClickAsync(Chat, "button", TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        await act.Should().ThrowAsync<BrowserException>().WithMessage("*not an element ref*");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task ScreenshotAsync_Page_ReturnsPng()
+    {
+        // Arrange
+        using var sut = Create();
+        await sut.NavigateAsync(Chat, Url("/"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        var png = await sut.ScreenshotAsync(Chat, fullPage: true, TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        png.AsSpan(0, 4).ToArray().Should().Equal(0x89, 0x50, 0x4E, 0x47);
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task DownloadAsync_FileLink_SavesTheFileAndLeavesNoTemporaryFolder()
+    {
+        // Arrange
+        using var sut = Create();
+        var page = await sut.NavigateAsync(Chat, Url("/form"), TestContext.Current.CancellationToken).Bounded();
+        var destination = Path.Combine(_folder.Root, "out", "saved.txt");
+
+        // Act
+        var download = await sut.DownloadAsync(Chat, RefOf(page, "link \"Get file\""), destination, TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        download.FileName.Should().Be("report.txt");
+        download.Bytes.Should().Be(5);
+        (await File.ReadAllTextAsync(destination, TestContext.Current.CancellationToken)).Should().Be("hello");
+        Directory.GetDirectories(Path.Combine(_folder.Root, "downloads")).Should().BeEmpty();
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task DownloadAsync_ElementOffersNoFile_ExplainsNothingWasDownloaded()
+    {
+        // Arrange
+        using var sut = Create(time: TimeProvider.System, downloadTimeout: TimeSpan.FromSeconds(1));
+        var page = await sut.NavigateAsync(Chat, Url("/form"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        var act = async () => await sut.DownloadAsync(Chat, RefOf(page, "button \"Greet\""), Path.Combine(_folder.Root, "x.txt"), TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        await act.Should().ThrowAsync<BrowserException>().WithMessage("*Nothing was downloaded*");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task UserClickAndKey_FieldAndButton_ReachThePage()
+    {
+        // Arrange
+        using var sut = Create();
+        await sut.NavigateAsync(Chat, Url("/click"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        await sut.UserClickAsync(Chat, 0.5, 0.5, TestContext.Current.CancellationToken).Bounded();
+        await sut.UserKeyAsync(Chat, "A", TestContext.Current.CancellationToken).Bounded();
+        await sut.UserKeyAsync(Chat, "Enter", TestContext.Current.CancellationToken).Bounded();
+        var view = await sut.SnapshotAsync(Chat, TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        view.Snapshot.Should().Contain("clicked").And.Contain("typed A").And.Contain("enter");
+    }
+
+    private static string RefOf(BrowserPageView view, string line) =>
+        Regex.Match(view.Snapshot, Regex.Escape(line) + @" .*?\[ref=(e\d+)\]").Groups[1].Value;
+
     private static string Html(string title, string body) => $"<!doctype html><html><head><title>{title}</title></head><body>{body}</body></html>";
 
-    private PuppeteerBrowserEngine Create(string? executablePath = "default", int? appPort = null) =>
+    private PuppeteerBrowserEngine Create(string? executablePath = "default", int? appPort = null, TimeProvider? time = null, TimeSpan? downloadTimeout = null) =>
         new(
             appPort,
             _folder.Root,
             new LoggerFake<PuppeteerBrowserEngine>(),
-            new FakeTimeProvider(),
-            executablePath: executablePath == "default" ? TestChrome.Path : executablePath);
+            time ?? new FakeTimeProvider(),
+            executablePath: executablePath == "default" ? TestChrome.Path : executablePath,
+            downloadTimeout: downloadTimeout);
 
     private Uri Url(string path) => new($"http://127.0.0.1:{_port}{path}");
 
@@ -277,6 +429,26 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
             {
                 case "/":
                     body = Html("Demo page", "<h1>Welcome</h1><button>Save</button><a href=\"/docs\">Docs</a>");
+                    break;
+                case "/form":
+                    body = Html(
+                        "Form",
+                        "<label for=\"n\">Name</label><input id=\"n\">" +
+                        "<label for=\"c\">Color</label><select id=\"c\"><option value=\"r\">Red</option><option value=\"g\">Green</option></select>" +
+                        "<button onclick=\"document.getElementById('out').textContent = 'Hello ' + document.getElementById('n').value + ' ' + document.getElementById('c').value\">Greet</button>" +
+                        "<p id=\"out\">nothing yet</p><a href=\"/file\">Get file</a>");
+                    break;
+                case "/click":
+                    body = Html(
+                        "Click",
+                        "<style>body{margin:0}#target{width:1280px;height:800px;display:block}</style>" +
+                        "<div id=\"log\"></div><button id=\"target\" onclick=\"log.append('clicked ')\">Target</button>" +
+                        "<script>document.addEventListener('keydown', event => log.append(event.key === 'Enter' ? 'enter ' : 'typed ' + event.key + ' '));</script>");
+                    break;
+                case "/file":
+                    response.ContentType = "application/octet-stream";
+                    response.AppendHeader("Content-Disposition", "attachment; filename=\"report.txt\"");
+                    body = "hello";
                     break;
                 case "/script":
                     body = Html("Script", "<div id=\"out\"></div><script>document.getElementById('out').textContent = 'Rendered by script';</script>");

@@ -8,6 +8,7 @@
 @using BlazeHarness.Core.Permissions
 @using BlazeHarness.Core.Tools
 @using BlazeHarness.Core.Tools.Files
+@using BlazeHarness.Core.Tools.Web
 @using BlazeHarness.Web.Hosting
 
 @if (Call.Question is not null)
@@ -183,7 +184,18 @@
 
     private string? FindImageAddress()
     {
-        if (ChatId is null || Call is not { Name: ShowImageTool.ToolName, Status: ToolCallStatus.Succeeded })
+        if (ChatId is null || Call.Status != ToolCallStatus.Succeeded)
+        {
+            return null;
+        }
+
+        var pathArgument = Call.Name switch
+        {
+            ShowImageTool.ToolName => ShowImageTool.PathArgument,
+            BrowserScreenshotTool.ToolName => BrowserScreenshotTool.PathArgument,
+            _ => null,
+        };
+        if (pathArgument is null)
         {
             return null;
         }
@@ -191,7 +203,7 @@
         try
         {
             using var document = JsonDocument.Parse(Call.ArgumentsJson);
-            return document.RootElement.TryGetProperty(ShowImageTool.PathArgument, out var path) && path.ValueKind == JsonValueKind.String
+            return document.RootElement.TryGetProperty(pathArgument, out var path) && path.ValueKind == JsonValueKind.String
                 ? AttachmentEndpoints.FileAddressOf(ChatId, path.GetString()!)
                 : null;
         }

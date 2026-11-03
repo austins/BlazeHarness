@@ -22,6 +22,14 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
 
     private const string MissingBrowserMessage = "The browser isn't installed yet. Tell the user to open Settings > Web and choose Install browser.";
 
+    private const int ViewportWidth = 1280;
+    private const int ViewportHeight = 800;
+
+    private static readonly HashSet<string> UserKeys = new(StringComparer.Ordinal)
+    {
+        "Enter", "Backspace", "Delete", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown",
+    };
+
     private static readonly TimeSpan NavigationTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan SettleTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan SweepInterval = TimeSpan.FromMinutes(1);
@@ -31,9 +39,11 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
 
     private readonly int? _appPort;
     private readonly BrowserFetcher _fetcher;
+    private readonly string _downloadRoot;
     private readonly string? _executablePath;
     private readonly SemaphoreSlim _install = new(1, 1);
     private readonly TimeSpan _idleLimit;
+    private readonly TimeSpan _downloadTimeout;
     private readonly TimeProvider _time;
     private readonly ILogger<PuppeteerBrowserEngine> _logger;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -52,23 +62,27 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     /// <param name="time">The clock.</param>
     /// <param name="idleLimit">How long a chat's page stays open without being used; ten minutes by default.</param>
     /// <param name="executablePath">A Chrome program to use instead of the downloaded one, or null.</param>
+    /// <param name="downloadTimeout">How long a download may take once it was started; a minute by default.</param>
     public PuppeteerBrowserEngine(
         int? appPort,
         string browserDirectory,
         ILogger<PuppeteerBrowserEngine> logger,
         TimeProvider time,
         TimeSpan? idleLimit = null,
-        string? executablePath = null)
+        string? executablePath = null,
+        TimeSpan? downloadTimeout = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(browserDirectory);
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(time);
         _appPort = appPort;
         _fetcher = new BrowserFetcher(new BrowserFetcherOptions { Browser = SupportedBrowser.ChromeHeadlessShell, Path = browserDirectory });
+        _downloadRoot = Path.Combine(browserDirectory, "downloads");
         _executablePath = executablePath;
         _logger = logger;
         _time = time;
         _idleLimit = idleLimit ?? TimeSpan.FromMinutes(10);
+        _downloadTimeout = downloadTimeout ?? TimeSpan.FromMinutes(1);
     }
 
     /// <summary>
@@ -169,6 +183,126 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     }
 
     /// <inheritdoc />
+    public Task<BrowserPageView> ClickAsync(string chatId, string elementRef, CancellationToken cancellationToken)
+    {
+        var backendNodeId = ParseRef(elementRef);
+        return WithPageAsync(
+            chatId,
+            async session =>
+            {
+                var (x, y) = await BrowserElementActions.LocateAsync(session.Client, backendNodeId, cancellationToken);
+                session.TakeProblems();
+                await session.Page.Mouse.ClickAsync(x, y);
+                await SettleAsync(session.Page, cancellationToken);
+                return await ViewAsync(session, null, cancellationToken);
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<BrowserPageView> TypeAsync(string chatId, string elementRef, string text, bool submit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var backendNodeId = ParseRef(elementRef);
+        return WithPageAsync(
+            chatId,
+            async session =>
+            {
+                session.TakeProblems();
+                if (await BrowserElementActions.PrepareTypingAsync(session.Client, backendNodeId, text, cancellationToken))
+                {
+                    if (text.Length == 0)
+                    {
+                        await session.Page.Keyboard.PressAsync("Backspace");
+                    }
+                    else
+                    {
+                        await session.Page.Keyboard.SendCharacterAsync(text);
+                    }
+                }
+
+                if (submit)
+                {
+                    await session.Page.Keyboard.PressAsync("Enter");
+                }
+
+                await SettleAsync(session.Page, cancellationToken);
+                return await ViewAsync(session, null, cancellationToken);
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<byte[]> ScreenshotAsync(string chatId, bool fullPage, CancellationToken cancellationToken) =>
+        WithPageAsync(
+            chatId,
+            session => session.Page.ScreenshotDataAsync(new ScreenshotOptions { Type = ScreenshotType.Png, FullPage = fullPage }).WaitAsync(cancellationToken),
+            cancellationToken);
+
+    /// <inheritdoc />
+    public Task<BrowserDownload> DownloadAsync(string chatId, string elementRef, string destination, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(destination);
+        var backendNodeId = ParseRef(elementRef);
+        return WithPageAsync(
+            chatId,
+            async session =>
+            {
+                var folder = Path.Combine(_downloadRoot, Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(folder);
+                try
+                {
+                    var (x, y) = await BrowserElementActions.LocateAsync(session.Client, backendNodeId, cancellationToken);
+                    var (fileName, saved) = await BrowserDownloader.RunAsync(
+                        session.BrowserClient,
+                        session.Context.Id,
+                        folder,
+                        () => session.Page.Mouse.ClickAsync(x, y),
+                        _time,
+                        _downloadTimeout,
+                        cancellationToken);
+                    Directory.CreateDirectory(Path.GetDirectoryName(destination) ?? ".");
+                    File.Move(saved, destination, overwrite: true);
+                    return new BrowserDownload(fileName, new FileInfo(destination).Length);
+                }
+                finally
+                {
+                    Directory.Delete(folder, recursive: true);
+                }
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task UserClickAsync(string chatId, double x, double y, CancellationToken cancellationToken) =>
+        WithPageAsync(chatId, session => session.Page.Mouse.ClickAsync(ViewportX(x), ViewportY(y)), cancellationToken);
+
+    /// <inheritdoc />
+    public Task UserKeyAsync(string chatId, string key, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        if (key.Length == 1)
+        {
+            return WithPageAsync(chatId, session => session.Page.Keyboard.TypeAsync(key), cancellationToken);
+        }
+
+        return UserKeys.Contains(key)
+            ? WithPageAsync(chatId, session => session.Page.Keyboard.PressAsync(key), cancellationToken)
+            : Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task UserScrollAsync(string chatId, double x, double y, double deltaY, CancellationToken cancellationToken) =>
+        WithPageAsync(
+            chatId,
+            async session =>
+            {
+                await session.Page.Mouse.MoveAsync(ViewportX(x), ViewportY(y));
+                await session.Page.Mouse.WheelAsync(0, (decimal)deltaY);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
     public void Forget(string chatId)
     {
         ArgumentException.ThrowIfNullOrEmpty(chatId);
@@ -231,7 +365,8 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         try
         {
             title = await page.GetTitleAsync().WaitAsync(cancellationToken);
-            snapshot = AccessibilityTextRenderer.Render(await page.Accessibility.SnapshotAsync().WaitAsync(cancellationToken));
+            var tree = await session.Client.SendAsync<JsonElement>("Accessibility.getFullAXTree").WaitAsync(cancellationToken);
+            snapshot = AccessibilityTextRenderer.Render(tree.TryGetProperty("nodes", out var nodes) ? nodes : default);
         }
         catch (PuppeteerException)
         {
@@ -242,7 +377,54 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         return new BrowserPageView(new Uri(page.Url), title, status, clipped ? snapshot[..MaxSnapshotChars] : snapshot, clipped, session.TakeProblems());
     }
 
+    private static long ParseRef(string elementRef) =>
+        BrowserElementRef.TryParse(elementRef, out var id)
+            ? id
+            : throw new BrowserException("That is not an element ref. Use a ref such as e42 from the last browser_snapshot.");
+
+    private static decimal ViewportX(double fraction) => (decimal)(Math.Clamp(fraction, 0, 1) * (ViewportWidth - 1));
+
+    private static decimal ViewportY(double fraction) => (decimal)(Math.Clamp(fraction, 0, 1) * (ViewportHeight - 1));
+
     private static string WithoutQuery(string url) => url.Split('?', 2)[0];
+
+    private async Task<T> WithPageAsync<T>(string chatId, Func<BrowserSession, Task<T>> action, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(chatId);
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (!_sessions.TryGetValue(chatId, out var session) || session.Page.IsClosed || session.Page.Url == "about:blank")
+            {
+                throw new BrowserException("No page is open. Call browser_navigate first.");
+            }
+
+            session.Touch(_time.GetUtcNow());
+            try
+            {
+                return await action(session);
+            }
+            catch (Exception ex) when (ex is PuppeteerException or TimeoutException)
+            {
+                LogActionFailed(ex);
+                throw new BrowserException("The page could not do that; it may have changed or navigated away. Call browser_snapshot to see it as it is now.");
+            }
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private Task WithPageAsync(string chatId, Func<BrowserSession, Task> action, CancellationToken cancellationToken) =>
+        WithPageAsync(
+            chatId,
+            async session =>
+            {
+                await action(session);
+                return true;
+            },
+            cancellationToken);
 
     private string? FindExecutable()
     {
@@ -270,8 +452,11 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         var browser = await BrowserAsync(cancellationToken);
         var context = await browser.CreateBrowserContextAsync();
         var page = await context.NewPageAsync();
-        await page.SetViewportAsync(new ViewPortOptions { Width = 1280, Height = 800 });
-        var session = new BrowserSession(context, page, _time.GetUtcNow());
+        await page.SetViewportAsync(new ViewPortOptions { Width = ViewportWidth, Height = ViewportHeight });
+        var client = await page.CreateCDPSessionAsync();
+        var browserClient = await browser.CreateCDPSessionAsync();
+        await BrowserDownloader.DenyAsync(browserClient, context.Id);
+        var session = new BrowserSession(context, page, client, browserClient, _time.GetUtcNow());
         await page.SetRequestInterceptionAsync(true);
         page.Request += (_, args) => OnRequestInBackground(session, args.Request);
         page.Console += (_, args) =>
@@ -306,7 +491,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     {
         try
         {
-            var client = await session.Page.CreateCDPSessionAsync();
+            var client = session.Client;
             client.MessageReceived += (_, args) =>
             {
                 if (args.MessageID == "Page.screencastFrame")
@@ -314,7 +499,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
                     OnFrameInBackground(chatId, session, client, args.MessageData);
                 }
             };
-            await client.SendAsync("Page.startScreencast", new { format = "jpeg", quality = 60, maxWidth = 1280, maxHeight = 800 });
+            await client.SendAsync("Page.startScreencast", new { format = "jpeg", quality = 60, maxWidth = ViewportWidth, maxHeight = ViewportHeight });
         }
         catch (PuppeteerException ex)
         {
@@ -523,6 +708,9 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The browser view could not be started.")]
     private partial void LogScreencastFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A browser action failed.")]
+    private partial void LogActionFailed(Exception ex);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Closing a browser page failed.")]
     private partial void LogCloseFailed(Exception ex);

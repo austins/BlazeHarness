@@ -138,6 +138,10 @@ public sealed class WebServices : IDisposable
         {
             tools.Add(new BrowserNavigateTool(_browser, chatId, _appPort));
             tools.Add(new BrowserSnapshotTool(_browser, chatId));
+            tools.Add(new BrowserClickTool(_browser, chatId));
+            tools.Add(new BrowserTypeTool(_browser, chatId));
+            tools.Add(new BrowserScreenshotTool(_browser, chatId));
+            tools.Add(new BrowserDownloadTool(_browser, chatId));
         }
 
         return tools;

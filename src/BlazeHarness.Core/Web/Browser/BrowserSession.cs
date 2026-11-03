@@ -16,16 +16,28 @@ internal sealed class BrowserSession
     private DateTimeOffset _lastUsed;
     private bool _closed;
 
-    public BrowserSession(IBrowserContext context, IPage page, DateTimeOffset now)
+    public BrowserSession(IBrowserContext context, IPage page, ICDPSession client, ICDPSession browserClient, DateTimeOffset now)
     {
         Context = context;
         Page = page;
+        Client = client;
+        BrowserClient = browserClient;
         _lastUsed = now;
     }
 
     public IBrowserContext Context { get; }
 
     public IPage Page { get; }
+
+    /// <summary>
+    /// Gets the protocol session of the page, used for the screencast and for finding elements.
+    /// </summary>
+    public ICDPSession Client { get; }
+
+    /// <summary>
+    /// Gets the protocol session of the whole browser, which has to stay open for the page's download setting to hold.
+    /// </summary>
+    public ICDPSession BrowserClient { get; }
 
     public DateTimeOffset LastUsed
     {
