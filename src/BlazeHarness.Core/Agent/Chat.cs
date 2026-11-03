@@ -53,7 +53,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     private readonly ILogger _logger;
     private readonly List<ChatEntry> _entries = [];
     private readonly List<ChatMessage> _history = [];
-    private readonly List<string> _queued = [];
+    private readonly List<QueuedMessage> _queued = [];
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ApprovalChoice>> _approvals = new(StringComparer.Ordinal);
     private readonly TodoCache _todoCache = new();
     private IReadOnlyList<ChatEntry> _snapshot = [];
@@ -255,7 +255,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     /// <remarks>
     /// After a reply that was stopped or failed, what was still waiting stays here until <see cref="TakeQueued"/> takes it.
     /// </remarks>
-    public IReadOnlyList<string> Queued
+    public IReadOnlyList<QueuedMessage> Queued
     {
         get
         {
@@ -382,13 +382,15 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     /// Queue a message for the reply that is running.
     /// </summary>
     /// <remarks>
-    /// The message is added to the conversation after the tool results of the current round, or when the model would otherwise finish, and the reply goes on.
-    /// Messages that wait together are merged into one. A message still waiting when the reply is stopped or fails is kept in <see cref="Queued"/>.
+    /// A <see cref="QueueMode.Steer"/> message is added to the conversation after the tool results of the current round, or when the model would otherwise finish;
+    /// a <see cref="QueueMode.AfterReply"/> message only when the model would otherwise finish. Either way the reply goes on.
+    /// Messages that are added together are merged into one. A message still waiting when the reply is stopped or fails is kept in <see cref="Queued"/>.
     /// While an <c>ask_user</c> question waits, the message is its free-text answer instead and nothing is queued.
     /// </remarks>
     /// <param name="text">The message text. Attachments are not supported.</param>
+    /// <param name="mode">When the message is added.</param>
     /// <returns>True when the message was queued or answered a question; false when no reply is running, the chat is closed, or the text is blank.</returns>
-    public bool Queue(string text)
+    public bool Queue(string text, QueueMode mode = QueueMode.Steer)
     {
         ArgumentNullException.ThrowIfNull(text);
         if (string.IsNullOrWhiteSpace(text))
@@ -408,7 +410,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
                 return false;
             }
 
-            _queued.Add(text);
+            _queued.Add(new QueuedMessage(text, mode));
         }
 
         RaiseChanged();
@@ -424,7 +426,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         string[] taken;
         lock (_gate)
         {
-            taken = [.. _queued];
+            taken = [.. _queued.Select(m => m.Text)];
             _queued.Clear();
         }
 
@@ -450,7 +452,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         ArgumentNullException.ThrowIfNull(text);
         lock (_gate)
         {
-            if (index < 0 || index >= _queued.Count || !string.Equals(_queued[index], text, StringComparison.Ordinal))
+            if (index < 0 || index >= _queued.Count || !string.Equals(_queued[index].Text, text, StringComparison.Ordinal))
             {
                 return false;
             }
@@ -609,19 +611,24 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     }
 
     /// <inheritdoc />
-    string? IRunInbox.TakeMessages()
+    string? IRunInbox.TakeMessages(bool replyEnded)
     {
         lock (_gate)
         {
             // A waiting question is answered by the user's next message; a steer message must not jump the queue.
-            if (_queued.Count == 0 || IsWaitingForUser)
+            if (IsWaitingForUser)
             {
                 return null;
             }
 
-            var text = string.Join("\n\n", _queued);
-            _queued.Clear();
-            return text;
+            var taken = _queued.FindAll(m => replyEnded || m.Mode == QueueMode.Steer);
+            if (taken.Count == 0)
+            {
+                return null;
+            }
+
+            _queued.RemoveAll(taken.Contains);
+            return string.Join("\n\n", taken.Select(m => m.Text));
         }
     }
 
@@ -719,7 +726,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
                 return null;
             }
 
-            var text = string.Join("\n\n", _queued);
+            var text = string.Join("\n\n", _queued.Select(m => m.Text));
             _queued.Clear();
             var sentAt = _time.GetUtcNow();
             var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt, Origin = UserMessageOrigin.Steer, HistoryIndex = _history.Count };

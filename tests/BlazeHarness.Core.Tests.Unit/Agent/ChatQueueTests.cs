@@ -83,6 +83,55 @@ public sealed class ChatQueueTests
     }
 
     [Fact]
+    public async Task Queue_AfterReplyWhileAToolRuns_AddsTheMessageOnlyAfterTheFinalReply()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read")])
+            .Enqueue([ScriptedChatClient.Text("fin")])
+            .Enqueue([ScriptedChatClient.Text("next")]);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var sut = Create(client, HoldingTools(started, release));
+        var turn = sut.SendAsync("hi", TestTargets.Create());
+        await started.Task.Bounded();
+
+        // Act
+        var accepted = sut.Queue("later", QueueMode.AfterReply);
+        release.SetResult();
+        await turn.Bounded();
+
+        // Assert
+        accepted.Should().BeTrue();
+        sut.Queued.Should().BeEmpty();
+        sut.Entries.Select(e => e.Text).Should().Equal("hi", string.Empty, "fin", "later", "next");
+        client.Requests[1].Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.Tool);
+    }
+
+    [Fact]
+    public async Task Queue_SteerAndAfterReplyWhileAToolRuns_AddsOnlyTheSteerMessageAfterTheToolResult()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read")])
+            .Enqueue([ScriptedChatClient.Text("fin")])
+            .Enqueue([ScriptedChatClient.Text("next")]);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var sut = Create(client, HoldingTools(started, release));
+        var turn = sut.SendAsync("hi", TestTargets.Create());
+        await started.Task.Bounded();
+
+        // Act
+        sut.Queue("later", QueueMode.AfterReply);
+        sut.Queue("now");
+        release.SetResult();
+        await turn.Bounded();
+
+        // Assert
+        sut.Entries.Select(e => e.Text).Should().Equal("hi", string.Empty, "now", "fin", "later", "next");
+        client.Requests[1][^1].Text.Should().Be("now");
+    }
+
+    [Fact]
     public async Task Queue_WhileAToolRuns_RestoredChatEqualsTheLiveChat()
     {
         // Arrange
@@ -158,7 +207,7 @@ public sealed class ChatQueueTests
 
         // Assert
         client.Requests.Should().HaveCount(1);
-        sut.Queued.Should().Equal("keep me");
+        sut.Queued.Should().Equal(new QueuedMessage("keep me", QueueMode.Steer));
         sut.Entries.Should().NotContain(e => e.Origin == UserMessageOrigin.Steer);
         sut.TakeQueued().Should().Equal("keep me");
         sut.Queued.Should().BeEmpty();
@@ -210,7 +259,7 @@ public sealed class ChatQueueTests
         // Assert
         otherText.Should().BeFalse();
         pastTheEnd.Should().BeFalse();
-        queued.Should().Equal("one");
+        queued.Select(m => m.Text).Should().Equal("one");
     }
 
     [Fact]

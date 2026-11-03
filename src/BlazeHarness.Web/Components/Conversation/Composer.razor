@@ -49,9 +49,9 @@ else
                     var index = i;
                     var queued = Queued[i];
                     <li class="chip">
-                        <span class="badge badge-accent">@WebStrings.ComposerQueuedBadge</span>
-                        <span class="chip-name" title="@queued">@queued</span>
-                        <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.ComposerRemoveQueued" @onclick="() => OnRemoveQueued?.Invoke(index, queued)"><Icon Name="close" /></button>
+                        <span class="badge badge-accent">@(queued.Mode == QueueMode.Steer ? WebStrings.ComposerSteerBadge : WebStrings.ComposerQueuedBadge)</span>
+                        <span class="chip-name" title="@queued.Text">@queued.Text</span>
+                        <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.ComposerRemoveQueued" @onclick="() => OnRemoveQueued?.Invoke(index, queued.Text)"><Icon Name="close" /></button>
                     </li>
                 }
             </ul>
@@ -133,7 +133,23 @@ else
             }
             @if (Running)
             {
-                @if (CanQueue && !string.IsNullOrWhiteSpace(_text))
+                @if (CanQueue && !Asked)
+                {
+                    <span class="composer-send">
+                        <Menu Label="@WebStrings.ComposerQueueModeMenuLabel" Title="@WebStrings.ComposerQueueModeTooltip">
+                            <Trigger><span class="menu-trigger-text">@(_mode == QueueMode.Steer ? WebStrings.ComposerQueueModeSteer : WebStrings.ComposerQueueModeAfterReply)</span></Trigger>
+                            <ChildContent>
+                                <MenuItem Label="@WebStrings.ComposerQueueModeSteer" Description="@WebStrings.ComposerQueueModeSteerDescription" Checked="_mode == QueueMode.Steer" OnSelect="() => SelectMode(QueueMode.Steer)" />
+                                <MenuItem Label="@WebStrings.ComposerQueueModeAfterReply" Description="@WebStrings.ComposerQueueModeAfterReplyDescription" Checked="_mode == QueueMode.AfterReply" OnSelect="() => SelectMode(QueueMode.AfterReply)" />
+                            </ChildContent>
+                        </Menu>
+                        @if (!string.IsNullOrWhiteSpace(_text))
+                        {
+                            <button type="submit" class="btn btn-primary btn-send" aria-label="@SendButtonLabel" title="@SendButtonTitle"><Icon Name="arrow-up" /></button>
+                        }
+                    </span>
+                }
+                else if (CanQueue && !string.IsNullOrWhiteSpace(_text))
                 {
                     <button type="submit" class="btn btn-primary btn-send" aria-label="@SendButtonLabel" title="@SendButtonTitle"><Icon Name="arrow-up" /></button>
                 }
@@ -168,6 +184,7 @@ else
     private List<ThinkingLevel> _levels = [];
     private ElementReference _input;
     private string _text = string.Empty;
+    private QueueMode _mode = QueueMode.Steer;
     private string _selected = string.Empty;
     private string _level = string.Empty;
     private const int PreviewBytes = 2000;
@@ -229,13 +246,13 @@ else
     /// Gets or sets the messages that wait to be added to the running reply.
     /// </summary>
     [Parameter]
-    public IReadOnlyList<string> Queued { get; set; } = [];
+    public IReadOnlyList<QueuedMessage> Queued { get; set; } = [];
 
     /// <summary>
-    /// Gets or sets the function that queues a text for the running reply and returns whether it was accepted.
+    /// Gets or sets the function that queues a text for the running reply, given when it is added, and returns whether it was accepted.
     /// </summary>
     [Parameter]
-    public Func<string, bool>? OnQueue { get; set; }
+    public Func<string, QueueMode, bool>? OnQueue { get; set; }
 
     /// <summary>
     /// Gets or sets the action that removes a waiting message, given its position in <see cref="Queued"/> and its text.
@@ -540,13 +557,24 @@ else
                 return WebStrings.ComposerAnswerQuestion;
             }
 
-            return CanQueue ? WebStrings.ComposerQueuePlaceholder : WebStrings.ComposerPlaceholder;
+            if (!CanQueue)
+            {
+                return WebStrings.ComposerPlaceholder;
+            }
+
+            return _mode == QueueMode.Steer ? WebStrings.ComposerQueuePlaceholder : WebStrings.ComposerAfterReplyPlaceholder;
         }
     }
 
-    private string SendButtonLabel => Asked ? WebStrings.ComposerSendAnswer : WebStrings.ComposerQueueMessage;
+    private string SendButtonLabel => Asked ? WebStrings.ComposerSendAnswer : ModeLabel;
 
-    private string SendButtonTitle => Asked ? WebStrings.ComposerSendAnswerEnter : WebStrings.ComposerQueueMessageEnter;
+    private string SendButtonTitle => Asked ? WebStrings.ComposerSendAnswerEnter : ModeTitle;
+
+    private string ModeLabel => _mode == QueueMode.Steer ? WebStrings.ComposerQueueMessage : WebStrings.ComposerAfterReplyMessage;
+
+    private string ModeTitle => _mode == QueueMode.Steer ? WebStrings.ComposerQueueMessageEnter : WebStrings.ComposerAfterReplyMessageEnter;
+
+    private void SelectMode(QueueMode mode) => _mode = mode;
 
     private static string FileRemoveLabel(string name) =>
         ResourceMessageFormatter.Web.Format(nameof(WebStrings.ComposerRemoveFile), new Dictionary<string, object?> { ["name"] = name });
@@ -599,7 +627,7 @@ else
             return;
         }
 
-        if (OnQueue(_text))
+        if (OnQueue(_text, Asked ? QueueMode.Steer : _mode))
         {
             _text = string.Empty;
             _note = null;

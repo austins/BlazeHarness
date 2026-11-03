@@ -29,6 +29,7 @@ public sealed class ChatRunnerInjectionTests
             new MessagesInjected("also this"),
             new NewResponse());
         client.Requests[1].Select(m => m.Text).Should().EndWith("also this");
+        inbox.Asked.Should().StartWith(false);
     }
 
     [Fact]
@@ -52,6 +53,7 @@ public sealed class ChatRunnerInjectionTests
             new TextDelta("second"),
             new Done(StopReason.Completed));
         events.OfType<Done>().Should().ContainSingle();
+        inbox.Asked.Should().StartWith(true);
     }
 
     [Fact]

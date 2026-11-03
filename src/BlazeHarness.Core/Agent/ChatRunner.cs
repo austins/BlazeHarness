@@ -328,7 +328,7 @@ internal static class ChatRunner
                 }
 
                 // End-of-run hook: a message the user queued during the run continues the loop instead of ending it.
-                if (AddQueuedMessages(inbox, history, contents.Count == 0) is { } queued)
+                if (AddQueuedMessages(inbox, history, true, contents.Count == 0) is { } queued)
                 {
                     yield return queued;
                     continue;
@@ -359,7 +359,7 @@ internal static class ChatRunner
             // A message from the user steers the run already, so it takes the place of the notice.
             // A notice goes into the last tool result rather than a user message: a new user message makes chat templates such as Qwen's
             // drop the thinking of the earlier steps, which changes the prompt from there on and throws away the server's prompt cache.
-            if (AddQueuedMessages(inbox, history, false) is { } steering)
+            if (AddQueuedMessages(inbox, history, false, false) is { } steering)
             {
                 failedRounds = 0;
                 yield return steering;
@@ -410,11 +410,12 @@ internal static class ChatRunner
     /// </remarks>
     /// <param name="inbox">Where queued messages wait, or null when the run has none.</param>
     /// <param name="history">The history of the run.</param>
+    /// <param name="replyEnded">True when the model has finished its reply, which takes every waiting message; false between two steps, which takes only steer messages.</param>
     /// <param name="afterEmptyReply">True when the last reply had no text and no calls, which the history does not hold; a placeholder reply is added so the roles alternate.</param>
     /// <returns>The event that tells the consumer to add a chat entry for the message, or null when nothing waited.</returns>
-    private static MessagesInjected? AddQueuedMessages(IRunInbox? inbox, IList<ChatMessage> history, bool afterEmptyReply)
+    private static MessagesInjected? AddQueuedMessages(IRunInbox? inbox, IList<ChatMessage> history, bool replyEnded, bool afterEmptyReply)
     {
-        if (inbox?.TakeMessages() is not { Length: > 0 } text)
+        if (inbox?.TakeMessages(replyEnded) is not { Length: > 0 } text)
         {
             return null;
         }

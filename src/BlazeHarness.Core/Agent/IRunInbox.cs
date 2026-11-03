@@ -6,8 +6,9 @@ namespace BlazeHarness.Core.Agent;
 internal interface IRunInbox
 {
     /// <summary>
-    /// Take everything that is waiting, so it is not offered again.
+    /// Take what is waiting, so it is not offered again.
     /// </summary>
-    /// <returns>The waiting messages merged into one text, or null when there are none.</returns>
-    string? TakeMessages();
+    /// <param name="replyEnded">True when the model has finished its reply, which takes every message; false between two steps, which takes only <see cref="QueueMode.Steer"/> messages.</param>
+    /// <returns>The messages taken merged into one text, or null when there are none.</returns>
+    string? TakeMessages(bool replyEnded);
 }

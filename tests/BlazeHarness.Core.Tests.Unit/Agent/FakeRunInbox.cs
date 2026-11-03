@@ -13,11 +13,14 @@ internal sealed class FakeRunInbox : IRunInbox
     }
 
     /// <summary>Gets how many times the runner asked for messages.</summary>
-    public int Calls { get; private set; }
+    public int Calls => Asked.Count;
 
-    public string? TakeMessages()
+    /// <summary>Gets, for each time the runner asked, whether the model had finished its reply.</summary>
+    public List<bool> Asked { get; } = [];
+
+    public string? TakeMessages(bool replyEnded)
     {
-        Calls++;
+        Asked.Add(replyEnded);
         return _answers.TryDequeue(out var answer) ? answer : null;
     }
 }

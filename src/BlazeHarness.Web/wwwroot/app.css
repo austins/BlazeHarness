@@ -722,6 +722,7 @@ legend.question-text + * { clear: both; }
 .composer-bar > .btn-ghost:hover:not(:disabled) { color: var(--fg); }
 .composer-spacer { flex: 1; }
 .btn-send { flex: none; margin-inline-start: auto; padding: 0; width: 2.25rem; height: 2.25rem; border-radius: 999px; }
+.composer-send { display: flex; align-items: center; gap: var(--space-1); margin-inline-start: auto; }
 .btn-stop { background: var(--fg); border-color: var(--fg); color: var(--bg); }
 .btn-stop:hover:not(:disabled) { background: var(--fg); filter: brightness(0.85); }
 .btn-stop .icon { fill: currentcolor; }

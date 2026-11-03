@@ -436,7 +436,7 @@ else
         }
     }
 
-    private bool Queue(string text) => _chat?.Queue(text) ?? false;
+    private bool Queue(string text, QueueMode mode) => _chat?.Queue(text, mode) ?? false;
 
     private void RemoveQueued(int index, string text) => _chat?.RemoveQueued(index, text);
 
