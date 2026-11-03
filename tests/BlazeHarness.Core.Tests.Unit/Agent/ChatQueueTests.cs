@@ -165,6 +165,55 @@ public sealed class ChatQueueTests
     }
 
     [Fact]
+    public async Task RemoveQueued_WhileAToolRuns_DropsOnlyThatMessage()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read")]).Enqueue([ScriptedChatClient.Text("fin")]);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var sut = Create(client, HoldingTools(started, release));
+        var turn = sut.SendAsync("hi", TestTargets.Create());
+        await started.Task.Bounded();
+        sut.Queue("one");
+        sut.Queue("two");
+
+        // Act
+        var removed = sut.RemoveQueued(0, "one");
+        release.SetResult();
+        await turn.Bounded();
+
+        // Assert
+        removed.Should().BeTrue();
+        sut.Entries[2].Text.Should().Be("two");
+        client.Requests[1][^1].Text.Should().Be("two");
+    }
+
+    [Fact]
+    public async Task RemoveQueued_TextNotAtThatPosition_ReturnsFalseAndKeepsTheMessage()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "read")]).Enqueue([ScriptedChatClient.Text("fin")]);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var sut = Create(client, HoldingTools(started, release));
+        var turn = sut.SendAsync("hi", TestTargets.Create());
+        await started.Task.Bounded();
+        sut.Queue("one");
+
+        // Act
+        var otherText = sut.RemoveQueued(0, "other");
+        var pastTheEnd = sut.RemoveQueued(1, "one");
+        var queued = sut.Queued;
+        release.SetResult();
+        await turn.Bounded();
+
+        // Assert
+        otherText.Should().BeFalse();
+        pastTheEnd.Should().BeFalse();
+        queued.Should().Equal("one");
+    }
+
+    [Fact]
     public async Task SendAsync_AfterAnAddedMessageTheRunIsStoppedDuringCompaction_RestoredChatEqualsTheLiveChat()
     {
         // Arrange

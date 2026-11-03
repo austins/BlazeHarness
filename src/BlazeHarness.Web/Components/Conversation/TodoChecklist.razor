@@ -3,9 +3,10 @@
 <ol class="todo-list" aria-label="@WebStrings.TodoChecklistLabel">
     @foreach (var item in Items)
     {
-        <li class="todo-item" data-status="@StatusKey(item.Status)">
-            <span class="todo-mark" aria-hidden="true">@if (item.Status == TodoStatus.Completed) { <Icon Name="check" /> }</span>
-            <span class="visually-hidden">@StatusText(item.Status): </span>
+        var status = Idle && item.Status == TodoStatus.InProgress ? TodoStatus.Pending : item.Status;
+        <li class="todo-item" data-status="@StatusKey(status)">
+            <span class="todo-mark" aria-hidden="true">@if (status == TodoStatus.Completed) { <Icon Name="check" /> }</span>
+            <span class="visually-hidden">@StatusText(status): </span>
             <span class="todo-text">@item.Text</span>
         </li>
     }
@@ -17,6 +18,12 @@
     /// </summary>
     [Parameter, EditorRequired]
     public IReadOnlyList<TodoItem> Items { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets a value indicating whether no run is going, so an item left in progress is shown as not started.
+    /// </summary>
+    [Parameter]
+    public bool Idle { get; set; }
 
     private static string StatusKey(TodoStatus status) => status switch
     {

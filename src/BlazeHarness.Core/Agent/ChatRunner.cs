@@ -31,11 +31,23 @@ internal static class ChatRunner
     internal const int MaxFailedRounds = 5;
 
     /// <summary>
+    /// The number of tool calls without an <c>update_todos</c> call, while the list has open items, before the runner reminds the model to update it.
+    /// </summary>
+    internal const int TodoReminderCalls = 10;
+
+    /// <summary>
     /// The user message added after <see cref="MaxFailedRounds"/> rounds in a row in which every tool call failed. It has no chat entry of its own.
     /// </summary>
     internal static readonly string FailureNotice = string.Create(
         CultureInfo.InvariantCulture,
         $"The last {MaxFailedRounds} rounds of tool calls all failed. Stop retrying. If {UserQuestion.ToolName} is available, use it to tell the user what failed and ask how to proceed; otherwise reply with what failed and what you need.");
+
+    /// <summary>
+    /// The user message added after <see cref="TodoReminderCalls"/> tool calls in which the model left an unfinished to-do list unchanged. It has no chat entry of its own.
+    /// </summary>
+    internal static readonly string TodoReminder = string.Create(
+        CultureInfo.InvariantCulture,
+        $"Your todo list has not changed in the last {TodoReminderCalls} tool calls. If a step is done or the plan changed, call {TodoList.ToolName} now; otherwise carry on.");
 
     private const int MaxTextCallRetries = 3;
     private const string TextCallMarker = "<tool_call>";
@@ -121,6 +133,8 @@ internal static class ChatRunner
         var firstResponse = true;
         var textCallRetries = 0;
         var failedRounds = 0;
+        var callsSinceTodos = 0;
+        var tracksTodos = tools?.Find(TodoList.ToolName) is not null;
         var questions = new QuestionBudget();
         while (true)
         {
@@ -334,6 +348,7 @@ internal static class ChatRunner
             }
 
             failedRounds = outcome.AllFailed ? failedRounds + 1 : 0;
+            callsSinceTodos = calls.Exists(c => c.Name == TodoList.ToolName) ? 0 : callsSinceTodos + calls.Count;
 
             // The tool results are in the history now, so a user message can follow them.
             // A message from the user steers the run already, so it takes the place of the notice.
@@ -346,6 +361,14 @@ internal static class ChatRunner
             {
                 failedRounds = 0;
                 history.Add(new ChatMessage(ChatRole.User, FailureNotice));
+            }
+            else if (tracksTodos && callsSinceTodos >= TodoReminderCalls)
+            {
+                callsSinceTodos = 0;
+                if (TodoList.From(history).Items.Any(item => item.Status != TodoStatus.Completed))
+                {
+                    history.Add(new ChatMessage(ChatRole.User, TodoReminder));
+                }
             }
         }
     }

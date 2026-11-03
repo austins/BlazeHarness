@@ -1389,6 +1389,7 @@
   <data name="ComposerSendAnswerEnter" xml:space="preserve"><value>Send answer (Enter)</value><comment>Tooltip for sending an answer with the Enter key.</comment></data>
   <data name="ComposerQueueMessageEnter" xml:space="preserve"><value>Queue message (Enter)</value><comment>Tooltip for queueing a message with the Enter key.</comment></data>
   <data name="ComposerRemoveFile" xml:space="preserve"><value>Remove {name}</value><comment>Accessible label for removing an attached file; name is the file name.</comment></data>
+  <data name="ComposerRemoveQueued" xml:space="preserve"><value>Remove queued message</value><comment>Accessible label for the X button on a message waiting above the message box to be sent into the running reply.</comment></data>
   <data name="ComposerPreviewStart" xml:space="preserve"><value>Start of {name}</value><comment>Accessible label for a preview of an attached file; name is the file name.</comment></data>
   <data name="ComposerFilesNotQueued" xml:space="preserve"><value>Files can't be added while a reply is running. Remove them to queue the message, or send it once the reply ends.</value><comment>Hint shown when a user tries to queue a message with attached files.</comment></data>
   <data name="ComposerQuestionAlreadyHandled" xml:space="preserve"><value>The question was answered or stopped before this arrived. Send it again.</value><comment>Hint shown when an answer can no longer be queued.</comment></data>

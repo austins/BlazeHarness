@@ -437,6 +437,32 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     }
 
     /// <summary>
+    /// Remove one message that waits, so it is never added to the reply.
+    /// </summary>
+    /// <remarks>
+    /// The text is checked as well as the position, because the reply may have taken the waiting messages since the caller read <see cref="Queued"/>.
+    /// </remarks>
+    /// <param name="index">The message's position in <see cref="Queued"/>.</param>
+    /// <param name="text">The message's text, as read from <see cref="Queued"/>.</param>
+    /// <returns>True when the message was removed; false when it no longer waits there.</returns>
+    public bool RemoveQueued(int index, string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        lock (_gate)
+        {
+            if (index < 0 || index >= _queued.Count || !string.Equals(_queued[index], text, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            _queued.RemoveAt(index);
+        }
+
+        RaiseChanged();
+        return true;
+    }
+
+    /// <summary>
     /// Request a new reply after the last reply failed, was stopped or was interrupted.
     /// </summary>
     /// <remarks>

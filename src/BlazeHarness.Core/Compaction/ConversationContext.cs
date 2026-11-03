@@ -320,7 +320,7 @@ public sealed class ConversationContext
             return false;
         }
 
-        return message.Role != ChatRole.User || (message.Text != ChatRunner.TextCallNotice && message.Text != ChatRunner.FailureNotice);
+        return message.Role != ChatRole.User || (message.Text != ChatRunner.TextCallNotice && message.Text != ChatRunner.FailureNotice && message.Text != ChatRunner.TodoReminder);
     }
 
     // Returns the index after the leading messages where the kept messages should begin, or 0 when there is nothing to fold in.

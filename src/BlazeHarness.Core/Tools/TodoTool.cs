@@ -20,7 +20,7 @@ internal sealed class TodoTool : ITool
     public string Description =>
         "Keep a short todo list for the current task, which the user sees in the chat. Use it for work with several steps, such as a change that touches many files, " +
         "and not for a simple question or a one or two step task. Write the list when you start, keep exactly one item in progress while you work, " +
-        "and update it as you go: mark an item completed as soon as it is done, and add or remove items when the plan changes. " +
+        "and update it as you go: mark an item completed as soon as it is done, and add or remove items when the plan changes. When the last step is your final reply, mark it completed in the call just before you write that reply. " +
         "Each call replaces the whole list, so send every item every time. " +
         $"Items are short one-line steps (at most {TodoList.MaxTextLength} characters), and a list has at most {TodoList.MaxItems} items. " +
         "Do not put details, code or results in the list; say those in your reply.";

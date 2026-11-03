@@ -44,11 +44,14 @@ else
         @if (Queued.Count > 0)
         {
             <ul class="composer-queued" aria-label="@WebStrings.ComposerQueuedMessagesLabel">
-                @foreach (var queued in Queued)
+                @for (var i = 0; i < Queued.Count; i++)
                 {
+                    var index = i;
+                    var queued = Queued[i];
                     <li class="chip">
                         <span class="badge badge-accent">@WebStrings.ComposerQueuedBadge</span>
                         <span class="chip-name" title="@queued">@queued</span>
+                        <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.ComposerRemoveQueued" @onclick="() => OnRemoveQueued?.Invoke(index, queued)"><Icon Name="close" /></button>
                     </li>
                 }
             </ul>
@@ -233,6 +236,12 @@ else
     /// </summary>
     [Parameter]
     public Func<string, bool>? OnQueue { get; set; }
+
+    /// <summary>
+    /// Gets or sets the action that removes a waiting message, given its position in <see cref="Queued"/> and its text.
+    /// </summary>
+    [Parameter]
+    public Action<int, string>? OnRemoveQueued { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the last reply can be retried.

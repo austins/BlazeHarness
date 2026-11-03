@@ -7,7 +7,7 @@
         <button type="button" class="todo-head" aria-expanded="@(_open ? "true" : "false")" aria-controls="@_bodyId" @onclick="Toggle">
             <Icon Name="@(_open ? "chevron-down" : "chevron-right")" />
             <span class="todo-count">@Count</span>
-            @if (Todos.Current is { } current)
+            @if (Running && Todos.Current is { } current)
             {
                 <span class="todo-current">@current.Text</span>
             }
@@ -15,7 +15,7 @@
         @if (_open)
         {
             <div class="todo-body" id="@_bodyId">
-                <TodoChecklist Items="Todos.Items" />
+                <TodoChecklist Items="Todos.Items" Idle="!Running" />
             </div>
         }
     </section>
@@ -31,7 +31,13 @@
     [Parameter]
     public TodoList? Todos { get; set; }
 
-    private string Count => string.Create(CultureInfo.CurrentCulture, $"{Todos!.CompletedCount} of {Todos.Items.Count} done") + (Todos.Current is null ? string.Empty : ":");
+    /// <summary>
+    /// Gets or sets a value indicating whether a run is going, so a step can be shown as being worked on.
+    /// </summary>
+    [Parameter]
+    public bool Running { get; set; }
+
+    private string Count => string.Create(CultureInfo.CurrentCulture, $"{Todos!.CompletedCount} of {Todos.Items.Count} done") + (Running && Todos.Current is not null ? ":" : string.Empty);
 
     private void Toggle() => _open = !_open;
 }
