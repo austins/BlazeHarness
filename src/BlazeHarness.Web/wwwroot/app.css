@@ -545,7 +545,8 @@ details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600
 /* A closed details still lays out its hidden content slot, so drop the gap it would add. */
 details.stack:not([open]) { gap: 0; }
 .key-env { display: flex; flex-direction: column; gap: var(--space-1); }
-.key-env > summary { font-weight: 400; color: var(--fg-muted); }
+.key-env > summary { font-weight: 400; color: var(--accent); cursor: pointer; width: fit-content; }
+.key-env > summary:hover { text-decoration: underline; }
 .key-env[open] > summary { margin-block-end: var(--space-1); }
 .skill-list { display: flex; flex-direction: column; }
 .skill-item {

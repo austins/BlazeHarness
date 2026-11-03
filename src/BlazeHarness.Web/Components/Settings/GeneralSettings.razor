@@ -8,14 +8,14 @@
     <PageHeader Title="General">How long chats are handled, text size and keyboard shortcuts.</PageHeader>
 
     <section class="card stack" aria-labelledby="compaction-heading">
-        <h2 id="compaction-heading">Long chats</h2>
+        <h2 id="compaction-heading">Compaction</h2>
         <label class="check">
             <input type="checkbox" checked="@(Config.Current.Compaction == CompactionMode.Extractive)" @onchange="OnCompactionChangedAsync" />
-            <span>Compact without asking the model</span>
+            <span>Compact without the model (Extraction)</span>
         </label>
         <p class="hint">
-            When a chat gets too long, the model normally summarizes the older messages. With this on, the summary is built from your requests,
-            the files touched and the latest steps instead: instant and free, but less thorough. The agent can still look up what was left out.
+            When a chat gets too long, the model normally summarizes the older messages. Extraction builds the summary from your requests,
+            the files touched and the latest steps instead, without a model call: instant and free, but less thorough. The agent can still look up what was left out.
         </p>
     </section>
 

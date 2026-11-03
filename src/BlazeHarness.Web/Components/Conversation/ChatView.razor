@@ -573,7 +573,7 @@ else
         }
         catch (InvalidOperationException ex)
         {
-            var hint = Config.Current.Compaction == CompactionMode.Model ? " You can turn on \"Compact without asking the model\" under Settings > Context." : string.Empty;
+            var hint = Config.Current.Compaction == CompactionMode.Model ? " You can turn on \"Compact without the model (Extraction)\" under Settings > General." : string.Empty;
             Toasts.Show($"The conversation could not be summarized: {ex.Message}{hint}", ToastKind.Error);
         }
     }

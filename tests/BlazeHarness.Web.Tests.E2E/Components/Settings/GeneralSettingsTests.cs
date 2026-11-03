@@ -8,7 +8,7 @@ public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(brow
         // Arrange
         await LaunchAsync();
         await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Settings" }).ClickAsync();
-        var toggle = Page.GetByLabel("Compact without asking the model");
+        var toggle = Page.GetByLabel("Compact without the model (Extraction)");
 
         // Act
         await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "General" }).ClickAsync();
