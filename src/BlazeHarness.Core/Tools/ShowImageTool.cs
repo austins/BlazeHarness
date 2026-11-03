@@ -9,7 +9,7 @@ namespace BlazeHarness.Core.Tools;
 /// </summary>
 /// <remarks>
 /// The chat itself loads the file through an endpoint that checks the path again, so this tool only has to confirm
-/// that the file can be shown. The model does not see the image.
+/// that the file can be shown. The model does not see the image; <c>read_file</c> gives it the picture.
 /// </remarks>
 public sealed class ShowImageTool : ITool
 {
@@ -29,7 +29,8 @@ public sealed class ShowImageTool : ITool
     /// <inheritdoc />
     public string Description =>
         "Show an image file from the open folder to the user in the chat, for example a chart or screenshot a script wrote. " +
-        "Supports PNG, JPEG, GIF, WebP, AVIF and SVG up to 10 MB. You can't see the image yourself through this tool.";
+        "Supports PNG, JPEG, GIF, WebP, AVIF and SVG up to 10 MB. You can't see the image yourself through this tool; " +
+        "use read_file to look at a PNG, JPEG, GIF or WebP image.";
 
     /// <inheritdoc />
     public string InputSchema => """

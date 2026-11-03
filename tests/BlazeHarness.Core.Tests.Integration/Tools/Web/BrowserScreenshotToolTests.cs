@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Core.Tools.Web;
 using BlazeHarness.Core.Web.Browser;
@@ -44,7 +45,7 @@ public sealed class BrowserScreenshotToolTests : IDisposable
     public async Task ExecuteAsync_PictureTooLargeForTheModel_SavesItWithoutAnImage()
     {
         // Arrange
-        _engine.ScreenshotAsync(Chat, true, Arg.Any<CancellationToken>()).Returns(new byte[BrowserScreenshotTool.MaxViewableBytes + 1]);
+        _engine.ScreenshotAsync(Chat, true, Arg.Any<CancellationToken>()).Returns(new byte[ImageFiles.MaxViewableBytes + 1]);
 
         // Act
         var result = await Run(new { path = "big.png", full_page = true });

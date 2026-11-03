@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Tests.Shared;
@@ -131,6 +132,41 @@ public sealed class ReadFileToolTests : IDisposable
         // Assert
         result.IsError.Should().BeTrue();
         result.Output.Should().Contain("binary");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_PngFile_ReturnsThePicture()
+    {
+        // Arrange
+        byte[] png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 1, 2, 3];
+        _root.Write("shot.png", png);
+
+        // Act
+        var result = await RunAsync(new { path = "shot.png" });
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Output.Should().Contain("shot.png").And.Contain("image/png");
+        result.Image.Should().NotBeNull();
+        result.Image.MediaType.Should().Be("image/png");
+        result.Image.Data.ToArray().Should().Equal(png);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ImageTooLarge_IsRefused()
+    {
+        // Arrange
+        var big = new byte[ImageFiles.MaxViewableBytes + 1];
+        "GIF89a"u8.CopyTo(big);
+        _root.Write("big.gif", big);
+
+        // Act
+        var result = await RunAsync(new { path = "big.gif" });
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.Image.Should().BeNull();
+        result.Output.Should().Contain("big.gif");
     }
 
     [Fact]

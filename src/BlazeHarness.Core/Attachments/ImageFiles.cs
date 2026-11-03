@@ -23,6 +23,11 @@ internal static class ImageFiles
     public const long MaxDisplayBytes = 10L * 1024 * 1024;
 
     /// <summary>
+    /// The largest picture a tool hands to the model, in bytes.
+    /// </summary>
+    public const int MaxViewableBytes = 5 * 1024 * 1024;
+
+    /// <summary>
     /// Recognize PNG, JPEG, GIF and WebP, the formats the common vision APIs take.
     /// </summary>
     /// <param name="head">The first bytes of the file.</param>

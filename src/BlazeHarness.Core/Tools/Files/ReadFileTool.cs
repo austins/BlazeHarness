@@ -1,3 +1,5 @@
+using BlazeHarness.Core.Attachments;
+using Microsoft.Extensions.AI;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -5,7 +7,7 @@ using System.Text.Json;
 namespace BlazeHarness.Core.Tools.Files;
 
 /// <summary>
-/// Reads a text file, a range of lines at a time.
+/// Reads a text file, a range of lines at a time, or hands an image file to the model as a picture.
 /// </summary>
 internal sealed class ReadFileTool : ITool
 {
@@ -28,7 +30,8 @@ internal sealed class ReadFileTool : ITool
     /// <inheritdoc />
     public string Description =>
         $"Read a text file inside the working folder. Returns up to {DefaultLimit} lines at a time; for a longer file, " +
-        "pass offset (the first line to read, starting at 1) and limit to read it in pieces. Binary files can't be read.";
+        "pass offset (the first line to read, starting at 1) and limit to read it in pieces. A PNG, JPEG, GIF or WebP image " +
+        $"up to {ImageFiles.MaxViewableBytes / (1024 * 1024)} MB comes back as a picture you can look at; other binary files can't be read.";
 
     /// <inheritdoc />
     public string InputSchema => $$"""
@@ -81,6 +84,11 @@ internal sealed class ReadFileTool : ITool
         if (ToolSupport.IsEmpty(full))
         {
             return Task.FromResult(ToolResult.Ok($"[{context.Relative(full)} is empty.]"));
+        }
+
+        if (ReadImage(context.Relative(full), full) is { } image)
+        {
+            return Task.FromResult(image);
         }
 
         return Task.FromResult(ToolSupport.LooksBinary(full)
@@ -145,5 +153,31 @@ internal sealed class ReadFileTool : ITool
         }
 
         return ToolResult.Ok(shown.ToString());
+    }
+
+    private static ToolResult? ReadImage(string display, string full)
+    {
+        Span<byte> head = stackalloc byte[ImageFiles.SniffBytes];
+        int read;
+        using (var stream = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        {
+            read = stream.ReadAtLeast(head, head.Length, throwOnEndOfStream: false);
+        }
+
+        if (ImageFiles.SniffRaster(head[..read]) is not { } image)
+        {
+            return null;
+        }
+
+        var size = new FileInfo(full).Length;
+        if (size > ImageFiles.MaxViewableBytes)
+        {
+            return ToolResult.Error(string.Create(
+                CultureInfo.InvariantCulture,
+                $"'{display}' is an image of {FileSize.Format(size)}, larger than the {ImageFiles.MaxViewableBytes / (1024 * 1024)} MB a picture can be."));
+        }
+
+        return ToolResult.Ok(string.Create(CultureInfo.InvariantCulture, $"[{display} is an image ({image.MediaType}, {FileSize.Format(size)}); the picture follows.]"))
+            with { Image = new DataContent(File.ReadAllBytes(full), image.MediaType) };
     }
 }
