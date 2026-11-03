@@ -58,7 +58,7 @@ Not built yet, and not promised:
 * Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits. A subagent would run the same loop at the same or a lower access level, and its approval requests would go to the parent chat's approver, never be granted on their own.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
-* Smaller additions: a command palette and a sandbox network allow-list (so commands can only reach hosts you list).
+* A sandbox network allow-list, so shell commands can only reach hosts you list.
 
 ## Not goals
 
