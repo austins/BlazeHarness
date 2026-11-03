@@ -42,6 +42,22 @@
         },
     };
 
+    const chatWidthKey = "blazeharness.chat-width";
+    const applyChatWidth = (full) => document.documentElement.toggleAttribute("data-chat-full-width", full);
+    applyChatWidth(localStorage.getItem(chatWidthKey) === "full");
+
+    window.bhChatWidth = {
+        get: () => localStorage.getItem(chatWidthKey) === "full",
+        set: (full) => {
+            if (full) {
+                localStorage.setItem(chatWidthKey, "full");
+            } else {
+                localStorage.removeItem(chatWidthKey);
+            }
+            applyChatWidth(full);
+        },
+    };
+
     window.bhTheme = {
         get: () => localStorage.getItem(key) || "system",
         isDark: () => {

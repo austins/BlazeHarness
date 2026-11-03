@@ -31,7 +31,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 
 ## Features
 
-* Chat and coding in one interface, with streamed replies and multiple providers.
+* Chat and coding in one interface, with streamed replies and multiple providers. Settings > General offers full-width chats and text-size controls, saved in the browser.
 * Tools for shell commands, reading, writing and editing files, listing folders, and searching files. Read-only tools run in parallel.
 * A to-do list the agent keeps up to date with `update_todos` during long tasks. It is shown above the message box (collapsed to "n of m done" and the current step) and survives compaction. It needs no approval, because it only changes what the chat shows.
 * An `ask_user` tool for questions the agent can't settle itself: a question with up to 8 options (single or multiple choice) or free text. The run pauses until you answer, choose "You decide" or skip, and the chat shows "Needs you" in the list. Text typed in the message box answers the question. It works at every access level, needs no approval, and is limited to 3 questions per run. A question still open when the app restarts is marked as not answered.

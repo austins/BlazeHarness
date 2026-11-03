@@ -5,7 +5,7 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <PageHeader Title="General">How long chats are handled, text size and keyboard shortcuts.</PageHeader>
+    <PageHeader Title="General">Compaction, chat appearance and keyboard shortcuts.</PageHeader>
 
     <section class="card stack" aria-labelledby="compaction-heading">
         <h2 id="compaction-heading">Compaction</h2>
@@ -17,6 +17,15 @@
             When a chat gets too long, the model normally summarizes the older messages. Extraction builds the summary from your requests,
             the files touched and the latest steps instead, without a model call: instant and free, but less thorough. The agent can still look up what was left out.
         </p>
+    </section>
+
+    <section class="card stack" aria-labelledby="chat-width-heading">
+        <h2 id="chat-width-heading">Chat width</h2>
+        <label class="check">
+            <input type="checkbox" checked="@_fullChatWidth" @onchange="OnChatWidthChangedAsync" />
+            <span>Use full width for chats</span>
+        </label>
+        <p class="hint">Expand messages and the message box to fill the available space. Kept in this browser and applied right away.</p>
     </section>
 
     <section class="card stack" aria-labelledby="text-size-heading">
@@ -106,6 +115,7 @@ var reversed = new string(chars);</code></pre>
 
     private string _ui = "default";
     private string _chat = "default";
+    private bool _fullChatWidth;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -113,6 +123,7 @@ var reversed = new string(chars);</code></pre>
         {
             _ui = await JS.InvokeAsync<string>("bhSize.get", UiKind);
             _chat = await JS.InvokeAsync<string>("bhSize.get", ChatKind);
+            _fullChatWidth = await JS.InvokeAsync<bool>("bhChatWidth.get");
             StateHasChanged();
         }
     }
@@ -121,6 +132,12 @@ var reversed = new string(chars);</code></pre>
     {
         var mode = e.Value is true ? CompactionMode.Extractive : CompactionMode.Model;
         return Toasts.TrySaveAsync(() => Config.UpdateAsync(config => config with { Compaction = mode }), "The setting could not be saved because the settings file could not be written.");
+    }
+
+    private async Task OnChatWidthChangedAsync(ChangeEventArgs e)
+    {
+        _fullChatWidth = e.Value is true;
+        await JS.InvokeVoidAsync("bhChatWidth.set", _fullChatWidth);
     }
 
     private async Task SetAsync(string kind, string step)

@@ -31,7 +31,7 @@ public enum SettingsSection
     Web,
 
     /// <summary>
-    /// Compaction, text size and keyboard shortcuts.
+    /// Compaction, chat appearance and keyboard shortcuts.
     /// </summary>
     General,
 
