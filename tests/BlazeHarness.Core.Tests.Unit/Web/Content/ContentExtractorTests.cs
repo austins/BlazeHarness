@@ -175,6 +175,28 @@ public sealed class ContentExtractorTests
         _office.ReceivedCalls().Should().BeEmpty();
     }
 
+    [Fact]
+    public void Extract_OctetStreamThatIsNotAZip_Throws()
+    {
+        // Act
+        var act = () => _sut.Extract(Response("application/octet-stream", "plain bytes"), TestContext.Current.CancellationToken);
+
+        // Assert
+        act.Should().Throw<WebFetchException>().WithMessage("*Office documents*'application/octet-stream'*");
+        _office.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Extract_ZipSignatureWithHtmlType_IsStillHtml()
+    {
+        // Act
+        var result = _sut.Extract(Response("text/html", "PK\u0003\u0004<p>Hi</p>"), TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Text.Should().Contain("Hi");
+        _office.ReceivedCalls().Should().BeEmpty();
+    }
+
     private static FetchResponse Response(string? contentType, string body, bool truncated = false)
     {
         return new FetchResponse(Address, 200, contentType, null, Encoding.UTF8.GetBytes(body), truncated);

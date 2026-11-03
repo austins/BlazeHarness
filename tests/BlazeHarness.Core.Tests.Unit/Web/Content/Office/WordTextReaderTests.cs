@@ -1,5 +1,9 @@
+#pragma warning disable S3220 // The SDK's element constructors take params children; the IEnumerable overload it reports is not the intended call.
 using BlazeHarness.Core.Web.Content.Office;
+using BlazeHarness.Tests.Shared.Office;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
+using W = DocumentFormat.OpenXml.Wordprocessing;
 
 namespace BlazeHarness.Core.Tests.Unit.Web.Content.Office;
 
@@ -71,6 +75,88 @@ public sealed class WordTextReaderTests
 
         // Assert
         output.ToString().Should().Be("Text");
+    }
+
+    [Fact]
+    public void Read_TitleStyle_IsAHeadingOne()
+    {
+        // Arrange
+        var file = OfficeFiles.Word([OfficeFiles.Paragraph("My report", "Title")], new Dictionary<string, string> { ["Title"] = "Title" });
+
+        // Act
+        var output = Read(file);
+
+        // Assert
+        output.ToString().Should().Be("# My report");
+    }
+
+    [Fact]
+    public void Read_ContentControl_IsReadThrough()
+    {
+        // Arrange
+        var file = OfficeFiles.Word([new W.SdtBlock(new W.SdtContentBlock(OfficeFiles.Paragraph("Inside a control")))]);
+
+        // Act
+        var output = Read(file);
+
+        // Assert
+        output.ToString().Should().Be("Inside a control");
+    }
+
+    [Fact]
+    public void Read_TabAndBreak_BecomeTabAndSpace()
+    {
+        // Arrange
+        var file = OfficeFiles.Word([OfficeFiles.RawParagraph(new W.Run(new W.Text("a"), new W.TabChar(), new W.Text("b"), new W.Break(), new W.Text("c")))]);
+
+        // Act
+        var output = Read(file);
+
+        // Assert
+        output.ToString().Should().Be("a\tb c");
+    }
+
+    [Fact]
+    public void Read_AlternateContent_IsNotRepeatedFromItsFallback()
+    {
+        // Arrange
+        var content = new AlternateContent(
+            new AlternateContentChoice(new W.Run(new W.Text("choice"))) { Requires = "wps" },
+            new AlternateContentFallback(new W.Run(new W.Text("fallback"))));
+        var file = OfficeFiles.Word([OfficeFiles.RawParagraph(content)]);
+
+        // Act
+        var output = Read(file);
+
+        // Assert
+        output.ToString().Should().Be("choice");
+    }
+
+    [Fact]
+    public void Read_TableCellWithSeveralParagraphs_JoinsThemWithASpace()
+    {
+        // Arrange
+        var cell = new W.TableCell(OfficeFiles.Paragraph("one"), OfficeFiles.Paragraph("two"));
+        var file = OfficeFiles.Word([new W.Table(new W.TableRow(cell, new W.TableCell(OfficeFiles.Paragraph("x"))))]);
+
+        // Act
+        var output = Read(file);
+
+        // Assert
+        output.ToString().Should().Contain("| one two | x |");
+    }
+
+    [Fact]
+    public void Read_Document_WithoutABody_WritesNothing()
+    {
+        // Arrange
+        var file = OfficeFiles.Word([]);
+
+        // Act
+        var output = Read(file);
+
+        // Assert
+        output.ToString().Should().BeEmpty();
     }
 
     private static OfficeTextBuilder Read(byte[] file)

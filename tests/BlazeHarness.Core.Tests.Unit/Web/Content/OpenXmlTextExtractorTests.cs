@@ -1,6 +1,6 @@
-using BlazeHarness.Core.Tests.Unit.Web.Content.Office;
 using BlazeHarness.Core.Web;
 using BlazeHarness.Core.Web.Content;
+using BlazeHarness.Tests.Shared.Office;
 
 namespace BlazeHarness.Core.Tests.Unit.Web.Content;
 
@@ -40,7 +40,7 @@ public sealed class OpenXmlTextExtractorTests
     public void Extract_Presentation_ReturnsSlides()
     {
         // Arrange
-        var file = OfficeFiles.Presentation(("Title", ["Body"], null, null));
+        var file = OfficeFiles.Presentation([new SlideSpec("Title", ["Body"])]);
 
         // Act
         var result = _sut.Extract(file, TestContext.Current.CancellationToken);
@@ -91,6 +91,86 @@ public sealed class OpenXmlTextExtractorTests
 
         // Assert
         act.Should().Throw<WebFetchException>().WithMessage("*not a Word, Excel or PowerPoint*");
+    }
+
+    [Fact]
+    public void Extract_SpreadsheetAndPresentation_ReturnTheirTitles()
+    {
+        // Arrange
+        var sheet = OfficeFiles.Spreadsheet([("S", false, [OfficeFiles.Row(OfficeFiles.InlineCell("A1", "x"))])], title: "Budget");
+        var slides = OfficeFiles.Presentation([new SlideSpec("T", ["Body"])], title: "Deck");
+
+        // Act
+        var sheetResult = _sut.Extract(sheet, TestContext.Current.CancellationToken);
+        var slidesResult = _sut.Extract(slides, TestContext.Current.CancellationToken);
+
+        // Assert
+        sheetResult.Title.Should().Be("Budget");
+        slidesResult.Title.Should().Be("Deck");
+    }
+
+    [Fact]
+    public void Extract_PresentationWithoutSlides_Throws()
+    {
+        // Act
+        var act = () => _sut.Extract(OfficeFiles.Presentation([]), TestContext.Current.CancellationToken);
+
+        // Assert
+        act.Should().Throw<WebFetchException>().WithMessage("*no text*");
+    }
+
+    [Fact]
+    public void Extract_ZipWithTooManyEntries_Throws()
+    {
+        // Arrange
+        var file = OfficeFiles.ZipWithEntries(OpenXmlTextExtractor.MaxEntries + 1);
+
+        // Act
+        var act = () => _sut.Extract(file, TestContext.Current.CancellationToken);
+
+        // Assert
+        act.Should().Throw<WebFetchException>().WithMessage("*too large*");
+    }
+
+    [Fact]
+    public void Extract_ZipThatUnpacksToTooMuch_Throws()
+    {
+        // Arrange
+        var file = OfficeFiles.ZipWithLargeEntry(OpenXmlTextExtractor.MaxUncompressedBytes + 1);
+
+        // Act
+        var act = () => _sut.Extract(file, TestContext.Current.CancellationToken);
+
+        // Assert
+        act.Should().Throw<WebFetchException>().WithMessage("*too large*");
+    }
+
+    [Fact]
+    public void Extract_VeryLongDocument_StopsWithANotice()
+    {
+        // Arrange
+        var text = new string('x', 10_000);
+        var paragraphs = Enumerable.Range(0, 300).Select(_ => OfficeFiles.Paragraph(text));
+        var file = OfficeFiles.Word(paragraphs);
+
+        // Act
+        var result = _sut.Extract(file, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Notice.Should().Contain("characters");
+        result.Text.Length.Should().BeLessThan(2_100_000);
+    }
+
+    [Fact]
+    public void Extract_WordPartWithBrokenXml_Throws()
+    {
+        var file = OfficeFiles.WithBrokenEntry(OfficeFiles.Word([OfficeFiles.Paragraph("text")]), "word/document.xml");
+
+        // Act
+        var act = () => _sut.Extract(file, TestContext.Current.CancellationToken);
+
+        // Assert
+        act.Should().Throw<WebFetchException>().WithMessage("*could not be read*");
     }
 
     [Fact]

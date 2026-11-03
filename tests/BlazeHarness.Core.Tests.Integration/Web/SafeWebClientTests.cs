@@ -1,6 +1,10 @@
 using BlazeHarness.Core.Web;
+using BlazeHarness.Core.Web.Content;
+using BlazeHarness.Tests.Shared.Office;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
+using System.Web;
 
 namespace BlazeHarness.Core.Tests.Integration.Web;
 
@@ -99,6 +103,72 @@ public sealed class SafeWebClientTests : IDisposable
         response.Body.Length.Should().Be(SafeWebClient.MaxPageBytes);
     }
 
+    [Theory]
+    [InlineData("application/pdf")]
+    [InlineData("application/vnd.openxmlformats-officedocument.wordprocessingml.document")]
+    public async Task FetchAsync_DocumentOverPageLimit_IsNotTruncated(string contentType)
+    {
+        // Arrange
+        using var sut = new SafeWebClient(_ => true);
+
+        // Act
+        var response = await sut.FetchAsync(new Uri($"{_prefix}doc?mb=12&type={Uri.EscapeDataString(contentType)}"), TestContext.Current.CancellationToken);
+
+        // Assert
+        response.Truncated.Should().BeFalse();
+        response.Body.Length.Should().Be(12 * 1024 * 1024);
+    }
+
+    [Theory]
+    [InlineData("application/pdf")]
+    [InlineData("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+    public async Task FetchAsync_OversizedDocument_IsTruncatedAtTheDocumentLimit(string contentType)
+    {
+        // Arrange
+        using var sut = new SafeWebClient(_ => true);
+
+        // Act
+        var response = await sut.FetchAsync(new Uri($"{_prefix}doc?mb=34&type={Uri.EscapeDataString(contentType)}"), TestContext.Current.CancellationToken);
+
+        // Assert
+        response.Truncated.Should().BeTrue();
+        response.Body.Length.Should().Be(SafeWebClient.MaxDocumentBytes);
+    }
+
+    [Fact]
+    public async Task FetchAsync_Request_AsksForOfficeDocuments()
+    {
+        // Arrange
+        using var sut = new SafeWebClient(_ => true);
+
+        // Act
+        var response = await sut.FetchAsync(new Uri(_prefix + "accept"), TestContext.Current.CancellationToken);
+
+        // Assert
+        var accept = System.Text.Encoding.UTF8.GetString(response.Body);
+        accept.Should().Contain("application/pdf")
+            .And.Contain("wordprocessingml.document")
+            .And.Contain("spreadsheetml.sheet")
+            .And.Contain("presentationml.presentation");
+    }
+
+    [Theory]
+    [InlineData("docx")]
+    [InlineData("docx-octet")]
+    public async Task FetchAndExtract_WordDocument_ReturnsItsText(string route)
+    {
+        // Arrange
+        using var sut = new SafeWebClient(_ => true);
+        var extractor = new ContentExtractor(new PdfPigTextExtractor(), new OpenXmlTextExtractor());
+
+        // Act
+        var response = await sut.FetchAsync(new Uri(_prefix + route), TestContext.Current.CancellationToken);
+        var document = extractor.Extract(response, TestContext.Current.CancellationToken);
+
+        // Assert
+        document.Text.Should().Contain("Served over HTTP");
+    }
+
     private async Task ServeAsync()
     {
         while (!_stop.IsCancellationRequested)
@@ -126,19 +196,24 @@ public sealed class SafeWebClientTests : IDisposable
                     break;
                 case "/big":
                     response.ContentType = "text/html";
-                    var chunk = new byte[1024 * 1024];
-                    try
-                    {
-                        for (var i = 0; i < 12; i++)
-                        {
-                            await response.OutputStream.WriteAsync(chunk, _stop.Token);
-                        }
-                    }
-                    catch (Exception ex) when (ex is HttpListenerException or IOException or OperationCanceledException)
-                    {
-                        // The client stops reading once the cap is reached.
-                    }
-
+                    await WriteChunksAsync(response, 12);
+                    break;
+                case "/doc":
+                    var query = HttpUtility.ParseQueryString(context.Request.Url.Query);
+                    response.ContentType = query["type"];
+                    await WriteChunksAsync(response, int.Parse(query["mb"]!, CultureInfo.InvariantCulture));
+                    break;
+                case "/accept":
+                    response.ContentType = "text/plain";
+                    await response.OutputStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(context.Request.Headers["Accept"] ?? string.Empty), _stop.Token);
+                    break;
+                case "/docx":
+                case "/docx-octet":
+                    var docx = OfficeFiles.Word([OfficeFiles.Paragraph("Served over HTTP")]);
+                    response.ContentType = context.Request.Url.AbsolutePath == "/docx"
+                        ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        : "application/octet-stream";
+                    await response.OutputStream.WriteAsync(docx, _stop.Token);
                     break;
                 default:
                     response.ContentType = "text/html";
@@ -147,6 +222,22 @@ public sealed class SafeWebClientTests : IDisposable
             }
 
             response.Close();
+        }
+    }
+
+    private async Task WriteChunksAsync(HttpListenerResponse response, int megabytes)
+    {
+        var chunk = new byte[1024 * 1024];
+        try
+        {
+            for (var i = 0; i < megabytes; i++)
+            {
+                await response.OutputStream.WriteAsync(chunk, _stop.Token);
+            }
+        }
+        catch (Exception ex) when (ex is HttpListenerException or IOException or OperationCanceledException)
+        {
+            // The client stops reading once the cap is reached.
         }
     }
 }
