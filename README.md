@@ -60,6 +60,7 @@ Not built yet, and not promised:
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
 * A sandbox network allow-list, so shell commands can only reach hosts you list.
+* More CSS animations and transitions, such as for messages appearing, panels opening and tool results expanding. They would be plain CSS with no animation library, and would respect `prefers-reduced-motion`.
 
 ## Not goals
 
