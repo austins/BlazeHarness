@@ -53,7 +53,6 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 Not built yet, and not promised:
 
 * A touch-friendly layout for use from a phone or tablet. `--host 0.0.0.0` already lets other devices connect, but the layout isn't made for small screens.
-* Complete localization of the web UI, starting with English.
 * An in-app browser that the agent can use to open a running service, read the page, and take a screenshot, so it can check its own UI changes (for example a click-through or a download) instead of only running tests.
 * Reading Office documents (docx, xlsx, pptx) in the web fetch tool, which reads HTML, PDF and text.
 * A limit on repeated failed attempts, after which the run pauses and uses `ask_user` to ask for help instead of retrying; today a run has no round limit and the user stops it.
