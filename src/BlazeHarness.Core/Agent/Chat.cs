@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Agent.Questions;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Permissions;
@@ -53,13 +54,13 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     private readonly List<ChatMessage> _history = [];
     private readonly List<string> _queued = [];
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ApprovalChoice>> _approvals = new(StringComparer.Ordinal);
+    private readonly TodoCache _todoCache = new();
     private IReadOnlyList<ChatEntry> _snapshot = [];
     private ProjectContext? _project;
     private SkillSet? _skills;
-    private ToolSet? _tools;
+    private ToolSetup _setup = new(null, null);
     private Func<CancellationToken, Task<IReadOnlyList<ITool>>>? _extraTools;
     private ChatAttachments? _attachments;
-    private string? _basePrompt;
     private Action? _stop;
     private bool _replying;
     private bool _closed;
@@ -101,7 +102,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     /// <remarks>
     /// It is read from the messages each time, so it follows a rewind, an edit and a restored chat without being saved on its own.
     /// </remarks>
-    public TodoList Todos => TodoList.From(Entries);
+    public TodoList Todos => TodoList.FromCached(Entries, _todoCache);
 
     /// <summary>
     /// Gets a copy of the messages that are sent to the model.
@@ -167,11 +168,12 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     /// </summary>
     /// <remarks>
     /// A reply reads this once when it starts, so changing it never alters a reply that is running.
+    /// Use <see cref="UseTools"/> to change it together with <see cref="Tools"/>.
     /// </remarks>
     public string? BasePrompt
     {
-        get => Volatile.Read(ref _basePrompt);
-        set => Volatile.Write(ref _basePrompt, value);
+        get => Volatile.Read(ref _setup).BasePrompt;
+        set => UpdateSetup(current => current with { BasePrompt = value });
     }
 
     /// <summary>
@@ -184,12 +186,20 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     /// </summary>
     /// <remarks>
     /// A reply reads this once when it starts, so changing it never alters a reply that is running.
+    /// Use <see cref="UseTools"/> to change it together with <see cref="BasePrompt"/>.
     /// </remarks>
     public ToolSet? Tools
     {
-        get => Volatile.Read(ref _tools);
-        set => Volatile.Write(ref _tools, value);
+        get => Volatile.Read(ref _setup).Tools;
+        set => UpdateSetup(current => current with { Tools = value });
     }
+
+    /// <summary>
+    /// Set the tools and the base system prompt in one step, so a reply never sees the tools of one with the prompt of the other.
+    /// </summary>
+    /// <param name="tools">The tools the model may call, or null for none.</param>
+    /// <param name="basePrompt">The base system prompt, or null for none.</param>
+    public void UseTools(ToolSet? tools, string? basePrompt) => Volatile.Write(ref _setup, new ToolSetup(tools, basePrompt));
 
     /// <summary>
     /// Gets or sets where the tools that come and go between replies, such as MCP tools, are asked for.
@@ -768,6 +778,18 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         {
             throw new InvalidOperationException("Only an empty chat can be restored.");
         }
+    }
+
+    private void UpdateSetup(Func<ToolSetup, ToolSetup> change)
+    {
+        ToolSetup current;
+        ToolSetup next;
+        do
+        {
+            current = Volatile.Read(ref _setup);
+            next = change(current);
+        }
+        while (!ReferenceEquals(Interlocked.CompareExchange(ref _setup, next, current), current));
     }
 
     private void Publish() => Volatile.Write(ref _snapshot, _entries.ToArray());

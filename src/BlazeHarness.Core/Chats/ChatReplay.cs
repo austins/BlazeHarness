@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Compaction;
 using Microsoft.Extensions.AI;
 

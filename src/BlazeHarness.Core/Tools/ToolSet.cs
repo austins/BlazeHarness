@@ -25,6 +25,12 @@ public sealed class ToolSet
     /// <param name="time">Times each call's timeout.</param>
     /// <exception cref="ArgumentException">Two tools share a name.</exception>
     public ToolSet(IEnumerable<ITool> tools, ToolContext context, TimeProvider time)
+        : this(tools, context, time, [])
+    {
+    }
+
+    // The declarations of the first tools are already built when a set is extended, so only the added tools' schemas are parsed.
+    private ToolSet(IEnumerable<ITool> tools, ToolContext context, TimeProvider time, IReadOnlyList<AITool> known)
     {
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(context);
@@ -39,7 +45,7 @@ public sealed class ToolSet
         }
 
         _byName = Tools.ToDictionary(t => t.Name, StringComparer.Ordinal);
-        Declarations = [.. Tools.Select(t => AIFunctionFactory.CreateDeclaration(t.Name, t.Description, JsonDocument.Parse(t.InputSchema).RootElement.Clone()))];
+        Declarations = [.. known, .. Tools.Skip(known.Count).Select(t => AIFunctionFactory.CreateDeclaration(t.Name, t.Description, JsonDocument.Parse(t.InputSchema).RootElement.Clone()))];
     }
 
     /// <summary>
@@ -66,7 +72,7 @@ public sealed class ToolSet
     {
         ArgumentNullException.ThrowIfNull(extra);
         var added = extra.Where(tool => !_byName.ContainsKey(tool.Name)).DistinctBy(tool => tool.Name, StringComparer.Ordinal).ToList();
-        return added.Count == 0 ? this : new ToolSet([.. Tools, .. added], Context, _time);
+        return added.Count == 0 ? this : new ToolSet([.. Tools, .. added], Context, _time, Declarations);
     }
 
     /// <summary>

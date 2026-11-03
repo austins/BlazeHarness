@@ -59,14 +59,18 @@ public sealed class PermissionEngine
     {
         get
         {
+            PermissionSettings settings;
             lock (_gate)
             {
-                return BypassAllowed()
-                    ? _settings
-                    : new PermissionSettings(
-                        _settings.Access == AccessLevel.Unrestricted ? AccessLevel.WriteInFolder : _settings.Access,
-                        _settings.Approvals == ApprovalMode.NeverAsk ? ApprovalMode.AutoApprove : _settings.Approvals);
+                settings = _settings;
             }
+
+            // The callback is outside code, so it runs outside the lock.
+            return BypassAllowed()
+                ? settings
+                : new PermissionSettings(
+                    settings.Access == AccessLevel.Unrestricted ? AccessLevel.WriteInFolder : settings.Access,
+                    settings.Approvals == ApprovalMode.NeverAsk ? ApprovalMode.AutoApprove : settings.Approvals);
         }
 
         set
@@ -130,14 +134,16 @@ public sealed class PermissionEngine
         using var document = Parse(argumentsJson);
         var arguments = document.RootElement;
 
+        // Resolving a path follows its links, so a path tool's paths are resolved once for both the access check and the rules.
+        var paths = tool is IMcpTool or IWebTool || tool.RunsCommands ? null : ResolvePaths(tool, arguments, context);
         var decision = tool switch
         {
             IMcpTool mcp => EvaluateMcp(mcp, settings),
             IWebTool web => EvaluateWeb(web, arguments, settings),
             { RunsCommands: true } => EvaluateCommand(arguments, settings),
-            _ => EvaluatePaths(tool, arguments, settings, context),
+            _ => EvaluatePaths(tool, paths!, settings, context),
         };
-        decision = ApplyRules(tool, arguments, context, decision);
+        decision = ApplyRules(tool, arguments, paths, context, decision);
         if (decision is { Verdict: PermissionVerdict.Ask, GrantKey: { } key } && _grants.ContainsKey(key))
         {
             decision = PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell };
@@ -214,7 +220,7 @@ public sealed class PermissionEngine
             : null;
     }
 
-    private PermissionDecision ApplyRules(ITool tool, JsonElement arguments, ToolContext context, PermissionDecision decision)
+    private PermissionDecision ApplyRules(ITool tool, JsonElement arguments, List<string>? resolved, ToolContext context, PermissionDecision decision)
     {
         var rules = Rules();
         if (rules.Count == 0)
@@ -237,16 +243,7 @@ public sealed class PermissionEngine
         }
         else
         {
-            var paths = new List<string>();
-            foreach (var name in tool.PathArguments)
-            {
-                if (RootedPath.TryLocate(context.Root, Text(arguments, name), out var full))
-                {
-                    paths.Add(full);
-                }
-            }
-
-            rule = RuleMatcher.ForPaths(rules, paths, context.Root);
+            rule = RuleMatcher.ForPaths(rules, resolved ?? ResolvePaths(tool, arguments, context), context.Root);
         }
 
         return rule is null ? decision : ApplyRule(rule, decision);
@@ -322,7 +319,7 @@ public sealed class PermissionEngine
             : PermissionDecision.Allow with { Shell = mode };
     }
 
-    private PermissionDecision EvaluatePaths(ITool tool, JsonElement arguments, PermissionSettings settings, ToolContext context)
+    private static List<string> ResolvePaths(ITool tool, JsonElement arguments, ToolContext context)
     {
         var paths = new List<string>();
         foreach (var name in tool.PathArguments)
@@ -333,6 +330,11 @@ public sealed class PermissionEngine
             }
         }
 
+        return paths;
+    }
+
+    private PermissionDecision EvaluatePaths(ITool tool, List<string> paths, PermissionSettings settings, ToolContext context)
+    {
         if (paths.Find(Sensitive().IsProtected) is { } protectedPath)
         {
             return new PermissionDecision(PermissionVerdict.Deny, $"The path '{protectedPath}' holds credentials or settings that tools may not use.");

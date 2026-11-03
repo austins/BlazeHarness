@@ -240,12 +240,22 @@ public sealed partial class McpManager : IAsyncDisposable
         try
         {
             var current = _config.Servers.ToDictionary(s => s.Name, StringComparer.Ordinal);
-            foreach (var (name, _) in _known.Where(p => !current.TryGetValue(p.Key, out var now) || !now.SameAs(p.Value)))
+            var known = new Dictionary<string, McpServerConfig>(current, StringComparer.Ordinal);
+            foreach (var (name, before) in _known.Where(p => !current.TryGetValue(p.Key, out var now) || !now.SameAs(p.Value)))
             {
-                await WithdrawTrustAsync(name);
+                try
+                {
+                    await WithdrawTrustAsync(name);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // The old config stays remembered, so the next reconcile withdraws the trust again; the server below is stopped regardless.
+                    LogTrustNotWithdrawn(ex, name);
+                    known[name] = before;
+                }
             }
 
-            _known = current;
+            _known = known;
             List<Entry> stale;
             lock (_gate)
             {
@@ -583,10 +593,28 @@ public sealed partial class McpManager : IAsyncDisposable
 
     private void OnConfigChanged(object? sender, EventArgs e)
     {
-        _ = ReconcileAsync();
+        _ = ReconcileQuietlyAsync();
+    }
+
+    private async Task ReconcileQuietlyAsync()
+    {
+        try
+        {
+            await ReconcileAsync();
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            LogReconcileFailed(ex);
+        }
     }
 
     private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not withdraw the trust of the changed MCP server {Server}.")]
+    private partial void LogTrustNotWithdrawn(Exception ex, string server);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not apply a change of the MCP configuration.")]
+    private partial void LogReconcileFailed(Exception ex);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not connect to the MCP server {Server}.")]
     private partial void LogConnectFailed(Exception ex, string server);

@@ -1,5 +1,6 @@
 using BlazeHarness.Core;
 using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Titles;
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Logging;
@@ -109,6 +110,7 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 var sandbox = app.Services.GetRequiredService<IShellSandbox>();
+// Probing here means the first chat does not wait for it. The probe reports a failure as a status and never throws.
 _ = Task.Run(() => sandbox.Status);
 
 await HostLauncher.RunAsync(app, args);

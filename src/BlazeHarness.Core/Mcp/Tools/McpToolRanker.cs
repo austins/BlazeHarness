@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Text;
 using System.Text.Json;
 
@@ -24,12 +25,12 @@ internal static class McpToolRanker
     private const int MaxSchemaDepth = 4;
     private const int MaxParameterWords = 400;
 
-    private static readonly HashSet<string> StopWords = new(StringComparer.Ordinal)
+    private static readonly FrozenSet<string> StopWords = new HashSet<string>(StringComparer.Ordinal)
     {
         "a", "an", "and", "are", "can", "do", "for", "from", "in", "into", "is", "it", "me", "of", "on", "or", "please", "that", "the", "this", "to", "tool", "use", "with",
-    };
+    }.ToFrozenSet(StringComparer.Ordinal);
 
-    private static readonly Dictionary<string, string[]> Synonyms = new(StringComparer.Ordinal)
+    private static readonly FrozenDictionary<string, string[]> Synonyms = new Dictionary<string, string[]>(StringComparer.Ordinal)
     {
         ["add"] = ["create", "insert", "new"],
         ["create"] = ["add", "new"],
@@ -51,7 +52,7 @@ internal static class McpToolRanker
         ["browse"] = ["list"],
         ["summarize"] = ["summary"],
         ["summary"] = ["summarize"],
-    };
+    }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>
     /// Rank tools by how well they match a query.

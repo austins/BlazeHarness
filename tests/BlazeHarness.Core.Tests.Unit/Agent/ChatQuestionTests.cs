@@ -1,6 +1,6 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Agent.Questions;
-using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Tests.Shared.Agent;

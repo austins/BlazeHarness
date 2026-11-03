@@ -1,4 +1,5 @@
 @using BlazeHarness.Core.Chats
+@using BlazeHarness.Web.Services
 @implements IDisposable
 @inject IJSRuntime JS
 @inject ChatService ChatService
@@ -6,6 +7,8 @@
 @inject FolderRegistry Folders
 @inject ToastService Toasts
 @inject SettingsDialogState SettingsState
+@inject ILogger<Sidebar> Logger
+@inject TimeProvider Time
 
 <nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="Main">
     <div class="sidebar-brand"><span class="logo" aria-hidden="true">🔥</span> BlazeHarness</div>
@@ -173,6 +176,7 @@
 
 @code {
     private readonly HashSet<string> _collapsed = new(FolderPaths.Comparer);
+    private RenderThrottle _throttle = null!;
     private bool _dark;
     private bool _picking;
     private FolderInfo? _locating;
@@ -195,6 +199,7 @@
 
     protected override void OnInitialized()
     {
+        _throttle = new RenderThrottle(() => InvokeAsync(StateHasChanged), TimeSpan.FromMilliseconds(100), Logger, Time);
         ChatService.Store.Changed += OnChatsChanged;
         ChatService.ActivityChanged += OnChatsChanged;
         Folders.Changed += OnChatsChanged;
@@ -238,11 +243,12 @@
         ChatService.Store.Changed -= OnChatsChanged;
         ChatService.ActivityChanged -= OnChatsChanged;
         Folders.Changed -= OnChatsChanged;
+        _throttle.Dispose();
     }
 
     private void OnChatsChanged(object? sender, EventArgs e)
     {
-        _ = InvokeAsync(StateHasChanged);
+        _throttle.Request();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Chats.Titles;
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Folders;
 using Microsoft.Extensions.Logging;
@@ -55,7 +56,7 @@ public sealed partial class ChatStore : IDisposable
     /// <summary>
     /// Raised after a chat is created, changed or deleted.
     /// </summary>
-    public event EventHandler? Changed;
+    public event EventHandler<ChatStoreChangedEventArgs>? Changed;
 
     /// <summary>
     /// Get chats, newest activity first.
@@ -151,7 +152,7 @@ public sealed partial class ChatStore : IDisposable
             _lock.Release();
         }
 
-        RaiseChanged();
+        RaiseChanged(info.Id);
         return info;
     }
 
@@ -190,7 +191,7 @@ public sealed partial class ChatStore : IDisposable
             _lock.Release();
         }
 
-        RaiseChanged();
+        RaiseChanged(id);
         return updated;
     }
 
@@ -270,7 +271,7 @@ public sealed partial class ChatStore : IDisposable
             RemoveTrash(trash);
         }
 
-        RaiseChanged();
+        RaiseChanged(id);
     }
 
     /// <inheritdoc />
@@ -334,7 +335,7 @@ public sealed partial class ChatStore : IDisposable
         }
     }
 
-    private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
+    private void RaiseChanged(string id) => Changed?.Invoke(this, new ChatStoreChangedEventArgs(id));
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Skipping chat {Chat}: its metadata could not be read.")]
     private partial void LogUnreadableChat(Exception ex, string chat);

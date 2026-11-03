@@ -1,3 +1,5 @@
+using BlazeHarness.Core.Chats.Events;
+
 namespace BlazeHarness.Core.Chats;
 
 /// <summary>

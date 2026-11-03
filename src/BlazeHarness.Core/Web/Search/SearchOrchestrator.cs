@@ -65,10 +65,10 @@ internal sealed partial class SearchOrchestrator
 
         List<(string Provider, IReadOnlyList<SearchResult> Results)> found = [];
         List<ProviderReport> reports = [];
+        using var deadline = new CancellationTokenSource(_overallTimeout, _time);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
         if (settings.SearchMode == WebSearchMode.Sequential)
         {
-            using var deadline = new CancellationTokenSource(_overallTimeout, _time);
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
             foreach (var slot in selected)
             {
                 (ProviderReport Report, IReadOnlyList<SearchResult> Results) run;
@@ -93,7 +93,18 @@ internal sealed partial class SearchOrchestrator
         }
         else
         {
-            var runs = await Task.WhenAll(selected.Select(slot => RunAsync(slot, query, maxResults, cancellationToken)));
+            var runs = await Task.WhenAll(selected.Select(async slot =>
+            {
+                try
+                {
+                    return await RunAsync(slot, query, maxResults, linked.Token);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // Out of time: the providers that finished keep their results.
+                    return Failed(slot, SearchFailure.Unavailable);
+                }
+            }));
             for (var i = 0; i < runs.Length; i++)
             {
                 reports.Add(runs[i].Report);

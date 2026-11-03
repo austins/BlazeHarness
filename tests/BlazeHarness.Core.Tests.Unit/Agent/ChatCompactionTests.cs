@@ -1,5 +1,5 @@
 using BlazeHarness.Core.Agent;
-using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Tools;

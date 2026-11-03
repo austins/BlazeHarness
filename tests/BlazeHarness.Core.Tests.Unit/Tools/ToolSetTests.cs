@@ -37,6 +37,20 @@ public sealed class ToolSetTests
     }
 
     [Fact]
+    public void With_ExtraTools_ReusesTheExistingDeclarations()
+    {
+        // Arrange
+        var sut = new ToolSet([new ReadFileTool()], _context, TimeProvider.System);
+
+        // Act
+        var more = sut.With([Named("extra_one")]);
+
+        // Assert
+        more.Declarations[0].Should().BeSameAs(sut.Declarations[0]);
+        more.Declarations.Select(d => d.Name).Should().Equal("read_file", "extra_one");
+    }
+
+    [Fact]
     public void With_NameAlreadyTaken_KeepsTheExistingToolAndSkipsTheNewOne()
     {
         // Arrange

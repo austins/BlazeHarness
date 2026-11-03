@@ -1,4 +1,6 @@
 using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Events;
+using BlazeHarness.Core.Chats.Export;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Tests.Shared.Agent;
 using ChatService = BlazeHarness.Core.Chats.ChatService;

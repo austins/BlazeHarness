@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Export;
 
 namespace BlazeHarness.Web.Hosting;
 

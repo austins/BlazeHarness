@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Chats.Titles;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
 using System.Text.Json.Serialization;

@@ -1,5 +1,6 @@
 using BlazeHarness.Core;
 using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Export;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Web.Hosting;
 using Microsoft.AspNetCore.Http;

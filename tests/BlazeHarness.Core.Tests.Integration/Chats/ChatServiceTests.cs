@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
-using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Events;
+using BlazeHarness.Core.Chats.Titles;
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Tests.Shared;

@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Collections.Frozen;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -31,7 +32,7 @@ internal static partial class ShellCommandParser
     private static readonly string[] Extensions = [".exe", ".cmd", ".bat", ".com"];
     private static readonly string[] NoOptionValues = [];
 
-    private static readonly Dictionary<string, string[]> Wrappers = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly FrozenDictionary<string, string[]> Wrappers = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
     {
         ["env"] = ["-u", "-C", "-S"],
         ["command"] = NoOptionValues,
@@ -47,7 +48,7 @@ internal static partial class ShellCommandParser
         ["timeout"] = ["-s", "-k"],
         ["stdbuf"] = ["-i", "-o", "-e"],
         ["xargs"] = ["-I", "-L", "-P", "-n", "-d", "-E", "-s", "-a"],
-    };
+    }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Split a command line.

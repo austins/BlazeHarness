@@ -1,5 +1,7 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Chats.Export;
+using BlazeHarness.Core.Chats.Titles;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Mcp;
@@ -121,7 +123,7 @@ public sealed partial class ChatService : IDisposable
             info = await _store.UpdateAsync(info.Id, s => StoreSettings(s, start), cancellationToken: cancellationToken) ?? info;
         }
 
-        var chat = NewChat(info.Id);
+        var chat = await NewChatAsync(info.Id);
         chat.Permissions.Settings = info.Permissions;
         _live[info.Id] = chat;
         await ApplyFolderAsync(info.Id, chat, CancellationToken.None);
@@ -222,11 +224,18 @@ public sealed partial class ChatService : IDisposable
             Chat? chat = null;
             try
             {
-                chat = NewChat(id);
+                chat = await NewChatAsync(id);
                 chat.Restore(await _store.GetLog(id).ReadAsync(cancellationToken));
                 chat.Permissions.Settings = _store.Find(id)?.Permissions ?? PermissionSettings.Default;
                 await ApplyFolderAsync(id, chat, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
+
+                // The chat may have been deleted while it was being restored.
+                if (_store.Find(id) is null)
+                {
+                    return null;
+                }
+
                 _live[id] = chat;
                 var opened = chat;
 #pragma warning disable IDISP003 // Ownership transferred to the live registry; only failed initialization is disposed here.
@@ -291,13 +300,7 @@ public sealed partial class ChatService : IDisposable
             id,
             s =>
             {
-                var chosen = (s.McpServers ?? new Dictionary<string, bool>()).Where(pair => !string.Equals(pair.Key, serverName, StringComparison.Ordinal)).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
-                if (enabled is { } value)
-                {
-                    chosen[serverName] = value;
-                }
-
-                return s with { McpServers = chosen.Count == 0 ? null : chosen };
+                return s with { McpServers = WithChoice(s.McpServers, serverName, enabled) };
             },
             cancellationToken: cancellationToken);
     }
@@ -339,13 +342,7 @@ public sealed partial class ChatService : IDisposable
             id,
             s =>
             {
-                var chosen = (s.Skills ?? new Dictionary<string, bool>()).Where(pair => !string.Equals(pair.Key, skillName, StringComparison.Ordinal)).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
-                if (enabled is { } value)
-                {
-                    chosen[skillName] = value;
-                }
-
-                return s with { Skills = chosen.Count == 0 ? null : chosen };
+                return s with { Skills = WithChoice(s.Skills, skillName, enabled) };
             },
             cancellationToken: cancellationToken);
         if (_live.TryGetValue(id, out var chat))
@@ -559,6 +556,13 @@ public sealed partial class ChatService : IDisposable
 
         _web?.Forget(id);
         await _store.DeleteAsync(id, CancellationToken.None);
+
+        // An open that was restoring the chat meanwhile may have registered it after the check above.
+        if (_live.TryRemove(id, out var late))
+        {
+            late.Dispose();
+        }
+
         return true;
     }
 
@@ -667,8 +671,7 @@ public sealed partial class ChatService : IDisposable
 
             var shell = ShellInfo.DetectCurrent();
             var tools = BuiltInTools.Create(root, _time, shell, chat.Attachments, _sandbox, _store.ShellDirectory(id), ChatSearchFor(id, chat, folderPath));
-            chat.Tools = tools;
-            chat.BasePrompt = SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root);
+            chat.UseTools(tools, SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
@@ -679,8 +682,7 @@ public sealed partial class ChatService : IDisposable
 
     private void UseAttachmentsOnly(string id, Chat chat, string? folderPath)
     {
-        chat.Tools = chat.Attachments is { } files ? BuiltInTools.ForAttachments(files, _time, ChatSearchFor(id, chat, folderPath)) : null;
-        chat.BasePrompt = null;
+        chat.UseTools(chat.Attachments is { } files ? BuiltInTools.ForAttachments(files, _time, ChatSearchFor(id, chat, folderPath)) : null, null);
     }
 
     private SearchChatTool ChatSearchFor(string id, Chat chat, string? folderPath)
@@ -745,6 +747,17 @@ public sealed partial class ChatService : IDisposable
             CancellationToken.None);
     }
 
+    private static Dictionary<string, bool>? WithChoice(IReadOnlyDictionary<string, bool>? choices, string name, bool? enabled)
+    {
+        var chosen = (choices ?? new Dictionary<string, bool>()).Where(pair => !string.Equals(pair.Key, name, StringComparison.Ordinal)).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        if (enabled is { } value)
+        {
+            chosen[name] = value;
+        }
+
+        return chosen.Count == 0 ? null : chosen;
+    }
+
     private static ChatInfo StoreSettings(ChatInfo info, PermissionSettings settings)
     {
         return info with
@@ -759,7 +772,7 @@ public sealed partial class ChatService : IDisposable
         return _defaults?.For(hasFolder) ?? (hasFolder ? PermissionSettings.Default : PermissionSettings.Default with { Access = AccessLevel.ReadOnly });
     }
 
-    private Chat NewChat(string id)
+    private async Task<Chat> NewChatAsync(string id)
     {
         var chat = new Chat(_clientFactory, _time, _store.GetLog(id), _loggers.CreateLogger<Chat>())
         {
@@ -768,7 +781,7 @@ public sealed partial class ChatService : IDisposable
         };
         chat.Permissions.Sensitive = () => _defaults?.Sensitive(id) ?? SensitivePaths.Default(_store.Paths, id);
         chat.Permissions.ReadableFolders = () => [_store.AttachmentsDirectory(id)];
-        chat.Permissions.Sandbox = _sandbox.Status;
+        chat.Permissions.Sandbox = await Task.Run(() => _sandbox.Status, CancellationToken.None);
         if (_defaults is { } defaults)
         {
             chat.Permissions.BypassAllowed = () => defaults.AllowBypass;

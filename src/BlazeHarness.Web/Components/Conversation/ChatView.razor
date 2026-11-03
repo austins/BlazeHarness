@@ -157,6 +157,7 @@ else
     private static readonly TimeSpan RenderInterval = TimeSpan.FromMilliseconds(50);
 
     private RenderThrottle _throttle = null!;
+    private RenderThrottle _storeThrottle = null!;
     private IReadOnlyList<ChatEntry> _entries = [];
     private Chat? _chat;
     private Composer? _composer;
@@ -207,6 +208,7 @@ else
     protected override void OnInitialized()
     {
         _throttle = new RenderThrottle(() => InvokeAsync(Refresh), RenderInterval, Logger, Time);
+        _storeThrottle = new RenderThrottle(RefreshInfoAsync, RenderInterval, Logger, Time);
         ChatService.Store.Changed += OnStoreChanged;
     }
 
@@ -304,11 +306,20 @@ else
         ChatService.Store.Changed -= OnStoreChanged;
         Detach();
         _throttle.Dispose();
+        _storeThrottle.Dispose();
     }
 
-    private void OnStoreChanged(object? sender, EventArgs e)
+    private void OnStoreChanged(object? sender, ChatStoreChangedEventArgs e)
     {
-        _ = InvokeAsync(() =>
+        if (e.ChatId == _openId)
+        {
+            _storeThrottle.Request();
+        }
+    }
+
+    private Task RefreshInfoAsync()
+    {
+        return InvokeAsync(() =>
         {
             if (_openId is not null && !_loading)
             {

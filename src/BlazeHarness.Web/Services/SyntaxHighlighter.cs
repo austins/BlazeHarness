@@ -2,6 +2,7 @@ using ColorCode;
 using ColorCode.Common;
 using ColorCode.Compilation;
 using ColorCode.Parsing;
+using System.Collections.Frozen;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18,7 +19,7 @@ public static class SyntaxHighlighter
 {
     private const int MaxLength = 20_000;
 
-    private static readonly Dictionary<string, string> LanguageIds = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly FrozenDictionary<string, string> LanguageIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
         ["c#"] = LanguageId.CSharp,
         ["cs"] = LanguageId.CSharp,
@@ -60,7 +61,7 @@ public static class SyntaxHighlighter
         ["markdown"] = LanguageId.Markdown,
         ["vb"] = LanguageId.VbDotNet,
         ["vbnet"] = LanguageId.VbDotNet,
-    };
+    }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     private static readonly ReaderWriterLockSlim CompileLock = new();
 

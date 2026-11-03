@@ -79,19 +79,8 @@ public sealed class TodoList
     public static TodoList From(IEnumerable<ChatEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
-
-        foreach (var entry in entries.Reverse())
-        {
-            foreach (var call in entry.ToolCalls.Reverse())
-            {
-                if (call.Name == ToolName && call.Status == ToolCallStatus.Succeeded && TryParse(call.ArgumentsJson) is { } list)
-                {
-                    return list;
-                }
-            }
-        }
-
-        return Empty;
+        TodoCache cache = new();
+        return FromCached(entries as IReadOnlyList<ChatEntry> ?? [.. entries], cache);
     }
 
     /// <summary>
@@ -109,6 +98,41 @@ public sealed class TodoList
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Get the list that the last successful <c>update_todos</c> call set, parsing it only when that call is not the one the cache holds.
+    /// </summary>
+    /// <param name="entries">The messages of the chat, oldest first.</param>
+    /// <param name="cache">The last call that was read and its list; it is updated when a different call is found.</param>
+    /// <returns>The list, or an empty list when the chat has none.</returns>
+    internal static TodoList FromCached(IReadOnlyList<ChatEntry> entries, TodoCache cache)
+    {
+        for (var i = entries.Count - 1; i >= 0; i--)
+        {
+            var calls = entries[i].ToolCalls;
+            for (var j = calls.Count - 1; j >= 0; j--)
+            {
+                var call = calls[j];
+                if (call.Name != ToolName || call.Status != ToolCallStatus.Succeeded)
+                {
+                    continue;
+                }
+
+                if (cache.TryGet(call, out var known))
+                {
+                    return known;
+                }
+
+                if (TryParse(call.ArgumentsJson) is { } list)
+                {
+                    cache.Set(call, list);
+                    return list;
+                }
+            }
+        }
+
+        return Empty;
     }
 
     /// <summary>

@@ -48,9 +48,11 @@ public sealed class MxcShellSandbox : IShellSandbox
             return DirectShellProcess.Start(launch);
         }
 
-        if (!Status.IsAvailable)
+        // The first probe runs a command for seconds; keep it off the caller's thread.
+        var status = _status.IsValueCreated ? _status.Value : await Task.Run(() => _status.Value, cancellationToken);
+        if (!status.IsAvailable)
         {
-            throw new InvalidOperationException(Status.Detail);
+            throw new InvalidOperationException(status.Detail);
         }
 
         return await SpawnAsync(launch, cancellationToken);
@@ -235,7 +237,7 @@ public sealed class MxcShellSandbox : IShellSandbox
     private async Task<IShellProcess> SpawnAsync(ShellLaunch launch, CancellationToken cancellationToken)
     {
         var (request, policy) = BuildRequest(launch);
-        if (policy.Denied.Any(File.Exists) && _fileDenyProblem.Value is { } problem)
+        if (policy.Denied.Any(File.Exists) && (_fileDenyProblem.IsValueCreated ? _fileDenyProblem.Value : await Task.Run(() => _fileDenyProblem.Value, cancellationToken)) is { } problem)
         {
             throw new IOException(problem);
         }

@@ -1,4 +1,5 @@
-using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Events;
+using BlazeHarness.Core.Chats.Titles;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;

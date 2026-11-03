@@ -1,6 +1,6 @@
 using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Attachments;
-using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Skills;
@@ -34,7 +34,8 @@ public sealed partial class Chat
 
         List<ChatMessage> working = [.. History];
         var before = working.Count;
-        var prompt = SystemPromptText();
+        var setup = Volatile.Read(ref _setup);
+        var prompt = SystemPromptText(setup);
         if (prompt.Length > 0)
         {
             working.Insert(0, new ChatMessage(ChatRole.System, prompt));
@@ -51,7 +52,7 @@ public sealed partial class Chat
         {
             using var client = await _clientFactory(target, cancellation);
             var options = ChatClientFactory.BuildOptions(target.Provider, target.Model, target.Level);
-            var tools = await TurnToolsAsync(cancellation);
+            var tools = await TurnToolsAsync(setup.Tools, cancellation);
             var toolTokens = tools is null ? 0 : TokenEstimate.OfTools(tools.Tools);
             Interlocked.Exchange(ref _toolTokens, toolTokens);
             EnsureToolsFit(target, prompt, toolTokens);
@@ -97,9 +98,8 @@ public sealed partial class Chat
         }
     }
 
-    private async Task<ToolSet?> TurnToolsAsync(CancellationToken cancellation)
+    private async Task<ToolSet?> TurnToolsAsync(ToolSet? tools, CancellationToken cancellation)
     {
-        var tools = Tools;
         if (tools is null)
         {
             return null;

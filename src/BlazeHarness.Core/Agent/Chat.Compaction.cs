@@ -1,6 +1,8 @@
 using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Compaction;
+using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
@@ -52,10 +54,11 @@ public sealed partial class Chat
             var stale = UsageIsStale(lastUsage);
 
             // The same context a reply builds, so the figure follows what the request really holds, including the stubs.
-            var prompt = SystemPromptText();
+            var setup = Volatile.Read(ref _setup);
+            var prompt = SystemPromptText(setup);
             var leading = prompt.Length > 0 ? 1 : 0;
             List<ChatMessage> messages = leading > 0 ? [new ChatMessage(ChatRole.System, prompt), .. _history] : [.. _history];
-            var context = NewContext(ContextBudget.Limit(target.Model), new ExtractiveSummarizer(), leading, _compaction, ToolTokens());
+            var context = NewContext(ContextBudget.Limit(target.Model), new ExtractiveSummarizer(), leading, _compaction, ToolTokens(setup.Tools));
             if (lastUsage >= 0 && !stale)
             {
                 context.RecordUsage(_entries[lastUsage].Usage!.PromptTokens, leading + _entries[lastUsage].HistoryIndex);
@@ -114,7 +117,8 @@ public sealed partial class Chat
                 summarizer = ModelSummarizer.For(client, target, _time);
             }
 
-            var context = NewContext(ContextBudget.Limit(target.Model), summarizer, 0, state, TokenEstimate.Of(SystemPromptText()) + ToolTokens());
+            var setup = Volatile.Read(ref _setup);
+            var context = NewContext(ContextBudget.Limit(target.Model), summarizer, 0, state, TokenEstimate.Of(SystemPromptText(setup)) + ToolTokens(setup.Tools));
             if (await context.CompactAsync(working, manual: true, run.Token) is not { } result)
             {
                 return false;
@@ -136,15 +140,15 @@ public sealed partial class Chat
 
     private bool UsesExtractiveCompaction => CompactionModeSource?.Invoke() == CompactionMode.Extractive;
 
-    private string SystemPromptText()
+    private string SystemPromptText(ToolSetup setup)
     {
-        return string.Join(Environment.NewLine, new[] { BasePrompt, Project?.ToPrompt(), Tools is null ? null : Skills?.ToPrompt() }.Where(p => !string.IsNullOrWhiteSpace(p)));
+        return string.Join(Environment.NewLine, new[] { setup.BasePrompt, Project?.ToPrompt(), setup.Tools is null ? null : Skills?.ToPrompt() }.Where(p => !string.IsNullOrWhiteSpace(p)));
     }
 
-    private long ToolTokens()
+    private long ToolTokens(ToolSet? current)
     {
         var last = Interlocked.Read(ref _toolTokens);
-        return last > 0 ? last : Tools is { } tools ? TokenEstimate.OfTools(tools.Tools) : 0;
+        return last > 0 ? last : current is { } tools ? TokenEstimate.OfTools(tools.Tools) : 0;
     }
 
     private ConversationContext CreateContext(IChatClient client, ChatTarget target, int leadingMessages, long toolTokens)

@@ -1,5 +1,5 @@
 using BlazeHarness.Core.Agent;
-using BlazeHarness.Core.Chats;
+using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Tests.Shared.Agent;
 using BlazeHarness.Tests.Shared.Chats;

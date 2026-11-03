@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Config;
 using Microsoft.Extensions.Logging;
 using System.Text;
