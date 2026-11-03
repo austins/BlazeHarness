@@ -2040,6 +2040,18 @@
     <value>Install browser</value>
     <comment>Button on the Web page that downloads the browser the agent's browser tools use (about 125 MB).</comment>
   </data>
+  <data name="BrowserPanelLabel" xml:space="preserve">
+    <value>Browser</value>
+    <comment>Accessible name of the side panel next to the chat that shows the page the assistant has open in its browser.</comment>
+  </data>
+  <data name="BrowserPanelClose" xml:space="preserve">
+    <value>Hide browser</value>
+    <comment>Tooltip and accessible name of the button that hides the browser side panel. It reappears when the assistant opens another page.</comment>
+  </data>
+  <data name="BrowserPanelImageAlt" xml:space="preserve">
+    <value>Page shown in the assistant's browser</value>
+    <comment>Alternative text of the picture of the page in the browser side panel, used when the page has no title.</comment>
+  </data>
   <data name="WebToolsSettingsBrowserInstallingHint" xml:space="preserve">
     <value>Downloading the browser (about 125 MB). This can take a few minutes; you can keep using the app meanwhile.</value>
     <comment>Hint shown under the Install browser button on the Web page while the download is running. The size is approximate.</comment>

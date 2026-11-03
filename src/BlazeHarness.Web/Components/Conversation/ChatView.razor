@@ -31,126 +31,129 @@
 }
 else
 {
-    <section class="chat" data-pinned="true" data-empty="@(!_loading && _entries.Count == 0 ? "true" : null)" @ref="_root" aria-label="@WebStrings.ChatViewConversationLabel">
-        <div class="chat-context">
-            @if (ContextPath is { } folderPath)
-            {
-                <span class="chat-context-where" title="@folderPath">
-                    <Icon Name="folder" />
-                    <span class="chat-context-name">@(Folders.Find(folderPath)?.Name ?? FolderPaths.DisplayName(folderPath))</span>
-                    <span class="chat-context-path mono"><bdi>@folderPath</bdi></span>
-                </span>
-                @if (Project is { Files.Count: > 0 } project)
+    <div class="chat-layout">
+        <section class="chat" data-pinned="true" data-empty="@(!_loading && _entries.Count == 0 ? "true" : null)" @ref="_root" aria-label="@WebStrings.ChatViewConversationLabel">
+            <div class="chat-context">
+                @if (ContextPath is { } folderPath)
                 {
-                    <Popover Label="@WebStrings.ChatViewInstructionsLabel" Title="@WebStrings.ChatViewInstructionsTooltip">
-                        <Trigger><Icon Name="file" /> @WebStrings.ChatViewAgentsMdTrigger <span class="badge">@project.Files.Count</span></Trigger>
-                        <ChildContent>
-                            <div class="panel-head"><span>@WebStrings.ChatViewInstructionsHeading</span></div>
-                            <ul class="panel-list">
-                                @foreach (var file in project.Files)
-                                {
-                                    <li class="panel-option">
-                                        <Icon Name="file" />
-                                        <span class="panel-option-text">
-                                            <span class="panel-option-name mono">@file.Path</span>
-                                            @if (file.Truncated)
-                                            {
-                                                <span class="panel-option-hint panel-option-error">@(file.Content.Length == 0 ? WebStrings.ChatViewTooLargeNotIncluded : WebStrings.ChatViewTooLargeCutOff)</span>
-                                            }
-                                        </span>
-                                    </li>
-                                }
-                            </ul>
-                        </ChildContent>
-                    </Popover>
-                }
-            }
-            else
-            {
-                <span class="chat-context-where" title="@WebStrings.ChatViewChatFilesTooltip">
-                    <Icon Name="file" />
-                    <span class="chat-context-name">@WebStrings.ChatViewChatFilesLabel</span>
-                </span>
-            }
-
-            <McpPicker ChatId="@_openId" Choices="_newMcpServers" OnChoose="choice => _newMcpServers[choice.Name] = choice.Enabled" />
-            <SkillPicker ChatId="@_openId" FolderPath="@ContextPath" Choices="_newSkills" OnChoose="choice => _newSkills[choice.Name] = choice.Enabled" />
-            @if (_openId is { } mcpId)
-            {
-                <ExportMenu ChatId="@mcpId" />
-            }
-            @if (_info is not null)
-            {
-                <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> @WebStrings.ChatViewMoveButton</button>
-            }
-            @if (_entries.Count > 0)
-            {
-                <button type="button" class="btn btn-ghost btn-sm" data-shortcut="find" title="@WebStrings.ChatViewFindButtonTooltip" @onclick="OpenFind"><Icon Name="search" /> @WebStrings.ChatViewFindButton</button>
-            }
-            @if (ContextPath is { } missingCheck && !Directory.Exists(missingCheck))
-            {
-                <span class="chat-context-warning" role="status"><Icon Name="alert" /> @WebStrings.ChatViewFolderNotFound</span>
-            }
-        </div>
-
-        @if (_finding)
-        {
-            <FindBar @ref="_findBar" Entries="_entries" OnShow="ShowMatchAsync" OnClose="CloseFindAsync" />
-        }
-
-        <div class="sr-only" role="status" aria-live="polite">@_announcement</div>
-
-        <div class="chat-scroll" @ref="_scroll" tabindex="-1">
-            <div class="chat-thread" role="log" aria-live="off">
-                @if (_entries.Count == 0)
-                {
-                    <div class="chat-empty">
-                        <h1>@WebStrings.ChatViewEmptyHeading</h1>
-                        <p class="muted">@WebStrings.ChatViewEmptyHint</p>
-                    </div>
-                }
-
-                @if (_windowStart > 0)
-                {
-                    <button type="button" class="btn btn-sm chat-earlier" data-earlier="@_windowStart" @onclick="ShowEarlier">@EarlierMessagesLabel</button>
-                }
-
-                @{
-                    string? previousLabel = _windowStart > 0 ? _entries[_windowStart - 1].Label : null;
-                }
-                @foreach (var entry in _entries.Skip(_windowStart))
-                {
-                    if (entry.Compaction is { } compaction)
+                    <span class="chat-context-where" title="@folderPath">
+                        <Icon Name="folder" />
+                        <span class="chat-context-name">@(Folders.Find(folderPath)?.Name ?? FolderPaths.DisplayName(folderPath))</span>
+                        <span class="chat-context-path mono"><bdi>@folderPath</bdi></span>
+                    </span>
+                    @if (Project is { Files.Count: > 0 } project)
                     {
-                        <CompactionMarker @key="entry.Id" Info="compaction" />
-                        continue;
+                        <Popover Label="@WebStrings.ChatViewInstructionsLabel" Title="@WebStrings.ChatViewInstructionsTooltip">
+                            <Trigger><Icon Name="file" /> @WebStrings.ChatViewAgentsMdTrigger <span class="badge">@project.Files.Count</span></Trigger>
+                            <ChildContent>
+                                <div class="panel-head"><span>@WebStrings.ChatViewInstructionsHeading</span></div>
+                                <ul class="panel-list">
+                                    @foreach (var file in project.Files)
+                                    {
+                                        <li class="panel-option">
+                                            <Icon Name="file" />
+                                            <span class="panel-option-text">
+                                                <span class="panel-option-name mono">@file.Path</span>
+                                                @if (file.Truncated)
+                                                {
+                                                    <span class="panel-option-hint panel-option-error">@(file.Content.Length == 0 ? WebStrings.ChatViewTooLargeNotIncluded : WebStrings.ChatViewTooLargeCutOff)</span>
+                                                }
+                                            </span>
+                                        </li>
+                                    }
+                                </ul>
+                            </ChildContent>
+                        </Popover>
                     }
+                }
+                else
+                {
+                    <span class="chat-context-where" title="@WebStrings.ChatViewChatFilesTooltip">
+                        <Icon Name="file" />
+                        <span class="chat-context-name">@WebStrings.ChatViewChatFilesLabel</span>
+                    </span>
+                }
 
-                    var showLabel = entry.Role == ChatRole.Assistant && entry.Label != previousLabel;
-                    if (entry.Role == ChatRole.Assistant)
-                    {
-                        previousLabel = entry.Label;
-                    }
-
-                    <MessageView @key="entry.Id" Entry="entry" ChatId="@_openId" ShowLabel="showLabel" CanEdit="!(_chat?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" OnAnswer="Answer" />
+                <McpPicker ChatId="@_openId" Choices="_newMcpServers" OnChoose="choice => _newMcpServers[choice.Name] = choice.Enabled" />
+                <SkillPicker ChatId="@_openId" FolderPath="@ContextPath" Choices="_newSkills" OnChoose="choice => _newSkills[choice.Name] = choice.Enabled" />
+                @if (_openId is { } mcpId)
+                {
+                    <ExportMenu ChatId="@mcpId" />
+                }
+                @if (_info is not null)
+                {
+                    <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> @WebStrings.ChatViewMoveButton</button>
+                }
+                @if (_entries.Count > 0)
+                {
+                    <button type="button" class="btn btn-ghost btn-sm" data-shortcut="find" title="@WebStrings.ChatViewFindButtonTooltip" @onclick="OpenFind"><Icon Name="search" /> @WebStrings.ChatViewFindButton</button>
+                }
+                @if (ContextPath is { } missingCheck && !Directory.Exists(missingCheck))
+                {
+                    <span class="chat-context-warning" role="status"><Icon Name="alert" /> @WebStrings.ChatViewFolderNotFound</span>
                 }
             </div>
-        </div>
 
-        <div class="chat-jump-anchor">
-            <button type="button" class="btn btn-icon chat-jump" data-bh-action="toBottom" aria-label="@WebStrings.ChatViewJumpToLatest" title="@WebStrings.ChatViewJumpToLatest"><Icon Name="arrow-down" /></button>
-        </div>
+            @if (_finding)
+            {
+                <FindBar @ref="_findBar" Entries="_entries" OnShow="ShowMatchAsync" OnClose="CloseFindAsync" />
+            }
 
-        @if (!_loading)
-        {
-            <TodoPanel @key="_openId" Todos="_chat?.Todos" />
-            <Composer @ref="_composer" ChatId="@ChatId" Entries="_entries" FolderPath="@ContextPath" Remembered="_info" Running="_chat?.IsRunning ?? false" CanQueue="_chat?.IsReplying ?? false" Asked="_chat?.IsWaitingForUser ?? false" Queued="_chat?.Queued ?? []" OnQueue="Queue" CanRetry="_chat?.CanRetry ?? false" CanCompact="_chat?.CanCompact ?? false" ContextOf="_chat is null ? null : _chat.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop">
-                <PermissionPicker Settings="CurrentPermissions" HasFolder="ContextPath is not null" OnChange="ChangePermissionsAsync" />
-            </Composer>
-        }
+            <div class="sr-only" role="status" aria-live="polite">@_announcement</div>
 
-        <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
-    </section>
+            <div class="chat-scroll" @ref="_scroll" tabindex="-1">
+                <div class="chat-thread" role="log" aria-live="off">
+                    @if (_entries.Count == 0)
+                    {
+                        <div class="chat-empty">
+                            <h1>@WebStrings.ChatViewEmptyHeading</h1>
+                            <p class="muted">@WebStrings.ChatViewEmptyHint</p>
+                        </div>
+                    }
+
+                    @if (_windowStart > 0)
+                    {
+                        <button type="button" class="btn btn-sm chat-earlier" data-earlier="@_windowStart" @onclick="ShowEarlier">@EarlierMessagesLabel</button>
+                    }
+
+                    @{
+                        string? previousLabel = _windowStart > 0 ? _entries[_windowStart - 1].Label : null;
+                    }
+                    @foreach (var entry in _entries.Skip(_windowStart))
+                    {
+                        if (entry.Compaction is { } compaction)
+                        {
+                            <CompactionMarker @key="entry.Id" Info="compaction" />
+                            continue;
+                        }
+
+                        var showLabel = entry.Role == ChatRole.Assistant && entry.Label != previousLabel;
+                        if (entry.Role == ChatRole.Assistant)
+                        {
+                            previousLabel = entry.Label;
+                        }
+
+                        <MessageView @key="entry.Id" Entry="entry" ChatId="@_openId" ShowLabel="showLabel" CanEdit="!(_chat?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" OnAnswer="Answer" />
+                    }
+                </div>
+            </div>
+
+            <div class="chat-jump-anchor">
+                <button type="button" class="btn btn-icon chat-jump" data-bh-action="toBottom" aria-label="@WebStrings.ChatViewJumpToLatest" title="@WebStrings.ChatViewJumpToLatest"><Icon Name="arrow-down" /></button>
+            </div>
+
+            @if (!_loading)
+            {
+                <TodoPanel @key="_openId" Todos="_chat?.Todos" />
+                <Composer @ref="_composer" ChatId="@ChatId" Entries="_entries" FolderPath="@ContextPath" Remembered="_info" Running="_chat?.IsRunning ?? false" CanQueue="_chat?.IsReplying ?? false" Asked="_chat?.IsWaitingForUser ?? false" Queued="_chat?.Queued ?? []" OnQueue="Queue" CanRetry="_chat?.CanRetry ?? false" CanCompact="_chat?.CanCompact ?? false" ContextOf="_chat is null ? null : _chat.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop">
+                    <PermissionPicker Settings="CurrentPermissions" HasFolder="ContextPath is not null" OnChange="ChangePermissionsAsync" />
+                </Composer>
+            }
+
+            <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
+        </section>
+        <BrowserPanel ChatId="@_openId" />
+    </div>
 }
 
 @code {

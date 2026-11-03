@@ -1,6 +1,8 @@
 #pragma warning disable IDISP001, IDISP003 // The engine owns the browser and sweeper; Dispose and CloseBrowserAsync release them.
 using Microsoft.Extensions.Logging;
 using PuppeteerSharp;
+using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace BlazeHarness.Core.Web.Browser;
 
@@ -23,6 +25,9 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     private static readonly TimeSpan NavigationTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan SettleTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan SweepInterval = TimeSpan.FromMinutes(1);
+    // Chrome sends the next screencast frame only after the last one is acknowledged, so waiting before the
+    // acknowledgement caps the frame rate without dropping the frame that shows where the page ended up.
+    private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(100);
 
     private readonly int? _appPort;
     private readonly BrowserFetcher _fetcher;
@@ -33,6 +38,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     private readonly ILogger<PuppeteerBrowserEngine> _logger;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly Dictionary<string, BrowserSession> _sessions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, BrowserFrame> _frames = new(StringComparer.Ordinal);
     private IBrowser? _browser;
     private ITimer? _sweeper;
     private bool _disposed;
@@ -69,6 +75,16 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     /// Gets how many chats have a page open.
     /// </summary>
     internal int OpenPages => _sessions.Count;
+
+    /// <inheritdoc />
+    public event EventHandler<BrowserFrameChangedEventArgs>? FrameChanged;
+
+    /// <inheritdoc />
+    public BrowserFrame? LatestFrame(string chatId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(chatId);
+        return _frames.GetValueOrDefault(chatId);
+    }
 
     /// <inheritdoc />
     public Task<bool> IsInstalledAsync(CancellationToken cancellationToken) => Task.FromResult(FindExecutable() is not null);
@@ -282,7 +298,61 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
             }
         };
         _sessions[chatId] = session;
+        await StartScreencastAsync(chatId, session);
         return session;
+    }
+
+    private async Task StartScreencastAsync(string chatId, BrowserSession session)
+    {
+        try
+        {
+            var client = await session.Page.CreateCDPSessionAsync();
+            client.MessageReceived += (_, args) =>
+            {
+                if (args.MessageID == "Page.screencastFrame")
+                {
+                    OnFrameInBackground(chatId, session, client, args.MessageData);
+                }
+            };
+            await client.SendAsync("Page.startScreencast", new { format = "jpeg", quality = 60, maxWidth = 1280, maxHeight = 800 });
+        }
+        catch (PuppeteerException ex)
+        {
+            // The agent can still read the page; only the view next to the chat stays empty.
+            LogScreencastFailed(ex);
+        }
+    }
+
+    private void OnFrameInBackground(string chatId, BrowserSession session, ICDPSession client, JsonElement data) => _ = OnFrameAsync(chatId, session, client, data);
+
+    private async Task OnFrameAsync(string chatId, BrowserSession session, ICDPSession client, JsonElement data)
+    {
+        try
+        {
+            var jpeg = Convert.FromBase64String(data.GetProperty("data").GetString() ?? string.Empty);
+            var ackId = data.GetProperty("sessionId").GetInt32();
+            if (Uri.TryCreate(session.Page.Url, UriKind.Absolute, out var url) && url.Scheme != "about" && !session.IsClosed)
+            {
+                var frame = new BrowserFrame(jpeg, url, await session.Page.GetTitleAsync());
+                _frames[chatId] = frame;
+                FrameChanged?.Invoke(this, new BrowserFrameChangedEventArgs(chatId, frame));
+            }
+
+            await Task.Delay(FrameInterval, _time);
+            await client.SendAsync("Page.screencastFrameAck", new { sessionId = ackId });
+        }
+        catch (Exception ex) when (ex is PuppeteerException or FormatException or JsonException or KeyNotFoundException or InvalidOperationException or ObjectDisposedException)
+        {
+            // The page closed or navigated while the frame was handled; the next frame replaces this one.
+        }
+    }
+
+    private void PublishClosed(string chatId)
+    {
+        if (_frames.TryRemove(chatId, out _))
+        {
+            FrameChanged?.Invoke(this, new BrowserFrameChangedEventArgs(chatId, null));
+        }
     }
 
     private void OnRequestInBackground(BrowserSession session, IRequest request) => _ = OnRequestAsync(session, request);
@@ -331,6 +401,12 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         if (_browser is { IsConnected: true } running)
         {
             return running;
+        }
+
+        foreach (var (chatId, stale) in _sessions.ToList())
+        {
+            stale.MarkClosed();
+            PublishClosed(chatId);
         }
 
         _sessions.Clear();
@@ -416,6 +492,8 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
             return;
         }
 
+        session.MarkClosed();
+        PublishClosed(chatId);
         try
         {
             await session.Context.CloseAsync();
@@ -442,6 +520,9 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The browser could not be launched.")]
     private partial void LogLaunchFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The browser view could not be started.")]
+    private partial void LogScreencastFailed(Exception ex);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Closing a browser page failed.")]
     private partial void LogCloseFailed(Exception ex);

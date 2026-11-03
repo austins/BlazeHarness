@@ -62,11 +62,27 @@ public sealed class WebServices : IDisposable
     }
 
     /// <summary>
+    /// Occurs when a chat's browser shows something new, and with no frame when its page is closed. It may be raised on any thread.
+    /// </summary>
+    public event EventHandler<BrowserFrameChangedEventArgs>? BrowserFrameChanged
+    {
+        add => _browser.FrameChanged += value;
+        remove => _browser.FrameChanged -= value;
+    }
+
+    /// <summary>
     /// Get how a search provider did the last time it was used.
     /// </summary>
     /// <param name="providerId">The provider id.</param>
     /// <returns>The status, or null when it has not been used yet.</returns>
     public WebProviderStatus? StatusOf(string providerId) => _search.StatusOf(providerId);
+
+    /// <summary>
+    /// Get the last picture of a chat's browser page.
+    /// </summary>
+    /// <param name="chatId">The chat id.</param>
+    /// <returns>The picture, or null when the chat has no page open.</returns>
+    public BrowserFrame? LatestBrowserFrame(string chatId) => _browser.LatestFrame(chatId);
 
     /// <summary>
     /// Drop the pages a chat fetched.

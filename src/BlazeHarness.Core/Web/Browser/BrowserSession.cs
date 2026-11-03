@@ -14,6 +14,7 @@ internal sealed class BrowserSession
     private readonly HashSet<string> _approved = new(StringComparer.Ordinal);
     private readonly List<string> _problems = [];
     private DateTimeOffset _lastUsed;
+    private bool _closed;
 
     public BrowserSession(IBrowserContext context, IPage page, DateTimeOffset now)
     {
@@ -34,6 +35,25 @@ internal sealed class BrowserSession
             {
                 return _lastUsed;
             }
+        }
+    }
+
+    public bool IsClosed
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _closed;
+            }
+        }
+    }
+
+    public void MarkClosed()
+    {
+        lock (_gate)
+        {
+            _closed = true;
         }
     }
 

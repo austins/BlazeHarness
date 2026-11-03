@@ -6,6 +6,18 @@ namespace BlazeHarness.Core.Web.Browser;
 internal interface IBrowserEngine : IDisposable
 {
     /// <summary>
+    /// Occurs when a chat's page shows something new, and with no frame when the page is closed. It may be raised on any thread.
+    /// </summary>
+    event EventHandler<BrowserFrameChangedEventArgs>? FrameChanged;
+
+    /// <summary>
+    /// Get the last picture of a chat's page.
+    /// </summary>
+    /// <param name="chatId">The chat id.</param>
+    /// <returns>The picture, or null when the chat has no page open.</returns>
+    BrowserFrame? LatestFrame(string chatId);
+
+    /// <summary>
     /// Tell whether the browser program is on this computer.
     /// </summary>
     /// <param name="cancellationToken">A token that stops the check.</param>

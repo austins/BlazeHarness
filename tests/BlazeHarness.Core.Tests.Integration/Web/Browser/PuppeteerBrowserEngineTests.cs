@@ -105,6 +105,45 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
     }
 
     [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task NavigateAsync_Page_PublishesJpegFrame()
+    {
+        // Arrange
+        using var sut = Create();
+        var first = new TaskCompletionSource<BrowserFrameChangedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+        sut.FrameChanged += (_, args) => first.TrySetResult(args);
+
+        // Act
+        await sut.NavigateAsync(Chat, Url("/"), TestContext.Current.CancellationToken).Bounded();
+        var args = await first.Task.Bounded();
+
+        // Assert
+        args.ChatId.Should().Be(Chat);
+        args.Frame.Should().NotBeNull();
+        args.Frame.Jpeg.Span[..2].ToArray().Should().Equal(0xFF, 0xD8);
+        args.Frame.Url.Should().Be(Url("/"));
+        sut.LatestFrame(Chat).Should().NotBeNull();
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task Forget_PageOpen_PublishesClosedAndClearsLatestFrame()
+    {
+        // Arrange
+        using var sut = Create();
+        var shown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        sut.FrameChanged += (_, args) => (args.Frame is null ? closed : shown).TrySetResult();
+        await sut.NavigateAsync(Chat, Url("/"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        await shown.Task.Bounded();
+        sut.Forget(Chat);
+        await closed.Task.Bounded();
+
+        // Assert
+        sut.LatestFrame(Chat).Should().BeNull();
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
     public async Task NavigateAsync_ScriptRendersContent_ShowsRenderedText()
     {
         // Arrange
