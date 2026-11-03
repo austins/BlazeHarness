@@ -415,14 +415,20 @@ public sealed partial class ChatService : IDisposable
     }
 
     /// <summary>
-    /// Find an image inside the working folder of a chat, so the chat can show it.
+    /// Find an image inside the working folder of a chat, or the chat's own files folder when it has none, so the chat can show it.
     /// </summary>
     /// <param name="id">The chat id.</param>
     /// <param name="path">The path as the model wrote it, relative to the folder or absolute.</param>
-    /// <returns>The image, or null when the chat has no folder, the path leaves the folder, or the file is not a supported image within the size cap.</returns>
+    /// <returns>The image, or null when the chat is unknown, the path leaves the folder, or the file is not a supported image within the size cap.</returns>
     public AttachmentFile? FindFolderImage(string id, string path)
     {
-        if (_store.Find(id)?.FolderPath is not { } folder || !Directory.Exists(folder))
+        if (_store.Find(id) is not { } chat)
+        {
+            return null;
+        }
+
+        var folder = chat.FolderPath ?? _store.OutputsDirectory(id);
+        if (!Directory.Exists(folder))
         {
             return null;
         }

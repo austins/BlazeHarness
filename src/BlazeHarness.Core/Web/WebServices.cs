@@ -85,6 +85,42 @@ public sealed class WebServices : IDisposable
     public BrowserFrame? LatestBrowserFrame(string chatId) => _browser.LatestFrame(chatId);
 
     /// <summary>
+    /// Pass a click by the user in the browser panel on to the page the chat has open.
+    /// </summary>
+    /// <param name="chatId">The chat id.</param>
+    /// <param name="x">How far across the page, from 0 to 1.</param>
+    /// <param name="y">How far down the page, from 0 to 1.</param>
+    /// <param name="cancellationToken">A token that stops the call.</param>
+    /// <returns>A task that completes when the click was sent.</returns>
+    /// <exception cref="BrowserException">The chat has no page open.</exception>
+    public Task BrowserClickAsync(string chatId, double x, double y, CancellationToken cancellationToken) =>
+        _browser.UserClickAsync(chatId, x, y, cancellationToken);
+
+    /// <summary>
+    /// Pass a key press by the user in the browser panel on to the page the chat has open.
+    /// </summary>
+    /// <param name="chatId">The chat id.</param>
+    /// <param name="key">A single character to type, or the name of a key such as Enter or ArrowDown. Other keys are ignored.</param>
+    /// <param name="cancellationToken">A token that stops the call.</param>
+    /// <returns>A task that completes when the key was sent.</returns>
+    /// <exception cref="BrowserException">The chat has no page open.</exception>
+    public Task BrowserKeyAsync(string chatId, string key, CancellationToken cancellationToken) =>
+        _browser.UserKeyAsync(chatId, key, cancellationToken);
+
+    /// <summary>
+    /// Pass a scroll by the user in the browser panel on to the page the chat has open.
+    /// </summary>
+    /// <param name="chatId">The chat id.</param>
+    /// <param name="x">How far across the page the pointer is, from 0 to 1.</param>
+    /// <param name="y">How far down the page the pointer is, from 0 to 1.</param>
+    /// <param name="deltaY">How many pixels to scroll down; negative scrolls up.</param>
+    /// <param name="cancellationToken">A token that stops the call.</param>
+    /// <returns>A task that completes when the scroll was sent.</returns>
+    /// <exception cref="BrowserException">The chat has no page open.</exception>
+    public Task BrowserScrollAsync(string chatId, double x, double y, double deltaY, CancellationToken cancellationToken) =>
+        _browser.UserScrollAsync(chatId, x, y, deltaY, cancellationToken);
+
+    /// <summary>
     /// Drop the pages a chat fetched.
     /// </summary>
     /// <param name="chatId">The chat id.</param>

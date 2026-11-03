@@ -884,7 +884,7 @@ public sealed class ChatServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task FindFolderImage_ImageInsideTheChatFolder_IsFoundAndAnythingElseIsNot()
+    public async Task FindFolderImage_ImageInsideTheChatFolderOrItsFiles_IsFoundAndAnythingElseIsNot()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
@@ -907,6 +907,14 @@ public sealed class ChatServiceTests : IDisposable
         sut.FindFolderImage(info.Id, "../outside.png").Should().BeNull();
         sut.FindFolderImage(withoutFolder.Id, "a.png").Should().BeNull();
         sut.FindFolderImage("nope", "a.png").Should().BeNull();
+
+        // Act
+        var outputs = Path.Combine(_paths.ChatDirectory(withoutFolder.Id), "outputs");
+        Directory.CreateDirectory(outputs);
+        await File.WriteAllBytesAsync(Path.Combine(outputs, "a.png"), [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1], ct);
+
+        // Assert
+        sut.FindFolderImage(withoutFolder.Id, "a.png").Should().Match<AttachmentFile>(f => f.MediaType == "image/png");
     }
 
     private async Task<PermissionDefaults> NewDefaultsAsync(PermissionSettings settings, bool allowBypass)

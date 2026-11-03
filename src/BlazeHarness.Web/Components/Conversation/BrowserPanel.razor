@@ -1,7 +1,8 @@
 @using BlazeHarness.Core.Web
 @using BlazeHarness.Core.Web.Browser
-@implements IDisposable
+@implements IAsyncDisposable
 @inject WebServices Web
+@inject IJSRuntime JS
 
 @if (_src is not null && _frame is { } frame && frame.Url.AbsoluteUri != _dismissedUrl)
 {
@@ -11,8 +12,8 @@
             <span class="browser-url" title="@frame.Url">@frame.Url</span>
             <button type="button" class="btn btn-icon" aria-label="@WebStrings.BrowserPanelClose" title="@WebStrings.BrowserPanelClose" @onclick="Dismiss"><Icon Name="close" /></button>
         </div>
-        <div class="browser-view">
-            <img src="@_src" alt="@(frame.Title.Length > 0 ? frame.Title : WebStrings.BrowserPanelImageAlt)" />
+        <div class="browser-view" tabindex="0" title="@WebStrings.BrowserPanelHint" @ref="_view">
+            <img src="@_src" draggable="false" alt="@(frame.Title.Length > 0 ? frame.Title : WebStrings.BrowserPanelImageAlt)" @ref="_image" />
         </div>
         @if (frame.Title.Length > 0)
         {
@@ -26,6 +27,13 @@
     private string? _src;
     private string? _shownChatId;
     private string? _dismissedUrl;
+    private ElementReference _view;
+    private ElementReference _image;
+    private string? _boundView;
+    private DotNetObjectReference<BrowserPanel>? _self;
+    private bool _disposed;
+
+    private bool Visible => _src is not null && _frame is { } frame && frame.Url.AbsoluteUri != _dismissedUrl;
 
     /// <summary>
     /// Gets or sets the id of the open chat, or null while a new chat has none yet.
@@ -34,10 +42,69 @@
     public string? ChatId { get; set; }
 
     /// <inheritdoc />
-    public void Dispose() => Web.BrowserFrameChanged -= OnFrameChanged;
+    public ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        Web.BrowserFrameChanged -= OnFrameChanged;
+        _self?.Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Passes a click on the picture of the page on to the page.
+    /// </summary>
+    /// <param name="x">How far across the page, from 0 to 1.</param>
+    /// <param name="y">How far down the page, from 0 to 1.</param>
+    /// <returns>A task that completes when the click was sent.</returns>
+    [JSInvokable]
+    public Task Click(double x, double y) => Forward(chatId => Web.BrowserClickAsync(chatId, x, y, CancellationToken.None));
+
+    /// <summary>
+    /// Passes a key press while the picture of the page has focus on to the page.
+    /// </summary>
+    /// <param name="key">The key, as the browser names it.</param>
+    /// <returns>A task that completes when the key was sent.</returns>
+    [JSInvokable]
+    public Task Key(string key) => Forward(chatId => Web.BrowserKeyAsync(chatId, key, CancellationToken.None));
+
+    /// <summary>
+    /// Passes scrolling over the picture of the page on to the page.
+    /// </summary>
+    /// <param name="x">How far across the page the pointer is, from 0 to 1.</param>
+    /// <param name="y">How far down the page the pointer is, from 0 to 1.</param>
+    /// <param name="deltaY">How many pixels to scroll down; negative scrolls up.</param>
+    /// <returns>A task that completes when the scroll was sent.</returns>
+    [JSInvokable]
+    public Task Scroll(double x, double y, double deltaY) => Forward(chatId => Web.BrowserScrollAsync(chatId, x, y, deltaY, CancellationToken.None));
 
     /// <inheritdoc />
     protected override void OnInitialized() => Web.BrowserFrameChanged += OnFrameChanged;
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!Visible)
+        {
+            _boundView = null;
+            return;
+        }
+
+        if (_disposed || _boundView == _view.Id)
+        {
+            return;
+        }
+
+        _boundView = _view.Id;
+        _self ??= DotNetObjectReference.Create(this);
+        try
+        {
+            await JS.InvokeVoidAsync("bhBrowser.bind", _view, _image, _self);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone; there is nothing left to bind.
+        }
+    }
 
     /// <inheritdoc />
     protected override void OnParametersSet()
@@ -56,6 +123,23 @@
     {
         _frame = frame;
         _src = frame is null ? null : "data:image/jpeg;base64," + Convert.ToBase64String(frame.Jpeg.Span);
+    }
+
+    private async Task Forward(Func<string, Task> send)
+    {
+        if (_shownChatId is not { } chatId)
+        {
+            return;
+        }
+
+        try
+        {
+            await send(chatId);
+        }
+        catch (BrowserException)
+        {
+            // The page closed or moved on between the click and its arrival; the next picture shows what happened.
+        }
     }
 
     private void Dismiss() => _dismissedUrl = _frame?.Url.AbsoluteUri;
