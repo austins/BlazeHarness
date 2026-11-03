@@ -837,7 +837,7 @@
     <comment>Heading of the sidebar section listing general chats, the ones that are not in a folder.</comment>
   </data>
   <data name="SidebarSearchChatsTooltip" xml:space="preserve">
-    <value>Search chats (Ctrl+K)</value>
+    <value>Search chat titles (Ctrl+K)</value>
     <comment>Tooltip of the chat search box. The parenthesised text is the keyboard shortcut; keep it matching the real shortcut.</comment>
   </data>
   <data name="SidebarSearchChatsLabel" xml:space="preserve">
@@ -845,7 +845,7 @@
     <comment>Accessible label (aria-label) of the chat search box; not shown on screen.</comment>
   </data>
   <data name="SidebarSearchChatsPlaceholder" xml:space="preserve">
-    <value>Search chats</value>
+    <value>Search chat titles</value>
     <comment>Placeholder text inside the empty chat search box in the sidebar.</comment>
   </data>
   <data name="SidebarNewChat" xml:space="preserve">
@@ -993,7 +993,7 @@
     <comment>Row label in the Keyboard shortcuts list on the General page; the key combination is shown next to it. Describes the shortcut that searches the text of the open chat.</comment>
   </data>
   <data name="GeneralSettingsShortcutSearchChats" xml:space="preserve">
-    <value>Search chats</value>
+    <value>Search chat titles</value>
     <comment>Row label in the Keyboard shortcuts list on the General page; the key combination is shown next to it. Describes the shortcut that searches the list of saved chats.</comment>
   </data>
   <data name="GeneralSettingsShortcutNewChat" xml:space="preserve">

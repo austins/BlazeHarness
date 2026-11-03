@@ -72,7 +72,8 @@ document.addEventListener("keydown", (event) => {
         // Only while the chat has focus; elsewhere the browser's own find stays.
         target = document.querySelector("[data-shortcut=find]");
     } else if (key === "k" && !event.shiftKey) {
-        target = document.querySelector("[data-shortcut=search]");
+        // The box is only there while the search is open; otherwise the toggle opens it.
+        target = document.querySelector("[data-shortcut=search-input]") ?? document.querySelector("[data-shortcut=search]");
     } else if (key === "o" && event.shiftKey) {
         target = document.querySelector("[data-shortcut=new-chat]");
     } else if (key === "," && !event.shiftKey) {

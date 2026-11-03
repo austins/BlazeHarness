@@ -35,16 +35,16 @@
         var filtering = !string.IsNullOrWhiteSpace(Filter);
     }
 
-    @if (filtering || all.Count > 0)
-    {
-        <input type="search" class="input input-sm sidebar-search" placeholder="@WebStrings.SidebarSearchChatsPlaceholder"
-               aria-label="@WebStrings.SidebarSearchChatsLabel" title="@WebStrings.SidebarSearchChatsTooltip" data-shortcut="search" @bind="Filter" @bind:event="oninput" />
-    }
-
     <section class="sidebar-section" aria-labelledby="chats-heading">
         <div class="sidebar-heading">
             <Icon Name="chat" /><span id="chats-heading">@WebStrings.SidebarChatsHeading</span>
             <div class="sidebar-heading-actions">
+                @if (_searching || all.Count > 0)
+                {
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon sidebar-search-toggle" aria-expanded="@(_searching ? "true" : "false")"
+                            aria-controls="sidebar-search" title="@WebStrings.SidebarSearchChatsTooltip" aria-label="@WebStrings.SidebarSearchChatsLabel"
+                            data-shortcut="search" @onclick="ToggleSearch"><Icon Name="search" /></button>
+                }
                 <label class="btn btn-ghost btn-sm btn-icon import-chat" title="@WebStrings.SidebarImportChatTooltip">
                     <InputFile @ref="_importInput" OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="@WebStrings.SidebarImportChatLabel" />
                     <Icon Name="import" />
@@ -52,6 +52,12 @@
                 <a class="btn btn-ghost btn-sm btn-icon" href="" title="@WebStrings.SidebarNewGeneralChatTooltip" aria-label="@WebStrings.SidebarNewGeneralChatLabel"><Icon Name="plus" /></a>
             </div>
         </div>
+        @if (_searching)
+        {
+            <input type="search" id="sidebar-search" class="input input-sm sidebar-search" placeholder="@WebStrings.SidebarSearchChatsPlaceholder"
+                   aria-label="@WebStrings.SidebarSearchChatsLabel" data-shortcut="search-input" @ref="_searchInput"
+                   @bind="Filter" @bind:event="oninput" @onkeydown="OnSearchKey" />
+        }
         @if (chats.Count == 0)
         {
             <p class="sidebar-empty">@(filtering ? WebStrings.SidebarNoChatsMatch : WebStrings.SidebarNoChatsYet)</p>
@@ -186,6 +192,9 @@
     private readonly string _menuId = $"folder-menu-{Guid.NewGuid():N}";
     private (double X, double Y)? _showMenuAt;
     private InputFile? _importInput;
+    private ElementReference _searchInput;
+    private bool _searching;
+    private bool _focusSearch;
 
     private const long MaxImportBytes = 8 * 1024 * 1024;
 
@@ -268,6 +277,30 @@
         {
             _showMenuAt = null;
             await JS.InvokeVoidAsync("bhUi.showContextMenu", _menu, x, y);
+        }
+
+        if (_focusSearch)
+        {
+            _focusSearch = false;
+            await _searchInput.FocusAsync();
+        }
+    }
+
+    private void ToggleSearch()
+    {
+        _searching = !_searching;
+        _focusSearch = _searching;
+        if (!_searching)
+        {
+            Filter = string.Empty;
+        }
+    }
+
+    private void OnSearchKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            ToggleSearch();
         }
     }
 
