@@ -73,4 +73,10 @@
             apply(mode);
         },
     };
+
+    const chatSortKey = "blazeharness.chat-sort";
+    window.bhChatSort = {
+        get: () => localStorage.getItem(chatSortKey),
+        set: (order) => localStorage.setItem(chatSortKey, order),
+    };
 })();

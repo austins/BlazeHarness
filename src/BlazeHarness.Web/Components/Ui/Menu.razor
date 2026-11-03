@@ -1,8 +1,15 @@
 @* A pill button that opens a list of choices in a popover. The browser closes it on Escape or a click outside, and CSS anchor positioning places it beside the button. *@
-<button type="button" class="menu-trigger" popovertarget="@Id" aria-haspopup="menu" title="@Title" data-tone="@Tone" style="anchor-name: --@Id">
-    <span class="sr-only">@Label: </span>
+<button type="button" class="@(IconOnly ? "btn btn-ghost btn-sm btn-icon" : "menu-trigger")" popovertarget="@Id" aria-haspopup="menu" title="@Title" data-tone="@Tone"
+        aria-label="@(IconOnly ? Label : null)" style="anchor-name: --@Id">
+    @if (!IconOnly)
+    {
+        <span class="sr-only">@Label: </span>
+    }
     @Trigger
-    <Icon Name="chevron-up" />
+    @if (!IconOnly)
+    {
+        <Icon Name="chevron-up" />
+    }
 </button>
 <div id="@Id" class="menu" popover="auto" role="menu" aria-label="@Label" style="position-anchor: --@Id" data-bh-menu>
     <CascadingValue Value="this" IsFixed="true">
@@ -39,6 +46,12 @@
     /// </summary>
     [Parameter]
     public RenderFragment? Trigger { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the trigger is a bare icon button, named by <see cref="Label"/>, instead of a pill with the current choice.
+    /// </summary>
+    [Parameter]
+    public bool IconOnly { get; set; }
 
     /// <summary>
     /// Gets or sets the items, headings and notes in the menu.

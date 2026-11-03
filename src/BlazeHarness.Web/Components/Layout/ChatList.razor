@@ -121,7 +121,7 @@
         }
     }
 
-    private static string DisplayTitle(ChatInfo chat)
+    internal static string DisplayTitle(ChatInfo chat)
     {
         return string.IsNullOrWhiteSpace(chat.Title) ? WebStrings.ChatListUntitledChat : chat.Title;
     }

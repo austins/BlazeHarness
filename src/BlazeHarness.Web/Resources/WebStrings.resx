@@ -828,6 +828,22 @@
     <value>Import a chat from a JSON file</value>
     <comment>Accessible label (aria-label) of the file input that imports an exported chat. JSON is a file format: do not translate it.</comment>
   </data>
+  <data name="SidebarSortLabel" xml:space="preserve">
+    <value>Sort chats</value>
+    <comment>Accessible label (aria-label) of the icon button in the Chats heading that opens the sort menu; not shown on screen.</comment>
+  </data>
+  <data name="SidebarSortTooltip" xml:space="preserve">
+    <value>Sort chats</value>
+    <comment>Tooltip of the icon button in the Chats heading that opens the menu for choosing how the chat lists are ordered.</comment>
+  </data>
+  <data name="SidebarSortUpdated" xml:space="preserve">
+    <value>Last updated</value>
+    <comment>Choice in the sort menu of the sidebar chat lists: the chat with the most recent activity comes first.</comment>
+  </data>
+  <data name="SidebarSortName" xml:space="preserve">
+    <value>Name</value>
+    <comment>Choice in the sort menu of the sidebar chat lists: chats are ordered alphabetically by title.</comment>
+  </data>
   <data name="SidebarImportChatTooltip" xml:space="preserve">
     <value>Import a chat from a JSON file</value>
     <comment>Tooltip of the icon button in the Chats heading that imports an exported chat. JSON is a file format: do not translate it.</comment>
@@ -837,15 +853,15 @@
     <comment>Heading of the sidebar section listing general chats, the ones that are not in a folder.</comment>
   </data>
   <data name="SidebarSearchChatsTooltip" xml:space="preserve">
-    <value>Search chat titles (Ctrl+K)</value>
+    <value>Search chat names (Ctrl+K)</value>
     <comment>Tooltip of the chat search box. The parenthesised text is the keyboard shortcut; keep it matching the real shortcut.</comment>
   </data>
   <data name="SidebarSearchChatsLabel" xml:space="preserve">
-    <value>Search chat titles</value>
+    <value>Search chat names</value>
     <comment>Accessible label (aria-label) of the chat search box; not shown on screen.</comment>
   </data>
   <data name="SidebarSearchChatsPlaceholder" xml:space="preserve">
-    <value>Search chat titles</value>
+    <value>Search chat names</value>
     <comment>Placeholder text inside the empty chat search box in the sidebar.</comment>
   </data>
   <data name="SidebarNewChat" xml:space="preserve">
@@ -993,7 +1009,7 @@
     <comment>Row label in the Keyboard shortcuts list on the General page; the key combination is shown next to it. Describes the shortcut that searches the text of the open chat.</comment>
   </data>
   <data name="GeneralSettingsShortcutSearchChats" xml:space="preserve">
-    <value>Search chat titles</value>
+    <value>Search chat names</value>
     <comment>Row label in the Keyboard shortcuts list on the General page; the key combination is shown next to it. Describes the shortcut that searches the list of saved chats.</comment>
   </data>
   <data name="GeneralSettingsShortcutNewChat" xml:space="preserve">

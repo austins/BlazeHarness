@@ -16,7 +16,11 @@
     <NavLink class="btn btn-primary" href="" Match="NavLinkMatch.All" data-shortcut="new-chat" title="@WebStrings.SidebarNewChatTooltip"><Icon Name="plus" /> @WebStrings.SidebarNewChat</NavLink>
 
     @{
-        var all = ChatService.Store.List(Filter);
+        IReadOnlyList<ChatInfo> all = ChatService.Store.List(Filter);
+        if (_sort == ChatSortOrder.Name)
+        {
+            all = [.. all.OrderBy(ChatList.DisplayTitle, StringComparer.CurrentCultureIgnoreCase).ThenByDescending(c => c.UpdatedAt)];
+        }
         var folders = Folders.List();
         var inFolder = folders.ToDictionary(f => f.Path, _ => new List<ChatInfo>(), FolderPaths.Comparer);
         var chats = new List<ChatInfo>();
@@ -44,6 +48,13 @@
                     <button type="button" class="btn btn-ghost btn-sm btn-icon sidebar-search-toggle" aria-expanded="@(_searching ? "true" : "false")"
                             aria-controls="sidebar-search" title="@WebStrings.SidebarSearchChatsTooltip" aria-label="@WebStrings.SidebarSearchChatsLabel"
                             data-shortcut="search" @onclick="ToggleSearch"><Icon Name="search" /></button>
+                    <Menu Label="@WebStrings.SidebarSortLabel" Title="@WebStrings.SidebarSortTooltip" IconOnly="true">
+                        <Trigger><Icon Name="sort" /></Trigger>
+                        <ChildContent>
+                            <MenuItem Label="@WebStrings.SidebarSortUpdated" Checked="_sort == ChatSortOrder.Updated" OnSelect="() => SetSortAsync(ChatSortOrder.Updated)" />
+                            <MenuItem Label="@WebStrings.SidebarSortName" Checked="_sort == ChatSortOrder.Name" OnSelect="() => SetSortAsync(ChatSortOrder.Name)" />
+                        </ChildContent>
+                    </Menu>
                 }
                 <label class="btn btn-ghost btn-sm btn-icon import-chat" title="@WebStrings.SidebarImportChatTooltip">
                     <InputFile @ref="_importInput" OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="@WebStrings.SidebarImportChatLabel" />
@@ -195,6 +206,7 @@
     private ElementReference _searchInput;
     private bool _searching;
     private bool _focusSearch;
+    private ChatSortOrder _sort;
 
     private const long MaxImportBytes = 8 * 1024 * 1024;
 
@@ -270,6 +282,7 @@
         if (firstRender)
         {
             _dark = await JS.InvokeAsync<bool>("bhTheme.isDark");
+            _sort = Enum.TryParse<ChatSortOrder>(await JS.InvokeAsync<string?>("bhChatSort.get"), out var saved) ? saved : ChatSortOrder.Updated;
             StateHasChanged();
         }
 
@@ -284,6 +297,12 @@
             _focusSearch = false;
             await _searchInput.FocusAsync();
         }
+    }
+
+    private async Task SetSortAsync(ChatSortOrder order)
+    {
+        _sort = order;
+        await JS.InvokeVoidAsync("bhChatSort.set", order.ToString());
     }
 
     private void ToggleSearch()
