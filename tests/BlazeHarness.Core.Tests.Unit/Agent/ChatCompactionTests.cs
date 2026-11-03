@@ -4,6 +4,7 @@ using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Core.Tools.Files;
+using BlazeHarness.Tests.Shared;
 using BlazeHarness.Tests.Shared.Agent;
 using BlazeHarness.Tests.Shared.Chats;
 using Microsoft.Extensions.AI;
@@ -261,6 +262,36 @@ public sealed class ChatCompactionTests
         status.Window.Should().Be(8000);
         status.Limit.Should().Be(5600);
         status.CacheHitRate.Should().Be(0.25);
+    }
+
+    [Fact]
+    public async Task GetContextStatus_DuringAReply_UsesTheSizeReportedForItsLastRequest()
+    {
+        // Arrange
+        var usage = new UsageContent(new UsageDetails { InputTokenCount = 50_000, OutputTokenCount = 10 });
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c0", "read"), new ChatResponseUpdate(ChatRole.Assistant, [usage])])
+            .Enqueue([ScriptedChatClient.Text("fin")]);
+        var running = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var read = new FakeTool("read", isReadOnly: true, async (_, ct) =>
+        {
+            running.TrySetResult();
+            await release.Task.WaitAsync(TestTimeouts.Default, ct);
+            return ToolResult.Ok("x");
+        });
+        using var sut = Create(client);
+        sut.Tools = new ToolSet([read], new ToolContext(Path.GetTempPath()), TimeProvider.System);
+        var send = sut.SendAsync("one", TestTargets.Create(contextWindow: 100_000));
+        await running.Task.Bounded();
+
+        // Act
+        var status = sut.GetContextStatus(TestTargets.Create(contextWindow: 100_000));
+
+        // Assert
+        release.SetResult();
+        await send.Bounded();
+        status.Approximate.Should().BeFalse();
+        status.Tokens.Should().Be(50_000);
     }
 
     [Fact]

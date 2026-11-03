@@ -145,7 +145,7 @@ public sealed class AttachmentMessageTests : IDisposable
 
         // Assert
         message!.Text.Should().Be("<tool_response>\n[The picture from browser_screenshot call c1 is no longer available.]\n</tool_response>");
-        AttachmentMessage.IsToolImages(message).Should().BeTrue();
+        StepMessage.Is(message).Should().BeTrue();
         message.Contents.OfType<DataContent>().Should().BeEmpty();
     }
 }

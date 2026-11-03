@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Providers;
+using BlazeHarness.Core.Tools;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Tests.Shared.Agent;
 using Microsoft.Extensions.AI;
@@ -28,6 +29,21 @@ public sealed class ChatTests
         sut.History.Select(m => m.Text).Should().Equal("hi", "Hello");
         sut.IsRunning.Should().BeFalse();
         sut.Entries[1].Label.Should().Be("P1 · fast");
+    }
+
+    [Fact]
+    public async Task SendAsync_ReplyWroteCallAsText_EndsThatResponseBeforeTheNextOne()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("<tool_call>x")]).Enqueue([ScriptedChatClient.Text("fine")]);
+        using var sut = CreateChat(client);
+        sut.Tools = new ToolSet([new FakeTool("read", isReadOnly: true)], new ToolContext(Path.GetTempPath()), TimeProvider.System);
+
+        // Act
+        await sut.SendAsync("hi", Fast);
+
+        // Assert
+        sut.Entries.Select(e => (e.Text, e.Status)).Should().Equal(("hi", EntryStatus.Done), ("<tool_call>x", EntryStatus.Done), ("fine", EntryStatus.Done));
     }
 
     [Fact]

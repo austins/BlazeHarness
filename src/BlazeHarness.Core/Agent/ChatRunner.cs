@@ -20,7 +20,7 @@ namespace BlazeHarness.Core.Agent;
 internal static class ChatRunner
 {
     /// <summary>
-    /// The user message added when a reply wrote a tool call as plain text. It has no chat entry of its own.
+    /// The text of the <see cref="StepMessage"/> added when a reply wrote a tool call as plain text. It has no chat entry of its own.
     /// </summary>
     internal const string TextCallNotice =
         "Your last reply wrote a tool call as plain text, so it was not run. Call the tool through the tool interface instead.";
@@ -323,7 +323,7 @@ internal static class ChatRunner
                     && WroteCallAsText(reply.ToString()))
                 {
                     textCallRetries++;
-                    history.Add(new ChatMessage(ChatRole.User, TextCallNotice));
+                    history.Add(StepMessage.Create([new TextContent(TextCallNotice)]));
                     continue;
                 }
 

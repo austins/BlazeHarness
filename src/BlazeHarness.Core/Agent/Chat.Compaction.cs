@@ -64,7 +64,10 @@ public sealed partial class Chat
                 context.RecordUsage(_entries[lastUsage].Usage!.PromptTokens, leading + _entries[lastUsage].HistoryIndex);
             }
 
-            var tokens = context.Size(messages).Tokens;
+            // During a reply the history holds only what came before it, so the size the server reported for the reply's last request is used as it is.
+            var tokens = lastUsage >= 0 && !stale && leading + _entries[lastUsage].HistoryIndex > messages.Count
+                ? _entries[lastUsage].Usage!.PromptTokens
+                : context.Size(messages).Tokens;
 
             double? cache = lastUsage >= 0 && _entries.Exists(e => e.Usage is { CachedTokens: > 0 })
                 ? (double)_entries[lastUsage].Usage!.CachedTokens / _entries[lastUsage].Usage!.PromptTokens

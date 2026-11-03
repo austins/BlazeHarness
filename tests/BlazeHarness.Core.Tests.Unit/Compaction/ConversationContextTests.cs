@@ -437,7 +437,7 @@ public sealed class ConversationContextTests
     }
 
     [Fact]
-    public async Task CompactAsync_AfterATextCallNotice_NeverCutsAtTheNotice()
+    public async Task CompactAsync_AfterAStepMessage_NeverCutsAtIt()
     {
         // Arrange
         var sut = new ConversationContext(1_000, _summarizer);
@@ -447,7 +447,7 @@ public sealed class ConversationContextTests
             new(ChatRole.Assistant, Text(100)),
             new(ChatRole.User, Text(100)),
             new(ChatRole.Assistant, Text(800)),
-            new(ChatRole.User, ChatRunner.TextCallNotice),
+            StepMessage.Create([new TextContent(ChatRunner.TextCallNotice)]),
             new(ChatRole.Assistant, Text(100)),
         ];
 

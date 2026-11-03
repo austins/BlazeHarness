@@ -102,7 +102,7 @@ public sealed class ChatRunnerInjectionTests
         await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(new FakeTool("read", isReadOnly: true)), inbox: inbox);
 
         // Assert
-        history.Select(m => m.Text).Should().Equal("hi", "<tool_call>x", ChatRunner.TextCallNotice, "fine", "later", "done");
+        history.Select(m => m.Text).Should().Equal("hi", "<tool_call>x", $"<tool_response>\n{ChatRunner.TextCallNotice}\n</tool_response>", "fine", "later", "done");
     }
 
     [Fact]

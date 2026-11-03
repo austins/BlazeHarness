@@ -251,8 +251,14 @@ public sealed partial class Chat
         return SaveAsync(events);
     }
 
-    private Task StartNextResponseAsync(Reply reply)
+    // A response without tool calls, such as one the runner asks again after, is still open here, so it is ended first.
+    private async Task StartNextResponseAsync(Reply reply)
     {
+        if (reply.Entry.Status == EntryStatus.Streaming)
+        {
+            await EndResponseAsync(reply);
+        }
+
         var startedAt = _time.GetUtcNow();
         var next = new ChatEntry(ChatRole.Assistant)
         {
@@ -268,7 +274,7 @@ public sealed partial class Chat
         }
 
         reply.Entry = next;
-        return SaveAsync([new AssistantStartEvent(startedAt, next.Id, next.Label)]);
+        await SaveAsync([new AssistantStartEvent(startedAt, next.Id, next.Label)]);
     }
 
     // The loop has already put the message at the end of the working history, so the entry points at that index.
