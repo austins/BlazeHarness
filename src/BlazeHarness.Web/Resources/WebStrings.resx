@@ -2045,8 +2045,8 @@
     <comment>Hint under the Web fetch checkbox on the Web page. It explains the limits of the tool: it only reaches public internet addresses (local network addresses are refused), ignores the system proxy settings, and caches fetched pages briefly so long pages can be read in pieces.</comment>
   </data>
   <data name="WebToolsSettingsFetchLabel" xml:space="preserve">
-    <value>Web fetch (pages, PDF files and text)</value>
-    <comment>Label of a checkbox on the Web page that turns the web_fetch tool on or off. The tool reads web pages, PDF files and plain text from an address. PDF is a file format name.</comment>
+    <value>Web fetch (pages, PDF, Office files and text)</value>
+    <comment>Label of a checkbox on the Web page that turns the web_fetch tool on or off. The tool reads web pages, PDF files, Office documents (Word, Excel, PowerPoint) and plain text from an address. PDF is a file format name.</comment>
   </data>
   <data name="WebToolsSettingsSearchLabel" xml:space="preserve">
     <value>Web search</value>
@@ -2057,7 +2057,7 @@
     <comment>Heading of the card on the Web page with the checkboxes that turn the web search and web fetch tools on or off.</comment>
   </data>
   <data name="WebToolsSettingsDescription" xml:space="preserve">
-    <value>Lets the agent search the web and read pages and PDF files. Each use asks first, unless the chat's access level is Unrestricted or it never asks. The page text is treated as data, never as instructions. JavaScript is not run, so pages that need it may come out empty.</value>
+    <value>Lets the agent search the web and read pages, PDF files and Office documents. Each use asks first, unless the chat's access level is Unrestricted or it never asks. The page text is treated as data, never as instructions. JavaScript is not run, so pages that need it may come out empty.</value>
     <comment>Introductory paragraph under the title of the Web page. "Unrestricted" is the name of an access level (see PermissionPickerUnrestricted) and should match its translation. JavaScript is a technology name, do not translate it.</comment>
   </data>
   <data name="WebToolsSettingsTitle" xml:space="preserve">

@@ -11,15 +11,20 @@ internal sealed partial class ContentExtractor
 {
     private static readonly string[] TextSubtypes = ["json", "xml", "javascript", "yaml", "x-yaml", "csv", "markdown", "x-markdown", "toml", "x-sh", "rss+xml", "atom+xml"];
 
+    private static readonly byte[] ZipMagic = [(byte)'P', (byte)'K', 3, 4];
+
     private readonly IPdfTextExtractor _pdf;
+    private readonly IOfficeTextExtractor _office;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ContentExtractor"/> class.
     /// </summary>
     /// <param name="pdf">Reads PDF files.</param>
-    public ContentExtractor(IPdfTextExtractor pdf)
+    /// <param name="office">Reads Word, Excel and PowerPoint files.</param>
+    public ContentExtractor(IPdfTextExtractor pdf, IOfficeTextExtractor office)
     {
         _pdf = pdf;
+        _office = office;
     }
 
     /// <summary>
@@ -42,13 +47,20 @@ internal sealed partial class ContentExtractor
                 }
 
                 return _pdf.Extract(response.Body, cancellationToken);
+            case Kind.Office:
+                if (response.Truncated)
+                {
+                    throw new WebFetchException("The document is too large to read.");
+                }
+
+                return _office.Extract(response.Body, cancellationToken);
             case Kind.Html:
                 return Truncation(ReadHtml(response, cancellationToken), response);
             case Kind.Text:
                 var text = Decode(response.Body, response.Charset).Trim('\uFEFF');
                 return Truncation(new ExtractedDocument(string.Empty, text.Trim(), []), response);
             default:
-                throw new WebFetchException(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"This tool reads web pages, PDF files and text, but the address returned '{response.ContentType ?? "unknown"}' content."));
+                throw new WebFetchException(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"This tool reads web pages, PDF files, Office documents and text, but the address returned '{response.ContentType ?? "unknown"}' content."));
         }
     }
 
@@ -64,6 +76,11 @@ internal sealed partial class ContentExtractor
         if (type.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) || (body.Length > 4 && body[0] == '%' && body[1] == 'P' && body[2] == 'D' && body[3] == 'F'))
         {
             return Kind.Pdf;
+        }
+
+        if (OfficeMediaTypes.IsOffice(type) || (OfficeMediaTypes.IsGenericBinary(type) && body.AsSpan().StartsWith(ZipMagic)))
+        {
+            return Kind.Office;
         }
 
         if (type.Equals("text/html", StringComparison.OrdinalIgnoreCase) || type.Equals("application/xhtml+xml", StringComparison.OrdinalIgnoreCase))
@@ -147,6 +164,7 @@ internal sealed partial class ContentExtractor
     private enum Kind
     {
         Pdf,
+        Office,
         Html,
         Text,
         Other,

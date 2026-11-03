@@ -43,7 +43,7 @@ public sealed class WebServices : IDisposable
             loggers.CreateLogger<SearchOrchestrator>());
         _client = new SafeWebClient();
         _cache = new WebCache(time);
-        _reader = new WebPageReader(_client, new ContentExtractor(new PdfPigTextExtractor()), _cache);
+        _reader = new WebPageReader(_client, new ContentExtractor(new PdfPigTextExtractor(), new OpenXmlTextExtractor()), _cache);
     }
 
     /// <summary>

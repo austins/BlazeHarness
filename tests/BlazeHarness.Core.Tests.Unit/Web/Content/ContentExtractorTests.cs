@@ -9,11 +9,12 @@ public sealed class ContentExtractorTests
     private static readonly Uri Address = new("https://example.com/page");
 
     private readonly IPdfTextExtractor _pdf = Substitute.For<IPdfTextExtractor>();
+    private readonly IOfficeTextExtractor _office = Substitute.For<IOfficeTextExtractor>();
     private readonly ContentExtractor _sut;
 
     public ContentExtractorTests()
     {
-        _sut = new ContentExtractor(_pdf);
+        _sut = new ContentExtractor(_pdf, _office);
     }
 
     [Fact]
@@ -125,6 +126,53 @@ public sealed class ContentExtractorTests
         // Assert
         act.Should().Throw<WebFetchException>().WithMessage("*too large*");
         _pdf.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("application/vnd.openxmlformats-officedocument.wordprocessingml.document")]
+    [InlineData("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+    [InlineData("application/vnd.openxmlformats-officedocument.presentationml.presentation")]
+    public void Extract_OfficeContentType_GoesToTheOfficeReader(string contentType)
+    {
+        // Arrange
+        var body = new byte[] { 1, 2, 3 };
+        var expected = new ExtractedDocument("Doc", "text", []);
+        _office.Extract(body, Arg.Any<CancellationToken>()).Returns(expected);
+
+        // Act
+        var result = _sut.Extract(new FetchResponse(Address, 200, contentType, null, body, Truncated: false), TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().BeSameAs(expected);
+    }
+
+    [Theory]
+    [InlineData("application/octet-stream")]
+    [InlineData("application/zip")]
+    [InlineData(null)]
+    public void Extract_ZipBodyWithGenericType_GoesToTheOfficeReader(string? contentType)
+    {
+        // Arrange
+        var body = new byte[] { (byte)'P', (byte)'K', 3, 4, 0 };
+        var expected = new ExtractedDocument("Doc", "text", []);
+        _office.Extract(body, Arg.Any<CancellationToken>()).Returns(expected);
+
+        // Act
+        var result = _sut.Extract(new FetchResponse(Address, 200, contentType, null, body, Truncated: false), TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().BeSameAs(expected);
+    }
+
+    [Fact]
+    public void Extract_TruncatedOfficeDocument_Throws()
+    {
+        // Act
+        var act = () => _sut.Extract(Response("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "PK", truncated: true), TestContext.Current.CancellationToken);
+
+        // Assert
+        act.Should().Throw<WebFetchException>().WithMessage("*too large*");
+        _office.ReceivedCalls().Should().BeEmpty();
     }
 
     private static FetchResponse Response(string? contentType, string body, bool truncated = false)

@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Web.Content;
 using System.Net;
 using System.Net.Sockets;
 
@@ -19,7 +20,7 @@ namespace BlazeHarness.Core.Web;
 internal sealed class SafeWebClient : IDisposable
 {
     internal const int MaxPageBytes = 10 * 1024 * 1024;
-    internal const int MaxPdfBytes = 32 * 1024 * 1024;
+    internal const int MaxDocumentBytes = 32 * 1024 * 1024;
 
     private const int MaxRedirects = 5;
     private const int MaxErrorBodyBytes = 64 * 1024;
@@ -57,7 +58,7 @@ internal sealed class SafeWebClient : IDisposable
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, current);
             request.Headers.UserAgent.ParseAdd(UserAgent);
-            request.Headers.Accept.ParseAdd("text/html,application/xhtml+xml,application/pdf;q=0.9,text/plain;q=0.8,*/*;q=0.5");
+            request.Headers.Accept.ParseAdd("text/html,application/xhtml+xml,application/pdf;q=0.9,application/vnd.openxmlformats-officedocument.wordprocessingml.document;q=0.9,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;q=0.9,application/vnd.openxmlformats-officedocument.presentationml.presentation;q=0.9,text/plain;q=0.8,*/*;q=0.5");
             request.Headers.AcceptLanguage.ParseAdd("en-US,en;q=0.8");
             using var response = await SendAsync(request, cancellationToken);
             if (IsRedirect(response.StatusCode))
@@ -188,7 +189,7 @@ internal sealed class SafeWebClient : IDisposable
         var type = response.Content.Headers.ContentType;
         var media = type?.MediaType;
         var success = response.IsSuccessStatusCode;
-        var limit = success ? (string.Equals(media, "application/pdf", StringComparison.OrdinalIgnoreCase) ? MaxPdfBytes : MaxPageBytes) : MaxErrorBodyBytes;
+        var limit = success ? (string.Equals(media, "application/pdf", StringComparison.OrdinalIgnoreCase) || OfficeMediaTypes.IsOffice(media) ? MaxDocumentBytes : MaxPageBytes) : MaxErrorBodyBytes;
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var memory = new MemoryStream();
         var buffer = new byte[32 * 1024];
