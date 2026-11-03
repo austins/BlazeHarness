@@ -31,7 +31,7 @@ public enum SettingsSection
     Web,
 
     /// <summary>
-    /// Compaction, chat appearance and keyboard shortcuts.
+    /// Compaction, the todo list, chat appearance and keyboard shortcuts.
     /// </summary>
     General,
 

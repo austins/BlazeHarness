@@ -20,9 +20,9 @@ internal static class ChatImport
     /// </summary>
     /// <param name="json">The text of the file.</param>
     /// <param name="chat">The chat when the file is valid; otherwise null.</param>
-    /// <param name="error">Why the file can't be imported, in a sentence that can be shown to the user; otherwise an empty string.</param>
+    /// <param name="error">Why the file can't be imported; otherwise null.</param>
     /// <returns>True when the file is a chat export this version can read.</returns>
-    public static bool TryParse(string json, out ImportedChat? chat, out string error)
+    public static bool TryParse(string json, out ImportedChat? chat, out ChatImportError? error)
     {
         ArgumentNullException.ThrowIfNull(json);
         chat = null;
@@ -34,26 +34,26 @@ internal static class ChatImport
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException)
         {
-            error = "The file is not a BlazeHarness chat export.";
+            error = ChatImportError.NotAnExport;
             return false;
         }
 
         if (document is not { Format: ChatExport.JsonFormat, Chat: not null, Events: not null })
         {
-            error = "The file is not a BlazeHarness chat export.";
+            error = ChatImportError.NotAnExport;
             return false;
         }
 
         if (document.Version > ChatExport.JsonVersion)
         {
-            error = "The file was exported by a newer version of BlazeHarness.";
+            error = ChatImportError.NewerVersion;
             return false;
         }
 
         var events = document.Events.OfType<ChatEvent>().Select(Sanitize).ToList();
         if (!events.Exists(e => e is UserMessageEvent or AssistantStartEvent))
         {
-            error = "The file has no messages.";
+            error = ChatImportError.NoMessages;
             return false;
         }
 
@@ -71,7 +71,7 @@ internal static class ChatImport
                 Level = document.Chat.Level,
             },
             events);
-        error = string.Empty;
+        error = null;
         return true;
     }
 

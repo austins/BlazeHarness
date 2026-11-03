@@ -200,15 +200,16 @@ public sealed partial class ChatStore : IDisposable
     /// </summary>
     /// <param name="oldPath">The folder the chats currently work in.</param>
     /// <param name="newPath">The folder to move them to, or null to detach them.</param>
-    /// <param name="cancellationToken">A token to cancel the writes.</param>
+    /// <param name="cancellationToken">A token to cancel before the first write; once begun, every chat is moved, so none is left behind in the old folder.</param>
     /// <returns>The number of chats that were changed.</returns>
     public async Task<int> RepointFolderAsync(string oldPath, string? newPath, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var moved = 0;
         var ids = _index.Values.Where(s => s.FolderPath is { } path && FolderPaths.Comparer.Equals(path, oldPath)).Select(s => s.Id).ToList();
         foreach (var id in ids)
         {
-            var updated = await UpdateAsync(id, s => s with { FolderPath = newPath }, cancellationToken: cancellationToken);
+            var updated = await UpdateAsync(id, s => s with { FolderPath = newPath }, cancellationToken: CancellationToken.None);
             moved += updated is null ? 0 : 1;
         }
 

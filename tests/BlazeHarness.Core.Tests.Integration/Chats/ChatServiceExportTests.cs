@@ -99,7 +99,7 @@ public sealed class ChatServiceExportTests : IDisposable
         var act = () => Sut.ImportAsync("{}", TestContext.Current.CancellationToken);
 
         // Assert
-        await act.Should().ThrowAsync<FormatException>();
+        (await act.Should().ThrowAsync<ChatImportException>()).Which.Error.Should().Be(ChatImportError.NotAnExport);
         _rig.Store.List().Should().BeEmpty();
     }
 }

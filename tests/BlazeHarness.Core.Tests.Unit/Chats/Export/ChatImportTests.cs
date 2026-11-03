@@ -19,7 +19,7 @@ public sealed class ChatImportTests
 
         // Assert
         ok.Should().BeTrue();
-        error.Should().BeEmpty();
+        error.Should().BeNull();
         chat!.Info.Title.Should().Be("Fix the build");
         chat.Info.TitleSource.Should().Be(TitleSource.Generated);
         chat.Info.CreatedAt.Should().Be(SampleChat.Time);
@@ -116,11 +116,11 @@ public sealed class ChatImportTests
         // Assert
         ok.Should().BeFalse();
         chat.Should().BeNull();
-        error.Should().NotBeEmpty();
+        error.Should().Be(ChatImportError.NotAnExport);
     }
 
     [Fact]
-    public void TryParse_NewerVersion_IsRejectedWithAClearMessage()
+    public void TryParse_NewerVersion_IsRejected()
     {
         // Arrange
         using var document = JsonDocument.Parse(ChatExport.ToJson(SampleChat.Info(), SampleChat.Events(), SampleChat.Time));
@@ -131,7 +131,7 @@ public sealed class ChatImportTests
 
         // Assert
         ok.Should().BeFalse();
-        error.Should().Contain("newer version");
+        error.Should().Be(ChatImportError.NewerVersion);
     }
 
     [Fact]
@@ -145,6 +145,6 @@ public sealed class ChatImportTests
 
         // Assert
         ok.Should().BeFalse();
-        error.Should().Be("The file has no messages.");
+        error.Should().Be(ChatImportError.NoMessages);
     }
 }

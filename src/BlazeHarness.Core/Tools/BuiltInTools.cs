@@ -21,6 +21,7 @@ internal static class BuiltInTools
     /// <param name="scratchDirectory">The folder confined shell commands may always write to. Required when <paramref name="shell"/> is set.</param>
     /// <param name="chatSearch">The <c>search_chat</c> tool, or null to leave it out.</param>
     /// <param name="background">Keeps the commands started in the background. Required when <paramref name="shell"/> is set.</param>
+    /// <param name="todos">False to leave out the <c>update_todos</c> tool.</param>
     /// <returns>The tool set.</returns>
     public static ToolSet Create(
         string folder,
@@ -30,9 +31,16 @@ internal static class BuiltInTools
         IShellSandbox? sandbox = null,
         string? scratchDirectory = null,
         ITool? chatSearch = null,
-        BackgroundShells? background = null)
+        BackgroundShells? background = null,
+        bool todos = true)
     {
-        List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool(), new TodoTool(), new AskUserTool()];
+        List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool()];
+        if (todos)
+        {
+            tools.Add(new TodoTool());
+        }
+
+        tools.Add(new AskUserTool());
         if (chatSearch is not null)
         {
             tools.Add(chatSearch);

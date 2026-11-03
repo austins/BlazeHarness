@@ -80,6 +80,11 @@ public sealed class ConversationContext
     }
 
     /// <summary>
+    /// Gets a value indicating whether a summary ends with the agent's todo list; false when the model can't update the list.
+    /// </summary>
+    public bool KeepsTodos { get; init; } = true;
+
+    /// <summary>
     /// Gets the summary that stands in for the older messages, or null before the first compaction.
     /// </summary>
     public string? Summary => _summary;
@@ -215,7 +220,11 @@ public sealed class ConversationContext
 
         var before = Size(messages).Tokens;
         var older = messages.Skip(_leading + _keptFrom).Take(cut - _keptFrom).ToList();
-        var summary = TodoNotes.Append(await _summarizer.SummarizeAsync(TodoNotes.Strip(_summary), older, cancellationToken), messages);
+        var summary = await _summarizer.SummarizeAsync(TodoNotes.Strip(_summary), older, cancellationToken);
+        if (KeepsTodos)
+        {
+            summary = TodoNotes.Append(summary, messages);
+        }
 
         _summary = summary;
         _keptFrom = cut;

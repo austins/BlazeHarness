@@ -47,6 +47,7 @@ public sealed partial class ChatService : IDisposable
     private readonly McpManager? _mcp;
     private readonly SkillCatalog? _skills;
     private readonly Func<CompactionMode>? _compactionMode;
+    private readonly Func<bool>? _todosEnabled;
     private readonly ILogger _log;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
@@ -68,6 +69,7 @@ public sealed partial class ChatService : IDisposable
     /// <param name="skills">Finds the skills a chat can use; without it chats have no skills.</param>
     /// <param name="compactionMode">Tells how summaries are written each time a chat is compacted; without it the model writes them.</param>
     /// <param name="web">Provides the web search and fetch tools; without it chats have no web tools.</param>
+    /// <param name="todosEnabled">Tells whether chats get the <c>update_todos</c> tool, read before each reply; without it they always do.</param>
     public ChatService(
         ChatStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
@@ -79,7 +81,8 @@ public sealed partial class ChatService : IDisposable
         McpManager? mcp = null,
         SkillCatalog? skills = null,
         Func<CompactionMode>? compactionMode = null,
-        WebServices? web = null)
+        WebServices? web = null,
+        Func<bool>? todosEnabled = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
@@ -96,6 +99,7 @@ public sealed partial class ChatService : IDisposable
         _mcp = mcp;
         _web = web;
         _compactionMode = compactionMode;
+        _todosEnabled = todosEnabled;
         _log = loggers.CreateLogger<ChatService>();
     }
 
@@ -159,12 +163,12 @@ public sealed partial class ChatService : IDisposable
     /// <param name="json">The text of the exported file.</param>
     /// <param name="cancellationToken">A token to cancel the write.</param>
     /// <returns>The new chat's metadata.</returns>
-    /// <exception cref="FormatException">The file is not a chat export this version can read; the message can be shown to the user.</exception>
+    /// <exception cref="ChatImportException">The file is not a chat export this version can read.</exception>
     public async Task<ChatInfo> ImportAsync(string json, CancellationToken cancellationToken = default)
     {
         if (!ChatImport.TryParse(json, out var imported, out var error) || imported is null)
         {
-            throw new FormatException(error);
+            throw new ChatImportException(error ?? ChatImportError.NotAnExport);
         }
 
         var created = await _store.CreateAsync(null, cancellationToken);
@@ -563,6 +567,7 @@ public sealed partial class ChatService : IDisposable
 
         _web?.Forget(id);
         await _store.DeleteAsync(id, CancellationToken.None);
+        _titleFailures.TryRemove(id, out _);
 
         // An open that was restoring the chat meanwhile may have registered it after the check above.
         if (_live.TryRemove(id, out var late))
@@ -671,13 +676,14 @@ public sealed partial class ChatService : IDisposable
                 Directory.CreateDirectory(root);
             }
 
-            if (chat.Tools?.Context.Root == RootedPath.CanonicalRoot(root))
+            var todos = _todosEnabled?.Invoke() ?? true;
+            if (chat.Tools is { } current && current.Context.Root == RootedPath.CanonicalRoot(root) && (current.Find(TodoList.ToolName) is not null) == todos)
             {
                 return;
             }
 
             var shell = ShellInfo.DetectCurrent();
-            var tools = BuiltInTools.Create(root, _time, shell, chat.Attachments, _sandbox, _store.ShellDirectory(id), ChatSearchFor(id, chat, folderPath), chat.BackgroundShells);
+            var tools = BuiltInTools.Create(root, _time, shell, chat.Attachments, _sandbox, _store.ShellDirectory(id), ChatSearchFor(id, chat, folderPath), chat.BackgroundShells, todos);
             chat.UseTools(tools, SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)

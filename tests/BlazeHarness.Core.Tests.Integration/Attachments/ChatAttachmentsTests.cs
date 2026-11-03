@@ -93,7 +93,7 @@ public sealed class ChatAttachmentsTests : IDisposable
         var act = () => _sut.SaveAsync("doc.pdf", [(byte)'%', (byte)'P', (byte)'D', (byte)'F', 0, 1, 2, 3, 4, 5, 6, 7]);
 
         // Assert
-        (await act.Should().ThrowAsync<AttachmentException>()).WithMessage("*doc.pdf*Only images*");
+        (await act.Should().ThrowAsync<AttachmentException>()).WithMessage("*doc.pdf*Only images*").Which.Error.Should().Be(AttachmentError.Unsupported);
         Directory.GetFileSystemEntries(_sut.Directory).Should().BeEmpty();
     }
 
@@ -104,7 +104,7 @@ public sealed class ChatAttachmentsTests : IDisposable
         var act = () => _sut.SaveAsync("empty.txt", []);
 
         // Assert
-        (await act.Should().ThrowAsync<AttachmentException>()).WithMessage("*empty*");
+        (await act.Should().ThrowAsync<AttachmentException>()).WithMessage("*empty*").Which.Error.Should().Be(AttachmentError.Empty);
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public sealed class ChatAttachmentsTests : IDisposable
         var act = () => _sut.SaveAsync("big.txt", new byte[ChatAttachments.MaxFileBytes + 1]);
 
         // Assert
-        (await act.Should().ThrowAsync<AttachmentException>()).WithMessage("*larger than 20 MB*");
+        (await act.Should().ThrowAsync<AttachmentException>()).WithMessage("*larger than 20 MB*").Which.Error.Should().Be(AttachmentError.TooLarge);
         Directory.GetFileSystemEntries(_sut.Directory).Should().BeEmpty();
     }
 

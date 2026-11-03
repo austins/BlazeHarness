@@ -137,6 +137,26 @@ public sealed class ConversationContextTests
     }
 
     [Fact]
+    public async Task CompactAsync_TodosOff_LeavesTheListOutOfTheSummary()
+    {
+        // Arrange
+        var sut = new ConversationContext(1_000, _summarizer) { KeepsTodos = false };
+        var messages = Conversation(10);
+        messages.Insert(1, new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("t1", "update_todos", new Dictionary<string, object?>
+        {
+            ["items"] = new[] { new Dictionary<string, object?> { ["text"] = "write tests", ["status"] = "in_progress" } },
+        })]));
+        messages.Insert(2, new ChatMessage(ChatRole.Tool, [new FunctionResultContent("t1", "Todo list updated: 0 of 1 done.")]));
+
+        // Act
+        var result = await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Summary.Should().Be("the summary");
+    }
+
+    [Fact]
     public async Task CompactAsync_WithToolCalls_NeverCutsBetweenACallAndItsResult()
     {
         // Arrange

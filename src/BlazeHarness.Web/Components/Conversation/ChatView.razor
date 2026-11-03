@@ -101,7 +101,7 @@ else
 
             <div class="sr-only" role="status" aria-live="polite">@_announcement</div>
 
-            <div class="chat-scroll" @ref="_scroll" tabindex="-1">
+            <div class="chat-scroll" @ref="_scroll" tabindex="0" role="region" aria-label="@WebStrings.ChatViewTranscriptLabel">
                 <div class="chat-thread" role="log" aria-live="off">
                     @if (_entries.Count == 0)
                     {
@@ -144,7 +144,7 @@ else
 
             @if (!_loading)
             {
-                <TodoPanel @key="_openId" Todos="_chat?.Todos" Running="_chat?.IsRunning ?? false" />
+                <TodoPanel @key="_openId" Todos="Config.Current.TodosEnabled ? _chat?.Todos : null" Running="_chat?.IsRunning ?? false" />
                 <BackgroundShellPanel @key="@($"jobs-{_openId}")" Shells="_chat?.BackgroundShells" />
                 <Composer @ref="_composer" ChatId="@ChatId" Entries="_entries" FolderPath="@ContextPath" Remembered="_info" Running="_chat?.IsRunning ?? false" CanQueue="_chat?.IsReplying ?? false" Asked="_chat?.IsWaitingForUser ?? false" Queued="_chat?.Queued ?? []" OnQueue="Queue" OnRemoveQueued="RemoveQueued" CanRetry="_chat?.CanRetry ?? false" CanCompact="_chat?.CanCompact ?? false" ContextOf="_chat is null ? null : _chat.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop">
                     <PermissionPicker Settings="CurrentPermissions" HasFolder="ContextPath is not null" OnChange="ChangePermissionsAsync" />
@@ -522,7 +522,7 @@ else
         }
         catch (AttachmentException ex)
         {
-            failure = ex.Message;
+            failure = ex.LocalizedMessage;
         }
 
         if (failure is not null)
@@ -540,8 +540,12 @@ else
             _newPermissions = null;
             _newMcpServers.Clear();
             _newSkills.Clear();
-            var chat = await ChatService.OpenAsync(id);
-            Attach(chat!);
+            if (await ChatService.OpenAsync(id) is not { } chat)
+            {
+                return WebStrings.ChatViewNoLongerExists;
+            }
+
+            Attach(chat);
             _openId = id;
             _info = created;
             Navigation.NavigateTo(Routes.Chat(id));

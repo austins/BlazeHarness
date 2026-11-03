@@ -268,9 +268,11 @@ window.bhChat = {
             items.forEach((item, at) => {
                 if (at === index) {
                     item.dataset.active = "true";
+                    item.setAttribute("aria-selected", "true");
                     item.scrollIntoView({ block: "nearest" });
                 } else {
                     delete item.dataset.active;
+                    item.setAttribute("aria-selected", "false");
                 }
             });
             if (items[index]) {

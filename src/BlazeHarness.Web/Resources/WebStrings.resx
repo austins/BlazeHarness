@@ -85,7 +85,7 @@
     <comment>Title of the General settings section.</comment>
   </data>
   <data name="SettingsGeneralDescription" xml:space="preserve">
-    <value>Compaction, chat appearance and keyboard shortcuts.</value>
+    <value>Compaction, the todo list, chat appearance and keyboard shortcuts.</value>
     <comment>Short description beneath the General settings title.</comment>
   </data>
   <data name="ChatStatsCachedPromptTokens" xml:space="preserve">
@@ -1096,6 +1096,22 @@
     <value>When a chat gets too long, the model normally summarizes the older messages. Extraction builds the summary from your requests, the files touched and the latest steps instead, without a model call: instant and free, but less thorough. The agent can still look up what was left out.</value>
     <comment>Explains the extractive compaction option.</comment>
   </data>
+  <data name="ChatViewTranscriptLabel" xml:space="preserve">
+    <value>Messages</value>
+    <comment>Accessible name of the scrollable area that holds the messages of a chat, read by screen readers when it gets keyboard focus.</comment>
+  </data>
+  <data name="GeneralSettingsTodosHeading" xml:space="preserve">
+    <value>Todo list</value>
+    <comment>Heading of the card on the General page for the option that lets the agent keep a todo list of the steps of a task.</comment>
+  </data>
+  <data name="GeneralSettingsTodosLabel" xml:space="preserve">
+    <value>Let the agent keep a todo list</value>
+    <comment>Label of a checkbox on the General page. When checked, the model gets a tool to keep a list of the steps of a task, shown above the message box.</comment>
+  </data>
+  <data name="GeneralSettingsTodosDescription" xml:space="preserve">
+    <value>The agent can write down the steps of a longer task and tick them off, and is reminded when it forgets to update the list. Turn this off if a model handles the list poorly. Applies from the next message in each chat.</value>
+    <comment>Explains the todo list option on the General page.</comment>
+  </data>
   <data name="GeneralSettingsSaveFailure" xml:space="preserve">
     <value>The setting could not be saved because the settings file could not be written.</value>
     <comment>Toast shown when saving the general setting fails.</comment>
@@ -1366,6 +1382,12 @@
   <data name="SidebarSwitchToLightTheme" xml:space="preserve"><value>Switch to light theme</value><comment>Accessible label for switching to the light theme.</comment></data>
   <data name="SidebarSwitchToDarkTheme" xml:space="preserve"><value>Switch to dark theme</value><comment>Accessible label for switching to the dark theme.</comment></data>
   <data name="SidebarRelocateHint" xml:space="preserve"><value>Choose where this folder is now. Its chats move with it.</value><comment>Hint shown when locating a moved folder.</comment></data>
+  <data name="SidebarImportNotAnExport" xml:space="preserve"><value>The file is not a BlazeHarness chat export.</value><comment>Error shown when an imported file is not a chat export. BlazeHarness is the app name: do not translate it.</comment></data>
+  <data name="SidebarImportNewerVersion" xml:space="preserve"><value>The file was exported by a newer version of BlazeHarness.</value><comment>Error shown when an imported chat export comes from a newer app version. BlazeHarness is the app name: do not translate it.</comment></data>
+  <data name="SidebarImportNoMessages" xml:space="preserve"><value>The file has no messages.</value><comment>Error shown when an imported chat export contains no messages.</comment></data>
+  <data name="AttachmentUnsupported" xml:space="preserve"><value>'{name}' can't be attached. Only images (PNG, JPEG, GIF, WebP) and text files are supported.</value><comment>Error shown above the message box when a file can't be attached. {name} is the file name. PNG, JPEG, GIF and WebP are file formats: do not translate them.</comment></data>
+  <data name="AttachmentTooLarge" xml:space="preserve"><value>'{name}' is larger than {size} MB.</value><comment>Error shown above the message box when a file to attach is too large. {name} is the file name and {size} the limit in megabytes.</comment></data>
+  <data name="AttachmentEmpty" xml:space="preserve"><value>'{name}' is empty.</value><comment>Error shown above the message box when a file to attach is empty. {name} is the file name.</comment></data>
   <data name="SidebarImportFileTooLarge" xml:space="preserve"><value>That file is too large to be a chat export.</value><comment>Error shown when a chat export file exceeds the import limit.</comment></data>
   <data name="SidebarImportReadFailed" xml:space="preserve"><value>The file could not be read.</value><comment>Error shown when a chat export file cannot be read.</comment></data>
   <data name="SidebarOpenFolderFailed" xml:space="preserve"><value>That folder could not be opened.</value><comment>Error shown when opening a folder fails.</comment></data>

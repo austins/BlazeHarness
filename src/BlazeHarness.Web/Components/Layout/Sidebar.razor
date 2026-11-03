@@ -1,5 +1,6 @@
 @using System.Diagnostics
 @using BlazeHarness.Core.Chats
+@using BlazeHarness.Core.Chats.Export
 @using BlazeHarness.Web.Services
 @implements IDisposable
 @inject IJSRuntime JS
@@ -249,9 +250,9 @@
             var info = await ChatService.ImportAsync(await reader.ReadToEndAsync());
             Navigation.NavigateTo(Routes.Chat(info.Id));
         }
-        catch (FormatException ex)
+        catch (ChatImportException ex)
         {
-            Toasts.Show(ex.Message, ToastKind.Error);
+            Toasts.Show(ex.LocalizedMessage, ToastKind.Error);
         }
         catch (IOException)
         {

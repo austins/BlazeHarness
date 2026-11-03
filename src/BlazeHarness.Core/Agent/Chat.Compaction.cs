@@ -179,9 +179,12 @@ public sealed partial class Chat
         return context;
     }
 
-    private static ConversationContext NewContext(int limit, ISummarizer summarizer, int leadingMessages, (string? Summary, int KeptFrom, int StubbedBefore)? state, long overheadTokens)
+    private ConversationContext NewContext(int limit, ISummarizer summarizer, int leadingMessages, (string? Summary, int KeptFrom, int StubbedBefore)? state, long overheadTokens)
     {
-        return new ConversationContext(limit, summarizer, leadingMessages, state?.Summary, state?.KeptFrom ?? 0, overheadTokens, state?.StubbedBefore ?? 0);
+        return new ConversationContext(limit, summarizer, leadingMessages, state?.Summary, state?.KeptFrom ?? 0, overheadTokens, state?.StubbedBefore ?? 0)
+        {
+            KeepsTodos = Volatile.Read(ref _setup).Tools?.Find(TodoList.ToolName) is not null,
+        };
     }
 
     // Must be called with the gate held. A reported size from before a compaction or a trim describes a request that no longer exists.

@@ -39,9 +39,9 @@ internal sealed class ChatServiceRig : IDisposable
     public ChatService Service => _service ?? throw new InvalidOperationException("Call Build first.");
 
 #pragma warning disable IDISP003 // Build refuses a second call, so nothing is overwritten.
-    public ChatService Build(SkillCatalog? skills = null, McpManager? mcp = null, PermissionDefaults? defaults = null)
+    public ChatService Build(SkillCatalog? skills = null, McpManager? mcp = null, PermissionDefaults? defaults = null, Func<bool>? todosEnabled = null)
     {
-        _service = _service is null ? new ChatService(Store, (_, _) => Task.FromResult<IChatClient>(Client), NullLoggerFactory.Instance, TimeProvider.System, defaults: defaults, mcp: mcp, skills: skills) : throw new InvalidOperationException("Build was already called.");
+        _service = _service is null ? new ChatService(Store, (_, _) => Task.FromResult<IChatClient>(Client), NullLoggerFactory.Instance, TimeProvider.System, defaults: defaults, mcp: mcp, skills: skills, todosEnabled: todosEnabled) : throw new InvalidOperationException("Build was already called.");
         return _service;
     }
 #pragma warning restore IDISP003

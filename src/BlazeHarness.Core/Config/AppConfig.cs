@@ -76,6 +76,11 @@ public sealed record AppConfig
     public CompactionMode Compaction { get; init; } = CompactionMode.Model;
 
     /// <summary>
+    /// Gets a value indicating whether the model gets the <c>update_todos</c> tool, which keeps a todo list the user sees in the chat.
+    /// </summary>
+    public bool TodosEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets the switches and search providers of the web search and web fetch tools.
     /// </summary>
     public WebSettings Web { get; init; } = new();

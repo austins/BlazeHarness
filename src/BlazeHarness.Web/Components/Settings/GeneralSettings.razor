@@ -24,6 +24,15 @@
         <p class="hint">@WebStrings.GeneralSettingsCompactionDescription</p>
     </section>
 
+    <section class="card stack" aria-labelledby="todos-heading">
+        <h2 id="todos-heading">@WebStrings.GeneralSettingsTodosHeading</h2>
+        <label class="check">
+            <input type="checkbox" checked="@Config.Current.TodosEnabled" @onchange="OnTodosChangedAsync" />
+            <span>@WebStrings.GeneralSettingsTodosLabel</span>
+        </label>
+        <p class="hint">@WebStrings.GeneralSettingsTodosDescription</p>
+    </section>
+
     <section class="card stack" aria-labelledby="chat-width-heading">
         <h2 id="chat-width-heading">@WebStrings.GeneralSettingsChatWidthHeading</h2>
         <label class="check">
@@ -145,6 +154,12 @@ var reversed = new string(chars);</code></pre>
     {
         var mode = e.Value is true ? CompactionMode.Extractive : CompactionMode.Model;
         return Toasts.TrySaveAsync(() => Config.UpdateAsync(config => config with { Compaction = mode }), WebStrings.GeneralSettingsSaveFailure);
+    }
+
+    private Task OnTodosChangedAsync(ChangeEventArgs e)
+    {
+        var enabled = e.Value is true;
+        return Toasts.TrySaveAsync(() => Config.UpdateAsync(config => config with { TodosEnabled = enabled }), WebStrings.GeneralSettingsSaveFailure);
     }
 
     private async Task OnLanguageChangedAsync(ChangeEventArgs e)

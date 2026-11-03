@@ -73,7 +73,7 @@ public sealed partial class ChatAttachments
             {
                 if (ToolSupport.LooksBinary(temp))
                 {
-                    throw new AttachmentException($"'{name}' can't be attached. Only images (PNG, JPEG, GIF, WebP) and text files are supported.");
+                    throw new AttachmentException(AttachmentError.Unsupported, name, $"'{name}' can't be attached. Only images (PNG, JPEG, GIF, WebP) and text files are supported.");
                 }
 
                 lines = CountLines(temp);
@@ -172,13 +172,13 @@ public sealed partial class ChatAttachments
             total += read;
             if (total > MaxFileBytes)
             {
-                throw new AttachmentException(string.Create(CultureInfo.InvariantCulture, $"'{name}' is larger than {MaxFileBytes / (1024 * 1024)} MB."));
+                throw new AttachmentException(AttachmentError.TooLarge, name, string.Create(CultureInfo.InvariantCulture, $"'{name}' is larger than {MaxFileBytes / (1024 * 1024)} MB."));
             }
 
             await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
         }
 
-        return total == 0 ? throw new AttachmentException($"'{name}' is empty.") : total;
+        return total == 0 ? throw new AttachmentException(AttachmentError.Empty, name, $"'{name}' is empty.") : total;
     }
 
     private static (string MediaType, string Extension)? Sniff(string path)

@@ -30,11 +30,11 @@ else
         }
         @if (Suggestions() is { Count: > 0 } suggestions)
         {
-            <ul class="composer-suggestions" aria-label="@WebStrings.ComposerSkillsLabel">
+            <ul class="composer-suggestions" role="listbox" aria-label="@WebStrings.ComposerSkillsLabel">
                 @foreach (var skill in suggestions)
                 {
-                    <li>
-                        <button type="button" id="skill-suggestion-@skill.Name" class="btn btn-ghost btn-sm" tabindex="-1" @onclick="() => ChooseSkillAsync(skill)">
+                    <li role="none">
+                        <button type="button" id="skill-suggestion-@skill.Name" class="btn btn-ghost btn-sm" role="option" aria-selected="false" tabindex="-1" @onclick="() => ChooseSkillAsync(skill)">
                             <strong>/@skill.Name</strong> <span class="muted">@ShortDescription(skill)</span>
                         </button>
                     </li>
