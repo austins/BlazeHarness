@@ -1,9 +1,45 @@
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Mcp.Config;
+using BlazeHarness.Core.Skills;
 
 namespace BlazeHarness.Web.Tests.E2E.Components.Conversation;
 
 public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)
 {
+    [Fact]
+    public async Task NewChat_Pickers_KeepChoicesAfterTheFirstMessage()
+    {
+        // Arrange
+        var config = Factory.Services.GetRequiredService<McpConfigFile>();
+        await config.SaveAsync(
+            """{"mcpServers":{"example":{"url":"https://example.com/mcp","disabled":true}}}""",
+            TestContext.Current.CancellationToken);
+        var skillFolder = ProjectFolder.Combine(".agents", "skills", "example-skill");
+        Directory.CreateDirectory(skillFolder);
+        await File.WriteAllTextAsync(
+            Path.Combine(skillFolder, "SKILL.md"),
+            "---\nname: example-skill\ndescription: A test skill\n---\nTest instructions.",
+            TestContext.Current.CancellationToken);
+        Factory.Services.GetRequiredService<SkillCatalog>().Refresh();
+        await Factory.Services.GetRequiredService<FolderRegistry>().OpenAsync(ProjectFolder.Root, TestContext.Current.CancellationToken);
+        await LaunchAsync("/?folder=" + Uri.EscapeDataString(ProjectFolder.Root));
+
+        // Act
+        await Page.GetByTitle("MCP servers whose tools this chat can use").ClickAsync();
+        await Expect(Page.GetByLabel("example", new PageGetByLabelOptions { Exact = true })).Not.ToBeCheckedAsync();
+        await Page.Keyboard.PressAsync("Escape");
+        await Page.GetByTitle("Skills this chat can load").ClickAsync();
+        await Page.GetByLabel("example-skill", new PageGetByLabelOptions { Exact = true }).UncheckAsync();
+        await Page.Keyboard.PressAsync("Escape");
+        await SendAsync("Say hello");
+        await Expect(Page.Locator("[data-role=assistant]")).ToContainTextAsync("Hello from the fake model.");
+        await Page.ReloadAsync();
+        await Page.GetByTitle("Skills this chat can load").ClickAsync();
+
+        // Assert
+        await Expect(Page.GetByLabel("example-skill", new PageGetByLabelOptions { Exact = true })).Not.ToBeCheckedAsync();
+    }
+
     [Fact]
     public async Task Send_Message_ShowsTheStreamedReply()
     {

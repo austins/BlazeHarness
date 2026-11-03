@@ -36,78 +36,93 @@
         {
             <p class="muted">No servers yet. Add one with the button above.</p>
         }
-        @foreach (var status in _statuses)
-        {
-            var server = status.Config;
-            var literals = McpSecrets.LiteralsIn(server);
-            <div class="stack" role="group" aria-label="@server.Name">
-                <div class="row">
-                    <strong>@server.Name</strong>
-                    <span class="badge @StateBadge(status)">@StateText(status)</span>
-                    <span class="muted">@TransportText(server)</span>
-                </div>
-                @if (_draft is { IsNew: false } editing && editing.Name == server.Name)
-                {
-                    <McpServerForm Draft="_draft" OnSaved="Saved" OnCancel="CancelEdit" />
-                }
-                @if (status.Error is { } error)
-                {
-                    <p class="error-text">@error</p>
-                }
-                @if (literals.Count > 0)
-                {
-                    <Alert Kind="AlertKind.Warning">
-                        <Icon Name="alert" />
-                        <span>This server has what looks like a secret written into the file: @string.Join(", ", literals). Use a <code class="mono">${NAME}</code> reference to an environment variable instead, so the secret stays out of the file.</span>
-                    </Alert>
-                }
-                <div class="row">
-                    <label class="check">
-                        <input type="checkbox" checked="@(!server.Disabled)" @onchange="e => SetEnabledAsync(server.Name, (bool)e.Value!)" />
-                        <span>On for new chats</span>
-                    </label>
-                    <label class="check">
-                        <input type="checkbox" checked="@Defaults.IsMcpServerTrusted(server.Name)" @onchange="e => SetTrustedAsync(server.Name, (bool)e.Value!)" />
-                        <span>Trust its read-only tools</span>
-                    </label>
-                </div>
-                <div class="row">
-                    <button type="button" class="btn btn-sm" disabled="@_busy.Contains(server.Name)" @onclick="() => TestAsync(server.Name)">
-                        @(_busy.Contains(server.Name) ? "Connecting…" : "Test connection")
-                    </button>
-                    <button type="button" class="btn btn-sm" disabled="@(status.State is McpServerState.Stopped)" @onclick="() => StopAsync(server.Name)">Stop</button>
-                    <button type="button" class="btn btn-sm" disabled="@(_draft is not null)" @onclick="() => EditAsync(server)">Edit</button>
-                    <button type="button" class="btn btn-sm btn-ghost btn-danger" aria-label="Remove @server.Name" @onclick="() => _removing = server.Name">Remove</button>
-                </div>
-                @if (status.Tools.Count > 0)
-                {
-                    var visible = status.Tools.Where(t => !server.IsExcluded(t.Name)).ToList();
-                    var loaded = visible.Count(t => server.LoadsAlways(t.Name));
-                    <p class="hint">
-                        @(visible.Count == 1 ? "1 tool" : $"{visible.Count} tools"):
-                        @if (loaded == visible.Count)
-                        {
-                            <text>always loaded, about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens of the prompt when it is on.</text>
-                        }
-                        else
-                        {
-                            <text>found by search when needed, or about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens of the prompt if always loaded.</text>
-                        }
-                    </p>
-                    <ul class="stack">
-                        @foreach (var tool in visible)
-                        {
-                            <li><code class="mono">@tool.Name</code> <span class="muted">@FirstLine(tool.Description)</span></li>
-                        }
-                    </ul>
-                }
-            </div>
-            @if (!ReferenceEquals(status, _statuses[^1]))
+        <div class="skill-list">
+            @foreach (var status in _statuses)
             {
-                <hr />
+                var server = status.Config;
+                var literals = McpSecrets.LiteralsIn(server);
+                <div class="skill-item" role="group" aria-label="@server.Name" @key="server.Name">
+                    <details>
+                        <summary>
+                            <Icon Name="chevron-right" />
+                            <span class="skill-title">
+                                <span class="row">
+                                    <strong>@server.Name</strong>
+                                    <span class="badge @StateBadge(status)">@StateText(status)</span>
+                                    @if (literals.Count > 0)
+                                    {
+                                        <span class="badge badge-warning">Secret in file</span>
+                                    }
+                                </span>
+                                <span class="skill-blurb">@TransportText(server)</span>
+                            </span>
+                        </summary>
+                        <div class="skill-body stack">
+                            <p class="hint mono">@TransportText(server)</p>
+                            @if (_draft is { IsNew: false } editing && editing.Name == server.Name)
+                            {
+                                <McpServerForm Draft="_draft" OnSaved="Saved" OnCancel="CancelEdit" />
+                            }
+                            @if (status.Error is { } error)
+                            {
+                                <p class="error-text">@error</p>
+                            }
+                            @if (literals.Count > 0)
+                            {
+                                <Alert Kind="AlertKind.Warning">
+                                    <Icon Name="alert" />
+                                    <span>This server has what looks like a secret written into the file: @string.Join(", ", literals). Use a <code class="mono">${NAME}</code> reference to an environment variable instead, so the secret stays out of the file.</span>
+                                </Alert>
+                            }
+                            <div class="row">
+                                <label class="check">
+                                    <input type="checkbox" checked="@Defaults.IsMcpServerTrusted(server.Name)" @onchange="e => SetTrustedAsync(server.Name, (bool)e.Value!)" />
+                                    <span>Trust tools marked read-only</span>
+                                </label>
+                            </div>
+                            <div class="row">
+                                <button type="button" class="btn btn-sm" disabled="@_busy.Contains(server.Name)" @onclick="() => TestAsync(server.Name)">
+                                    @(_busy.Contains(server.Name) ? "Connecting…" : "Test connection")
+                                </button>
+                                <button type="button" class="btn btn-sm" disabled="@(status.State is McpServerState.Stopped)" @onclick="() => StopAsync(server.Name)">Stop</button>
+                                <button type="button" class="btn btn-sm" disabled="@(_draft is not null)" @onclick="() => EditAsync(server)">Edit</button>
+                                <button type="button" class="btn btn-sm btn-ghost btn-danger" aria-label="Remove @server.Name" @onclick="() => _removing = server.Name">Remove</button>
+                            </div>
+                            @if (status.Tools.Count > 0)
+                            {
+                                var visible = status.Tools.Where(t => !server.IsExcluded(t.Name)).ToList();
+                                var loaded = visible.Count(t => server.LoadsAlways(t.Name));
+                                <p class="hint">
+                                    @(visible.Count == 1 ? "1 tool" : $"{visible.Count} tools"):
+                                    @if (loaded == visible.Count)
+                                    {
+                                        <text>always loaded, about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens of the prompt when it is on.</text>
+                                    }
+                                    else
+                                    {
+                                        <text>found by search when needed, or about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens of the prompt if always loaded.</text>
+                                    }
+                                </p>
+                                <details>
+                                    <summary><Icon Name="chevron-right" /> Tools (@visible.Count)</summary>
+                                    <ul class="stack">
+                                        @foreach (var tool in visible)
+                                        {
+                                            <li><code class="mono">@tool.Name</code> <span class="muted">@FirstLine(tool.Description)</span></li>
+                                        }
+                                    </ul>
+                                </details>
+                            }
+                        </div>
+                    </details>
+                    <label class="check" title="On for new chats">
+                        <input type="checkbox" aria-label="On for new chats" checked="@(!server.Disabled)" @onchange="e => SetEnabledAsync(server.Name, (bool)e.Value!)" />
+                        <span>On</span>
+                    </label>
+                </div>
             }
-        }
-        <p class="hint">Trusted servers skip the question for tools that say they only read. Everything else always asks first, unless a chat is set to Never ask.</p>
+        </div>
+        <p class="hint">The server supplies this label; BlazeHarness can't verify it. Trusted tools skip approval unless the chat is read only. Everything else asks first, unless a chat is set to Never ask.</p>
     </section>
 
     <details class="card stack" open="@_openAtStart">

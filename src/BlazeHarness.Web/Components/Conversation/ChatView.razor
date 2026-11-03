@@ -72,10 +72,10 @@ else
                 </span>
             }
 
+            <McpPicker ChatId="@_openId" Choices="_newMcpServers" OnChoose="choice => _newMcpServers[choice.Name] = choice.Enabled" />
+            <SkillPicker ChatId="@_openId" FolderPath="@ContextPath" Choices="_newSkills" OnChoose="choice => _newSkills[choice.Name] = choice.Enabled" />
             @if (_openId is { } mcpId)
             {
-                <McpPicker ChatId="@mcpId" />
-                <SkillPicker ChatId="@mcpId" />
                 <ExportMenu ChatId="@mcpId" />
             }
             @if (_info is not null)
@@ -155,6 +155,9 @@ else
     private const int EarlierBatch = 40;
 
     private static readonly TimeSpan RenderInterval = TimeSpan.FromMilliseconds(50);
+
+    private readonly Dictionary<string, bool> _newMcpServers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, bool> _newSkills = new(StringComparer.Ordinal);
 
     private RenderThrottle _throttle = null!;
     private RenderThrottle _storeThrottle = null!;
@@ -467,6 +470,16 @@ else
             {
                 await ChatService.SetPermissionsAsync(id, chosen);
             }
+
+            foreach (var (name, enabled) in _newMcpServers)
+            {
+                await ChatService.SetMcpServerAsync(id, name, enabled);
+            }
+
+            foreach (var (name, enabled) in _newSkills)
+            {
+                await ChatService.SetSkillAsync(id, name, enabled);
+            }
         }
 
         List<AttachmentInfo> files = [];
@@ -503,6 +516,8 @@ else
         if (created is not null)
         {
             _newPermissions = null;
+            _newMcpServers.Clear();
+            _newSkills.Clear();
             var chat = await ChatService.OpenAsync(id);
             Attach(chat!);
             _openId = id;

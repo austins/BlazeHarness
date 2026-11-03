@@ -7,19 +7,19 @@
     <Trigger><Icon Name="@(Settings.IsRisky || !Sandboxed ? "alert" : "shield")" /> <span class="menu-trigger-text">@AccessName(Settings.Access, brief: true) · @ApprovalsName(Settings.Approvals)</span></Trigger>
     <ChildContent>
         <div class="menu-heading">Access</div>
-        <MenuItem Label="@AccessName(AccessLevel.ReadOnly)" Description="Read files; change nothing, run no commands" Checked="Settings.Access == AccessLevel.ReadOnly" OnSelect="() => Choose(Settings with { Access = AccessLevel.ReadOnly })" />
-        <MenuItem Label="@AccessName(AccessLevel.WriteInFolder)" Description="@(HasFolder ? "Read and change files in this folder" : "Read and change this chat's own files")" Checked="Settings.Access == AccessLevel.WriteInFolder" OnSelect="() => Choose(Settings with { Access = AccessLevel.WriteInFolder })" />
+        <MenuItem Label="@AccessName(AccessLevel.ReadOnly)" Description="Read files without changing them or running commands" Checked="Settings.Access == AccessLevel.ReadOnly" OnSelect="() => Choose(Settings with { Access = AccessLevel.ReadOnly })" />
+        <MenuItem Label="@AccessName(AccessLevel.WriteInFolder)" Description="@(HasFolder ? "Read and change files in this folder" : "Read and change files in this chat's folder")" Checked="Settings.Access == AccessLevel.WriteInFolder" OnSelect="() => Choose(Settings with { Access = AccessLevel.WriteInFolder })" />
         @if (Defaults.AllowBypass || Settings.Access == AccessLevel.Unrestricted)
         {
-            <MenuItem Label="@AccessName(AccessLevel.Unrestricted)" Description="Anything your account can touch, no sandbox" Checked="Settings.Access == AccessLevel.Unrestricted" OnSelect="() => Choose(Settings with { Access = AccessLevel.Unrestricted })" />
+            <MenuItem Label="@AccessName(AccessLevel.Unrestricted)" Description="Access anything your account can, without a sandbox" Checked="Settings.Access == AccessLevel.Unrestricted" OnSelect="() => Choose(Settings with { Access = AccessLevel.Unrestricted })" />
         }
         <div class="menu-sep" role="separator"></div>
         <div class="menu-heading">Approvals</div>
-        <MenuItem Label="@ApprovalsName(ApprovalMode.AskFirst)" Description="Ask before risky actions and anything outside the folder" Checked="Settings.Approvals == ApprovalMode.AskFirst" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.AskFirst })" />
-        <MenuItem Label="@ApprovalsName(ApprovalMode.AutoApprove)" Description="Ask only for what the access level would block" Checked="Settings.Approvals == ApprovalMode.AutoApprove" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.AutoApprove })" />
+        <MenuItem Label="@ApprovalsName(ApprovalMode.AskFirst)" Description="Ask before risky actions or actions outside the folder" Checked="Settings.Approvals == ApprovalMode.AskFirst" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.AskFirst })" />
+        <MenuItem Label="@ApprovalsName(ApprovalMode.AutoApprove)" Description="Ask only when an action exceeds the access level" Checked="Settings.Approvals == ApprovalMode.AutoApprove" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.AutoApprove })" />
         @if (Defaults.AllowBypass || Settings.Approvals == ApprovalMode.NeverAsk)
         {
-            <MenuItem Label="@ApprovalsName(ApprovalMode.NeverAsk)" Description="Run everything allowed; refuse the rest" Checked="Settings.Approvals == ApprovalMode.NeverAsk" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.NeverAsk })" />
+            <MenuItem Label="@ApprovalsName(ApprovalMode.NeverAsk)" Description="Run allowed actions and block the rest" Checked="Settings.Approvals == ApprovalMode.NeverAsk" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.NeverAsk })" />
         }
         <div class="menu-sep" role="separator"></div>
         <p class="menu-note" data-tone="@Tone" title="@Sandbox.Status.Detail">
@@ -29,7 +29,7 @@
             }
             else if (Sandbox.Status.IsAvailable)
             {
-                <Icon Name="shield" /> <span>Commands run in a sandbox</span>
+                <Icon Name="shield" /> <span>Commands, when allowed, run in a sandbox</span>
             }
             else
             {
@@ -91,7 +91,7 @@
     private string TriggerTitle => (Settings.IsRisky, Sandboxed) switch
     {
         (true, _) => "Some safeguards are off for this chat",
-        (false, true) => "What tools may touch, and when you are asked. Commands run in a sandbox.",
+        (false, true) => "What tools may touch, and when you are asked. Commands, when allowed, run in a sandbox.",
         _ => "What tools may touch, and when you are asked. There is no sandbox, so commands are blocked.",
     };
 
@@ -99,14 +99,14 @@
     {
         AccessLevel.ReadOnly => "Read only",
         AccessLevel.WriteInFolder when HasFolder => brief ? "Folder" : "Write in folder",
-        AccessLevel.WriteInFolder => brief ? "Chat files" : "Write in chat files",
+        AccessLevel.WriteInFolder => brief ? "Chat folder" : "Write in chat folder",
         _ => "Unrestricted",
     };
 
     private static string ApprovalsName(ApprovalMode approvals) => approvals switch
     {
         ApprovalMode.AskFirst => "Ask first",
-        ApprovalMode.AutoApprove => "Auto-approve",
+        ApprovalMode.AutoApprove => "Ask for exceptions",
         _ => "Never ask",
     };
 

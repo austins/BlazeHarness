@@ -33,10 +33,28 @@
     private SkillResolution _available = SkillResolution.Of();
 
     /// <summary>
-    /// Gets or sets the id of the chat whose skills are shown.
+    /// Gets or sets the chat id, or null before the first message.
     /// </summary>
-    [Parameter, EditorRequired]
-    public string ChatId { get; set; } = string.Empty;
+    [Parameter]
+    public string? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the folder whose skills are shown before the chat is created.
+    /// </summary>
+    [Parameter]
+    public string? FolderPath { get; set; }
+
+    /// <summary>
+    /// Gets or sets the skill choices before the chat is created.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyDictionary<string, bool>? Choices { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for choosing a skill before the chat is created.
+    /// </summary>
+    [Parameter]
+    public EventCallback<(string Name, bool Enabled)> OnChoose { get; set; }
 
     public void Dispose()
     {
@@ -50,21 +68,32 @@
 
     protected override void OnParametersSet()
     {
-        _available = ChatService.AvailableSkills(ChatId);
+        _available = AvailableSkills();
     }
 
-    private bool IsOn(SkillInfo skill) => ChatService.IsSkillEnabled(ChatId, skill.Name);
+    private SkillResolution AvailableSkills() => ChatId is { } id ? ChatService.AvailableSkills(id) : Catalog.Resolve(FolderPath);
+
+    private bool IsOn(SkillInfo skill) => ChatId is { } id
+        ? ChatService.IsSkillEnabled(id, skill.Name)
+        : SkillCatalog.IsEnabled(skill.Name, Catalog.IsDisabledGlobally(skill.Name), Choices);
 
     private async Task SetAsync(string name, bool enabled)
     {
-        await ChatService.SetSkillAsync(ChatId, name, enabled);
+        if (ChatId is { } id)
+        {
+            await ChatService.SetSkillAsync(id, name, enabled);
+        }
+        else
+        {
+            await OnChoose.InvokeAsync((name, enabled));
+        }
     }
 
     private void OnCatalogChanged(object? sender, EventArgs e)
     {
         _ = InvokeAsync(() =>
         {
-            _available = ChatService.AvailableSkills(ChatId);
+            _available = AvailableSkills();
             StateHasChanged();
         });
     }

@@ -38,10 +38,22 @@
     private IReadOnlyList<McpServerStatus> _servers = [];
 
     /// <summary>
-    /// Gets or sets the id of the chat whose servers are shown.
+    /// Gets or sets the chat id, or null before the first message.
     /// </summary>
-    [Parameter, EditorRequired]
-    public string ChatId { get; set; } = string.Empty;
+    [Parameter]
+    public string? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the server choices before the chat is created.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyDictionary<string, bool>? Choices { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for choosing a server before the chat is created.
+    /// </summary>
+    [Parameter]
+    public EventCallback<(string Name, bool Enabled)> OnChoose { get; set; }
 
     public void Dispose()
     {
@@ -58,11 +70,20 @@
         _servers = Manager.Statuses();
     }
 
-    private bool IsOn(McpServerStatus status) => ChatService.IsMcpServerEnabled(ChatId, status.Config);
+    private bool IsOn(McpServerStatus status) => ChatId is { } id
+        ? ChatService.IsMcpServerEnabled(id, status.Config)
+        : McpManager.IsEnabled(status.Config, Choices);
 
     private async Task SetAsync(string name, bool enabled)
     {
-        await ChatService.SetMcpServerAsync(ChatId, name, enabled);
+        if (ChatId is { } id)
+        {
+            await ChatService.SetMcpServerAsync(id, name, enabled);
+        }
+        else
+        {
+            await OnChoose.InvokeAsync((name, enabled));
+        }
     }
 
     private void OnManagerChanged(object? sender, EventArgs e)
