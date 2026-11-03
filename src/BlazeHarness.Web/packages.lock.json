@@ -22,9 +22,9 @@
       },
       "Markdig": {
         "type": "Direct",
-        "requested": "[1.5.0, )",
-        "resolved": "1.5.0",
-        "contentHash": "oEm6N4PYFPUZiJ5e89993AE6hfC8EWRGD5M8nyoSJbwD4GgW818mjlQCk++SdTV4godaN50Ybcmm4j2Dp76oIQ=="
+        "requested": "[1.5.1, )",
+        "resolved": "1.5.1",
+        "contentHash": "NtHwU5t5yKr6Gnylhs8/hlR0mOAftTFQURDz2ID8bkunxps1neOzKw0dYKKlwNuwiYIGLHjJTXK91f809Ko1ww=="
       },
       "MessageFormat": {
         "type": "Direct",
@@ -130,8 +130,8 @@
       },
       "ModelContextProtocol.Core": {
         "type": "Transitive",
-        "resolved": "2.3.0",
-        "contentHash": "EDpbQholhVWoNumb0Ab3oGv9LmXOLgaD5ixEIUkrnzpnqD0TJCSHTJ5G71/J1KlrQ98aWDclWTPMffKTnCJoMw==",
+        "resolved": "2.3.1",
+        "contentHash": "cuYIbAWWhVSY0PRaz0LiDoxxnpLdps1tKXjo2LN91CObgWBFcKg3Ebz4kF95O++2Do7GXI2Tl5KQOYM8UoAyZA==",
         "dependencies": {
           "Microsoft.Extensions.AI.Abstractions": "10.11.0"
         }
@@ -206,7 +206,7 @@
           "Microsoft.Extensions.AI.OpenAI": "[10.11.0, )",
           "Microsoft.Extensions.Resilience": "[10.11.0, )",
           "Microsoft.Mxc.Sdk": "[1.0.1, )",
-          "ModelContextProtocol.Core": "[2.3.0, )",
+          "ModelContextProtocol.Core": "[2.3.1, )",
           "PdfPig": "[0.1.16, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.14, )"
         }

@@ -327,8 +327,8 @@
       },
       "ModelContextProtocol.Core": {
         "type": "Transitive",
-        "resolved": "2.3.0",
-        "contentHash": "EDpbQholhVWoNumb0Ab3oGv9LmXOLgaD5ixEIUkrnzpnqD0TJCSHTJ5G71/J1KlrQ98aWDclWTPMffKTnCJoMw==",
+        "resolved": "2.3.1",
+        "contentHash": "cuYIbAWWhVSY0PRaz0LiDoxxnpLdps1tKXjo2LN91CObgWBFcKg3Ebz4kF95O++2Do7GXI2Tl5KQOYM8UoAyZA==",
         "dependencies": {
           "Microsoft.Extensions.AI.Abstractions": "10.11.0",
           "Microsoft.Extensions.Logging.Abstractions": "10.0.13"
@@ -476,7 +476,7 @@
           "Microsoft.Extensions.Options": "[10.0.14, )",
           "Microsoft.Extensions.Resilience": "[10.11.0, )",
           "Microsoft.Mxc.Sdk": "[1.0.1, )",
-          "ModelContextProtocol.Core": "[2.3.0, )",
+          "ModelContextProtocol.Core": "[2.3.1, )",
           "PdfPig": "[0.1.16, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.14, )"
         }
