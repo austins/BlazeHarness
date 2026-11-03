@@ -7,7 +7,7 @@
 - One test class: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit -- --filter-class "*ResolvedRequestParamsTests"`.
 - Running the app and its environment variables: see [README.md](README.md).
 - To check UI in a browser, use whichever browser tool the chat has (Playwright MCP, an agent browser, or none: then say the UI is unchecked). Run `ASPNETCORE_ENVIRONMENT=Development BLAZEHARNESS_HOME=$(mktemp -d) BLAZEHARNESS_NO_BROWSER=1 dotnet run --no-build --project src/BlazeHarness.Web`; Development is what serves `app.css`. Rebuild for Razor changes, restart for CSS, and reload the page after a restart. Stop the app with `kill <PID>` from `ss -ltnp | grep 5380`. Delete screenshots, the temp home and any browser output folder afterwards.
-- Check a UI change at about 390px (phone) and 1280px (desktop) in the browser, and say so when you couldn't.
+- For layout or responsive changes, check about 390px (phone) and 1280px (desktop) in the browser when practical. Small cosmetic changes can skip this; say when browser checks were skipped.
 - To seed a chat without a model server, write `providers.json`, `chats/<32-hex>/chat.json` and `messages.jsonl` under the home. Copy the event shapes from `tests/BlazeHarness.Core.Tests.Unit/Chats/SampleChat.cs` and `src/BlazeHarness.Core/Chats/*Event.cs` (enums are strings). If the transcript stays empty, the app's console log names the bad field in a `JsonException`.
 - After changing packages, commit every updated `packages.lock.json`.
 
