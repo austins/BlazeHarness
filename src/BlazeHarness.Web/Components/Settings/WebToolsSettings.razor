@@ -25,10 +25,7 @@
             <span>@WebStrings.WebToolsSettingsBrowserLabel</span>
         </label>
         <p class="hint">@WebStrings.WebToolsSettingsBrowserHint</p>
-        @if (!Sandbox.Status.ForwardsPorts)
-        {
-            <p class="hint">@(OperatingSystem.IsLinux() ? WebStrings.WebToolsSettingsBrowserNeedsForwarding : WebStrings.WebToolsSettingsBrowserNeedsUnrestricted)</p>
-        }
+        <p class="hint">@BrowserReach</p>
         @if (_browserInstalled is { } installed)
         {
             <div class="row">
@@ -92,6 +89,18 @@
 </div>
 
 @code {
+    private static string BrowserReachFor(SandboxStatus status)
+    {
+        if (status.ForwardsPorts)
+        {
+            return WebStrings.WebToolsSettingsBrowserForwarded;
+        }
+
+        return OperatingSystem.IsLinux() ? WebStrings.WebToolsSettingsBrowserNeedsForwarding : WebStrings.WebToolsSettingsBrowserNeedsUnrestricted;
+    }
+
+    private string BrowserReach => BrowserReachFor(Sandbox.Status);
+
     private bool? _browserInstalled;
     private bool _installing;
 

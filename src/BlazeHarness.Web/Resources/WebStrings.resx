@@ -2028,6 +2028,10 @@
     <value>The agent can open pages on this computer (localhost) in a hidden browser that runs their scripts, and read what they show and any errors. It can't open the internet or BlazeHarness itself; each address asks first, like web fetch. The browser is downloaded once, about 125 MB.</value>
     <comment>Hint under the Browser checkbox on the Web page. It explains that the tool opens only addresses on this computer (localhost), runs the page's scripts in a hidden (headless) browser, cannot open internet addresses or the app itself, asks for approval per address, and needs a one-time download of about 125 MB.</comment>
   </data>
+  <data name="WebToolsSettingsBrowserForwarded" xml:space="preserve">
+    <value>The browser tools are offered in every chat. A server that a sandboxed command starts can be opened when the command runs in the background: its ports are forwarded to localhost. A server started without background can't be reached from outside its command.</value>
+    <comment>Note under the Browser hint when the ports of sandboxed background commands are forwarded to this computer. "background" refers to the shell tool's option that keeps a command running; keep it as it is.</comment>
+  </data>
   <data name="WebToolsSettingsBrowserNeedsForwarding" xml:space="preserve">
     <value>Servers that sandboxed commands start can't be reached from outside the sandbox until socat and nsenter (util-linux) are installed, so until then the browser tools are offered only in chats with the Unrestricted access level.</value>
     <comment>Note under the Browser hint on Linux when the programs that forward ports out of the command sandbox are missing. "socat", "nsenter" and "util-linux" are program and package names; keep them as they are. "Unrestricted" is the name of an access level shown in the chat's permission picker.</comment>
