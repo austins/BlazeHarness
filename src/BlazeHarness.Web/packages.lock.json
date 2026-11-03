@@ -26,6 +26,12 @@
         "resolved": "1.5.0",
         "contentHash": "oEm6N4PYFPUZiJ5e89993AE6hfC8EWRGD5M8nyoSJbwD4GgW818mjlQCk++SdTV4godaN50Ybcmm4j2Dp76oIQ=="
       },
+      "MessageFormat": {
+        "type": "Direct",
+        "requested": "[8.0.0, )",
+        "resolved": "8.0.0",
+        "contentHash": "+nmYgGQVhGXmvQd+AMYILZGTxOP4J9tOR3KbjoxMDDICRrSzHYB9v1aRRVnXkD1ZeBapscFWIf5B/ck3p9R1mg=="
+      },
       "Microsoft.AspNetCore.App.Internal.Assets": {
         "type": "Direct",
         "requested": "[10.0.13, )",

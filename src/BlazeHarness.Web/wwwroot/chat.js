@@ -125,10 +125,10 @@ window.bhChat = {
 
             try {
                 await navigator.clipboard.writeText(code.querySelector("pre").innerText);
-                button.textContent = "Copied";
-                setTimeout(() => { button.textContent = "Copy"; }, copiedResetMs);
+                button.textContent = document.documentElement.dataset.copiedLabel;
+                setTimeout(() => { button.textContent = document.documentElement.dataset.copyLabel; }, copiedResetMs);
             } catch {
-                button.textContent = "Copy failed";
+                button.textContent = document.documentElement.dataset.copyFailedLabel;
             }
         });
     },

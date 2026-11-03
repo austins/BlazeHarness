@@ -1,4 +1,5 @@
 using BlazeHarness.Web.Hosting;
+using BlazeHarness.Web.Resources;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
@@ -185,7 +186,9 @@ public sealed partial class MarkdownRenderer
     {
         protected override void Write(HtmlRenderer renderer, CodeBlock obj)
         {
-            renderer.Write("<div class=\"code\"><button type=\"button\" class=\"btn btn-sm btn-ghost code-copy\" data-copy>Copy</button>");
+            renderer.Write("<div class=\"code\"><button type=\"button\" class=\"btn btn-sm btn-ghost code-copy\" data-copy>")
+                .WriteEscape(WebStrings.UiCopy)
+                .Write("</button>");
             if (obj is FencedCodeBlock { Info: { Length: > 0 } info } && SyntaxHighlighter.TryHighlight(obj.Lines.ToString(), info) is { } html)
             {
                 renderer.Write("<pre><code class=\"language-").WriteEscape(info.Split(' ', '\t', '{')[0]).Write("\">").Write(html).WriteLine("</code></pre>");

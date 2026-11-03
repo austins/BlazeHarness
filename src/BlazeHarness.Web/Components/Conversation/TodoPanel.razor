@@ -3,7 +3,7 @@
 
 @if (Todos is { Items.Count: > 0 })
 {
-    <section class="todo-panel" aria-label="To-do list">
+    <section class="todo-panel" aria-label="@WebStrings.TodoPanelLabel">
         <button type="button" class="todo-head" aria-expanded="@(_open ? "true" : "false")" aria-controls="@_bodyId" @onclick="Toggle">
             <Icon Name="@(_open ? "chevron-down" : "chevron-right")" />
             <span class="todo-count">@Count</span>

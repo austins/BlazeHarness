@@ -3,57 +3,57 @@
 
 @if (_totals is { Responses: > 0 } totals)
 {
-    <dl class="chat-stats" aria-label="Usage of this chat">
-        <div title="Prompt tokens sent, over all responses of this chat">
-            <dt><Icon Name="arrow-down" />In</dt>
+    <dl class="chat-stats" aria-label="@WebStrings.ChatStatsAriaLabel">
+        <div title="@WebStrings.ChatStatsInTooltip">
+            <dt><Icon Name="arrow-down" />@WebStrings.ChatStatsInLabel</dt>
             <dd>@TokenFormat.Of(totals.PromptTokens)</dd>
         </div>
         @if (totals.CacheHitRate is { } hit && totals.CachedTokens > 0)
         {
-            <div title="@($"{totals.CachedTokens:N0} prompt tokens were served from the provider's cache")">
-                <dt><Icon Name="database" />Cached</dt>
+            <div title="@CachedPromptTokens(totals.CachedTokens)">
+                <dt><Icon Name="database" />@WebStrings.ChatStatsCachedLabel</dt>
                 <dd>@hit.ToString("P0", CultureInfo.CurrentCulture)</dd>
             </div>
         }
 
-        <div title="@(totals.ReasoningTokens > 0 ? $"{totals.ReasoningTokens:N0} of them were thinking" : "Tokens the model generated")">
-            <dt><Icon Name="arrow-up" />Out</dt>
+        <div title="@OutputTooltip(totals)">
+            <dt><Icon Name="arrow-up" />@WebStrings.ChatStatsOutLabel</dt>
             <dd>@TokenFormat.Of(totals.CompletionTokens)</dd>
         </div>
         @if (totals.DecodeTokensPerSecond is { } decode)
         {
-            <div title="Tokens generated per second while streaming">
-                <dt><Icon Name="gauge" />Decode</dt>
+            <div title="@WebStrings.ChatStatsDecodeTooltip">
+                <dt><Icon Name="gauge" />@WebStrings.ChatStatsDecodeLabel</dt>
                 <dd>@TokenFormat.Rate(decode)</dd>
             </div>
         }
 
         @if (totals.PrefillTokensPerSecond is { } prefill)
         {
-            <div title="Uncached prompt tokens processed per second before the first output">
-                <dt><Icon Name="bolt" />Prefill</dt>
+            <div title="@WebStrings.ChatStatsPrefillTooltip">
+                <dt><Icon Name="bolt" />@WebStrings.ChatStatsPrefillLabel</dt>
                 <dd>@TokenFormat.Rate(prefill)</dd>
             </div>
         }
 
         @if (totals.TimeToFirstToken is { } wait)
         {
-            <div title="Average wait until the first output arrived">
-                <dt><Icon Name="timer" />First token</dt>
+            <div title="@WebStrings.ChatStatsFirstTokenTooltip">
+                <dt><Icon Name="timer" />@WebStrings.ChatStatsFirstTokenLabel</dt>
                 <dd>@TokenFormat.Duration(wait)</dd>
             </div>
         }
 
         @if (totals.GenerationTime > TimeSpan.Zero)
         {
-            <div title="Time spent streaming output, over all responses">
-                <dt><Icon Name="clock" />Streaming</dt>
+            <div title="@WebStrings.ChatStatsStreamingTooltip">
+                <dt><Icon Name="clock" />@WebStrings.ChatStatsStreamingLabel</dt>
                 <dd>@TokenFormat.Duration(totals.GenerationTime)</dd>
             </div>
         }
 
-        <div title="Responses the model gave, tool rounds included">
-            <dt><Icon Name="chat" />Responses</dt>
+        <div title="@WebStrings.ChatStatsResponsesTooltip">
+            <dt><Icon Name="chat" />@WebStrings.ChatStatsResponsesLabel</dt>
             <dd>@totals.Responses</dd>
         </div>
     </dl>
@@ -72,4 +72,31 @@
     {
         _totals = UsageTotals.Of(Entries.Select(e => e.Usage).OfType<UsageReported>());
     }
+
+    private static string CachedPromptTokens(long count) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ChatStatsCachedPromptTokens),
+            new Dictionary<string, object?>
+            {
+                ["count"] = count,
+                ["formattedCount"] = count.ToString("N0", CultureInfo.CurrentCulture),
+            });
+
+    private static string OutputTooltip(UsageTotals totals) => totals.ReasoningTokens > 0
+        ? ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ChatStatsOutputWithReasoning),
+            new Dictionary<string, object?>
+            {
+                ["count"] = totals.CompletionTokens,
+                ["formattedCount"] = totals.CompletionTokens.ToString("N0", CultureInfo.CurrentCulture),
+                ["reasoning"] = totals.ReasoningTokens,
+                ["formattedReasoning"] = totals.ReasoningTokens.ToString("N0", CultureInfo.CurrentCulture),
+            })
+        : ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ChatStatsOutputTokens),
+            new Dictionary<string, object?>
+            {
+                ["count"] = totals.CompletionTokens,
+                ["formattedCount"] = totals.CompletionTokens.ToString("N0", CultureInfo.CurrentCulture),
+            });
 }

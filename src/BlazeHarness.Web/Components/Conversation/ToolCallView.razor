@@ -23,7 +23,7 @@
         @if (McpToolNames.TrySplit(Call.Name, out var server, out var remote))
         {
             <span class="tool-name mono">@remote</span>
-            <span class="badge" title="A tool from the MCP server @server. It runs outside the sandbox.">@server</span>
+            <span class="badge" title="@McpBadgeTitle(server)">@server</span>
         }
         else
         {
@@ -61,14 +61,14 @@
     @if (Call.Status == ToolCallStatus.AwaitingApproval)
     {
         <div class="tool-approval" role="alert">
-            <span>@(Call.ApprovalReason.Length > 0 ? Call.ApprovalReason : "Allow this call?")</span>
-            <button type="button" class="btn btn-primary btn-sm" @onclick="() => OnDecide.InvokeAsync((Call.CallId, ApprovalChoice.AllowOnce))"><Icon Name="check" /> Allow</button>
+            <span>@(Call.ApprovalReason.Length > 0 ? Call.ApprovalReason : WebStrings.ToolCallAllowPrompt)</span>
+            <button type="button" class="btn btn-primary btn-sm" @onclick="() => OnDecide.InvokeAsync((Call.CallId, ApprovalChoice.AllowOnce))"><Icon Name="check" /> @WebStrings.ToolCallViewAllowOnce</button>
             @if (Call.CanRemember)
             {
-                <button type="button" class="btn btn-sm" @onclick="() => OnDecide.InvokeAsync((Call.CallId, ApprovalChoice.AllowForChat))"><Icon Name="check" /> Allow for this chat</button>
+                <button type="button" class="btn btn-sm" @onclick="() => OnDecide.InvokeAsync((Call.CallId, ApprovalChoice.AllowForChat))"><Icon Name="check" /> @WebStrings.ToolCallViewAllowForChat</button>
             }
 
-            <button type="button" class="btn btn-sm" @onclick="() => OnDecide.InvokeAsync((Call.CallId, ApprovalChoice.Deny))"><Icon Name="ban" /> Deny</button>
+            <button type="button" class="btn btn-sm" @onclick="() => OnDecide.InvokeAsync((Call.CallId, ApprovalChoice.Deny))"><Icon Name="ban" /> @WebStrings.ToolCallViewDeny</button>
         </div>
     }
 
@@ -105,11 +105,11 @@
             @if (Call.Output.Length > 0 && !(_todos is not null && Call.Status == ToolCallStatus.Succeeded))
             {
                 <div class="tool-arg">
-                    <span class="tool-arg-name">Output</span>
+                    <span class="tool-arg-name">@WebStrings.ToolCallViewOutputLabel</span>
                     <pre class="tool-pre">@(_showAll ? Call.Output : TextShortener.Shorten(Call.Output, OutputPreviewLength))</pre>
                     @if (!_showAll && Call.Output.Length > OutputPreviewLength)
                     {
-                        <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _showAll = true">Show all @Call.Output.Length.ToString("N0", CultureInfo.CurrentCulture) characters</button>
+                        <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _showAll = true">@ShowAllLabel</button>
                     }
                 </div>
             }
@@ -131,6 +131,15 @@
     private IReadOnlyList<DiffLine>? _diff;
     private TodoList? _todos;
     private List<(string Name, string Value)> _arguments = [];
+
+    private string ShowAllLabel =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ToolCallShowAllCharacters),
+            new Dictionary<string, object?>
+            {
+                ["count"] = Call.Output.Length,
+                ["formattedCount"] = Call.Output.Length.ToString("N0", CultureInfo.CurrentCulture),
+            });
 
     /// <summary>
     /// Gets or sets the call to show.
@@ -198,18 +207,23 @@
 
     private string StatusText => Call.Status switch
     {
-        ToolCallStatus.Pending => "Queued",
-        ToolCallStatus.AwaitingApproval => "Needs approval",
-        ToolCallStatus.Running => "Running",
-        ToolCallStatus.Succeeded => "Done",
-        ToolCallStatus.Failed => "Failed",
-        ToolCallStatus.Denied => "Denied",
-        ToolCallStatus.Cancelled => "Stopped",
-        ToolCallStatus.Interrupted => "Interrupted",
+        ToolCallStatus.Pending => WebStrings.ToolCallQueued,
+        ToolCallStatus.AwaitingApproval => WebStrings.ToolCallNeedsApproval,
+        ToolCallStatus.Running => WebStrings.ToolCallRunning,
+        ToolCallStatus.Succeeded => WebStrings.ToolCallDone,
+        ToolCallStatus.Failed => WebStrings.ToolCallFailed,
+        ToolCallStatus.Denied => WebStrings.ToolCallDenied,
+        ToolCallStatus.Cancelled => WebStrings.ToolCallStopped,
+        ToolCallStatus.Interrupted => WebStrings.ToolCallInterrupted,
         _ => string.Empty,
     };
 
     private string Label => $"{Call.Name}: {StatusText}";
+
+    private static string McpBadgeTitle(string server) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ToolCallMcpBadgeTitle),
+            new Dictionary<string, object?> { ["server"] = server });
 
     private void Toggle()
     {

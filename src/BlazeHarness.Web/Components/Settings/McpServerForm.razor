@@ -3,21 +3,21 @@
 @using BlazeHarness.Core.Mcp.Config
 @inject McpServerEditor Editor
 
-<form class="stack" @onsubmit="SaveAsync" autocomplete="off" novalidate aria-label="@(Draft.IsNew ? "Add a server" : "Edit " + Draft.Name)">
-    <h3>@(Draft.IsNew ? "Add a server" : "Edit " + Draft.Name)</h3>
+<form class="stack" @onsubmit="SaveAsync" autocomplete="off" novalidate aria-label="@FormLabel">
+    <h3>@FormLabel</h3>
 
     <div class="form-grid">
         <div class="field">
-            <label for="mcp-name">Name</label>
-            <input id="mcp-name" class="input mono" @bind="Draft.Name" @bind:event="oninput" disabled="@(!Draft.IsNew)" placeholder="e.g. github" />
-            <span class="hint">Letters, digits, - and _. It prefixes the names of the server's tools.</span>
+            <label for="mcp-name">@WebStrings.McpServerFormServerName</label>
+            <input id="mcp-name" class="input mono" @bind="Draft.Name" @bind:event="oninput" disabled="@(!Draft.IsNew)" placeholder="@WebStrings.McpServerFormNamePlaceholder" />
+            <span class="hint">@WebStrings.McpServerFormNameHint</span>
         </div>
         <div class="field">
-            <label for="mcp-transport">Kind</label>
+            <label for="mcp-transport">@WebStrings.McpServerFormKind</label>
             <select id="mcp-transport" class="select" @bind="Draft.Transport">
-                <option value="@McpTransport.Stdio">Local program</option>
-                <option value="@McpTransport.Http">Remote (HTTP)</option>
-                <option value="@McpTransport.Sse">Remote (SSE)</option>
+                <option value="@McpTransport.Stdio">@WebStrings.McpServerFormKindLocal</option>
+                <option value="@McpTransport.Http">@WebStrings.McpServerFormKindHttp</option>
+                <option value="@McpTransport.Sse">@WebStrings.McpServerFormKindSse</option>
             </select>
         </div>
     </div>
@@ -26,54 +26,52 @@
     {
         <div class="form-grid">
             <div class="field">
-                <label for="mcp-command">Command</label>
-                <input id="mcp-command" class="input mono" @bind="Draft.Command" @bind:event="oninput" placeholder="npx" spellcheck="false" />
+                <label for="mcp-command">@WebStrings.McpServerFormCommand</label>
+                <input id="mcp-command" class="input mono" @bind="Draft.Command" @bind:event="oninput" placeholder="@WebStrings.McpServerFormCommandPlaceholder" spellcheck="false" />
             </div>
             <div class="field">
-                <label for="mcp-cwd">Working folder <span class="muted">(optional)</span></label>
+                <label for="mcp-cwd">@WebStrings.McpServerFormWorkingFolder <span class="muted">(@WebStrings.McpServerFormOptional)</span></label>
                 <input id="mcp-cwd" class="input mono" @bind="Draft.Cwd" @bind:event="oninput" spellcheck="false" />
             </div>
         </div>
         <div class="field">
-            <label for="mcp-args">Arguments <span class="muted">(one per line)</span></label>
+            <label for="mcp-args">@WebStrings.McpServerFormArguments <span class="muted">(@WebStrings.McpServerFormOnePerLine)</span></label>
             <textarea id="mcp-args" class="input mono" rows="3" @bind="Draft.ArgsText" @bind:event="oninput" spellcheck="false" placeholder="@ArgsPlaceholder"></textarea>
         </div>
-        @Entries(Draft.Env, "Environment variables", "Add variable", "Variable name")
+        @Entries(Draft.Env, WebStrings.McpServerFormEnvironmentVariables, WebStrings.McpServerFormAddVariable, WebStrings.McpServerFormVariableName)
     }
     else
     {
         <div class="field">
-            <label for="mcp-url">Address</label>
-            <input id="mcp-url" class="input mono" @bind="Draft.Url" @bind:event="oninput" inputmode="url" spellcheck="false" placeholder="https://example.com/mcp" />
+            <label for="mcp-url">@WebStrings.McpServerFormAddress</label>
+            <input id="mcp-url" class="input mono" @bind="Draft.Url" @bind:event="oninput" inputmode="url" spellcheck="false" placeholder="@WebStrings.McpServerFormAddressPlaceholder" />
         </div>
-        @Entries(Draft.Headers, "Headers", "Add header", "Header name")
+        @Entries(Draft.Headers, WebStrings.McpServerFormHeaders, WebStrings.McpServerFormAddHeader, WebStrings.McpServerFormHeaderName)
     }
 
     <label class="check">
         <input type="checkbox" @bind="Draft.AlwaysLoadAll" />
-        <span>Always load all of its tools</span>
+        <span>@WebStrings.McpServerFormAlwaysLoad</span>
     </label>
-    <p class="hint">
-        Off by default: the model finds this server's tools with a search when it needs them, which keeps the prompt small.
-        Turn it on for a small server whose tools you use in most chats.
-    </p>
+    <p class="hint">@WebStrings.McpServerFormAlwaysLoadHint</p>
 
     <p class="hint">
-        Mark a value as secret to keep it in @Editor.SecretStoreName@(Editor.SecretStoreIsSecure ? "" : ", which is not encrypted,") instead of in the file.
-        The file then holds a <code class="mono">${MCP_…}</code> reference. A variable of that name set in the environment takes its place.
+        @ResourceMessageFormatter.Web.FormatMarkup(
+            Editor.SecretStoreIsSecure ? nameof(WebStrings.McpServerFormSecretNote) : nameof(WebStrings.McpServerFormSecretNoteNotEncrypted),
+            new Dictionary<string, object?> { ["store"] = Editor.SecretStoreName, ["reference"] = "${MCP_…}" })
     </p>
 
     @if (_problems.Count > 0)
     {
         <Alert>
-            <strong>Fix these before saving:</strong>
+            <strong>@WebStrings.McpServerFormProblemsHeading</strong>
             <ul>@foreach (var problem in _problems) { <li>@problem</li> }</ul>
         </Alert>
     }
 
     <div class="row">
-        <button type="submit" class="btn btn-primary" disabled="@_saving">Save server</button>
-        <button type="button" class="btn btn-ghost" @onclick="OnCancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" disabled="@_saving">@WebStrings.McpServerFormSave</button>
+        <button type="button" class="btn btn-ghost" @onclick="OnCancel">@WebStrings.McpServerFormCancel</button>
     </div>
 </form>
 
@@ -82,6 +80,11 @@
 
     private IReadOnlyList<string> _problems = [];
     private bool _saving;
+    private string FormLabel => Draft.IsNew
+        ? WebStrings.McpServerFormAddServer
+        : ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.McpServerFormEditServer),
+            new Dictionary<string, object?> { ["name"] = Draft.Name });
 
     /// <summary>
     /// Gets or sets the settings being edited.
@@ -111,17 +114,17 @@
             @foreach (var entry in entries)
             {
                 <div class="input-group entry-row" @key="entry">
-                    <input class="input mono" aria-label="@nameLabel" placeholder="Name" spellcheck="false" @bind="entry.Name" @bind:event="oninput" />
+                    <input class="input mono" aria-label="@nameLabel" placeholder="@WebStrings.McpServerFormName" spellcheck="false" @bind="entry.Name" @bind:event="oninput" />
                     @if (entry.Secret)
                     {
-                        <SecretInput Value="@entry.Value" ValueChanged="v => entry.Value = v" HasStoredKey="entry.HasStoredSecret" Placeholder="Secret value" />
+                        <SecretInput Value="@entry.Value" ValueChanged="v => entry.Value = v" HasStoredKey="entry.HasStoredSecret" Placeholder="@WebStrings.McpServerFormSecretValue" />
                     }
                     else
                     {
-                        <input class="input mono" aria-label="Value" placeholder="Value" spellcheck="false" @bind="entry.Value" @bind:event="oninput" />
+                        <input class="input mono" aria-label="@WebStrings.McpServerFormValue" placeholder="@WebStrings.McpServerFormValue" spellcheck="false" @bind="entry.Value" @bind:event="oninput" />
                     }
-                    <label class="check"><input type="checkbox" checked="@entry.Secret" @onchange="e => ToggleSecret(entry, (bool)e.Value!)" /> <span>Secret</span></label>
-                    <button type="button" class="btn btn-ghost btn-danger" aria-label="Remove @addLabel.Replace("Add ", string.Empty, StringComparison.Ordinal)" @onclick="() => entries.Remove(entry)"><Icon Name="close" /></button>
+                    <label class="check"><input type="checkbox" checked="@entry.Secret" @onchange="e => ToggleSecret(entry, (bool)e.Value!)" /> <span>@WebStrings.McpServerFormSecret</span></label>
+                    <button type="button" class="btn btn-ghost btn-danger" aria-label="@WebStrings.McpServerFormRemoveEntry" @onclick="() => entries.Remove(entry)"><Icon Name="close" /></button>
                 </div>
             }
         </div>
@@ -142,7 +145,7 @@
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            _problems = ["The server could not be saved because the file or the secret store could not be written."];
+            _problems = [WebStrings.McpServerFormSaveFailure];
         }
         finally
         {

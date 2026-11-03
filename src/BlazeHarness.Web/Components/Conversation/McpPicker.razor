@@ -7,8 +7,8 @@
 
 @if (_servers.Count > 0)
 {
-    <Popover Label="MCP servers" Title="MCP servers whose tools this chat can use">
-        <Trigger><Icon Name="plug" /> MCP <span class="badge">@_servers.Count(IsOn) / @_servers.Count</span></Trigger>
+    <Popover Label="@WebStrings.McpPickerLabel" Title="@WebStrings.McpPickerTitle">
+        <Trigger><Icon Name="plug" /> @WebStrings.McpPickerTrigger <span class="badge">@_servers.Count(IsOn) / @_servers.Count</span></Trigger>
         <ChildContent>
             <ul class="panel-list">
                 @foreach (var status in _servers)
@@ -20,15 +20,15 @@
                             <span class="panel-check-name">@server.Name</span>
                             @if (status.State is McpServerState.Failed)
                             {
-                                <span class="panel-check-error" title="@status.Error">Failed</span>
+                                <span class="panel-check-error" title="@status.Error">@WebStrings.McpPickerFailed</span>
                             }
                         </label>
                     </li>
                 }
             </ul>
             <p class="panel-note">
-                <Icon Name="info" /> <span>Applies to this chat only, from the next reply. Changing it resets the model's prompt cache, so that reply may be slower.</span>
-                <button type="button" class="link-button" @onclick="() => SettingsState.Open(SettingsSection.Mcp)">Manage</button>
+                <Icon Name="info" /> <span>@WebStrings.McpPickerScopeNote</span>
+                <button type="button" class="link-button" @onclick="() => SettingsState.Open(SettingsSection.Mcp)">@WebStrings.McpPickerManage</button>
             </p>
         </ChildContent>
     </Popover>

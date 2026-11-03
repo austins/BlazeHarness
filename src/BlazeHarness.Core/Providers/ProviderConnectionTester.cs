@@ -35,7 +35,7 @@ public static class ProviderConnectionTester
             || provider.BaseUrl.Scheme is not ("http" or "https")
             || !Uri.TryCreate(provider.BaseUrl.OriginalString.TrimEnd('/') + "/models", UriKind.Absolute, out var uri))
         {
-            return Fail("The base URL is not a valid http or https address.");
+            return Fail(ConnectionTestCode.InvalidBaseUrl, "The base URL is not a valid http or https address.");
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
@@ -60,19 +60,27 @@ public static class ProviderConnectionTester
             using var response = await httpClient.SendAsync(request, timeout.Token);
             if (!response.IsSuccessStatusCode)
             {
-                return Fail(DescribeStatus(response.StatusCode));
+                return DescribeStatus(response.StatusCode);
             }
 
             var body = await ReadCappedAsync(response.Content, timeout.Token);
-            return body is null ? Fail("The server's model list is too large to be an OpenAI-style answer.") : ParseModels(body);
+            return body is null
+                ? Fail(ConnectionTestCode.ModelListTooLarge, "The server's model list is too large to be an OpenAI-style answer.")
+                : ParseModels(body);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return Fail($"The server did not answer within {Timeout.TotalSeconds:0} seconds. Check that it is running and the address is right.");
+            return Fail(
+                ConnectionTestCode.Timeout,
+                $"The server did not answer within {Timeout.TotalSeconds:0} seconds. Check that it is running and the address is right.",
+                new Dictionary<string, object?> { ["seconds"] = (int)Timeout.TotalSeconds });
         }
         catch (HttpRequestException ex)
         {
-            return Fail($"Could not connect: {ex.Message}. Check that the server is running and the address is right.");
+            return Fail(
+                ConnectionTestCode.ConnectionFailed,
+                $"Could not connect: {ex.Message}. Check that the server is running and the address is right.",
+                new Dictionary<string, object?> { ["detail"] = ex.Message });
         }
     }
 
@@ -127,30 +135,37 @@ public static class ProviderConnectionTester
             }
 
             ids.Sort(StringComparer.OrdinalIgnoreCase);
-            var message = ids.Count == 0
-                ? "Connected, but the server listed no models. Add them manually."
-                : $"Connected. The server lists {ids.Count} model{(ids.Count == 1 ? string.Empty : "s")}.";
-            return new ConnectionTestResult(true, message, ids);
+            return ids.Count == 0
+                ? new ConnectionTestResult(true, ConnectionTestCode.ConnectedNoModels, "Connected, but the server listed no models. Add them manually.", ids)
+                : new ConnectionTestResult(
+                    true,
+                    ConnectionTestCode.Connected,
+                    $"Connected. The server lists {ids.Count} model{(ids.Count == 1 ? string.Empty : "s")}.",
+                    ids,
+                    new Dictionary<string, object?> { ["count"] = ids.Count });
         }
         catch (JsonException)
         {
-            return Fail("The server answered, but not with an OpenAI-style model list. Check that the base URL points at the API (usually ending in /v1).");
+            return Fail(ConnectionTestCode.NotAModelList, "The server answered, but not with an OpenAI-style model list. Check that the base URL points at the API (usually ending in /v1).");
         }
     }
 
-    private static string DescribeStatus(HttpStatusCode status)
+    private static ConnectionTestResult DescribeStatus(HttpStatusCode status)
     {
         return status switch
         {
-            HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => "The server rejected the API key. Check the key, and that it can list models.",
-            HttpStatusCode.NotFound => "The server has no /models endpoint at this address. Check the base URL (usually ending in /v1), or add models manually.",
-            HttpStatusCode.TooManyRequests => "The server is rate limiting requests. Try again shortly.",
-            _ => $"The server answered with HTTP {(int)status} ({status}).",
+            HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => Fail(ConnectionTestCode.Unauthorized, "The server rejected the API key. Check the key, and that it can list models."),
+            HttpStatusCode.NotFound => Fail(ConnectionTestCode.NotFound, "The server has no /models endpoint at this address. Check the base URL (usually ending in /v1), or add models manually."),
+            HttpStatusCode.TooManyRequests => Fail(ConnectionTestCode.RateLimited, "The server is rate limiting requests. Try again shortly."),
+            _ => Fail(
+                ConnectionTestCode.HttpError,
+                $"The server answered with HTTP {(int)status} ({status}).",
+                new Dictionary<string, object?> { ["code"] = (int)status, ["status"] = status.ToString() }),
         };
     }
 
-    private static ConnectionTestResult Fail(string message)
+    private static ConnectionTestResult Fail(ConnectionTestCode code, string message, IReadOnlyDictionary<string, object?>? arguments = null)
     {
-        return new ConnectionTestResult(false, message, []);
+        return new ConnectionTestResult(false, code, message, [], arguments);
     }
 }

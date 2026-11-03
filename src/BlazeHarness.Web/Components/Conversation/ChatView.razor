@@ -1,6 +1,7 @@
 @using BlazeHarness.Core.Agent.Questions
 @using BlazeHarness.Core.Compaction
 @using BlazeHarness.Core.Config
+@using System.Globalization
 @using BlazeHarness.Core.Permissions
 @implements IDisposable
 @inject PermissionDefaults PermissionDefaults
@@ -21,8 +22,8 @@
         <div class="chat-scroll">
             <div class="chat-thread">
                 <Alert Kind="AlertKind.Warning">
-                    <span>This chat no longer exists.</span>
-                    <a href="">Start a new chat</a>
+                    <span>@WebStrings.ChatViewMissingChat</span>
+                    <a href="">@WebStrings.ChatViewStartNewChat</a>
                 </Alert>
             </div>
         </div>
@@ -30,7 +31,7 @@
 }
 else
 {
-    <section class="chat" data-pinned="true" data-empty="@(!_loading && _entries.Count == 0 ? "true" : null)" @ref="_root" aria-label="Conversation">
+    <section class="chat" data-pinned="true" data-empty="@(!_loading && _entries.Count == 0 ? "true" : null)" @ref="_root" aria-label="@WebStrings.ChatViewConversationLabel">
         <div class="chat-context">
             @if (ContextPath is { } folderPath)
             {
@@ -41,10 +42,10 @@ else
                 </span>
                 @if (Project is { Files.Count: > 0 } project)
                 {
-                    <Popover Label="Project instructions" Title="Project instructions the model was given">
-                        <Trigger><Icon Name="file" /> AGENTS.md <span class="badge">@project.Files.Count</span></Trigger>
+                    <Popover Label="@WebStrings.ChatViewInstructionsLabel" Title="@WebStrings.ChatViewInstructionsTooltip">
+                        <Trigger><Icon Name="file" /> @WebStrings.ChatViewAgentsMdTrigger <span class="badge">@project.Files.Count</span></Trigger>
                         <ChildContent>
-                            <div class="panel-head"><span>Project instructions</span></div>
+                            <div class="panel-head"><span>@WebStrings.ChatViewInstructionsHeading</span></div>
                             <ul class="panel-list">
                                 @foreach (var file in project.Files)
                                 {
@@ -54,7 +55,7 @@ else
                                             <span class="panel-option-name mono">@file.Path</span>
                                             @if (file.Truncated)
                                             {
-                                                <span class="panel-option-hint panel-option-error">@(file.Content.Length == 0 ? "Too large, not included" : "Too large, cut off")</span>
+                                                <span class="panel-option-hint panel-option-error">@(file.Content.Length == 0 ? WebStrings.ChatViewTooLargeNotIncluded : WebStrings.ChatViewTooLargeCutOff)</span>
                                             }
                                         </span>
                                     </li>
@@ -66,9 +67,9 @@ else
             }
             else
             {
-                <span class="chat-context-where" title="Files this chat creates are kept with the chat">
+                <span class="chat-context-where" title="@WebStrings.ChatViewChatFilesTooltip">
                     <Icon Name="file" />
-                    <span class="chat-context-name">Chat files</span>
+                    <span class="chat-context-name">@WebStrings.ChatViewChatFilesLabel</span>
                 </span>
             }
 
@@ -80,15 +81,15 @@ else
             }
             @if (_info is not null)
             {
-                <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> Move</button>
+                <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> @WebStrings.ChatViewMoveButton</button>
             }
             @if (_entries.Count > 0)
             {
-                <button type="button" class="btn btn-ghost btn-sm" data-shortcut="find" title="Find in this chat (Ctrl+F)" @onclick="OpenFind"><Icon Name="search" /> Find</button>
+                <button type="button" class="btn btn-ghost btn-sm" data-shortcut="find" title="@WebStrings.ChatViewFindButtonTooltip" @onclick="OpenFind"><Icon Name="search" /> @WebStrings.ChatViewFindButton</button>
             }
             @if (ContextPath is { } missingCheck && !Directory.Exists(missingCheck))
             {
-                <span class="chat-context-warning" role="status"><Icon Name="alert" /> Folder not found</span>
+                <span class="chat-context-warning" role="status"><Icon Name="alert" /> @WebStrings.ChatViewFolderNotFound</span>
             }
         </div>
 
@@ -104,14 +105,14 @@ else
                 @if (_entries.Count == 0)
                 {
                     <div class="chat-empty">
-                        <h1>What can I help with?</h1>
-                        <p class="muted">Pick a model below and send a message. Press Enter to send and Shift+Enter for a new line.</p>
+                        <h1>@WebStrings.ChatViewEmptyHeading</h1>
+                        <p class="muted">@WebStrings.ChatViewEmptyHint</p>
                     </div>
                 }
 
                 @if (_windowStart > 0)
                 {
-                    <button type="button" class="btn btn-sm chat-earlier" data-earlier="@_windowStart" @onclick="ShowEarlier">Show earlier messages (@_windowStart)</button>
+                    <button type="button" class="btn btn-sm chat-earlier" data-earlier="@_windowStart" @onclick="ShowEarlier">@EarlierMessagesLabel</button>
                 }
 
                 @{
@@ -136,7 +137,7 @@ else
             </div>
         </div>
 
-        <button type="button" class="btn btn-sm chat-jump" data-bh-action="toBottom">Jump to latest</button>
+        <button type="button" class="btn btn-sm chat-jump" data-bh-action="toBottom">@WebStrings.ChatViewJumpToLatest</button>
 
         @if (!_loading)
         {
@@ -392,6 +393,15 @@ else
         _windowStart = Math.Max(0, _windowStart - EarlierBatch);
     }
 
+    private string EarlierMessagesLabel =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ChatViewEarlierMessages),
+            new Dictionary<string, object?>
+            {
+                ["count"] = _windowStart,
+                ["formattedCount"] = _windowStart.ToString("N0", CultureInfo.CurrentCulture),
+            });
+
     private void Refresh()
     {
         _entries = _chat?.Entries ?? [];
@@ -433,11 +443,13 @@ else
         _wasRunning = running;
         if (running)
         {
-            _announcement = "Reply started";
+            _announcement = WebStrings.ChatViewReplyStarted;
         }
         else
         {
-            _announcement = _entries.Count > 0 && _entries[^1].Status == EntryStatus.Failed ? "Reply failed" : "Reply finished";
+            _announcement = _entries.Count > 0 && _entries[^1].Status == EntryStatus.Failed
+                ? WebStrings.ChatViewReplyFailed
+                : WebStrings.ChatViewReplyFinished;
         }
     }
 
@@ -450,7 +462,9 @@ else
     {
         if (message.Files.Sum(file => (long)file.Content.Length) > ChatAttachments.MaxMessageBytes)
         {
-            return $"The files of a message can add up to at most {FileSize.Format(ChatAttachments.MaxMessageBytes)}.";
+            return ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.ChatViewAttachmentLimit),
+                new Dictionary<string, object?> { ["size"] = FileSize.Format(ChatAttachments.MaxMessageBytes) });
         }
 
         await FollowAsync();
@@ -491,7 +505,7 @@ else
                 await using var content = file.OpenRead();
                 if (await ChatService.SaveAttachmentAsync(id, file.Name, content) is not { } saved)
                 {
-                    failure = "This chat no longer exists.";
+                    failure = WebStrings.ChatViewNoLongerExists;
                     break;
                 }
 
@@ -568,13 +582,15 @@ else
         {
             if (!await ChatService.CompactAsync(id, target))
             {
-                Toasts.Show("There is not enough earlier conversation to summarize.", ToastKind.Info);
+                Toasts.Show(WebStrings.ChatViewNotEnoughToSummarize, ToastKind.Info);
             }
         }
         catch (InvalidOperationException ex)
         {
-            var hint = Config.Current.Compaction == CompactionMode.Model ? " You can turn on \"Compact without the model (Extraction)\" under Settings > General." : string.Empty;
-            Toasts.Show($"The conversation could not be summarized: {ex.Message}{hint}", ToastKind.Error);
+            var hint = Config.Current.Compaction == CompactionMode.Model ? WebStrings.ChatViewEnableExtractionHint : string.Empty;
+            Toasts.Show(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.ChatViewSummarizeFailed),
+                new Dictionary<string, object?> { ["error"] = ex.Message, ["hint"] = hint }), ToastKind.Error);
         }
     }
 
@@ -587,7 +603,7 @@ else
     {
         if (_openId is { } id)
         {
-            await Toasts.TrySaveAsync(() => ChatService.SetPermissionsAsync(id, settings), "The permissions could not be saved because the chat's file could not be written.");
+            await Toasts.TrySaveAsync(() => ChatService.SetPermissionsAsync(id, settings), WebStrings.ChatViewPermissionSaveFailure);
         }
         else
         {

@@ -1,4 +1,5 @@
 @using System.Text.Json
+@using System.Globalization
 @using BlazeHarness.Core.Config
 @implements IDisposable
 @inject ProviderService Service
@@ -6,23 +7,23 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <PageHeader Title="Providers">Connect any OpenAI-compatible endpoint. Keys are kept in @Service.Secrets.Name@(Service.Secrets.IsSecure ? "." : ", which is not encrypted. Install a system keyring to store keys more securely.")</PageHeader>
+    <PageHeader Title="@WebStrings.ProvidersSettingsPageTitle">@WebStrings.ProvidersSettingsHeaderBefore @Service.Secrets.Name@(Service.Secrets.IsSecure ? WebStrings.ProvidersSettingsSecureSuffix : WebStrings.ProvidersSettingsInsecureSuffix)</PageHeader>
 
     <div class="split">
         @if (ShowList)
         {
-        <aside class="stack" aria-label="Configured providers">
+        <aside class="stack" aria-label="@WebStrings.ProvidersSettingsListLabel">
             <div class="list">
                 @foreach (var provider in Service.Configured)
                 {
                     var isCurrent = _edit is { IsNew: false } && _edit.Id == provider.Id;
                     <button type="button" class="list-item" aria-current="@(isCurrent ? "true" : "false")" @onclick="() => Select(provider)">
-                        <span>@provider.DisplayName @if (Service.Config.DefaultProviderId == provider.Id) { <span class="badge badge-accent">default</span> }</span>
-                        <span class="sub">@provider.Models.Count model@(provider.Models.Count == 1 ? "" : "s") · @provider.BaseUrl</span>
+                        <span>@provider.DisplayName @if (Service.Config.DefaultProviderId == provider.Id) { <span class="badge badge-accent">@WebStrings.ProvidersSettingsDefaultProviderBadge</span> }</span>
+                        <span class="sub">@ModelCountLabel(provider.Models.Count) · @provider.BaseUrl</span>
                     </button>
                 }
             </div>
-            <button type="button" class="btn btn-add" @onclick="() => StartNew(null, null)"><Icon Name="plus" /> Add provider</button>
+            <button type="button" class="btn btn-add" @onclick="() => StartNew(null, null)"><Icon Name="plus" /> @WebStrings.ProvidersSettingsAddProviderButton</button>
         </aside>
         }
 
@@ -32,8 +33,8 @@
                 <div class="card empty">
                     @if (Service.Configured.Count == 0)
                     {
-                        <h2>Connect your first provider</h2>
-                        <p>Pick a starting point, or add any OpenAI-compatible endpoint.</p>
+                        <h2>@WebStrings.ProvidersSettingsEmptyStateHeading</h2>
+                        <p>@WebStrings.ProvidersSettingsEmptyStateDescription</p>
                         <div class="row">
                             @foreach (var (name, url) in QuickStarts)
                             {
@@ -43,7 +44,7 @@
                     }
                     else
                     {
-                        <p>Select a provider to edit it, or add a new one.</p>
+                        <p>@WebStrings.ProvidersSettingsSelectPrompt</p>
                     }
                 </div>
             }
@@ -52,42 +53,42 @@
                 <form @onsubmit="SaveAsync" class="stack" autocomplete="off" novalidate>
                     <div class="card stack">
                         <div class="card-header">
-                            <h2>@(_edit.IsNew ? "New provider" : _edit.DisplayName)</h2>
+                            <h2>@(_edit.IsNew ? WebStrings.ProvidersSettingsNewProvider : _edit.DisplayName)</h2>
                             @if (!ShowList)
                             {
-                                <button type="button" class="btn btn-sm" @onclick="() => StartNew(null, null)"><Icon Name="plus" /> Add provider</button>
+                                <button type="button" class="btn btn-sm" @onclick="() => StartNew(null, null)"><Icon Name="plus" /> @WebStrings.ProvidersSettingsAddProviderEditorButton</button>
                             }
                         </div>
 
                         <div class="form-grid">
                             <div class="field">
-                                <label for="p-name">Name</label>
-                                <input id="p-name" class="input" aria-invalid="@Invalid("displayName")" @bind="_edit.DisplayName" @bind:event="oninput" placeholder="e.g. DeepSeek" />
+                                <label for="p-name">@WebStrings.ProvidersSettingsNameLabel</label>
+                                <input id="p-name" class="input" aria-invalid="@Invalid("displayName")" @bind="_edit.DisplayName" @bind:event="oninput" placeholder="@WebStrings.ProvidersSettingsNamePlaceholder" />
                                 @Error("displayName")
                             </div>
                             <div class="field">
-                                <label for="p-url">Base URL</label>
-                                <input id="p-url" class="input mono" aria-invalid="@Invalid("baseUrl")" @bind="_edit.BaseUrl" @bind:event="oninput" placeholder="https://api.example.com/v1" inputmode="url" />
+                                <label for="p-url">@WebStrings.ProvidersSettingsBaseUrlLabel</label>
+                                <input id="p-url" class="input mono" aria-invalid="@Invalid("baseUrl")" @bind="_edit.BaseUrl" @bind:event="oninput" placeholder="@WebStrings.ProvidersSettingsBaseUrlPlaceholder" inputmode="url" />
                                 @Error("baseUrl")
                             </div>
                             <div class="field">
-                                <label for="p-key">API key <span class="muted">(optional)</span></label>
-                                <SecretInput Id="p-key" @bind-Value="_edit.NewApiKey" HasStoredKey="_hasStoredKey" OnRemoveStored="ClearKeyAsync" Placeholder="Optional for local servers" />
-                                <span class="hint">Local servers usually need none. A stored key is never shown again; leave blank to keep it.</span>
+                                <label for="p-key">@WebStrings.ProvidersSettingsApiKeyLabel <span class="muted">(@WebStrings.McpServerFormOptional)</span></label>
+                                <SecretInput Id="p-key" @bind-Value="_edit.NewApiKey" HasStoredKey="_hasStoredKey" OnRemoveStored="ClearKeyAsync" Placeholder="@WebStrings.ProvidersSettingsOptionalForLocal" />
+                                <span class="hint">@WebStrings.ProvidersSettingsApiKeyHint</span>
                                 <details class="key-env" open="@(!string.IsNullOrWhiteSpace(_edit.ApiKeyEnvVar))">
-                                    <summary>Read it from an environment variable</summary>
-                                    <input id="p-env" class="input mono" aria-label="Environment variable name" @bind="_edit.ApiKeyEnvVar" placeholder="DEEPSEEK_API_KEY" />
-                                    <span class="hint">When set, this replaces the stored key.</span>
+                                    <summary>@WebStrings.ProvidersSettingsEnvVarSummary</summary>
+                                    <input id="p-env" class="input mono" aria-label="@WebStrings.ProvidersSettingsEnvVarLabel" @bind="_edit.ApiKeyEnvVar" placeholder="@WebStrings.ProvidersSettingsEnvVarPlaceholder" />
+                                    <span class="hint">@WebStrings.ProvidersSettingsEnvVarHint</span>
                                     @Error("apiKeyRef")
                                 </details>
                             </div>
                         </div>
 
                         <div class="row">
-                            <button type="button" class="btn" aria-busy="@Flag(_testing)" disabled="@_testing" @onclick="TestAsync">Check connection &amp; list models</button>
+                            <button type="button" class="btn" aria-busy="@Flag(_testing)" disabled="@_testing" @onclick="TestAsync">@WebStrings.ProvidersSettingsCheckConnectionButton</button>
                             @if (_test is not null)
                             {
-                                <span class="alert @(_test.Success ? "alert-success" : "alert-error")" role="status">@_test.Message</span>
+                                <span class="alert @(_test.Success ? "alert-success" : "alert-error")" role="status">@_test.LocalizedMessage</span>
                             }
                         </div>
 
@@ -95,8 +96,8 @@
 
                     <div class="card stack">
                         <div class="card-header">
-                            <h2>Models</h2>
-                            <button type="button" class="btn btn-sm" @onclick="AddModel">＋ Add model</button>
+                            <h2>@WebStrings.ProvidersSettingsModelsHeading</h2>
+                            <button type="button" class="btn btn-sm" @onclick="AddModel">@WebStrings.ProvidersSettingsAddModelButton</button>
                         </div>
                         @if (_test is { Success: true })
                         {
@@ -105,10 +106,10 @@
                             {
                                 <div class="stack">
                                     <div class="row row-spread">
-                                        <span class="label">Models on this server</span>
+                                        <span class="label">@WebStrings.ProvidersSettingsServerModelsLabel</span>
                                         <span class="row">
-                                            <button type="button" class="btn btn-sm" @onclick="() => _picked.UnionWith(available)">Select all</button>
-                                            <button type="button" class="btn btn-sm btn-primary" disabled="@(_picked.Count == 0)" @onclick="AddPicked">Add selected (@_picked.Count)</button>
+                                            <button type="button" class="btn btn-sm" @onclick="() => _picked.UnionWith(available)">@WebStrings.ProvidersSettingsSelectAllButton</button>
+                                            <button type="button" class="btn btn-sm btn-primary" disabled="@(_picked.Count == 0)" @onclick="AddPicked">@SelectedModelsLabel</button>
                                         </span>
                                     </div>
                                     <div class="fetched">
@@ -121,16 +122,16 @@
                             }
                             else
                             {
-                                <p class="muted">Every model the server lists has been added.</p>
+                                <p class="muted">@WebStrings.ProvidersSettingsAllModelsAddedMessage</p>
                             }
                         }
                         @if (_edit.Models.Count == 0)
                         {
-                            <p class="muted">No models yet. Use Check connection &amp; list models above, or add one by hand.</p>
+                            <p class="muted">@WebStrings.ProvidersSettingsNoModelsMessage</p>
                         }
                         else
                         {
-                            <p class="hint">Servers rarely report limits, so check these. Context window feeds compaction, and max output must be smaller than it.</p>
+                            <p class="hint">@WebStrings.ProvidersSettingsModelLimitsHint</p>
                             <div class="models">
                                 @for (var i = 0; i < _edit.Models.Count; i++)
                                 {
@@ -139,38 +140,38 @@
                                     <div class="model" @key="model">
                                         <div class="model-main">
                                             <div class="field">
-                                                <label for="m-id-@index">Model id</label>
+                                                <label for="m-id-@index">@WebStrings.ProvidersSettingsModelIdLabel</label>
                                                 <input id="m-id-@index" class="input mono" aria-invalid="@Invalid($"models[{index}].id")" @bind="model.Id" @bind:after="() => ApplyPreset(model)" />
                                             </div>
                                             <div class="field">
-                                                <label for="m-name-@index">Name <span class="muted">(optional)</span></label>
+                                                <label for="m-name-@index">@WebStrings.ProvidersSettingsModelNameLabel <span class="muted">(@WebStrings.McpServerFormOptional)</span></label>
                                                 <input id="m-name-@index" class="input" @bind="model.DisplayName" placeholder="@model.Id" />
                                             </div>
                                             <div class="field">
-                                                <label for="m-ctx-@index">Context window</label>
+                                                <label for="m-ctx-@index">@WebStrings.ProvidersSettingsContextWindowLabel</label>
                                                 <input id="m-ctx-@index" class="input num" type="number" min="1" aria-invalid="@Invalid($"models[{index}].contextWindow")" @bind="model.ContextWindow" />
                                             </div>
                                             <div class="field">
-                                                <label for="m-out-@index">Max output</label>
+                                                <label for="m-out-@index">@WebStrings.ProvidersSettingsMaxOutputLabel</label>
                                                 <input id="m-out-@index" class="input num" type="number" min="1" aria-invalid="@Invalid($"models[{index}].maxOutputTokens")" @bind="model.MaxOutputTokens" />
                                             </div>
                                         </div>
                                         <div class="row row-spread">
                                             <span class="row">
-                                                <label class="check"><input type="checkbox" @bind="model.Reasoning" /> Thinking</label>
-                                                <label class="check"><input type="checkbox" @bind="model.Image" /> Images</label>
+                                                <label class="check"><input type="checkbox" @bind="model.Reasoning" /> @WebStrings.ProvidersSettingsThinkingLabel</label>
+                                                <label class="check"><input type="checkbox" @bind="model.Image" /> @WebStrings.ProvidersSettingsImagesLabel</label>
                                                 @if (IsDefault(model))
                                                 {
-                                                    <span class="badge badge-accent">default</span>
+                                                    <span class="badge badge-accent">@WebStrings.ProvidersSettingsDefaultModelBadge</span>
                                                 }
                                             </span>
                                             <span class="row">
-                                                <button type="button" class="btn btn-sm" aria-label="Tune @model.Id" @onclick="() => _tuning = model">Tune thinking &amp; sampling</button>
+                                                <button type="button" class="btn btn-sm" aria-label="@TuneModelLabel(model.Id)" @onclick="() => _tuning = model">@WebStrings.ProvidersSettingsTuneModelButton</button>
                                                 @if (!IsDefault(model) && IsSaved(model))
                                                 {
-                                                    <button type="button" class="btn btn-sm" @onclick="() => MakeDefaultAsync(model)">Make default</button>
+                                                    <button type="button" class="btn btn-sm" @onclick="() => MakeDefaultAsync(model)">@WebStrings.ProvidersSettingsMakeDefault</button>
                                                 }
-                                                <button type="button" class="btn btn-sm btn-ghost btn-danger" aria-label="Remove model @model.Id" @onclick="() => _edit.Models.Remove(model)">Remove</button>
+                                                <button type="button" class="btn btn-sm btn-ghost btn-danger" aria-label="@RemoveModelLabel(model.Id)" @onclick="() => _edit.Models.Remove(model)">@WebStrings.ProvidersSettingsRemoveModelButton</button>
                                             </span>
                                         </div>
                                     </div>
@@ -178,47 +179,47 @@
                             </div>
                             @foreach (var issue in ModelIssues())
                             {
-                                <span class="error-text">@issue.Message</span>
+                                <span class="error-text">@issue.LocalizedMessage</span>
                             }
                         }
                     </div>
 
                     <details class="card stack">
-                        <summary class="label">Compatibility</summary>
-                        <span class="hint">Only change these if the server rejects requests or ignores thinking.</span>
+                        <summary class="label">@WebStrings.ProvidersSettingsCompatibilityHeading</summary>
+                        <span class="hint">@WebStrings.ProvidersSettingsCompatibilityHint</span>
                         <div class="form-grid">
                             <div class="field">
-                                <label for="p-think">Thinking level sent as</label>
+                                <label for="p-think">@WebStrings.ProvidersSettingsThinkingLevelLabel</label>
                                 <select id="p-think" class="select" @bind="_edit.ThinkingMode">
                                     @foreach (var mode in Enum.GetValues<ThinkingSendMode>())
                                     {
                                         <option value="@mode">@ThinkingSendLabels.Option(mode)</option>
                                     }
                                 </select>
-                                <span class="hint">For every model, unless a model picks its own when you tune it.</span>
+                                <span class="hint">@WebStrings.ProvidersSettingsThinkingLevelHint</span>
                             </div>
                             @if (_edit.ThinkingMode == ThinkingSendMode.BodyField)
                             {
                                 <div class="field">
-                                    <label for="p-field">Body field</label>
-                                    <input id="p-field" class="input mono" @bind="_edit.ThinkingField" placeholder="chat_template_kwargs.enable_thinking" />
+                                    <label for="p-field">@WebStrings.ProvidersSettingsThinkingFieldLabel</label>
+                                    <input id="p-field" class="input mono" @bind="_edit.ThinkingField" placeholder="@WebStrings.ProvidersSettingsThinkingFieldPlaceholder" />
                                     @Error("thinkingSend.field")
                                 </div>
                             }
                         </div>
-                        <label class="check"><input type="checkbox" @bind="_edit.SendStreamUsage" /> Ask for token usage while streaming (turn off if the server rejects <code>stream_options</code>)</label>
-                        <label class="check"><input type="checkbox" @bind="_edit.LegacyMaxTokens" /> Send <code>max_tokens</code> (most compatible servers) instead of <code>max_completion_tokens</code></label>
+                        <label class="check"><input type="checkbox" @bind="_edit.SendStreamUsage" /> @ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.ProvidersSettingsStreamUsage))</label>
+                        <label class="check"><input type="checkbox" @bind="_edit.LegacyMaxTokens" /> @ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.ProvidersSettingsLegacyMaxTokens))</label>
                         <div class="stack">
                             <div class="row row-spread">
-                                <span class="label">Extra headers <span class="muted">(optional)</span></span>
-                                <button type="button" class="btn btn-sm" @onclick="() => _edit.Headers.Add(new HeaderRow())">＋ Add header</button>
+                                <span class="label">@WebStrings.ProvidersSettingsExtraHeadersLabel <span class="muted">(@WebStrings.McpServerFormOptional)</span></span>
+                                <button type="button" class="btn btn-sm" @onclick="() => _edit.Headers.Add(new HeaderRow())">@WebStrings.ProvidersSettingsAddHeaderButton</button>
                             </div>
                             @foreach (var header in _edit.Headers)
                             {
                                 <div class="input-group" @key="header">
-                                    <input class="input mono" aria-label="Header name" placeholder="Name" @bind="header.Name" />
-                                    <input class="input mono" aria-label="Header value" placeholder="Value" @bind="header.Value" />
-                                    <button type="button" class="btn btn-ghost btn-danger" aria-label="Remove header" @onclick="() => _edit.Headers.Remove(header)"><Icon Name="close" /></button>
+                                    <input class="input mono" aria-label="@WebStrings.ProvidersSettingsHeaderNameLabel" placeholder="@WebStrings.ProvidersSettingsHeaderNamePlaceholder" @bind="header.Name" />
+                                    <input class="input mono" aria-label="@WebStrings.ProvidersSettingsHeaderValueLabel" placeholder="@WebStrings.ProvidersSettingsHeaderValuePlaceholder" @bind="header.Value" />
+                                    <button type="button" class="btn btn-ghost btn-danger" aria-label="@WebStrings.ProvidersSettingsRemoveHeaderLabel" @onclick="() => _edit.Headers.Remove(header)"><Icon Name="close" /></button>
                                 </div>
                             }
                         </div>
@@ -227,23 +228,23 @@
                     @if (_issues.Count > 0)
                     {
                         <Alert>
-                            <strong>Fix these before saving:</strong>
-                            <ul>@foreach (var issue in _issues) { <li>@issue.Message</li> }</ul>
+                            <strong>@WebStrings.ProvidersSettingsValidationHeading</strong>
+                            <ul>@foreach (var issue in _issues) { <li>@issue.LocalizedMessage</li> }</ul>
                         </Alert>
                     }
 
                     @if (!_edit.IsNew)
                     {
-                        <div><button type="button" class="btn btn-danger" @onclick="() => _confirmDelete = true">Remove provider</button></div>
+                        <div><button type="button" class="btn btn-danger" @onclick="() => _confirmDelete = true">@WebStrings.ProvidersSettingsRemoveProviderButton</button></div>
                     }
 
                     @if (IsDirty)
                     {
-                        <div class="save-bar" role="region" aria-label="Unsaved changes">
-                            <span>@(_edit.IsNew ? "This provider isn't saved yet." : "You have unsaved changes.")</span>
+                        <div class="save-bar" role="region" aria-label="@WebStrings.ProvidersSettingsSaveBarLabel">
+                            <span>@(_edit.IsNew ? WebStrings.ProvidersSettingsNotSaved : WebStrings.ProvidersSettingsUnsavedChanges)</span>
                             <span class="row">
-                                <button type="button" class="btn btn-ghost" @onclick="Cancel">@(_edit.IsNew ? "Cancel" : "Discard")</button>
-                                <button type="submit" class="btn btn-primary" aria-busy="@Flag(_saving)" disabled="@_saving">Save provider</button>
+                                <button type="button" class="btn btn-ghost" @onclick="Cancel">@(_edit.IsNew ? WebStrings.McpServerFormCancel : WebStrings.ProvidersSettingsDiscard)</button>
+                                <button type="submit" class="btn btn-primary" aria-busy="@Flag(_saving)" disabled="@_saving">@WebStrings.ProvidersSettingsSaveButton</button>
                             </span>
                         </div>
                     }
@@ -255,8 +256,8 @@
 
 <ModelTuning Provider="_edit" Model="_tuning" Open="_tuning is not null" OnClose="() => _tuning = null" />
 
-<ConfirmDialog Title="Remove provider?" Open="_confirmDelete" ConfirmText="Remove" OnConfirm="RemoveAsync" OnCancel="() => _confirmDelete = false">
-    <p>This removes <strong>@_edit?.DisplayName</strong> and its stored API key. Existing chats that used it will need another provider.</p>
+<ConfirmDialog Title="@WebStrings.ProvidersSettingsRemoveDialogTitle" Open="_confirmDelete" ConfirmText="@WebStrings.ProvidersSettingsRemoveConfirmButton" OnConfirm="RemoveAsync" OnCancel="() => _confirmDelete = false">
+    <p>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.ProvidersSettingsRemoveWarning), new Dictionary<string, object?> { ["name"] = _edit?.DisplayName })</p>
 </ConfirmDialog>
 
 @code {
@@ -276,13 +277,37 @@
     private ModelEditModel? _tuning;
     private bool _hasStoredKey;
     private bool _testing;
-    private const string SaveFailure = "The provider settings could not be saved because the settings file or the key store could not be written.";
+    private static string SaveFailure => WebStrings.ProvidersSettingsSaveFailure;
 
     private bool _saving;
     private bool _confirmDelete;
     private string? _baseline;
 
     private bool ShowList => Service.Configured.Count > 1 || _edit is null or { IsNew: true };
+
+    private string SelectedModelsLabel =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ProvidersSettingsAddSelectedModels),
+            new Dictionary<string, object?>
+            {
+                ["count"] = _picked.Count,
+                ["formattedCount"] = _picked.Count.ToString("N0", CultureInfo.CurrentCulture),
+            });
+
+    private static string ModelCountLabel(int count) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ProvidersSettingsModelCount),
+            new Dictionary<string, object?>
+            {
+                ["count"] = count,
+                ["formattedCount"] = count.ToString("N0", CultureInfo.CurrentCulture),
+            });
+
+    private static string TuneModelLabel(string id) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.ProvidersSettingsTuneModel), new Dictionary<string, object?> { ["model"] = id });
+
+    private static string RemoveModelLabel(string id) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.ProvidersSettingsRemoveModel), new Dictionary<string, object?> { ["model"] = id });
 
     private bool IsDirty => _edit is not null && (_edit.IsNew || _edit.NewApiKey.Length > 0 || Snapshot(_edit) != _baseline);
 
@@ -415,7 +440,9 @@
         var changed = false;
         if (await Toasts.TrySaveAsync(async () => changed = await Service.SetDefaultAsync(_edit!.Id, model.Id), SaveFailure) && changed)
         {
-            Toasts.Show($"{model.Id} is now the default model.", ToastKind.Success);
+            Toasts.Show(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.ProvidersSettingsDefaultModelSet),
+                new Dictionary<string, object?> { ["model"] = model.Id }), ToastKind.Success);
         }
     }
 
@@ -450,7 +477,7 @@
             _edit.NewApiKey = string.Empty;
             _baseline = Snapshot(_edit);
             await RefreshKeyAsync();
-            Toasts.Show("Provider saved.", ToastKind.Success);
+            Toasts.Show(WebStrings.ProvidersSettingsProviderSaved, ToastKind.Success);
         }
         finally
         {
@@ -469,7 +496,7 @@
 
             _edit.NewApiKey = string.Empty;
             await RefreshKeyAsync();
-            Toasts.Show("Stored key removed.", ToastKind.Success);
+            Toasts.Show(WebStrings.ProvidersSettingsStoredKeyRemoved, ToastKind.Success);
         }
     }
 
@@ -487,7 +514,9 @@
             Load(Service.Configured.FirstOrDefault(p => p.Id == Service.Config.DefaultProviderId) ?? Service.Configured.FirstOrDefault());
             ResetFeedback();
             await RefreshKeyAsync();
-            Toasts.Show($"Removed {name}.", ToastKind.Success);
+            Toasts.Show(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.ProvidersSettingsProviderRemoved),
+                new Dictionary<string, object?> { ["name"] = name }), ToastKind.Success);
         }
     }
 
@@ -496,7 +525,7 @@
     private string? Invalid(string path) => _issues.Any(i => i.Path == path) ? "true" : null;
 
     private RenderFragment? Error(string path) => _issues.FirstOrDefault(i => i.Path == path) is { } issue
-        ? @<span class="error-text">@issue.Message</span>
+        ? @<span class="error-text">@issue.LocalizedMessage</span>
         : null;
 
     private IEnumerable<ValidationIssue> ModelIssues() => _issues.Where(i => i.Path.StartsWith("models[", StringComparison.Ordinal));

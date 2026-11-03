@@ -3,58 +3,58 @@
 @inject IShellSandbox Sandbox
 @inject PermissionDefaults Defaults
 
-<Menu Label="Permissions" Title="@TriggerTitle" Tone="@Tone">
+<Menu Label="@WebStrings.PermissionPickerLabel" Title="@TriggerTitle" Tone="@Tone">
     <Trigger><Icon Name="@(Settings.IsRisky || !Sandboxed ? "alert" : "shield")" /> <span class="menu-trigger-text">@AccessName(Settings.Access, brief: true) · @ApprovalsName(Settings.Approvals)</span></Trigger>
     <ChildContent>
-        <div class="menu-heading">Access</div>
-        <MenuItem Label="@AccessName(AccessLevel.ReadOnly)" Description="Read files without changing them or running commands" Checked="Settings.Access == AccessLevel.ReadOnly" OnSelect="() => Choose(Settings with { Access = AccessLevel.ReadOnly })" />
-        <MenuItem Label="@AccessName(AccessLevel.WriteInFolder)" Description="@(HasFolder ? "Read and change files in this folder" : "Read and change files in this chat's folder")" Checked="Settings.Access == AccessLevel.WriteInFolder" OnSelect="() => Choose(Settings with { Access = AccessLevel.WriteInFolder })" />
+        <div class="menu-heading">@WebStrings.PermissionPickerAccessHeading</div>
+        <MenuItem Label="@AccessName(AccessLevel.ReadOnly)" Description="@WebStrings.PermissionPickerReadOnlyDescription" Checked="Settings.Access == AccessLevel.ReadOnly" OnSelect="() => Choose(Settings with { Access = AccessLevel.ReadOnly })" />
+        <MenuItem Label="@AccessName(AccessLevel.WriteInFolder)" Description="@(HasFolder ? WebStrings.PermissionPickerFolderDescription : WebStrings.PermissionPickerChatFolderDescription)" Checked="Settings.Access == AccessLevel.WriteInFolder" OnSelect="() => Choose(Settings with { Access = AccessLevel.WriteInFolder })" />
         @if (Defaults.AllowBypass || Settings.Access == AccessLevel.Unrestricted)
         {
-            <MenuItem Label="@AccessName(AccessLevel.Unrestricted)" Description="Access anything your account can, without a sandbox" Checked="Settings.Access == AccessLevel.Unrestricted" OnSelect="() => Choose(Settings with { Access = AccessLevel.Unrestricted })" />
+            <MenuItem Label="@AccessName(AccessLevel.Unrestricted)" Description="@WebStrings.PermissionPickerUnrestrictedDescription" Checked="Settings.Access == AccessLevel.Unrestricted" OnSelect="() => Choose(Settings with { Access = AccessLevel.Unrestricted })" />
         }
         <div class="menu-sep" role="separator"></div>
-        <div class="menu-heading">Approvals</div>
-        <MenuItem Label="@ApprovalsName(ApprovalMode.AskFirst)" Description="Ask before risky actions or actions outside the folder" Checked="Settings.Approvals == ApprovalMode.AskFirst" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.AskFirst })" />
-        <MenuItem Label="@ApprovalsName(ApprovalMode.AutoApprove)" Description="Ask only when an action exceeds the access level" Checked="Settings.Approvals == ApprovalMode.AutoApprove" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.AutoApprove })" />
+        <div class="menu-heading">@WebStrings.PermissionPickerApprovalsHeading</div>
+        <MenuItem Label="@ApprovalsName(ApprovalMode.AskFirst)" Description="@WebStrings.PermissionPickerAskFirstDescription" Checked="Settings.Approvals == ApprovalMode.AskFirst" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.AskFirst })" />
+        <MenuItem Label="@ApprovalsName(ApprovalMode.AutoApprove)" Description="@WebStrings.PermissionPickerAskForExceptionsDescription" Checked="Settings.Approvals == ApprovalMode.AutoApprove" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.AutoApprove })" />
         @if (Defaults.AllowBypass || Settings.Approvals == ApprovalMode.NeverAsk)
         {
-            <MenuItem Label="@ApprovalsName(ApprovalMode.NeverAsk)" Description="Run allowed actions and block the rest" Checked="Settings.Approvals == ApprovalMode.NeverAsk" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.NeverAsk })" />
+            <MenuItem Label="@ApprovalsName(ApprovalMode.NeverAsk)" Description="@WebStrings.PermissionPickerNeverAskDescription" Checked="Settings.Approvals == ApprovalMode.NeverAsk" OnSelect="() => Choose(Settings with { Approvals = ApprovalMode.NeverAsk })" />
         }
         <div class="menu-sep" role="separator"></div>
         <p class="menu-note" data-tone="@Tone" title="@Sandbox.Status.Detail">
             @if (Settings.Access == AccessLevel.Unrestricted)
             {
-                <Icon Name="alert" /> <span>Commands run without a sandbox</span>
+                <Icon Name="alert" /> <span>@WebStrings.PermissionPickerUnrestrictedNote</span>
             }
             else if (Sandbox.Status.IsAvailable)
             {
-                <Icon Name="shield" /> <span>Commands, when allowed, run in a sandbox</span>
+                <Icon Name="shield" /> <span>@WebStrings.PermissionPickerSandboxedNote</span>
             }
             else
             {
-                <Icon Name="alert" /> <span>No sandbox, so commands are blocked</span>
+                <Icon Name="alert" /> <span>@WebStrings.PermissionPickerNoSandboxNote</span>
             }
         </p>
     </ChildContent>
 </Menu>
-<Dialog Title="Turn off a safeguard?" Open="_pending is not null" OnClose="Cancel">
+<Dialog Title="@WebStrings.PermissionPickerConfirmTitle" Open="_pending is not null" OnClose="Cancel">
     <ChildContent>
         @if (TurnsOnAccess(_pending))
         {
-            <p>Unrestricted: tools and commands can read and change anything your user account can, with no sandbox.</p>
+            <p>@WebStrings.PermissionPickerUnrestrictedWarning</p>
         }
 
         @if (TurnsOnApprovals(_pending))
         {
-            <p>Never ask: tool calls run without asking you first. Text the model reads from files or web pages could trick it into running harmful commands.</p>
+            <p>@WebStrings.PermissionPickerNeverAskWarning</p>
         }
 
-        <p class="hint">This only applies to this chat. Protected folders such as your SSH keys stay blocked.</p>
+        <p class="hint">@WebStrings.PermissionPickerConfirmHint</p>
     </ChildContent>
     <Footer>
-        <button type="button" class="btn" @onclick="Cancel">Cancel</button>
-        <button type="button" class="btn btn-danger" @onclick="ConfirmAsync">Turn on</button>
+        <button type="button" class="btn" @onclick="Cancel">@WebStrings.PermissionPickerCancelButton</button>
+        <button type="button" class="btn btn-danger" @onclick="ConfirmAsync">@WebStrings.PermissionPickerConfirmButton</button>
     </Footer>
 </Dialog>
 
@@ -90,24 +90,24 @@
 
     private string TriggerTitle => (Settings.IsRisky, Sandboxed) switch
     {
-        (true, _) => "Some safeguards are off for this chat",
-        (false, true) => "What tools may touch, and when you are asked. Commands, when allowed, run in a sandbox.",
-        _ => "What tools may touch, and when you are asked. There is no sandbox, so commands are blocked.",
+        (true, _) => WebStrings.PermissionPickerRiskyTitle,
+        (false, true) => WebStrings.PermissionPickerSandboxedTitle,
+        _ => WebStrings.PermissionPickerNoSandboxTitle,
     };
 
     private string AccessName(AccessLevel access, bool brief = false) => access switch
     {
-        AccessLevel.ReadOnly => "Read only",
-        AccessLevel.WriteInFolder when HasFolder => brief ? "Folder" : "Write in folder",
-        AccessLevel.WriteInFolder => brief ? "Chat folder" : "Write in chat folder",
-        _ => "Unrestricted",
+        AccessLevel.ReadOnly => WebStrings.PermissionPickerReadOnly,
+        AccessLevel.WriteInFolder when HasFolder => brief ? WebStrings.PermissionPickerFolder : WebStrings.PermissionPickerWriteInFolder,
+        AccessLevel.WriteInFolder => brief ? WebStrings.PermissionPickerChatFolder : WebStrings.PermissionPickerWriteInChatFolder,
+        _ => WebStrings.PermissionPickerUnrestricted,
     };
 
     private static string ApprovalsName(ApprovalMode approvals) => approvals switch
     {
-        ApprovalMode.AskFirst => "Ask first",
-        ApprovalMode.AutoApprove => "Ask for exceptions",
-        _ => "Never ask",
+        ApprovalMode.AskFirst => WebStrings.PermissionPickerAskFirst,
+        ApprovalMode.AutoApprove => WebStrings.PermissionPickerAskForExceptions,
+        _ => WebStrings.PermissionPickerNeverAsk,
     };
 
     private static bool IsRiskyLevel(AccessLevel level) => level == AccessLevel.Unrestricted;

@@ -1,3 +1,4 @@
+using BlazeHarness.Web.Resources;
 using System.Globalization;
 
 namespace BlazeHarness.Web.Components.Conversation;
@@ -17,8 +18,8 @@ public static class TokenFormat
         return tokens switch
         {
             < 1_000 => tokens.ToString(CultureInfo.CurrentCulture),
-            < 10_000 => (tokens / 1_000.0).ToString("0.#", CultureInfo.CurrentCulture) + "k",
-            _ => (tokens / 1_000).ToString(CultureInfo.CurrentCulture) + "k",
+            < 10_000 => Unit(nameof(WebStrings.TokenFormatThousands), (tokens / 1_000.0).ToString("0.#", CultureInfo.CurrentCulture)),
+            _ => Unit(nameof(WebStrings.TokenFormatThousands), (tokens / 1_000).ToString(CultureInfo.CurrentCulture)),
         };
     }
 
@@ -29,12 +30,13 @@ public static class TokenFormat
     /// <returns>The text to show.</returns>
     public static string Rate(double tokensPerSecond)
     {
-        return tokensPerSecond switch
+        var value = tokensPerSecond switch
         {
-            < 10 => tokensPerSecond.ToString("0.0", CultureInfo.CurrentCulture) + " t/s",
-            < 1_000 => tokensPerSecond.ToString("0", CultureInfo.CurrentCulture) + " t/s",
-            _ => Of((long)tokensPerSecond) + " t/s",
+            < 10 => tokensPerSecond.ToString("0.0", CultureInfo.CurrentCulture),
+            < 1_000 => tokensPerSecond.ToString("0", CultureInfo.CurrentCulture),
+            _ => Of((long)tokensPerSecond),
         };
+        return Unit(nameof(WebStrings.TokenFormatRate), value);
     }
 
     /// <summary>
@@ -46,9 +48,18 @@ public static class TokenFormat
     {
         return duration.TotalSeconds switch
         {
-            < 1 => duration.TotalMilliseconds.ToString("0", CultureInfo.CurrentCulture) + " ms",
-            < 60 => duration.TotalSeconds.ToString("0.0", CultureInfo.CurrentCulture) + " s",
-            _ => $"{(int)duration.TotalMinutes}m {duration.Seconds:00}s",
+            < 1 => Unit(nameof(WebStrings.TokenFormatMilliseconds), duration.TotalMilliseconds.ToString("0", CultureInfo.CurrentCulture)),
+            < 60 => Unit(nameof(WebStrings.TokenFormatSeconds), duration.TotalSeconds.ToString("0.0", CultureInfo.CurrentCulture)),
+            _ => ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.TokenFormatMinutes),
+                new Dictionary<string, object?>
+                {
+                    ["minutes"] = ((int)duration.TotalMinutes).ToString(CultureInfo.CurrentCulture),
+                    ["seconds"] = duration.Seconds.ToString("00", CultureInfo.CurrentCulture),
+                }),
         };
     }
+
+    private static string Unit(string key, string value) =>
+        ResourceMessageFormatter.Web.Format(key, new Dictionary<string, object?> { ["value"] = value });
 }

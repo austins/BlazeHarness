@@ -13,8 +13,8 @@
 @if (_models.Count == 0)
 {
     <div class="composer composer-empty">
-        <p class="muted">Add a model to a provider to start chatting.</p>
-        <button type="button" class="btn btn-primary btn-sm" @onclick="() => SettingsState.Open(SettingsSection.Providers)">Open providers</button>
+        <p class="muted">@WebStrings.ComposerNoModelsHint</p>
+        <button type="button" class="btn btn-primary btn-sm" @onclick="() => SettingsState.Open(SettingsSection.Providers)">@WebStrings.ComposerOpenProviders</button>
     </div>
 }
 else
@@ -24,13 +24,13 @@ else
         @if (Editing is not null)
         {
             <div class="composer-editing" role="status">
-                <span>Editing a message. Sending replaces it and every reply after it.</span>
-                <button type="button" class="btn btn-ghost btn-sm" @onclick="CancelEditAsync">Cancel</button>
+                <span>@WebStrings.ComposerEditingHint</span>
+                <button type="button" class="btn btn-ghost btn-sm" @onclick="CancelEditAsync">@WebStrings.ComposerCancelEdit</button>
             </div>
         }
         @if (Suggestions() is { Count: > 0 } suggestions)
         {
-            <ul class="composer-suggestions" aria-label="Skills">
+            <ul class="composer-suggestions" aria-label="@WebStrings.ComposerSkillsLabel">
                 @foreach (var skill in suggestions)
                 {
                     <li>
@@ -43,11 +43,11 @@ else
         }
         @if (Queued.Count > 0)
         {
-            <ul class="composer-queued" aria-label="Queued messages">
+            <ul class="composer-queued" aria-label="@WebStrings.ComposerQueuedMessagesLabel">
                 @foreach (var queued in Queued)
                 {
                     <li class="chip">
-                        <span class="badge badge-accent">Queued</span>
+                        <span class="badge badge-accent">@WebStrings.ComposerQueuedBadge</span>
                         <span class="chip-name" title="@queued">@queued</span>
                     </li>
                 }
@@ -57,7 +57,7 @@ else
         @if (_files.Count > 0)
         {
             var deliveries = Deliveries();
-            <ul class="composer-files" aria-label="Attached files">
+            <ul class="composer-files" aria-label="@WebStrings.ComposerAttachedFilesLabel">
                 @foreach (var (file, delivery) in _files.Zip(deliveries))
                 {
                     <li @key="file.Id" class="chip">
@@ -67,28 +67,28 @@ else
                         <span class="chip-hint">@HintFor(delivery)</span>
                         @if (file.IsPasted)
                         {
-                            <button type="button" class="btn btn-ghost btn-sm" aria-expanded="@(_previewing == file.Id ? "true" : "false")" @onclick="() => TogglePreview(file)">Preview</button>
-                            <button type="button" class="btn btn-ghost btn-sm" @onclick="() => InsertAsText(file)">Insert as text</button>
+                            <button type="button" class="btn btn-ghost btn-sm" aria-expanded="@(_previewing == file.Id ? "true" : "false")" @onclick="() => TogglePreview(file)">@WebStrings.ComposerPreviewFile</button>
+                            <button type="button" class="btn btn-ghost btn-sm" @onclick="() => InsertAsText(file)">@WebStrings.ComposerInsertAsText</button>
                         }
-                        <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@($"Remove {file.Name}")" @onclick="() => Remove(file)"><Icon Name="close" /></button>
+                        <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@FileRemoveLabel(file.Name)" @onclick="() => Remove(file)"><Icon Name="close" /></button>
                     </li>
                 }
             </ul>
             @if (_files.Find(f => f.Id == _previewing) is { } previewed)
             {
-                <pre class="composer-preview" aria-label="@($"Start of {previewed.Name}")">@Preview(previewed)</pre>
+                <pre class="composer-preview" aria-label="@PreviewStartLabel(previewed.Name)">@Preview(previewed)</pre>
             }
         }
         <textarea class="composer-input" rows="1" @ref="_input" @bind="_text" @bind:event="oninput"
-                  placeholder="@Placeholder" aria-label="Message"></textarea>
+                  placeholder="@Placeholder" aria-label="@WebStrings.ComposerMessageLabel"></textarea>
         <div class="composer-bar">
             @if (Editing is null)
             {
                 <InputFile @ref="_picker" OnChange="AddFilesAsync" multiple tabindex="-1" class="visually-hidden" aria-hidden="true" />
-                <button type="button" class="btn btn-ghost btn-icon" aria-label="Attach files" title="Attach files" data-bh-action="pick"><Icon Name="paperclip" /></button>
+                <button type="button" class="btn btn-ghost btn-icon" aria-label="@WebStrings.ComposerAttachFilesLabel" title="@WebStrings.ComposerAttachFilesTooltip" data-bh-action="pick"><Icon Name="paperclip" /></button>
             }
-            <Menu Label="Model" Title="Model">
-                <Trigger><Icon Name="sparkle" /> <span class="menu-trigger-text">@(SelectedChoice?.Model.Name ?? "Choose a model")</span></Trigger>
+            <Menu Label="@WebStrings.ComposerModelMenuLabel" Title="@WebStrings.ComposerModelMenuTooltip">
+                <Trigger><Icon Name="sparkle" /> <span class="menu-trigger-text">@(SelectedChoice?.Model.Name ?? WebStrings.ComposerChooseModel)</span></Trigger>
                 <ChildContent>
                     @{ var grouped = _models.GroupBy(m => m.Provider.Id).ToList(); }
                     @foreach (var group in grouped)
@@ -106,10 +106,10 @@ else
             </Menu>
             @if (_levels.Count > 0)
             {
-                <Menu Label="Thinking" Title="How much the model thinks before answering">
+                <Menu Label="@WebStrings.ComposerThinkingMenuLabel" Title="@WebStrings.ComposerThinkingTooltip">
                     <Trigger><Icon Name="bulb" /> <span class="menu-trigger-text">@_level</span></Trigger>
                     <ChildContent>
-                        <div class="menu-heading">Thinking</div>
+                        <div class="menu-heading">@WebStrings.ComposerThinkingHeading</div>
                         @foreach (var level in _levels)
                         {
                             var name = level.ToString();
@@ -126,25 +126,25 @@ else
             }
             @if (CanRetry && Editing is null)
             {
-                <button type="button" class="btn btn-ghost btn-icon" aria-label="Retry" title="Retry the last reply" @onclick="RetryAsync"><Icon Name="retry" /></button>
+                <button type="button" class="btn btn-ghost btn-icon" aria-label="@WebStrings.ComposerRetryLabel" title="@WebStrings.ComposerRetryTooltip" @onclick="RetryAsync"><Icon Name="retry" /></button>
             }
             @if (Running)
             {
                 @if (CanQueue && !string.IsNullOrWhiteSpace(_text))
                 {
-                    <button type="submit" class="btn btn-primary btn-send" aria-label="@(Asked ? "Send answer" : "Queue message")" title="@(Asked ? "Send answer (Enter)" : "Queue message (Enter)")"><Icon Name="arrow-up" /></button>
+                    <button type="submit" class="btn btn-primary btn-send" aria-label="@SendButtonLabel" title="@SendButtonTitle"><Icon Name="arrow-up" /></button>
                 }
-                <button type="button" class="btn btn-send btn-stop" aria-label="Stop" title="Stop" @onclick="OnStop"><Icon Name="stop" /></button>
+                <button type="button" class="btn btn-send btn-stop" aria-label="@WebStrings.ComposerStopLabel" title="@WebStrings.ComposerStopTooltip" @onclick="OnStop"><Icon Name="stop" /></button>
             }
             else
             {
-                <button type="submit" class="btn btn-primary btn-send" aria-label="Send" title="Send (Enter)"><Icon Name="arrow-up" /></button>
+                <button type="submit" class="btn btn-primary btn-send" aria-label="@WebStrings.ComposerSendLabel" title="@WebStrings.ComposerSendTooltip"><Icon Name="arrow-up" /></button>
             }
         </div>
         </div>
         @if (!ModelSeesImages && _files.Any(f => f.IsImage))
         {
-            <div class="hint" role="status">The selected model can't view images, so they will be left out of what it sees.</div>
+            <div class="hint" role="status">@WebStrings.ComposerImagesUnsupportedHint</div>
         }
         @if (_note is not null)
         {
@@ -152,7 +152,7 @@ else
         }
         else if (SwitchesModel)
         {
-            <div class="hint" role="status">Sending with a different model starts the prompt cache over, so the first reply may be slower.</div>
+            <div class="hint" role="status">@WebStrings.ComposerModelSwitchCacheHint</div>
         }
     </form>
     </div>
@@ -456,7 +456,11 @@ else
         {
             var previous = _level;
             _level = DefaultLevelName();
-            _note = _level.Length > 0 ? $"{previous} is not available for this model, so {_level} will be used." : null;
+            _note = _level.Length > 0
+                ? ResourceMessageFormatter.Web.Format(
+                    nameof(WebStrings.ComposerLevelUnavailable),
+                    new Dictionary<string, object?> { ["previous"] = previous, ["level"] = _level })
+                : null;
         }
         else if (_level.Length == 0)
         {
@@ -524,12 +528,22 @@ else
         {
             if (Asked)
             {
-                return "Answer the question above";
+                return WebStrings.ComposerAnswerQuestion;
             }
 
-            return CanQueue ? "Add a message for the model to see at its next step" : "Message the model";
+            return CanQueue ? WebStrings.ComposerQueuePlaceholder : WebStrings.ComposerPlaceholder;
         }
     }
+
+    private string SendButtonLabel => Asked ? WebStrings.ComposerSendAnswer : WebStrings.ComposerQueueMessage;
+
+    private string SendButtonTitle => Asked ? WebStrings.ComposerSendAnswerEnter : WebStrings.ComposerQueueMessageEnter;
+
+    private static string FileRemoveLabel(string name) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.ComposerRemoveFile), new Dictionary<string, object?> { ["name"] = name });
+
+    private static string PreviewStartLabel(string name) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.ComposerPreviewStart), new Dictionary<string, object?> { ["name"] = name });
 
     private async Task SubmitAsync()
     {
@@ -572,7 +586,7 @@ else
 
         if (_files.Count > 0)
         {
-            _note = "Files can't be added while a reply is running. Remove them to queue the message, or send it once the reply ends.";
+            _note = WebStrings.ComposerFilesNotQueued;
             return;
         }
 
@@ -584,7 +598,7 @@ else
         }
         else
         {
-            _note = Asked ? "The question was answered or stopped before this arrived. Send it again." : "The reply ended before the message could be queued. Send it again.";
+            _note = Asked ? WebStrings.ComposerQuestionAlreadyHandled : WebStrings.ComposerReplyEnded;
         }
     }
 
@@ -595,19 +609,25 @@ else
         {
             if (_files.Count >= ChatAttachments.MaxFilesPerMessage)
             {
-                _note = $"A message can carry at most {ChatAttachments.MaxFilesPerMessage} files.";
+                _note = ResourceMessageFormatter.Web.Format(
+                    nameof(WebStrings.ComposerMaxFiles),
+                    new Dictionary<string, object?> { ["count"] = ChatAttachments.MaxFilesPerMessage });
                 break;
             }
 
             if (browserFile.Size > ChatAttachments.MaxFileBytes)
             {
-                _note = $"'{browserFile.Name}' is larger than {FileSize.Format(ChatAttachments.MaxFileBytes)}.";
+                _note = ResourceMessageFormatter.Web.Format(
+                    nameof(WebStrings.ComposerFileTooLarge),
+                    new Dictionary<string, object?> { ["name"] = browserFile.Name, ["size"] = FileSize.Format(ChatAttachments.MaxFileBytes) });
                 continue;
             }
 
             if (_files.Sum(f => (long)f.Content.Length) + browserFile.Size > ChatAttachments.MaxMessageBytes)
             {
-                _note = $"The files of a message can add up to at most {FileSize.Format(ChatAttachments.MaxMessageBytes)}.";
+                _note = ResourceMessageFormatter.Web.Format(
+                    nameof(WebStrings.ChatViewAttachmentLimit),
+                    new Dictionary<string, object?> { ["size"] = FileSize.Format(ChatAttachments.MaxMessageBytes) });
                 continue;
             }
 
@@ -633,9 +653,9 @@ else
 
     private static string HintFor(AttachmentDelivery delivery) => delivery switch
     {
-        AttachmentDelivery.Image => "Sent as an image",
-        AttachmentDelivery.Inline => "Added to the message",
-        _ => "Too long to add, the model reads it as needed",
+        AttachmentDelivery.Image => WebStrings.ComposerAttachmentImage,
+        AttachmentDelivery.Inline => WebStrings.ComposerAttachmentInline,
+        _ => WebStrings.ComposerAttachmentTooLong,
     };
 
     private IReadOnlyList<AttachmentDelivery> Deliveries()

@@ -3,42 +3,42 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <PageHeader Title="Permissions">What new chats start with. Each chat can still change its own settings, and changes here apply right away.</PageHeader>
+    <PageHeader Title="@WebStrings.PermissionsSettingsTitle">@WebStrings.PermissionsSettingsDescription</PageHeader>
 
     <section class="card stack" aria-labelledby="start-heading">
-        <h2 id="start-heading">New chats start with</h2>
+        <h2 id="start-heading">@WebStrings.PermissionsSettingsStartHeading</h2>
         <div class="field">
-            <label for="default-access">Access level</label>
+            <label for="default-access">@WebStrings.PermissionsSettingsAccessLabel</label>
             <select id="default-access" class="select" value="@_access" @onchange="OnAccessChangedAsync">
-                <option value="@AccessLevel.WriteInFolder">Write in folder</option>
-                <option value="@AccessLevel.ReadOnly">Read only</option>
+                <option value="@AccessLevel.WriteInFolder">@WebStrings.PermissionsSettingsAccessWriteInFolder</option>
+                <option value="@AccessLevel.ReadOnly">@WebStrings.PermissionsSettingsAccessReadOnly</option>
             </select>
-            <span class="hint">A chat without a folder always starts read only.</span>
+            <span class="hint">@WebStrings.PermissionsSettingsAccessHint</span>
         </div>
         <div class="field">
-            <label for="default-approvals">Approvals</label>
+            <label for="default-approvals">@WebStrings.PermissionsSettingsApprovalsLabel</label>
             <select id="default-approvals" class="select" value="@_approvals" @onchange="OnApprovalsChangedAsync">
-                <option value="@ApprovalMode.AskFirst">Ask first</option>
-                <option value="@ApprovalMode.AutoApprove">Ask for exceptions</option>
+                <option value="@ApprovalMode.AskFirst">@WebStrings.PermissionsSettingsApprovalsAskFirst</option>
+                <option value="@ApprovalMode.AutoApprove">@WebStrings.PermissionsSettingsApprovalsAskForExceptions</option>
             </select>
         </div>
     </section>
 
     <section class="card stack" aria-labelledby="bypass-heading">
-        <h2 id="bypass-heading">Risky options</h2>
+        <h2 id="bypass-heading">@WebStrings.PermissionsSettingsRiskyOptionsHeading</h2>
         <label class="check">
             <input type="checkbox" checked="@_allowBypass" @onchange="OnBypassChangedAsync" />
-            <span>Let a chat turn on Unrestricted or Never ask</span>
+            <span>@WebStrings.PermissionsSettingsRiskyOptionsLabel</span>
         </label>
-        <p class="hint">Turn this off to hide both options. A chat that already has one of them then behaves as if it did not. Protected folders such as your SSH keys stay blocked either way.</p>
+        <p class="hint">@WebStrings.PermissionsSettingsRiskyOptionsHint</p>
     </section>
 
     <section class="card stack" aria-labelledby="protected-heading">
-        <h2 id="protected-heading">Protected folders</h2>
-        <p class="hint">No tool can read or write these, in any chat, even Unrestricted. BlazeHarness's own folder is always protected and is not listed.</p>
+        <h2 id="protected-heading">@WebStrings.PermissionsSettingsProtectedFoldersHeading</h2>
+        <p class="hint">@WebStrings.PermissionsSettingsProtectedFoldersHint</p>
         @if (_protected.Count == 0)
         {
-            <p class="muted">No folders are protected.</p>
+            <p class="muted">@WebStrings.PermissionsSettingsNoProtectedFolders</p>
         }
         @for (var i = 0; i < _protected.Count; i++)
         {
@@ -46,33 +46,26 @@
             var folder = _protected[i];
             <div class="row list-row">
                 <code class="mono">@folder</code>
-                <button type="button" class="btn btn-sm" aria-label="Remove @folder from the protected folders" @onclick="() => RemoveProtectedAsync(index)">Remove</button>
+                <button type="button" class="btn btn-sm" aria-label="@RemoveProtectedLabel(folder)" @onclick="() => RemoveProtectedAsync(index)">@WebStrings.PermissionsSettingsRemoveProtectedButton</button>
             </div>
         }
         <div class="row">
-            <input class="input mono" aria-label="Folder to protect" aria-invalid="@(ProtectedInvalid ? "true" : null)" aria-describedby="@(ProtectedInvalid ? "protected-error" : null)" placeholder="@_protectedExample" @bind="_newProtected" @bind:event="oninput" @onkeydown="OnProtectedKeyAsync" />
-            <button type="button" class="btn" disabled="@(!Path.IsPathFullyQualified(_newProtected.Trim()))" @onclick="AddProtectedAsync">＋ Add folder</button>
-            <button type="button" class="btn" disabled="@Defaults.UsesDefaultProtectedFolders" @onclick="ResetProtectedAsync">Reset to the built-in list</button>
+            <input class="input mono" aria-label="@WebStrings.PermissionsSettingsProtectedFolderLabel" aria-invalid="@(ProtectedInvalid ? "true" : null)" aria-describedby="@(ProtectedInvalid ? "protected-error" : null)" placeholder="@_protectedExample" @bind="_newProtected" @bind:event="oninput" @onkeydown="OnProtectedKeyAsync" />
+            <button type="button" class="btn" disabled="@(!Path.IsPathFullyQualified(_newProtected.Trim()))" @onclick="AddProtectedAsync">@WebStrings.PermissionsSettingsAddProtectedButton</button>
+            <button type="button" class="btn" disabled="@Defaults.UsesDefaultProtectedFolders" @onclick="ResetProtectedAsync">@WebStrings.PermissionsSettingsResetProtectedButton</button>
         </div>
         @if (ProtectedInvalid)
         {
-            <p id="protected-error" class="error-text">Enter the full path of the folder, starting from the root.</p>
+            <p id="protected-error" class="error-text">@WebStrings.PermissionsSettingsProtectedFolderError</p>
         }
     </section>
 
     <section class="card stack" aria-labelledby="rules-heading">
-        <h2 id="rules-heading">Rules</h2>
-        <p class="hint">
-            A rule that refuses always wins. Otherwise the last matching rule decides. An allow rule skips the question but never gets a call out of the sandbox or into a protected folder.
-            Use * for any text and ? for one character. In a path, * stays inside one folder and ** crosses folders.
-            An MCP tool rule matches the server name and the tool name written as server/tool.
-            A rule that refuses a file path also hides those files from listing and search. In a sandboxed shell command, those files are kept out of reach when the command starts, so they look empty or unreadable: an exact path wherever it is, and a pattern with a wildcard inside the working folder and the folders you approved.
-            It is best effort: the shell can still read a refused file from git history, a file made later is not covered, on macOS renaming a folder above a refused file may get around it, and a command with Unrestricted access is not sandboxed.
-            Shell commands don't run while a rule matches too many files, or a ** rule would need a look through a very large folder; a rule such as secrets/** or *.pem stays quick. They also don't run where this system's sandbox can't keep a single file out of reach.
-        </p>
+        <h2 id="rules-heading">@WebStrings.PermissionsSettingsRulesHeading</h2>
+        <p class="hint">@WebStrings.PermissionsRulesDescription</p>
         @if (_rules.Count == 0)
         {
-            <p class="muted">No rules yet.</p>
+            <p class="muted">@WebStrings.PermissionsSettingsNoRules</p>
         }
         @for (var i = 0; i < _rules.Count; i++)
         {
@@ -82,23 +75,23 @@
                 <span>@TargetLabel(rule.Target)</span>
                 <span>@ActionLabel(rule.Action)</span>
                 <code class="mono">@rule.Pattern</code>
-                <button type="button" class="btn btn-sm" aria-label="Remove rule @rule.Pattern" @onclick="() => RemoveRuleAsync(index)">Remove</button>
+                <button type="button" class="btn btn-sm" aria-label="@RemoveRuleLabel(rule.Pattern)" @onclick="() => RemoveRuleAsync(index)">@WebStrings.PermissionsSettingsRemoveRuleButton</button>
             </div>
         }
         <div class="row">
-            <select class="select" aria-label="Rule applies to" @bind="_newTarget">
-                <option value="@RuleTarget.ShellCommand">Shell command</option>
-                <option value="@RuleTarget.FilePath">File path</option>
-                <option value="@RuleTarget.McpTool">MCP tool</option>
-                <option value="@RuleTarget.WebHost">Web host</option>
+            <select class="select" aria-label="@WebStrings.PermissionsSettingsRuleTargetLabel" @bind="_newTarget">
+                <option value="@RuleTarget.ShellCommand">@WebStrings.PermissionsSettingsTargetShellCommand</option>
+                <option value="@RuleTarget.FilePath">@WebStrings.PermissionsSettingsTargetFilePath</option>
+                <option value="@RuleTarget.McpTool">@WebStrings.PermissionsSettingsTargetMcpTool</option>
+                <option value="@RuleTarget.WebHost">@WebStrings.PermissionsSettingsTargetWebHost</option>
             </select>
-            <select class="select" aria-label="Rule action" @bind="_newAction">
-                <option value="@PermissionVerdict.Deny">Refuse</option>
-                <option value="@PermissionVerdict.Ask">Ask</option>
-                <option value="@PermissionVerdict.Allow">Allow</option>
+            <select class="select" aria-label="@WebStrings.PermissionsSettingsRuleActionLabel" @bind="_newAction">
+                <option value="@PermissionVerdict.Deny">@WebStrings.PermissionsSettingsRuleRefuse</option>
+                <option value="@PermissionVerdict.Ask">@WebStrings.PermissionsSettingsRuleAsk</option>
+                <option value="@PermissionVerdict.Allow">@WebStrings.PermissionsSettingsRuleAllow</option>
             </select>
-            <input class="input mono" aria-label="Rule pattern" placeholder="@PatternExample(_newTarget)" @bind="_newPattern" @bind:event="oninput" @onkeydown="OnPatternKeyAsync" />
-            <button type="button" class="btn" disabled="@string.IsNullOrWhiteSpace(_newPattern)" @onclick="AddRuleAsync">＋ Add rule</button>
+            <input class="input mono" aria-label="@WebStrings.PermissionsSettingsRulePatternLabel" placeholder="@PatternExample(_newTarget)" @bind="_newPattern" @bind:event="oninput" @onkeydown="OnPatternKeyAsync" />
+            <button type="button" class="btn" disabled="@string.IsNullOrWhiteSpace(_newPattern)" @onclick="AddRuleAsync">@WebStrings.PermissionsSettingsAddRuleButton</button>
         </div>
     </section>
 </div>
@@ -133,10 +126,16 @@
         _protected = [.. Defaults.ProtectedFolders];
     }
 
+    private static string RemoveProtectedLabel(string folder) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.PermissionsRemoveProtectedFolder), new Dictionary<string, object?> { ["folder"] = folder });
+
+    private static string RemoveRuleLabel(string pattern) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.PermissionsRemoveRule), new Dictionary<string, object?> { ["pattern"] = pattern });
+
     // The lists are edited before they are saved, so a failed save shows what is really stored again.
     private async Task PersistAsync(Func<Task> save)
     {
-        if (!await Toasts.TrySaveAsync(save, "The permission settings could not be saved because the settings file could not be written."))
+        if (!await Toasts.TrySaveAsync(save, WebStrings.PermissionsSaveFailure))
         {
             Load();
         }
@@ -146,10 +145,10 @@
     {
         return target switch
         {
-            RuleTarget.ShellCommand => "Shell command",
-            RuleTarget.McpTool => "MCP tool",
-            RuleTarget.WebHost => "Web host",
-            _ => "File path",
+            RuleTarget.ShellCommand => WebStrings.PermissionsTargetShellCommand,
+            RuleTarget.McpTool => WebStrings.PermissionsTargetMcpTool,
+            RuleTarget.WebHost => WebStrings.PermissionsTargetWebHost,
+            _ => WebStrings.PermissionsTargetFilePath,
         };
     }
 
@@ -166,9 +165,9 @@
 
     private static string ActionLabel(PermissionVerdict action) => action switch
     {
-        PermissionVerdict.Deny => "Refuse",
-        PermissionVerdict.Ask => "Ask",
-        _ => "Allow",
+        PermissionVerdict.Deny => WebStrings.PermissionsActionRefuse,
+        PermissionVerdict.Ask => WebStrings.PermissionsActionAsk,
+        _ => WebStrings.PermissionsActionAllow,
     };
 
     private Task OnPatternKeyAsync(KeyboardEventArgs e) => e.Key == "Enter" ? AddRuleAsync() : Task.CompletedTask;

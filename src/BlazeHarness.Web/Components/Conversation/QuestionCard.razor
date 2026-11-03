@@ -1,7 +1,7 @@
 @using BlazeHarness.Core.Agent.Questions
 
-<section class="question" data-state="@(Waiting ? "waiting" : "done")" aria-live="polite" aria-label="Question from the assistant">
-    <p class="question-from">Asked by the assistant</p>
+<section class="question" data-state="@(Waiting ? "waiting" : "done")" aria-live="polite" aria-label="@WebStrings.QuestionCardLabel">
+    <p class="question-from">@WebStrings.QuestionCardAskedBy</p>
     @if (Waiting)
     {
         <form class="question-form" @onsubmit="SendAsync">
@@ -31,13 +31,13 @@
                 }
             </fieldset>
             <textarea class="input question-input" rows="@(Question.Options.Count == 0 ? 3 : 2)" data-bh-submit="true" @bind="_text" @bind:event="oninput"
-                      placeholder="@(Question.Options.Count == 0 ? "Your answer" : "Add a note, or write your own answer")"
-                      aria-label="@(Question.Options.Count == 0 ? "Your answer" : "Note or your own answer")"></textarea>
+                      placeholder="@(Question.Options.Count == 0 ? WebStrings.QuestionCardYourAnswer : WebStrings.QuestionCardAddNoteOrAnswer)"
+                      aria-label="@(Question.Options.Count == 0 ? WebStrings.QuestionCardYourAnswer : WebStrings.QuestionCardNoteOrAnswer)"></textarea>
             <div class="question-actions">
-                <button type="submit" class="btn btn-primary" disabled="@(!CanSend)"><Icon Name="check" /> Send answer</button>
-                <button type="button" class="btn" @onclick="() => ReplyAsync(UserAnswer.LeaveToModel())">You decide</button>
-                <button type="button" class="btn" @onclick="() => ReplyAsync(UserAnswer.Skip())">Skip</button>
-                <span class="question-hint">Ctrl+Enter sends</span>
+                <button type="submit" class="btn btn-primary" disabled="@(!CanSend)"><Icon Name="check" /> @WebStrings.QuestionCardSendAnswer</button>
+                <button type="button" class="btn" @onclick="() => ReplyAsync(UserAnswer.LeaveToModel())">@WebStrings.QuestionCardLeaveToModel</button>
+                <button type="button" class="btn" @onclick="() => ReplyAsync(UserAnswer.Skip())">@WebStrings.QuestionCardSkip</button>
+                <span class="question-hint">@WebStrings.QuestionCardSendHint</span>
             </div>
             @if (_note is not null)
             {
@@ -50,11 +50,11 @@
         <p class="question-text">@Question.Question</p>
         @if (Answer is { } answer)
         {
-            <p class="question-answer"><span class="question-answer-label">Your answer:</span> @answer.Display</p>
+            <p class="question-answer"><span class="question-answer-label">@WebStrings.QuestionCardAnswerLabel</span> @answer.Display</p>
         }
         else if (Call.Status is ToolCallStatus.Cancelled or ToolCallStatus.Interrupted)
         {
-            <p class="question-answer question-answer-none">Not answered. @Call.Output</p>
+            <p class="question-answer question-answer-none">@WebStrings.QuestionCardNotAnswered @Call.Output</p>
         }
     }
 </section>
@@ -128,7 +128,7 @@
         }
         else
         {
-            _note = "This question was already answered or stopped, so the answer was not sent.";
+            _note = WebStrings.QuestionCardAnswerNotSent;
         }
 
         return Task.CompletedTask;

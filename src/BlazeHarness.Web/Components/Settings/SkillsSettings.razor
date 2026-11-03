@@ -6,16 +6,16 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <PageHeader Title="Skills">A skill is a folder with a <code class="mono">SKILL.md</code> file that tells the model how to do one kind of work. The model sees each skill's name and description, and loads the rest only when it needs it. Each chat can turn skills on or off for itself.</PageHeader>
+    <PageHeader Title="@WebStrings.SkillsSettingsTitle">@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.SkillsSettingsIntro))</PageHeader>
 
     <Alert Kind="AlertKind.Warning">
         <Icon Name="alert" />
-        <span>A skill is text the model follows, and it may come with scripts. It never gives the model more permissions, and running anything still asks first. Only install skills you trust.</span>
+        <span>@WebStrings.SkillsSettingsInstallWarning</span>
     </Alert>
 
     <section class="card stack" aria-labelledby="skills-heading">
         <div class="row row-spread">
-            <h2 id="skills-heading">Installed skills</h2>
+            <h2 id="skills-heading">@WebStrings.SkillsSettingsInstalledHeading</h2>
             @if (_resolution.Skills.Count > 0)
             {
                 <span class="hint">@_resolution.Skills.Count installed · on by default for new chats</span>
@@ -23,7 +23,7 @@
         </div>
         @if (_resolution.Skills.Count == 0)
         {
-            <p class="muted">No skills yet. Put a folder with a <code class="mono">SKILL.md</code> in one of the places below.</p>
+            <p class="muted">@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.SkillsSettingsEmpty))</p>
         }
         else
         {
@@ -47,9 +47,9 @@
                                 <p class="hint mono">@skill.Directory</p>
                             </div>
                         </details>
-                        <label class="check" title="On for new chats">
-                            <input type="checkbox" aria-label="On for new chats" checked="@(!Catalog.IsDisabledGlobally(skill.Name))" @onchange="e => SetEnabledAsync(skill.Name, (bool)e.Value!)" />
-                            <span>On</span>
+                        <label class="check" title="@WebStrings.SkillsSettingsNewChatsTooltip">
+                            <input type="checkbox" aria-label="@WebStrings.SkillsSettingsNewChatsLabel" checked="@(!Catalog.IsDisabledGlobally(skill.Name))" @onchange="e => SetEnabledAsync(skill.Name, (bool)e.Value!)" />
+                            <span>@WebStrings.SkillsSettingsOn</span>
                         </label>
                     </div>
                 }
@@ -60,11 +60,11 @@
     @if (_resolution.Shadowed.Count > 0)
     {
         <section class="card stack" aria-labelledby="shadowed-heading">
-            <h2 id="shadowed-heading">Hidden by another skill with the same name</h2>
+            <h2 id="shadowed-heading">@WebStrings.SkillsSettingsHiddenHeading</h2>
             <ul class="stack">
                 @foreach (var skill in _resolution.Shadowed)
                 {
-                    <li><strong>@skill.Name</strong> <span class="muted">in</span> <span class="mono">@skill.Directory</span></li>
+                    <li><strong>@skill.Name</strong> <span class="muted">@WebStrings.SkillsSettingsHiddenIn</span> <span class="mono">@skill.Directory</span></li>
                 }
             </ul>
         </section>
@@ -73,7 +73,7 @@
     @if (_resolution.Problems.Count > 0)
     {
         <section class="card stack" aria-labelledby="problems-heading">
-            <h2 id="problems-heading">Skills that could not be read</h2>
+            <h2 id="problems-heading">@WebStrings.SkillsSettingsProblemsHeading</h2>
             <ul class="stack">
                 @foreach (var problem in _resolution.Problems)
                 {
@@ -84,13 +84,13 @@
     }
 
     <section class="card stack" aria-labelledby="places-heading">
-        <h2 id="places-heading">Where skills are read from</h2>
+        <h2 id="places-heading">@WebStrings.SkillsSettingsLocationsHeading</h2>
         <ul class="stack">
-            <li><span class="mono">&lt;chat folder&gt;/.agents/skills</span> <span class="muted">Folder skills, for chats in that folder.</span></li>
-            <li><span class="mono">@Paths.SkillsDirectory</span> <span class="muted">BlazeHarness skills, for every chat here.</span></li>
-            <li><span class="mono">@Paths.UserAgentsSkillsDirectory</span> <span class="muted">Global skills, for every chat here and in other AI agent apps that read this folder.</span></li>
+            <li><span class="mono">&lt;chat folder&gt;/.agents/skills</span> <span class="muted">@WebStrings.SkillsSettingsFolderLocation</span></li>
+            <li><span class="mono">@Paths.SkillsDirectory</span> <span class="muted">@WebStrings.SkillsSettingsBlazeHarnessLocation</span></li>
+            <li><span class="mono">@Paths.UserAgentsSkillsDirectory</span> <span class="muted">@WebStrings.SkillsSettingsGlobalLocation</span></li>
         </ul>
-        <p class="hint">Skills from all three are used. If two have the same name, the one from the folder higher in this list is used and the other is hidden. Changes to the BlazeHarness and global folders show up here by themselves. Skills in a chat's folder are read each time the chat sends a message.</p>
+        <p class="hint">@WebStrings.SkillsSettingsLocationsHint</p>
     </section>
 </div>
 
@@ -110,12 +110,12 @@
 
     private static string SourceText(SkillSource source) => source switch
     {
-        SkillSource.Project => "Chat folder",
-        SkillSource.App => "BlazeHarness",
-        _ => "Global",
+        SkillSource.Project => WebStrings.SkillsSettingsChatFolder,
+        SkillSource.App => WebStrings.SkillsSettingsBlazeHarness,
+        _ => WebStrings.SkillsSettingsGlobal,
     };
 
-    private Task SetEnabledAsync(string name, bool enabled) => Toasts.TrySaveAsync(() => Catalog.SetDisabledAsync(name, !enabled), "The skill setting could not be saved because the settings file could not be written.");
+    private Task SetEnabledAsync(string name, bool enabled) => Toasts.TrySaveAsync(() => Catalog.SetDisabledAsync(name, !enabled), WebStrings.SkillsSettingsSaveFailure);
 
     private void OnCatalogChanged(object? sender, EventArgs e)
     {

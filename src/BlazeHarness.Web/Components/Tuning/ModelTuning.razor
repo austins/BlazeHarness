@@ -2,21 +2,21 @@
 @using BlazeHarness.Core.Providers
 @using BlazeHarness.Web.Settings
 
-<Dialog Title="@($"Tune {Model?.Id}")" Open="Open" OnClose="OnClose">
+<Dialog Title="@TuneTitle" Open="Open" OnClose="OnClose">
     <ChildContent>
         @if (Model is not null && Provider is not null)
         {
             <div class="tune">
             <section class="stack" aria-labelledby="tune-levels">
-                <h3 id="tune-levels">Thinking</h3>
+                <h3 id="tune-levels">@WebStrings.ModelTuningThinkingHeading</h3>
                 @if (!Model.Reasoning)
                 {
-                    <span class="hint">This model is not marked as a thinking model.</span>
-                    <div><button type="button" class="btn btn-sm" @onclick="() => Model.Reasoning = true">Mark as a thinking model</button></div>
+                    <span class="hint">@WebStrings.ModelTuningNotThinkingModelHint</span>
+                    <div><button type="button" class="btn btn-sm" @onclick="() => Model.Reasoning = true">@WebStrings.ModelTuningMarkThinkingButton</button></div>
                 }
                 else
                 {
-                    <div class="chips" role="group" aria-label="Supported thinking levels">
+                    <div class="chips" role="group" aria-label="@WebStrings.ModelTuningSupportedLevelsLabel">
                         @foreach (var level in Enum.GetValues<ThinkingLevel>())
                         {
                             var thisLevel = level;
@@ -32,13 +32,13 @@
                                 var edit = Model.Levels[level];
                                 <label class="level-value">
                                     <span>@LevelName(level)</span>
-                                    <input class="input mono" aria-label="Value sent for @LevelName(level)" placeholder="@ModelEditModel.SuggestedValue(level)" title="@Wire(edit.Value)" @bind="edit.Value" @bind:event="oninput" />
+                                    <input class="input mono" aria-label="@ValueSentLabel(LevelName(level))" placeholder="@ModelEditModel.SuggestedValue(level)" title="@Wire(edit.Value)" @bind="edit.Value" @bind:event="oninput" />
                                 </label>
                             }
                         </div>
-                        <span class="hint">Pick the levels the model supports and check the value the server expects for each. Blank sends nothing.</span>
+                        <span class="hint">@WebStrings.ModelTuningLevelValuesHint</span>
                         <div class="send-row">
-                            <label for="tune-default-level">Default level</label>
+                            <label for="tune-default-level">@WebStrings.ModelTuningDefaultLevelLabel</label>
                             <select id="tune-default-level" class="select" value="@Model.DefaultLevel" @onchange="OnDefaultLevelChanged">
                                 @foreach (var level in Model.SupportedLevels)
                                 {
@@ -49,12 +49,12 @@
                     }
                     else
                     {
-                        <span class="hint">Pick the levels this model supports. Pick none if it can't be controlled.</span>
+                        <span class="hint">@WebStrings.ModelTuningNoLevelsHint</span>
                     }
                     <div class="send-row">
-                        <label for="tune-send">Sent as</label>
+                        <label for="tune-send">@WebStrings.ModelTuningSentAsLabel</label>
                         <select id="tune-send" class="select" value="@SendChoice" @onchange="OnSendChanged">
-                            <option value="inherit">Same as provider: @ThinkingSendLabels.Short(Provider.ThinkingMode)</option>
+                            <option value="inherit">@WebStrings.ModelTuningSameAsProvider @ThinkingSendLabels.Short(Provider.ThinkingMode)</option>
                             @foreach (var mode in Enum.GetValues<ThinkingSendMode>())
                             {
                                 <option value="@mode">@ThinkingSendLabels.Option(mode)</option>
@@ -62,29 +62,29 @@
                         </select>
                         @if (Model.OverrideSend && Model.SendMode == ThinkingSendMode.BodyField)
                         {
-                            <input class="input mono" aria-label="Body field path" placeholder="chat_template_kwargs.reasoning_effort" @bind="Model.SendField" @bind:event="oninput" />
+                            <input class="input mono" aria-label="@WebStrings.ModelTuningBodyFieldPathLabel" placeholder="@WebStrings.ModelTuningBodyFieldPathPlaceholder" @bind="Model.SendField" @bind:event="oninput" />
                         }
                     </div>
                     @if (!Model.OverrideSend)
                     {
-                        <span class="hint">The provider's setting is under Compatibility in its settings, and applies to every model that doesn't pick its own.</span>
+                        <span class="hint">@WebStrings.ModelTuningProviderSettingHint</span>
                     }
                 }
             </section>
 
             <section class="stack" aria-labelledby="tune-sampling">
-                <h3 id="tune-sampling">Sampling</h3>
+                <h3 id="tune-sampling">@WebStrings.ModelTuningSamplingHeading</h3>
                 @{
                     var both = Model.HasThinkingLevels;
                 }
                 <table class="params">
                     <thead>
                         <tr>
-                            <th scope="col">Parameter</th>
-                            <th scope="col">@(both ? "Thinking off" : "Value")</th>
+                            <th scope="col">@WebStrings.ModelTuningParameterColumn</th>
+                            <th scope="col">@(both ? WebStrings.ModelTuningThinkingOff : WebStrings.ModelTuningValue)</th>
                             @if (both)
                             {
-                                <th scope="col">Thinking on</th>
+                                <th scope="col">@WebStrings.ModelTuningThinkingOnColumn</th>
                             }
                         </tr>
                     </thead>
@@ -111,22 +111,22 @@
                     </tbody>
                 </table>
                 <span class="hint">
-                    Leave a cell empty to leave it to the server.@if (both)
+                    @WebStrings.ModelTuningEmptyUsesDefault@if (both)
                     {
-                        <text> An empty Thinking on cell uses the Thinking off value (↳).</text>
+                        <text> @WebStrings.ModelTuningThinkingOnEmptyHint</text>
                     }
                 </span>
 
                 <details>
-                    <summary>Custom fields@(ExtraCount > 0 ? $" ({ExtraCount})" : "")</summary>
+                    <summary>@CustomFieldsLabel</summary>
                     <div class="stack details-body">
-                        <span class="hint">For server-specific request fields. A dotted name such as chat_template_kwargs.x sets a nested field.</span>
+                        <span class="hint">@WebStrings.ModelTuningCustomFieldsHint</span>
                         @if (both)
                         {
-                            <h4 class="subhead">Thinking off</h4>
+                            <h4 class="subhead">@WebStrings.ModelTuningCustomFieldsThinkingOffHeading</h4>
                             <ExtraFields Rows="Model.Sampling.Extra" />
-                            <h4 class="subhead">Thinking on</h4>
-                            <span class="hint">Added to the Thinking off fields; a field with the same name replaces it.</span>
+                            <h4 class="subhead">@WebStrings.ModelTuningCustomFieldsThinkingOnHeading</h4>
+                            <span class="hint">@WebStrings.ModelTuningThinkingOnFieldsHint</span>
                             <ExtraFields Rows="Model.ThinkingSampling.Extra" />
                         }
                         else
@@ -138,17 +138,17 @@
             </section>
 
             <details>
-                <summary>Preview of what is sent</summary>
+                <summary>@WebStrings.ModelTuningPreviewSummary</summary>
                 <div class="stack details-body">
                     @if (both)
                     {
                         <div class="preview-pair">
                             <div class="stack">
-                                <h4 class="subhead">Thinking off</h4>
+                                <h4 class="subhead">@WebStrings.ModelTuningPreviewThinkingOffHeading</h4>
                                 <pre class="preview" tabindex="0">@Preview(thinking: false)</pre>
                             </div>
                             <div class="stack">
-                                <h4 class="subhead">Thinking on</h4>
+                                <h4 class="subhead">@WebStrings.ModelTuningPreviewThinkingOnHeading</h4>
                                 <pre class="preview" tabindex="0">@Preview(thinking: true)</pre>
                             </div>
                         </div>
@@ -163,12 +163,28 @@
         }
     </ChildContent>
     <Footer>
-        <button type="button" class="btn btn-primary" @onclick="OnClose">Done</button>
+        <button type="button" class="btn btn-primary" @onclick="OnClose">@WebStrings.ModelTuningDoneButton</button>
     </Footer>
 </Dialog>
 
 @code {
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
+
+    private string TuneTitle =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ModelTuningTitle),
+            new Dictionary<string, object?> { ["model"] = Model?.Id ?? string.Empty });
+
+    private string CustomFieldsLabel => ExtraCount > 0
+        ? ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ModelTuningCustomFieldsCount),
+            new Dictionary<string, object?> { ["count"] = ExtraCount })
+        : WebStrings.ModelTuningCustomFields;
+
+    private static string ValueSentLabel(string level) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ModelTuningValueSentFor),
+            new Dictionary<string, object?> { ["level"] = level });
 
     /// <summary>
     /// Gets or sets the provider whose model is tuned, which supplies the inherited values.

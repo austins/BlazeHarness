@@ -1,14 +1,14 @@
 @implements IDisposable
 @inject SettingsDialogState State
 
-<Dialog Title="Settings" Open="State.Section is not null" Class="dialog-settings" OnClose="State.Close">
+<Dialog Title="@WebStrings.SettingsDialogTitle" Open="State.Section is not null" Class="dialog-settings" OnClose="State.Close">
     <div class="settings">
-        <nav class="settings-nav" aria-label="Settings sections">
-            @foreach (var (section, label, icon) in Sections)
+        <nav class="settings-nav" aria-label="@WebStrings.SettingsDialogSectionsLabel">
+            @foreach (var (section, icon) in Sections)
             {
                 <button type="button" class="nav-link@(State.Section == section ? " active" : "")"
                         aria-current="@(State.Section == section ? "page" : null)" @onclick="() => State.Open(section)">
-                    <Icon Name="@icon" /> @label
+                    <Icon Name="@icon" /> @SectionLabel(section)
                 </button>
             }
         </nav>
@@ -44,16 +44,27 @@
 </Dialog>
 
 @code {
-    private static readonly (SettingsSection Section, string Label, string Icon)[] Sections =
+    private static readonly (SettingsSection Section, string Icon)[] Sections =
     [
-        (SettingsSection.General, "General", "settings"),
-        (SettingsSection.Providers, "Providers", "server"),
-        (SettingsSection.Permissions, "Permissions", "shield"),
-        (SettingsSection.Mcp, "MCP servers", "plug"),
-        (SettingsSection.Skills, "Skills", "book"),
-        (SettingsSection.Web, "Web", "search"),
-        (SettingsSection.Diagnostics, "Diagnostics", "wrench"),
+        (SettingsSection.General, "settings"),
+        (SettingsSection.Providers, "server"),
+        (SettingsSection.Permissions, "shield"),
+        (SettingsSection.Mcp, "plug"),
+        (SettingsSection.Skills, "book"),
+        (SettingsSection.Web, "search"),
+        (SettingsSection.Diagnostics, "wrench"),
     ];
+
+    private static string SectionLabel(SettingsSection section) => section switch
+    {
+        SettingsSection.General => WebStrings.SettingsDialogGeneral,
+        SettingsSection.Providers => WebStrings.SettingsDialogProviders,
+        SettingsSection.Permissions => WebStrings.SettingsDialogPermissions,
+        SettingsSection.Mcp => WebStrings.SettingsDialogMcpServers,
+        SettingsSection.Skills => WebStrings.SettingsDialogSkills,
+        SettingsSection.Web => WebStrings.SettingsDialogWeb,
+        _ => WebStrings.SettingsDialogDiagnostics,
+    };
 
     protected override void OnInitialized()
     {

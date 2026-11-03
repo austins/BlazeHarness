@@ -3,13 +3,13 @@
 @inject ChatService ChatService
 @inject ToastService Toasts
 
-<Dialog Title="Move chat to" Open="Chat is not null" OnClose="CloseAsync">
+<Dialog Title="@WebStrings.MoveChatDialogTitle" Open="Chat is not null" OnClose="CloseAsync">
     <ChildContent>
-        <p class="hint">Choose where this chat works. Its messages stay as they are, and nothing in the folders is changed.</p>
-        <ul class="folder-entries" aria-label="Destinations">
+        <p class="hint">@WebStrings.MoveChatDialogHint</p>
+        <ul class="folder-entries" aria-label="@WebStrings.MoveChatDialogDestinationsLabel">
             <li>
                 <button type="button" class="folder-entry" disabled="@(Chat?.FolderPath is null)" @onclick="() => MoveAsync(null)">
-                    <Icon Name="chat" /> <span>No folder</span>
+                    <Icon Name="chat" /> <span>@WebStrings.MoveChatDialogNoFolder</span>
                 </button>
             </li>
             @foreach (var folder in Folders.List().Where(FolderRegistry.IsAvailable))
@@ -24,7 +24,7 @@
         </ul>
     </ChildContent>
     <Footer>
-        <button type="button" class="btn" @onclick="CloseAsync">Cancel</button>
+        <button type="button" class="btn" @onclick="CloseAsync">@WebStrings.MoveChatDialogCancel</button>
     </Footer>
 </Dialog>
 
@@ -66,7 +66,7 @@
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Toasts.Show("The chat could not be moved because its file could not be written.", ToastKind.Error);
+            Toasts.Show(WebStrings.MoveChatErrorWriteFailed, ToastKind.Error);
         }
 
         await CloseAsync();

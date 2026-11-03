@@ -1,6 +1,6 @@
 @using BlazeHarness.Core.Diff
 
-<div class="diff" role="group" aria-label="Changes">
+<div class="diff" role="group" aria-label="@WebStrings.DiffViewLabel">
     @foreach (var line in Lines)
     {
         <div class="diff-line" data-kind="@Kind(line)">
@@ -8,7 +8,7 @@
             <span class="diff-text">@line.Text</span>
             @if (line.Kind != DiffKind.Same)
             {
-                <span class="visually-hidden">@(line.Kind == DiffKind.Added ? "Added" : "Removed")</span>
+                <span class="visually-hidden">@(line.Kind == DiffKind.Added ? WebStrings.DiffViewAdded : WebStrings.DiffViewRemoved)</span>
             }
         </div>
     }

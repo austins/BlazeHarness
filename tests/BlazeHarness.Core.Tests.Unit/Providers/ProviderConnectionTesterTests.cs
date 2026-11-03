@@ -37,7 +37,7 @@ public sealed class ProviderConnectionTesterTests
 
         // Assert
         result.Success.Should().BeTrue();
-        result.Message.Should().Contain("no models");
+        result.Code.Should().Be(ConnectionTestCode.ConnectedNoModels);
         handler.Requests[0].Headers.Authorization.Should().BeNull();
     }
 

@@ -10,10 +10,10 @@
 @inject ILogger<Sidebar> Logger
 @inject TimeProvider Time
 
-<nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="Main">
-    <div class="sidebar-brand"><span class="logo" aria-hidden="true">🔥</span> BlazeHarness</div>
+<nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="@WebStrings.SidebarNavigationLabel">
+    <div class="sidebar-brand"><span class="logo" aria-hidden="true">🔥</span> @WebStrings.SidebarBrand</div>
 
-    <NavLink class="btn btn-primary" href="" Match="NavLinkMatch.All" data-shortcut="new-chat" title="New chat (Ctrl+Shift+O)"><Icon Name="plus" /> New chat</NavLink>
+    <NavLink class="btn btn-primary" href="" Match="NavLinkMatch.All" data-shortcut="new-chat" title="@WebStrings.SidebarNewChatTooltip"><Icon Name="plus" /> @WebStrings.SidebarNewChat</NavLink>
 
     @{
         var all = ChatService.Store.List(Filter);
@@ -37,24 +37,24 @@
 
     @if (filtering || all.Count > 0)
     {
-        <input type="search" class="input input-sm sidebar-search" placeholder="Search chats"
-               aria-label="Search chat titles" title="Search chats (Ctrl+K)" data-shortcut="search" @bind="Filter" @bind:event="oninput" />
+        <input type="search" class="input input-sm sidebar-search" placeholder="@WebStrings.SidebarSearchChatsPlaceholder"
+               aria-label="@WebStrings.SidebarSearchChatsLabel" title="@WebStrings.SidebarSearchChatsTooltip" data-shortcut="search" @bind="Filter" @bind:event="oninput" />
     }
 
     <section class="sidebar-section" aria-labelledby="chats-heading">
         <div class="sidebar-heading">
-            <Icon Name="chat" /><span id="chats-heading">Chats</span>
+            <Icon Name="chat" /><span id="chats-heading">@WebStrings.SidebarChatsHeading</span>
             <div class="sidebar-heading-actions">
-                <label class="btn btn-ghost btn-sm btn-icon import-chat" title="Import a chat from a JSON file">
-                    <InputFile @ref="_importInput" OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="Import a chat from a JSON file" />
+                <label class="btn btn-ghost btn-sm btn-icon import-chat" title="@WebStrings.SidebarImportChatTooltip">
+                    <InputFile @ref="_importInput" OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="@WebStrings.SidebarImportChatLabel" />
                     <Icon Name="import" />
                 </label>
-                <a class="btn btn-ghost btn-sm btn-icon" href="" title="New chat without a folder" aria-label="New chat without a folder"><Icon Name="plus" /></a>
+                <a class="btn btn-ghost btn-sm btn-icon" href="" title="@WebStrings.SidebarNewGeneralChatTooltip" aria-label="@WebStrings.SidebarNewGeneralChatLabel"><Icon Name="plus" /></a>
             </div>
         </div>
         @if (chats.Count == 0)
         {
-            <p class="sidebar-empty">@(filtering ? "No chats match." : "No chats yet.")</p>
+            <p class="sidebar-empty">@(filtering ? WebStrings.SidebarNoChatsMatch : WebStrings.SidebarNoChatsYet)</p>
         }
         else
         {
@@ -64,13 +64,13 @@
 
     <section class="sidebar-section" aria-labelledby="folders-heading">
         <div class="sidebar-heading">
-            <Icon Name="folder" /><span id="folders-heading">Folders</span>
-            <button type="button" class="btn btn-ghost btn-sm btn-icon sidebar-heading-action" title="Open folder"
-                    aria-label="Open folder" @onclick="() => _picking = true"><Icon Name="folder-plus" /></button>
+            <Icon Name="folder" /><span id="folders-heading">@WebStrings.SidebarFoldersHeading</span>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon sidebar-heading-action" title="@WebStrings.SidebarOpenFolderTooltip"
+                    aria-label="@WebStrings.SidebarOpenFolderLabel" @onclick="() => _picking = true"><Icon Name="folder-plus" /></button>
         </div>
         @if (folders.Count == 0)
         {
-            <p class="sidebar-empty">Open a project folder to start chats in it.</p>
+            <p class="sidebar-empty">@WebStrings.SidebarNoFoldersHint</p>
         }
         else
         {
@@ -93,25 +93,25 @@
                                 <span class="folder-name">@folder.Name</span>
                                 @if (!available)
                                 {
-                                    <span class="folder-warning" title="Folder not found" role="img" aria-label="Folder not found"><Icon Name="alert" /></span>
+                                    <span class="folder-warning" title="@WebStrings.SidebarFolderNotFoundTooltip" role="img" aria-label="@WebStrings.SidebarFolderNotFoundLabel"><Icon Name="alert" /></span>
                                 }
                             </button>
                             <div class="folder-actions">
                                 @if (available)
                                 {
-                                    <a class="btn btn-ghost btn-sm btn-icon" href="@NewChatHref(folder)" title="New chat in this folder"
-                                       aria-label="@("New chat in " + folder.Name)"><Icon Name="plus" /></a>
+                                    <a class="btn btn-ghost btn-sm btn-icon" href="@NewChatHref(folder)" title="@WebStrings.SidebarNewChatInFolderTooltip"
+                                       aria-label="@FolderActionLabel(nameof(WebStrings.SidebarNewChatInFolder), folder.Name)"><Icon Name="plus" /></a>
                                 }
                                 else
                                 {
-                                    <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Find this folder"
-                                            aria-label="@("Find " + folder.Name)" @onclick="() => _locating = folder"><Icon Name="folder" /></button>
+                                    <button type="button" class="btn btn-ghost btn-sm btn-icon" title="@WebStrings.SidebarFindFolderTooltip"
+                                            aria-label="@FolderActionLabel(nameof(WebStrings.SidebarFindFolder), folder.Name)" @onclick="() => _locating = folder"><Icon Name="folder" /></button>
                                 }
                             </div>
                         </div>
                         @if (!available)
                         {
-                            <p class="sidebar-empty">This folder can't be found. It may have been moved or deleted.</p>
+                            <p class="sidebar-empty">@WebStrings.SidebarFolderMissing</p>
                         }
 
                         @if (expanded)
@@ -122,7 +122,7 @@
                             }
                             else if (available)
                             {
-                                <p class="sidebar-empty folder-chats">No chats yet.</p>
+                                <p class="sidebar-empty folder-chats">@WebStrings.SidebarNoChatsInFolder</p>
                             }
                         }
                     </li>
@@ -135,11 +135,11 @@
 
     <div class="sidebar-footer">
         <div class="sidebar-links">
-            <button type="button" class="nav-link" data-shortcut="settings" title="Settings (Ctrl+,)" @onclick="() => SettingsState.Open()"><Icon Name="settings" /> Settings</button>
+            <button type="button" class="nav-link" data-shortcut="settings" title="@WebStrings.SidebarSettingsTooltip" @onclick="() => SettingsState.Open()"><Icon Name="settings" /> @WebStrings.SidebarSettings</button>
         </div>
         <button type="button" class="nav-link nav-link-icon" @onclick="ToggleThemeAsync"
-                title="@(_dark ? "Switch to light theme" : "Switch to dark theme")"
-                aria-label="@(_dark ? "Switch to light theme" : "Switch to dark theme")">
+                title="@ThemeToggleLabel"
+                aria-label="@ThemeToggleLabel">
             <Icon Name="@(_dark ? "moon" : "sun")" />
         </button>
     </div>
@@ -147,31 +147,31 @@
 
 <OpenFolderDialog Open="_picking" OnClose="() => _picking = false" OnPicked="OnFolderPickedAsync" />
 
-<div @ref="_menu" id="@_menuId" class="menu context-menu" popover="auto" role="menu" aria-label="@(_menuFolder?.Name ?? "Folder actions")" data-bh-menu>
+<div @ref="_menu" id="@_menuId" class="menu context-menu" popover="auto" role="menu" aria-label="@(_menuFolder?.Name ?? WebStrings.SidebarFolderActions)" data-bh-menu>
     @if (_menuFolder is { } target)
     {
         @if (FolderRegistry.IsAvailable(target))
         {
             <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                    @onclick="() => Navigation.NavigateTo(NewChatHref(target))"><Icon Name="plus" />New chat</button>
+                    @onclick="() => Navigation.NavigateTo(NewChatHref(target))"><Icon Name="plus" />@WebStrings.SidebarNewChatMenuItem</button>
         }
         else
         {
             <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                    @onclick="() => _locating = target"><Icon Name="folder" />Find folder</button>
+                    @onclick="() => _locating = target"><Icon Name="folder" />@WebStrings.SidebarFindFolderMenuItem</button>
         }
 
         <div class="menu-sep" role="separator"></div>
         <button type="button" class="menu-item menu-item-danger" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                @onclick="() => _removing = target"><Icon Name="close" />Remove folder</button>
+                @onclick="() => _removing = target"><Icon Name="close" />@WebStrings.SidebarRemoveFolderMenuItem</button>
     }
 </div>
 
 <OpenFolderDialog Open="_locating is not null" OnClose="() => _locating = null" OnPicked="RelocateAsync"
-                  Title="Find folder" Hint="Choose where this folder is now. Its chats move with it." ConfirmText="Use this folder" />
+                  Title="@WebStrings.SidebarRelocateTitle" Hint="@WebStrings.SidebarRelocateHint" ConfirmText="@WebStrings.SidebarRelocateConfirm" />
 
-<ConfirmDialog Title="Remove this folder?" Open="_removing is not null" ConfirmText="Remove" OnConfirm="RemoveAsync" OnCancel="() => _removing = null">
-    <p><strong>@_removing?.Name</strong> is removed from this list. The folder on your computer is not touched, and its chats stay, moved to Chats.</p>
+<ConfirmDialog Title="@WebStrings.SidebarRemoveFolderTitle" Open="_removing is not null" ConfirmText="@WebStrings.SidebarRemoveConfirm" OnConfirm="RemoveAsync" OnCancel="() => _removing = null">
+    <p>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.SidebarRemoveFolderWarning), new Dictionary<string, object?> { ["name"] = _removing?.Name })</p>
 </ConfirmDialog>
 
 @code {
@@ -190,6 +190,11 @@
     private const long MaxImportBytes = 8 * 1024 * 1024;
 
     private string Filter { get; set; } = string.Empty;
+
+    private string ThemeToggleLabel => _dark ? WebStrings.SidebarSwitchToLightTheme : WebStrings.SidebarSwitchToDarkTheme;
+
+    private static string FolderActionLabel(string pattern, string folder) =>
+        ResourceMessageFormatter.Web.Format(pattern, new Dictionary<string, object?> { ["folder"] = folder });
 
     /// <summary>
     /// Gets or sets a value indicating whether the sidebar is hidden.
@@ -210,7 +215,7 @@
         var file = e.File;
         if (file.Size > MaxImportBytes)
         {
-            Toasts.Show("That file is too large to be a chat export.", ToastKind.Error);
+            Toasts.Show(WebStrings.SidebarImportFileTooLarge, ToastKind.Error);
             return;
         }
 
@@ -226,7 +231,7 @@
         }
         catch (IOException)
         {
-            Toasts.Show("The file could not be read.", ToastKind.Error);
+            Toasts.Show(WebStrings.SidebarImportReadFailed, ToastKind.Error);
         }
         finally
         {
@@ -290,7 +295,7 @@
         var result = await Folders.OpenAsync(path);
         if (result.Folder is null)
         {
-            Toasts.Show("That folder could not be opened.", ToastKind.Error);
+            Toasts.Show(WebStrings.SidebarOpenFolderFailed, ToastKind.Error);
             return;
         }
 
@@ -313,7 +318,7 @@
             var result = await Folders.RelocateAsync(old.Path, path);
             if (result.Folder is null)
             {
-                Toasts.Show("That folder could not be used.", ToastKind.Error);
+                Toasts.Show(WebStrings.SidebarRelocateFolderFailed, ToastKind.Error);
                 return;
             }
 
@@ -322,7 +327,7 @@
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Toasts.Show("The folder could not be updated because a file could not be written.", ToastKind.Error);
+            Toasts.Show(WebStrings.SidebarRelocateWriteFailed, ToastKind.Error);
         }
     }
 
@@ -343,7 +348,7 @@
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Toasts.Show("The folder could not be removed because a file could not be written.", ToastKind.Error);
+            Toasts.Show(WebStrings.SidebarRemoveWriteFailed, ToastKind.Error);
         }
     }
 

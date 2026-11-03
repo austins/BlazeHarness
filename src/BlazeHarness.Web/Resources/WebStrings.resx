@@ -1,0 +1,2204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ConfirmDialogKeep" xml:space="preserve">
+    <value>Keep</value>
+    <comment>Label for the cancel button in confirmation dialogs when a caller does not supply a custom label.</comment>
+  </data>
+  <data name="SecretInputStoredPlaceholder" xml:space="preserve">
+    <value>Stored. Type to replace.</value>
+    <comment>Placeholder shown when a secret is already stored and the user can type a replacement.</comment>
+  </data>
+  <data name="SecretInputHide" xml:space="preserve">
+    <value>Hide secret</value>
+    <comment>Accessible label and tooltip for hiding a typed secret in a password field.</comment>
+  </data>
+  <data name="SecretInputShow" xml:space="preserve">
+    <value>Show secret</value>
+    <comment>Accessible label and tooltip for revealing a typed secret in a password field.</comment>
+  </data>
+  <data name="OpenFolderDialogTitle" xml:space="preserve">
+    <value>Open a folder</value>
+    <comment>Title of the dialog for choosing a project folder.</comment>
+  </data>
+  <data name="OpenFolderDialogHint" xml:space="preserve">
+    <value>Choose a project folder on this computer. Chats you start in it use it as their working folder.</value>
+    <comment>Explanation at the top of the folder chooser dialog.</comment>
+  </data>
+  <data name="OpenFolderDialogConfirm" xml:space="preserve">
+    <value>Open this folder</value>
+    <comment>Confirmation button label in the folder chooser dialog.</comment>
+  </data>
+  <data name="OpenFolderDialogUp" xml:space="preserve">
+    <value>Up</value>
+    <comment>Button label for navigating to the parent folder.</comment>
+  </data>
+  <data name="OpenFolderDialogShowHiddenFolders" xml:space="preserve">
+    <value>Show hidden folders</value>
+    <comment>Checkbox label for showing hidden folders in the folder chooser.</comment>
+  </data>
+  <data name="OpenFolderDialogFoldersIn" xml:space="preserve">
+    <value>Folders in {path}</value>
+    <comment>Accessible label for a list of folders; path is the current folder path.</comment>
+  </data>
+  <data name="OpenFolderErrorEmpty" xml:space="preserve">
+    <value>Enter a folder path.</value>
+    <comment>Error shown when the folder path field is empty.</comment>
+  </data>
+  <data name="OpenFolderErrorNotAbsolute" xml:space="preserve">
+    <value>Enter a full path, such as /home/me/my-app or C:\Projects\my-app. A path starting with ~ means your home folder.</value>
+    <comment>Error shown when the entered folder path is not absolute. Keep the example paths recognizable.</comment>
+  </data>
+  <data name="OpenFolderErrorNotFound" xml:space="preserve">
+    <value>That folder doesn't exist.</value>
+    <comment>Error shown when the entered folder does not exist.</comment>
+  </data>
+  <data name="OpenFolderErrorNotAFolder" xml:space="preserve">
+    <value>That is a file, not a folder.</value>
+    <comment>Error shown when the entered path points to a file.</comment>
+  </data>
+  <data name="OpenFolderErrorAccessDenied" xml:space="preserve">
+    <value>BlazeHarness isn't allowed to read that folder.</value>
+    <comment>Error shown when access to the selected folder is denied.</comment>
+  </data>
+  <data name="OpenFolderErrorNotAllowed" xml:space="preserve">
+    <value>That folder is too broad to work in. Pick a project folder, not the root, your home folder or BlazeHarness's own data folder.</value>
+    <comment>Error shown when the selected folder is too broad to safely use as a project folder.</comment>
+  </data>
+  <data name="MoveChatErrorWriteFailed" xml:space="preserve">
+    <value>The chat could not be moved because its file could not be written.</value>
+    <comment>Error toast shown when moving a chat fails because its file could not be written.</comment>
+  </data>
+  <data name="SettingsGeneralTitle" xml:space="preserve">
+    <value>General</value>
+    <comment>Title of the General settings section.</comment>
+  </data>
+  <data name="SettingsGeneralDescription" xml:space="preserve">
+    <value>Compaction, chat appearance and keyboard shortcuts.</value>
+    <comment>Short description beneath the General settings title.</comment>
+  </data>
+  <data name="ChatStatsCachedPromptTokens" xml:space="preserve">
+    <value>{count, plural, one {{formattedCount} prompt token was served from the provider's cache} other {{formattedCount} prompt tokens were served from the provider's cache}}</value>
+    <comment>Tooltip for the number of prompt tokens served from the provider's cache. count selects the plural form; formattedCount is the number formatted for display.</comment>
+  </data>
+  <data name="ChatStatsResponsesLabel" xml:space="preserve">
+    <value>Responses</value>
+    <comment>Label in the chat usage stats for the number of model responses. Keep it short; it sits next to a number.</comment>
+  </data>
+  <data name="ChatStatsResponsesTooltip" xml:space="preserve">
+    <value>Responses the model gave, tool rounds included</value>
+    <comment>Tooltip for the Responses stat; a tool round is one model response that is followed by tool calls.</comment>
+  </data>
+  <data name="ChatStatsStreamingLabel" xml:space="preserve">
+    <value>Streaming</value>
+    <comment>Label in the chat usage stats for the total time the model spent streaming output.</comment>
+  </data>
+  <data name="ChatStatsStreamingTooltip" xml:space="preserve">
+    <value>Time spent streaming output, over all responses</value>
+    <comment>Tooltip for the Streaming stat, which shows a duration summed over all responses of the chat.</comment>
+  </data>
+  <data name="ChatStatsFirstTokenLabel" xml:space="preserve">
+    <value>First token</value>
+    <comment>Label in the chat usage stats for the wait before the first output token arrives.</comment>
+  </data>
+  <data name="ChatStatsFirstTokenTooltip" xml:space="preserve">
+    <value>Average wait until the first output arrived</value>
+    <comment>Tooltip for the First token stat, which shows an average latency per response.</comment>
+  </data>
+  <data name="ChatStatsPrefillLabel" xml:space="preserve">
+    <value>Prefill</value>
+    <comment>Label in the chat usage stats for prompt processing speed, the work the model does before it starts to answer.</comment>
+  </data>
+  <data name="ChatStatsPrefillTooltip" xml:space="preserve">
+    <value>Uncached prompt tokens processed per second before the first output</value>
+    <comment>Tooltip for the Prefill stat, a speed in tokens per second.</comment>
+  </data>
+  <data name="ChatStatsDecodeLabel" xml:space="preserve">
+    <value>Decode</value>
+    <comment>Label in the chat usage stats for output generation speed while the model writes its answer.</comment>
+  </data>
+  <data name="ChatStatsDecodeTooltip" xml:space="preserve">
+    <value>Tokens generated per second while streaming</value>
+    <comment>Tooltip for the Decode stat, a speed in tokens per second.</comment>
+  </data>
+  <data name="ChatStatsOutLabel" xml:space="preserve">
+    <value>Out</value>
+    <comment>Short label in the chat usage stats for tokens the model generated (output). Pairs with the In label.</comment>
+  </data>
+  <data name="ChatStatsCachedLabel" xml:space="preserve">
+    <value>Cached</value>
+    <comment>Short label in the chat usage stats for prompt tokens served from the provider's cache, shown beside the In count.</comment>
+  </data>
+  <data name="ChatStatsInLabel" xml:space="preserve">
+    <value>In</value>
+    <comment>Short label in the chat usage stats for prompt tokens sent to the model (input). Pairs with the Out label.</comment>
+  </data>
+  <data name="ChatStatsInTooltip" xml:space="preserve">
+    <value>Prompt tokens sent, over all responses of this chat</value>
+    <comment>Tooltip for the In stat, which sums prompt tokens over the whole chat.</comment>
+  </data>
+  <data name="ChatStatsAriaLabel" xml:space="preserve">
+    <value>Usage of this chat</value>
+    <comment>Accessible name (aria-label) of the group of token and speed stats shown for a chat.</comment>
+  </data>
+  <data name="ChatViewJumpToLatest" xml:space="preserve">
+    <value>Jump to latest</value>
+    <comment>Button in the chat transcript that scrolls back to the newest message after the user scrolled up.</comment>
+  </data>
+  <data name="ChatViewEmptyHint" xml:space="preserve">
+    <value>Pick a model below and send a message. Press Enter to send and Shift+Enter for a new line.</value>
+    <comment>Hint under the heading of an empty chat. Enter and Shift+Enter are key names; use the names on the target keyboard.</comment>
+  </data>
+  <data name="ChatViewEmptyHeading" xml:space="preserve">
+    <value>What can I help with?</value>
+    <comment>Heading of an empty chat, written as the assistant's greeting to the user.</comment>
+  </data>
+  <data name="ChatViewFolderNotFound" xml:space="preserve">
+    <value>Folder not found</value>
+    <comment>Warning in the chat header when the folder the chat works in no longer exists on disk.</comment>
+  </data>
+  <data name="ChatViewFindButton" xml:space="preserve">
+    <value>Find</value>
+    <comment>Button label in the chat header that opens the find bar to search the transcript.</comment>
+  </data>
+  <data name="ChatViewFindButtonTooltip" xml:space="preserve">
+    <value>Find in this chat (Ctrl+F)</value>
+    <comment>Tooltip for the Find button. Ctrl+F is the keyboard shortcut; use the key names of the target keyboard.</comment>
+  </data>
+  <data name="ChatViewMoveButton" xml:space="preserve">
+    <value>Move</value>
+    <comment>Button label in the chat header that opens a dialog to move the chat to another folder.</comment>
+  </data>
+  <data name="ChatViewChatFilesLabel" xml:space="preserve">
+    <value>Chat files</value>
+    <comment>Label in the header of a general chat (one without a folder) that names where its files are kept.</comment>
+  </data>
+  <data name="ChatViewChatFilesTooltip" xml:space="preserve">
+    <value>Files this chat creates are kept with the chat</value>
+    <comment>Tooltip for the Chat files label in the header of a general chat.</comment>
+  </data>
+  <data name="ChatViewInstructionsHeading" xml:space="preserve">
+    <value>Project instructions</value>
+    <comment>Heading of the popover that lists the project instruction files (AGENTS.md) given to the model.</comment>
+  </data>
+  <data name="ChatViewAgentsMdTrigger" xml:space="preserve">
+    <value>AGENTS.md</value>
+    <comment>Button in the chat header that opens the project instructions popover. AGENTS.md is a file name; do not translate it.</comment>
+  </data>
+  <data name="ChatViewInstructionsTooltip" xml:space="preserve">
+    <value>Project instructions the model was given</value>
+    <comment>Tooltip for the AGENTS.md button in the chat header.</comment>
+  </data>
+  <data name="ChatViewInstructionsLabel" xml:space="preserve">
+    <value>Project instructions</value>
+    <comment>Accessible name (aria-label) of the project instructions popover and its trigger button.</comment>
+  </data>
+  <data name="ChatViewConversationLabel" xml:space="preserve">
+    <value>Conversation</value>
+    <comment>Accessible name (aria-label) of the region that holds the chat messages.</comment>
+  </data>
+  <data name="ChatViewStartNewChat" xml:space="preserve">
+    <value>Start a new chat</value>
+    <comment>Link shown after the chat-not-found message that leads to a new chat.</comment>
+  </data>
+  <data name="ChatViewMissingChat" xml:space="preserve">
+    <value>This chat no longer exists.</value>
+    <comment>Message shown in place of the chat when the opened chat was deleted or cannot be found.</comment>
+  </data>
+  <data name="ComposerModelSwitchCacheHint" xml:space="preserve">
+    <value>Sending with a different model starts the prompt cache over, so the first reply may be slower.</value>
+    <comment>Hint under the composer when the selected model differs from the one used so far in this chat. The prompt cache is the provider's reuse of earlier input.</comment>
+  </data>
+  <data name="ComposerImagesUnsupportedHint" xml:space="preserve">
+    <value>The selected model can't view images, so they will be left out of what it sees.</value>
+    <comment>Hint under the composer when images are attached but the selected model does not support image input.</comment>
+  </data>
+  <data name="ComposerSendTooltip" xml:space="preserve">
+    <value>Send (Enter)</value>
+    <comment>Tooltip for the Send button. Enter is the key name; use the key name of the target keyboard.</comment>
+  </data>
+  <data name="ComposerSendLabel" xml:space="preserve">
+    <value>Send</value>
+    <comment>Accessible name (aria-label) of the icon-only button that sends the message.</comment>
+  </data>
+  <data name="ComposerStopTooltip" xml:space="preserve">
+    <value>Stop</value>
+    <comment>Tooltip for the button that stops the reply that is being generated.</comment>
+  </data>
+  <data name="ComposerStopLabel" xml:space="preserve">
+    <value>Stop</value>
+    <comment>Accessible name (aria-label) of the icon-only button that stops the reply that is being generated.</comment>
+  </data>
+  <data name="ComposerRetryTooltip" xml:space="preserve">
+    <value>Retry the last reply</value>
+    <comment>Tooltip for the button that asks the model to generate its last reply again.</comment>
+  </data>
+  <data name="ComposerRetryLabel" xml:space="preserve">
+    <value>Retry</value>
+    <comment>Accessible name (aria-label) of the icon-only button that regenerates the last reply.</comment>
+  </data>
+  <data name="ComposerThinkingHeading" xml:space="preserve">
+    <value>Thinking</value>
+    <comment>Heading inside the thinking menu above the list of thinking levels (how much the model reasons before answering).</comment>
+  </data>
+  <data name="ComposerThinkingTooltip" xml:space="preserve">
+    <value>How much the model thinks before answering</value>
+    <comment>Tooltip for the thinking level menu in the composer.</comment>
+  </data>
+  <data name="ComposerThinkingMenuLabel" xml:space="preserve">
+    <value>Thinking</value>
+    <comment>Accessible name of the thinking level menu in the composer. Read aloud before the selected level.</comment>
+  </data>
+  <data name="ComposerModelMenuTooltip" xml:space="preserve">
+    <value>Model</value>
+    <comment>Tooltip for the menu in the composer that selects the model.</comment>
+  </data>
+  <data name="ComposerModelMenuLabel" xml:space="preserve">
+    <value>Model</value>
+    <comment>Accessible name of the model selection menu in the composer. Read aloud before the selected model name.</comment>
+  </data>
+  <data name="ComposerAttachFilesTooltip" xml:space="preserve">
+    <value>Attach files</value>
+    <comment>Tooltip for the paperclip button that opens the file picker.</comment>
+  </data>
+  <data name="ComposerAttachFilesLabel" xml:space="preserve">
+    <value>Attach files</value>
+    <comment>Accessible name (aria-label) of the icon-only button that opens the file picker.</comment>
+  </data>
+  <data name="ComposerMessageLabel" xml:space="preserve">
+    <value>Message</value>
+    <comment>Accessible name (aria-label) of the message text box in the composer.</comment>
+  </data>
+  <data name="ComposerInsertAsText" xml:space="preserve">
+    <value>Insert as text</value>
+    <comment>Button on an attached text file that pastes the file's contents into the message instead of sending it as an attachment.</comment>
+  </data>
+  <data name="ComposerPreviewFile" xml:space="preserve">
+    <value>Preview</value>
+    <comment>Button on an attached file that shows or hides a preview of the start of the file.</comment>
+  </data>
+  <data name="ComposerAttachedFilesLabel" xml:space="preserve">
+    <value>Attached files</value>
+    <comment>Accessible name (aria-label) of the list of files attached to the message being written.</comment>
+  </data>
+  <data name="ComposerQueuedBadge" xml:space="preserve">
+    <value>Queued</value>
+    <comment>Badge on a message that waits to be sent to the model at its next step while a reply is running.</comment>
+  </data>
+  <data name="ComposerQueuedMessagesLabel" xml:space="preserve">
+    <value>Queued messages</value>
+    <comment>Accessible name (aria-label) of the list of messages queued while a reply is running.</comment>
+  </data>
+  <data name="ComposerSkillsLabel" xml:space="preserve">
+    <value>Skills</value>
+    <comment>Accessible name (aria-label) of the suggestion list of skills that appears while the user types a skill name.</comment>
+  </data>
+  <data name="ComposerCancelEdit" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Button in the editing notice that discards the edit of an earlier message.</comment>
+  </data>
+  <data name="ComposerEditingHint" xml:space="preserve">
+    <value>Editing a message. Sending replaces it and every reply after it.</value>
+    <comment>Notice above the composer while the user edits an earlier message; sending removes that message and everything after it.</comment>
+  </data>
+  <data name="ComposerOpenProviders" xml:space="preserve">
+    <value>Open providers</value>
+    <comment>Button shown when no model is configured; opens the Providers section of the settings.</comment>
+  </data>
+  <data name="ComposerNoModelsHint" xml:space="preserve">
+    <value>Add a model to a provider to start chatting.</value>
+    <comment>Message shown in place of the composer when no provider has a model yet.</comment>
+  </data>
+  <data name="ContextIndicatorCompactDescription" xml:space="preserve">
+    <value>Replace older messages with a summary</value>
+    <comment>Description under the Compact now item in the context panel; compacting shortens the conversation by summarizing earlier messages.</comment>
+  </data>
+  <data name="ContextIndicatorCompactNow" xml:space="preserve">
+    <value>Compact now</value>
+    <comment>Menu item in the context panel that summarizes older messages immediately.</comment>
+  </data>
+  <data name="ContextIndicatorHeading" xml:space="preserve">
+    <value>Context</value>
+    <comment>Heading of the context panel; the context is the part of the model's input window the conversation uses.</comment>
+  </data>
+  <data name="ContextIndicatorDialogLabel" xml:space="preserve">
+    <value>Context</value>
+    <comment>Accessible name (aria-label) of the context panel dialog.</comment>
+  </data>
+  <data name="ContextIndicatorTokensUnit" xml:space="preserve">
+    <value>tokens</value>
+    <comment>Screen-reader-only unit read after the context size number on the context indicator button.</comment>
+  </data>
+  <data name="DiffViewLabel" xml:space="preserve">
+    <value>Changes</value>
+    <comment>Accessible name (aria-label) of the diff, the list of added and removed lines of a file change.</comment>
+  </data>
+  <data name="ExportMenuSecretsWarning" xml:space="preserve">
+    <value>The file holds everything in the chat, including what tools printed, such as the contents of files they read. Check it for secrets before you share it. Attached files are not included.</value>
+    <comment>Warning at the bottom of the export popover: the exported file may contain sensitive data such as secrets read by tools.</comment>
+  </data>
+  <data name="ExportMenuJsonHint" xml:space="preserve">
+    <value>To import again later</value>
+    <comment>Description of the JSON export option: the file can be imported back into the app.</comment>
+  </data>
+  <data name="ExportMenuJsonName" xml:space="preserve">
+    <value>JSON</value>
+    <comment>Name of the JSON export format in the export popover. JSON is a file format name; do not translate it.</comment>
+  </data>
+  <data name="ExportMenuMarkdownHint" xml:space="preserve">
+    <value>To read or share</value>
+    <comment>Description of the Markdown export option: a readable document of the chat.</comment>
+  </data>
+  <data name="ExportMenuMarkdownName" xml:space="preserve">
+    <value>Markdown</value>
+    <comment>Name of the Markdown export format in the export popover. Markdown is a format name; do not translate it.</comment>
+  </data>
+  <data name="ExportMenuHeading" xml:space="preserve">
+    <value>Export chat</value>
+    <comment>Heading of the export popover, shown above the list of export formats.</comment>
+  </data>
+  <data name="ExportMenuButton" xml:space="preserve">
+    <value>Export</value>
+    <comment>Label of the button in the chat header that opens the export popover.</comment>
+  </data>
+  <data name="ExportMenuTooltip" xml:space="preserve">
+    <value>Save this chat as a file</value>
+    <comment>Tooltip for the Export button in the chat header.</comment>
+  </data>
+  <data name="ExportMenuLabel" xml:space="preserve">
+    <value>Export</value>
+    <comment>Accessible name (aria-label) of the export popover dialog.</comment>
+  </data>
+  <data name="FindBarCloseTooltip" xml:space="preserve">
+    <value>Close (Esc)</value>
+    <comment>Tooltip for the button that closes the find bar. Esc is the key name; use the key name of the target keyboard.</comment>
+  </data>
+  <data name="FindBarCloseLabel" xml:space="preserve">
+    <value>Close find</value>
+    <comment>Accessible name (aria-label) of the icon-only button that closes the find bar.</comment>
+  </data>
+  <data name="FindBarNextTooltip" xml:space="preserve">
+    <value>Next match (Enter)</value>
+    <comment>Tooltip for the button that jumps to the next search match. Enter is the key name; use the key name of the target keyboard.</comment>
+  </data>
+  <data name="FindBarNextLabel" xml:space="preserve">
+    <value>Next match</value>
+    <comment>Accessible name (aria-label) of the icon-only button that jumps to the next search match.</comment>
+  </data>
+  <data name="FindBarPreviousTooltip" xml:space="preserve">
+    <value>Previous match (Shift+Enter)</value>
+    <comment>Tooltip for the button that jumps to the previous search match. Shift+Enter is the keyboard shortcut; use the key names of the target keyboard.</comment>
+  </data>
+  <data name="FindBarPreviousLabel" xml:space="preserve">
+    <value>Previous match</value>
+    <comment>Accessible name (aria-label) of the icon-only button that jumps to the previous search match.</comment>
+  </data>
+  <data name="FindBarInputLabel" xml:space="preserve">
+    <value>Find in this chat</value>
+    <comment>Accessible name (aria-label) of the search text box in the find bar.</comment>
+  </data>
+  <data name="FindBarPlaceholder" xml:space="preserve">
+    <value>Find in this chat</value>
+    <comment>Placeholder text of the search text box in the find bar.</comment>
+  </data>
+  <data name="FindBarLabel" xml:space="preserve">
+    <value>Find in this chat</value>
+    <comment>Accessible name (aria-label) of the find bar region that searches the transcript.</comment>
+  </data>
+  <data name="McpPickerManage" xml:space="preserve">
+    <value>Manage</value>
+    <comment>Link-style button in the MCP picker popover that opens the MCP settings page.</comment>
+  </data>
+  <data name="McpPickerScopeNote" xml:space="preserve">
+    <value>Applies to this chat only, from the next reply. Changing it resets the model's prompt cache, so that reply may be slower.</value>
+    <comment>Info note at the bottom of the MCP picker popover: explains that turning servers on or off affects only the current chat. "Prompt cache" is the model provider's cache of the conversation prefix.</comment>
+  </data>
+  <data name="McpPickerFailed" xml:space="preserve">
+    <value>Failed</value>
+    <comment>Short error badge next to an MCP server in the picker popover when its connection failed; the error text is shown as a tooltip.</comment>
+  </data>
+  <data name="McpPickerTrigger" xml:space="preserve">
+    <value>MCP</value>
+    <comment>Text of the chat toolbar button that opens the MCP servers picker, followed by a count badge. MCP is the Model Context Protocol; keep the abbreviation.</comment>
+  </data>
+  <data name="McpPickerTitle" xml:space="preserve">
+    <value>MCP servers whose tools this chat can use</value>
+    <comment>Tooltip of the MCP picker toolbar button, describing what the picker controls. MCP is the Model Context Protocol; keep the abbreviation.</comment>
+  </data>
+  <data name="McpPickerLabel" xml:space="preserve">
+    <value>MCP servers</value>
+    <comment>Accessible label (aria-label) of the MCP picker popover and its button. MCP is the Model Context Protocol; keep the abbreviation.</comment>
+  </data>
+  <data name="MessageViewEditTooltip" xml:space="preserve">
+    <value>Edit and resend</value>
+    <comment>Tooltip for the icon-only button on a user message that lets the user edit it and send it again.</comment>
+  </data>
+  <data name="MessageViewEditLabel" xml:space="preserve">
+    <value>Edit and resend this message</value>
+    <comment>Accessible name (aria-label) of the icon-only edit button on a user message.</comment>
+  </data>
+  <data name="MessageViewCopyTooltip" xml:space="preserve">
+    <value>Copy message</value>
+    <comment>Tooltip for the icon-only button that copies a message to the clipboard.</comment>
+  </data>
+  <data name="MessageViewCopyLabel" xml:space="preserve">
+    <value>Copy this message</value>
+    <comment>Accessible name (aria-label) of the icon-only button that copies a message to the clipboard.</comment>
+  </data>
+  <data name="MessageViewInterruptedHint" xml:space="preserve">
+    <value>This reply was cut off when the app stopped. Retry to generate it again.</value>
+    <comment>Hint under an assistant reply that was interrupted because the app shut down while it was being generated.</comment>
+  </data>
+  <data name="MessageViewStoppedHint" xml:space="preserve">
+    <value>Stopped.</value>
+    <comment>Hint under an assistant reply that the user stopped before it finished.</comment>
+  </data>
+  <data name="MessageViewEmptyReplyHint" xml:space="preserve">
+    <value>The model ended its reply without any text.</value>
+    <comment>Hint shown in place of an assistant reply that finished with no text, for example after only tool calls.</comment>
+  </data>
+  <data name="MessageViewWaiting" xml:space="preserve">
+    <value>Waiting for the model…</value>
+    <comment>Status shown while the request is sent and no output has arrived yet. The ellipsis marks ongoing activity.</comment>
+  </data>
+  <data name="MessageViewThinkingSummary" xml:space="preserve">
+    <value>Thinking</value>
+    <comment>Summary line of the collapsible section that holds the model's reasoning text.</comment>
+  </data>
+  <data name="MessageViewQueuedLabel" xml:space="preserve">
+    <value>Sent while the model was working</value>
+    <comment>Label above a user message that was queued while a reply was running and reached the model at its next step.</comment>
+  </data>
+  <data name="PermissionPickerConfirmButton" xml:space="preserve">
+    <value>Turn on</value>
+    <comment>Button in the confirmation dialog of the permission menu that enables the risky option (Unrestricted or Never ask) the user picked. Imperative verb phrase.</comment>
+  </data>
+  <data name="PermissionPickerCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Button in the confirmation dialog of the permission menu that closes it without turning the risky option on.</comment>
+  </data>
+  <data name="PermissionPickerConfirmHint" xml:space="preserve">
+    <value>This only applies to this chat. Protected folders such as your SSH keys stay blocked.</value>
+    <comment>Hint at the bottom of the confirmation dialog shown before a risky permission option is turned on. It reassures the user that the change affects only the current chat. SSH is a protocol name, do not translate it.</comment>
+  </data>
+  <data name="PermissionPickerNeverAskWarning" xml:space="preserve">
+    <value>Never ask: tool calls run without asking you first. Text the model reads from files or web pages could trick it into running harmful commands.</value>
+    <comment>Warning paragraph in the confirmation dialog shown before the Never ask approval mode is turned on. "Never ask" is the name of that option (see PermissionPickerNeverAsk) and should match its translation.</comment>
+  </data>
+  <data name="PermissionPickerUnrestrictedWarning" xml:space="preserve">
+    <value>Unrestricted: tools and commands can read and change anything your user account can, with no sandbox.</value>
+    <comment>Warning paragraph in the confirmation dialog shown before the Unrestricted access level is turned on. "Unrestricted" is the name of that option (see PermissionPickerUnrestricted) and should match its translation.</comment>
+  </data>
+  <data name="PermissionPickerConfirmTitle" xml:space="preserve">
+    <value>Turn off a safeguard?</value>
+    <comment>Title of the confirmation dialog shown when the user picks Unrestricted or Never ask in the permission menu. Phrased as a question.</comment>
+  </data>
+  <data name="PermissionPickerNoSandboxNote" xml:space="preserve">
+    <value>No sandbox, so commands are blocked</value>
+    <comment>Short note at the bottom of the permission menu, shown when no shell sandbox is available on this computer, so shell commands cannot run. The sandbox is the isolated environment commands run in.</comment>
+  </data>
+  <data name="PermissionPickerSandboxedNote" xml:space="preserve">
+    <value>Commands, when allowed, run in a sandbox</value>
+    <comment>Short note at the bottom of the permission menu, shown when a shell sandbox is available and the access level is not Unrestricted. The sandbox is the isolated environment commands run in.</comment>
+  </data>
+  <data name="PermissionPickerUnrestrictedNote" xml:space="preserve">
+    <value>Commands run without a sandbox</value>
+    <comment>Short note at the bottom of the permission menu, shown when the access level is Unrestricted, so shell commands run outside the sandbox. The sandbox is the isolated environment commands normally run in.</comment>
+  </data>
+  <data name="PermissionPickerNeverAskDescription" xml:space="preserve">
+    <value>Run allowed actions and block the rest</value>
+    <comment>Description under the Never ask item in the permission menu's Approvals section: actions the rules allow run, everything else is blocked without a prompt.</comment>
+  </data>
+  <data name="PermissionPickerAskForExceptionsDescription" xml:space="preserve">
+    <value>Ask only when an action exceeds the access level</value>
+    <comment>Description under the Ask for exceptions item in the permission menu's Approvals section. The access level is the choice made in the Access section of the same menu.</comment>
+  </data>
+  <data name="PermissionPickerAskFirstDescription" xml:space="preserve">
+    <value>Ask before risky actions or actions outside the folder</value>
+    <comment>Description under the Ask first item in the permission menu's Approvals section. "The folder" is the folder the chat works in.</comment>
+  </data>
+  <data name="PermissionPickerApprovalsHeading" xml:space="preserve">
+    <value>Approvals</value>
+    <comment>Section heading in the permission menu above the options that decide when the agent asks before acting.</comment>
+  </data>
+  <data name="PermissionPickerUnrestrictedDescription" xml:space="preserve">
+    <value>Access anything your account can, without a sandbox</value>
+    <comment>Description under the Unrestricted item in the permission menu's Access section. "Your account" is the operating system user account running the app.</comment>
+  </data>
+  <data name="PermissionPickerReadOnlyDescription" xml:space="preserve">
+    <value>Read files without changing them or running commands</value>
+    <comment>Description under the Read only item in the permission menu's Access section.</comment>
+  </data>
+  <data name="PermissionPickerAccessHeading" xml:space="preserve">
+    <value>Access</value>
+    <comment>Section heading in the permission menu above the options that decide what the agent can read and change.</comment>
+  </data>
+  <data name="PermissionPickerLabel" xml:space="preserve">
+    <value>Permissions</value>
+    <comment>Accessible label (not shown on screen) of the permission menu button in the chat header.</comment>
+  </data>
+  <data name="QuestionCardAnswerLabel" xml:space="preserve">
+    <value>Your answer:</value>
+    <comment>Label before the user's answer on an answered question card; the answer text follows it.</comment>
+  </data>
+  <data name="QuestionCardSendHint" xml:space="preserve">
+    <value>Ctrl+Enter sends</value>
+    <comment>Keyboard hint beside the answer buttons of a question card. Ctrl+Enter is the shortcut; use the key names of the target keyboard.</comment>
+  </data>
+  <data name="QuestionCardSkip" xml:space="preserve">
+    <value>Skip</value>
+    <comment>Button on a question card that declines to answer so the model continues without an answer.</comment>
+  </data>
+  <data name="QuestionCardLeaveToModel" xml:space="preserve">
+    <value>You decide</value>
+    <comment>Button on a question card that tells the model to make the choice itself. Addressed to the model.</comment>
+  </data>
+  <data name="QuestionCardSendAnswer" xml:space="preserve">
+    <value>Send answer</value>
+    <comment>Submit button on a question card that sends the user's answer to the model.</comment>
+  </data>
+  <data name="QuestionCardAskedBy" xml:space="preserve">
+    <value>Asked by the assistant</value>
+    <comment>Caption at the top of a question card showing that the question comes from the assistant, not from the user.</comment>
+  </data>
+  <data name="QuestionCardLabel" xml:space="preserve">
+    <value>Question from the assistant</value>
+    <comment>Accessible name (aria-label) of the question card region.</comment>
+  </data>
+  <data name="SkillPickerManage" xml:space="preserve">
+    <value>Manage</value>
+    <comment>Link-style button in the skills picker popover that opens the skills settings page.</comment>
+  </data>
+  <data name="SkillPickerScopeNote" xml:space="preserve">
+    <value>Applies to this chat only, from the next reply. Changing it resets the model's prompt cache, so that reply may be slower.</value>
+    <comment>Info note at the bottom of the skills picker popover: explains that turning skills on or off affects only the current chat. "Prompt cache" is the model provider's cache of the conversation prefix.</comment>
+  </data>
+  <data name="SkillPickerTrigger" xml:space="preserve">
+    <value>Skills</value>
+    <comment>Text of the chat toolbar button that opens the skills picker, followed by a count badge.</comment>
+  </data>
+  <data name="SkillPickerTitle" xml:space="preserve">
+    <value>Skills this chat can load</value>
+    <comment>Tooltip of the skills picker toolbar button, describing what the picker controls.</comment>
+  </data>
+  <data name="SkillPickerLabel" xml:space="preserve">
+    <value>Skills</value>
+    <comment>Accessible label (aria-label) of the skills picker popover and its button.</comment>
+  </data>
+  <data name="TodoChecklistLabel" xml:space="preserve">
+    <value>To-do list</value>
+    <comment>Accessible name (aria-label) of the list of to-do items the model keeps for its task.</comment>
+  </data>
+  <data name="TodoPanelLabel" xml:space="preserve">
+    <value>To-do list</value>
+    <comment>Accessible name (aria-label) of the collapsible panel that shows the model's to-do list above the composer.</comment>
+  </data>
+  <data name="ToolCallViewOutputLabel" xml:space="preserve">
+    <value>Output</value>
+    <comment>Label above the output a tool returned, in the details of a tool call.</comment>
+  </data>
+  <data name="ToolCallViewDeny" xml:space="preserve">
+    <value>Deny</value>
+    <comment>Button on a tool call approval request that refuses to run the tool.</comment>
+  </data>
+  <data name="ToolCallViewAllowForChat" xml:space="preserve">
+    <value>Allow for this chat</value>
+    <comment>Button on a tool call approval request that allows the tool now and for the rest of this chat.</comment>
+  </data>
+  <data name="ToolCallViewAllowOnce" xml:space="preserve">
+    <value>Allow</value>
+    <comment>Button on a tool call approval request that allows this single tool call.</comment>
+  </data>
+  <data name="MoveChatDialogCancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Button label that closes the move-chat dialog without moving the chat.</comment>
+  </data>
+  <data name="MoveChatDialogNoFolder" xml:space="preserve">
+    <value>No folder</value>
+    <comment>Destination option in the move-chat dialog that detaches the chat from any folder, making it a general chat.</comment>
+  </data>
+  <data name="MoveChatDialogDestinationsLabel" xml:space="preserve">
+    <value>Destinations</value>
+    <comment>Accessible label (aria-label) for the list of folders a chat can be moved to; not shown on screen.</comment>
+  </data>
+  <data name="MoveChatDialogHint" xml:space="preserve">
+    <value>Choose where this chat works. Its messages stay as they are, and nothing in the folders is changed.</value>
+    <comment>Explanatory paragraph at the top of the move-chat dialog; reassures the user that moving only changes which folder the chat works in.</comment>
+  </data>
+  <data name="MoveChatDialogTitle" xml:space="preserve">
+    <value>Move chat to</value>
+    <comment>Title of the dialog for choosing a new folder for a chat; the destinations are listed below it.</comment>
+  </data>
+  <data name="OpenFolderDialogCancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Button label that closes the folder picker dialog without choosing a folder.</comment>
+  </data>
+  <data name="OpenFolderDialogNoSubfolders" xml:space="preserve">
+    <value>There are no folders inside this one. You can still open it.</value>
+    <comment>Empty-state message in the folder picker when the current directory has no subfolders.</comment>
+  </data>
+  <data name="OpenFolderDialogPlacesLabel" xml:space="preserve">
+    <value>Places</value>
+    <comment>Accessible label (aria-label) for the row of shortcut locations, such as the home folder, in the folder picker; not shown on screen.</comment>
+  </data>
+  <data name="OpenFolderDialogGo" xml:space="preserve">
+    <value>Go</value>
+    <comment>Button next to the path box in the folder picker that jumps to the typed path.</comment>
+  </data>
+  <data name="OpenFolderDialogPathPlaceholder" xml:space="preserve">
+    <value>Type or paste a path, such as ~/code/my-app</value>
+    <comment>Placeholder in the folder path box of the folder picker. The example path is a file system path: do not translate it.</comment>
+  </data>
+  <data name="OpenFolderDialogPathLabel" xml:space="preserve">
+    <value>Folder path</value>
+    <comment>Label of the text box in the folder picker where the user types or pastes a directory path.</comment>
+  </data>
+  <data name="ChatListDeleteWarning" xml:space="preserve">
+    <value>This can't be undone. [strong]{title}[/strong] and everything stored for it is removed. Files in your project folder are not touched.</value>
+    <comment>Body of the dialog that confirms deleting a chat. {title} is the chat title. Keep the [strong] tags around it; they make it bold.</comment>
+  </data>
+  <data name="ChatListDeleteConfirm" xml:space="preserve">
+    <value>Delete</value>
+    <comment>Confirm button in the delete-chat confirmation dialog; permanently deletes the chat.</comment>
+  </data>
+  <data name="ChatListDeleteTitle" xml:space="preserve">
+    <value>Delete this chat?</value>
+    <comment>Title of the confirmation dialog shown before a chat is deleted.</comment>
+  </data>
+  <data name="ChatListDeleteMenuItem" xml:space="preserve">
+    <value>Delete</value>
+    <comment>Chat context menu item that starts deleting the chat; a confirmation dialog follows.</comment>
+  </data>
+  <data name="ChatListOpenDataMenuItem" xml:space="preserve">
+    <value>Open chat data</value>
+    <comment>Chat context menu item that opens the folder holding the chat's files in the operating system's file manager.</comment>
+  </data>
+  <data name="ChatListMoveMenuItem" xml:space="preserve">
+    <value>Move to folder</value>
+    <comment>Chat context menu item that opens the dialog for choosing which folder the chat works in.</comment>
+  </data>
+  <data name="ChatListRenameMenuItem" xml:space="preserve">
+    <value>Rename</value>
+    <comment>Chat context menu item that lets the user edit the chat's title in place.</comment>
+  </data>
+  <data name="ChatListReplyingLabel" xml:space="preserve">
+    <value>Replying</value>
+    <comment>Accessible label (aria-label) of the spinner shown next to a chat while the model is generating a reply.</comment>
+  </data>
+  <data name="ChatListReplyingTooltip" xml:space="preserve">
+    <value>Replying</value>
+    <comment>Tooltip on the spinner shown next to a chat while the model is generating a reply.</comment>
+  </data>
+  <data name="ChatListNeedsYouBadge" xml:space="preserve">
+    <value>Needs you</value>
+    <comment>Short badge shown next to a chat that is paused until the user answers a question or approves an action.</comment>
+  </data>
+  <data name="ChatListNeedsYouTooltip" xml:space="preserve">
+    <value>Waiting for your answer or approval</value>
+    <comment>Tooltip on the "Needs you" badge explaining why the chat is paused.</comment>
+  </data>
+  <data name="ChatListRenameLabel" xml:space="preserve">
+    <value>Chat name</value>
+    <comment>Accessible label (aria-label) of the text box used to rename a chat; not shown on screen.</comment>
+  </data>
+  <data name="MainLayoutReload" xml:space="preserve">
+    <value>Reload</value>
+    <comment>Link in the unhandled-error bar that reloads the page.</comment>
+  </data>
+  <data name="MainLayoutTitle" xml:space="preserve">
+    <value>BlazeHarness</value>
+    <comment>Product name shown in the top bar of the main layout. Product name: do not translate.</comment>
+  </data>
+  <data name="MainLayoutCloseSidebar" xml:space="preserve">
+    <value>Close sidebar</value>
+    <comment>Accessible label (aria-label) of the backdrop button that closes the sidebar on narrow screens; not shown on screen.</comment>
+  </data>
+  <data name="MainLayoutSkipToChat" xml:space="preserve">
+    <value>Skip to chat</value>
+    <comment>Keyboard "skip link", visible when focused, that moves focus past the sidebar to the chat area.</comment>
+  </data>
+  <data name="SettingsDialogSectionsLabel" xml:space="preserve">
+    <value>Settings sections</value>
+    <comment>Accessible label (not shown on screen) of the navigation list of settings sections (General, Providers, Permissions and so on) in the settings dialog.</comment>
+  </data>
+  <data name="SettingsDialogTitle" xml:space="preserve">
+    <value>Settings</value>
+    <comment>Title of the settings dialog, opened from the sidebar.</comment>
+  </data>
+  <data name="SidebarRemoveFolderWarning" xml:space="preserve">
+    <value>[strong]{name}[/strong] is removed from this list. The folder on your computer is not touched, and its chats stay, moved to Chats.</value>
+    <comment>Body of the dialog that confirms removing a folder from the sidebar. {name} is the folder name. Keep the [strong] tags around it; they make it bold. "Chats" is the name of the sidebar section for chats without a folder.</comment>
+  </data>
+  <data name="SidebarRemoveConfirm" xml:space="preserve">
+    <value>Remove</value>
+    <comment>Confirm button in the remove-folder dialog; removes the folder from the sidebar without deleting files on disk.</comment>
+  </data>
+  <data name="SidebarRemoveFolderTitle" xml:space="preserve">
+    <value>Remove this folder?</value>
+    <comment>Title of the confirmation dialog shown before a folder is removed from the sidebar.</comment>
+  </data>
+  <data name="SidebarRelocateConfirm" xml:space="preserve">
+    <value>Use this folder</value>
+    <comment>Confirm button in the dialog for pointing a missing folder at its new location.</comment>
+  </data>
+  <data name="SidebarRelocateTitle" xml:space="preserve">
+    <value>Find folder</value>
+    <comment>Title of the dialog for locating a folder that was moved or deleted on disk.</comment>
+  </data>
+  <data name="SidebarRemoveFolderMenuItem" xml:space="preserve">
+    <value>Remove folder</value>
+    <comment>Folder context menu item that starts removing the folder from the sidebar; a confirmation dialog follows.</comment>
+  </data>
+  <data name="SidebarFindFolderMenuItem" xml:space="preserve">
+    <value>Find folder</value>
+    <comment>Folder context menu item that opens the dialog for locating a moved or deleted folder.</comment>
+  </data>
+  <data name="SidebarNewChatMenuItem" xml:space="preserve">
+    <value>New chat</value>
+    <comment>Folder context menu item that starts a new chat in that folder.</comment>
+  </data>
+  <data name="SidebarSettings" xml:space="preserve">
+    <value>Settings</value>
+    <comment>Label of the button at the bottom of the sidebar that opens the settings dialog.</comment>
+  </data>
+  <data name="SidebarSettingsTooltip" xml:space="preserve">
+    <value>Settings (Ctrl+,)</value>
+    <comment>Tooltip of the settings button. The parenthesised text is the keyboard shortcut; keep it matching the real shortcut.</comment>
+  </data>
+  <data name="SidebarNoChatsInFolder" xml:space="preserve">
+    <value>No chats yet.</value>
+    <comment>Empty-state text shown under a folder in the sidebar when that folder has no chats.</comment>
+  </data>
+  <data name="SidebarFolderMissing" xml:space="preserve">
+    <value>This folder can't be found. It may have been moved or deleted.</value>
+    <comment>Message shown under a folder in the sidebar whose directory no longer exists on disk.</comment>
+  </data>
+  <data name="SidebarFindFolderTooltip" xml:space="preserve">
+    <value>Find this folder</value>
+    <comment>Tooltip of the icon button on a missing folder that opens the dialog for locating it.</comment>
+  </data>
+  <data name="SidebarNewChatInFolderTooltip" xml:space="preserve">
+    <value>New chat in this folder</value>
+    <comment>Tooltip of the icon button on a folder row that starts a new chat in that folder.</comment>
+  </data>
+  <data name="SidebarFolderNotFoundLabel" xml:space="preserve">
+    <value>Folder not found</value>
+    <comment>Accessible label (aria-label) of the warning icon shown on a folder whose directory is missing.</comment>
+  </data>
+  <data name="SidebarFolderNotFoundTooltip" xml:space="preserve">
+    <value>Folder not found</value>
+    <comment>Tooltip of the warning icon shown on a folder whose directory is missing.</comment>
+  </data>
+  <data name="SidebarNoFoldersHint" xml:space="preserve">
+    <value>Open a project folder to start chats in it.</value>
+    <comment>Empty-state text in the sidebar's Folders section when no folder has been added yet.</comment>
+  </data>
+  <data name="SidebarOpenFolderLabel" xml:space="preserve">
+    <value>Open folder</value>
+    <comment>Accessible label (aria-label) of the icon button in the Folders heading that opens the folder picker.</comment>
+  </data>
+  <data name="SidebarOpenFolderTooltip" xml:space="preserve">
+    <value>Open folder</value>
+    <comment>Tooltip of the icon button in the Folders heading that opens the folder picker.</comment>
+  </data>
+  <data name="SidebarFoldersHeading" xml:space="preserve">
+    <value>Folders</value>
+    <comment>Heading of the sidebar section listing project folders and the chats inside them.</comment>
+  </data>
+  <data name="SidebarNewGeneralChatLabel" xml:space="preserve">
+    <value>New chat without a folder</value>
+    <comment>Accessible label (aria-label) of the icon button in the Chats heading that starts a general chat, one that works in no folder.</comment>
+  </data>
+  <data name="SidebarNewGeneralChatTooltip" xml:space="preserve">
+    <value>New chat without a folder</value>
+    <comment>Tooltip of the icon button in the Chats heading that starts a general chat, one that works in no folder.</comment>
+  </data>
+  <data name="SidebarImportChatLabel" xml:space="preserve">
+    <value>Import a chat from a JSON file</value>
+    <comment>Accessible label (aria-label) of the file input that imports an exported chat. JSON is a file format: do not translate it.</comment>
+  </data>
+  <data name="SidebarImportChatTooltip" xml:space="preserve">
+    <value>Import a chat from a JSON file</value>
+    <comment>Tooltip of the icon button in the Chats heading that imports an exported chat. JSON is a file format: do not translate it.</comment>
+  </data>
+  <data name="SidebarChatsHeading" xml:space="preserve">
+    <value>Chats</value>
+    <comment>Heading of the sidebar section listing general chats, the ones that are not in a folder.</comment>
+  </data>
+  <data name="SidebarSearchChatsTooltip" xml:space="preserve">
+    <value>Search chats (Ctrl+K)</value>
+    <comment>Tooltip of the chat search box. The parenthesised text is the keyboard shortcut; keep it matching the real shortcut.</comment>
+  </data>
+  <data name="SidebarSearchChatsLabel" xml:space="preserve">
+    <value>Search chat titles</value>
+    <comment>Accessible label (aria-label) of the chat search box; not shown on screen.</comment>
+  </data>
+  <data name="SidebarSearchChatsPlaceholder" xml:space="preserve">
+    <value>Search chats</value>
+    <comment>Placeholder text inside the empty chat search box in the sidebar.</comment>
+  </data>
+  <data name="SidebarNewChat" xml:space="preserve">
+    <value>New chat</value>
+    <comment>Label of the primary button at the top of the sidebar that starts a new general chat.</comment>
+  </data>
+  <data name="SidebarNewChatTooltip" xml:space="preserve">
+    <value>New chat (Ctrl+Shift+O)</value>
+    <comment>Tooltip of the New chat button. The parenthesised text is the keyboard shortcut; keep it matching the real shortcut.</comment>
+  </data>
+  <data name="SidebarBrand" xml:space="preserve">
+    <value>BlazeHarness</value>
+    <comment>Product name shown at the top of the sidebar next to the logo. Product name: do not translate.</comment>
+  </data>
+  <data name="SidebarNavigationLabel" xml:space="preserve">
+    <value>Main</value>
+    <comment>Accessible label (aria-label) naming the sidebar as the main navigation landmark; read by screen readers, not shown on screen.</comment>
+  </data>
+  <data name="ErrorMessage" xml:space="preserve">
+    <value>An error occurred while processing your request. Check the console for details.</value>
+    <comment>Body text of the error page; "the console" is the app's console output, not the browser's.</comment>
+  </data>
+  <data name="ErrorHeading" xml:space="preserve">
+    <value>Something went wrong</value>
+    <comment>Heading of the error page.</comment>
+  </data>
+  <data name="ErrorPageTitle" xml:space="preserve">
+    <value>Error</value>
+    <comment>Browser tab title of the error page.</comment>
+  </data>
+  <data name="HomeSetUpProvider" xml:space="preserve">
+    <value>Set up a provider</value>
+    <comment>Button on the welcome page that opens the Providers section of the settings dialog.</comment>
+  </data>
+  <data name="HomeProviderHint" xml:space="preserve">
+    <value>Connect an OpenAI-compatible endpoint to start chatting. A hosted API or a local server such as llama.cpp both work.</value>
+    <comment>Paragraph on the welcome page shown when no provider is configured. "OpenAI" and "llama.cpp" are product names: do not translate.</comment>
+  </data>
+  <data name="HomeHeading" xml:space="preserve">
+    <value>Welcome to BlazeHarness</value>
+    <comment>Main heading of the welcome page. BlazeHarness is the product name: do not translate it.</comment>
+  </data>
+  <data name="HomePageTitle" xml:space="preserve">
+    <value>BlazeHarness</value>
+    <comment>Browser tab title of the welcome page. Product name: do not translate.</comment>
+  </data>
+  <data name="NotFoundMessage" xml:space="preserve">
+    <value>The page you are looking for does not exist.</value>
+    <comment>Body text of the 404 page shown for an unknown address.</comment>
+  </data>
+  <data name="NotFoundHeading" xml:space="preserve">
+    <value>Not found</value>
+    <comment>Heading of the 404 page shown for an unknown address.</comment>
+  </data>
+  <data name="NotFoundPageTitle" xml:space="preserve">
+    <value>Not found</value>
+    <comment>Browser tab title of the 404 page shown for an unknown address.</comment>
+  </data>
+  <data name="DiagnosticsSettingsRecentLogLabel" xml:space="preserve">
+    <value>Recent log lines</value>
+    <comment>Accessible label (not shown on screen) of the scrollable box that lists the most recent log lines on the Diagnostics page.</comment>
+  </data>
+  <data name="DiagnosticsSettingsLogEmpty" xml:space="preserve">
+    <value>Nothing has been logged yet.</value>
+    <comment>Message on the Diagnostics page shown in place of the log lines when the log is empty.</comment>
+  </data>
+  <data name="DiagnosticsSettingsRefreshButton" xml:space="preserve">
+    <value>Refresh</value>
+    <comment>Button next to the Recent log heading on the Diagnostics page that reloads the log lines.</comment>
+  </data>
+  <data name="DiagnosticsSettingsRecentLogHeading" xml:space="preserve">
+    <value>Recent log</value>
+    <comment>Heading of the card on the Diagnostics page that shows the tail of the application log.</comment>
+  </data>
+  <data name="DiagnosticsSettingsSkillsLabel" xml:space="preserve">
+    <value>Skills</value>
+    <comment>Label in the About this install list on the Diagnostics page; its value is the number of skills found.</comment>
+  </data>
+  <data name="DiagnosticsSettingsMcpServersLabel" xml:space="preserve">
+    <value>MCP servers</value>
+    <comment>Label in the About this install list on the Diagnostics page; its value summarizes the configured MCP servers. MCP is the Model Context Protocol, do not translate the abbreviation.</comment>
+  </data>
+  <data name="DiagnosticsSettingsFoldersLabel" xml:space="preserve">
+    <value>Folders</value>
+    <comment>Label in the About this install list on the Diagnostics page; its value is the number of folders added to the app.</comment>
+  </data>
+  <data name="DiagnosticsSettingsChatsLabel" xml:space="preserve">
+    <value>Chats</value>
+    <comment>Label in the About this install list on the Diagnostics page; its value is the number of saved chats.</comment>
+  </data>
+  <data name="DiagnosticsSettingsShellSandboxLabel" xml:space="preserve">
+    <value>Shell sandbox</value>
+    <comment>Label in the About this install list on the Diagnostics page; its value names the sandbox that isolates shell commands and whether it is available.</comment>
+  </data>
+  <data name="DiagnosticsSettingsLogFolderLabel" xml:space="preserve">
+    <value>Log folder</value>
+    <comment>Label in the About this install list on the Diagnostics page; its value is the path of the folder holding the log files.</comment>
+  </data>
+  <data name="DiagnosticsSettingsDataFolderLabel" xml:space="preserve">
+    <value>Data folder</value>
+    <comment>Label in the About this install list on the Diagnostics page; its value is the path of the folder where the app keeps its settings and chats.</comment>
+  </data>
+  <data name="DiagnosticsSettingsSystemLabel" xml:space="preserve">
+    <value>System</value>
+    <comment>Label in the About this install list on the Diagnostics page; its value is the operating system description.</comment>
+  </data>
+  <data name="DiagnosticsSettingsRuntimeLabel" xml:space="preserve">
+    <value>Runtime</value>
+    <comment>Label in the About this install list on the Diagnostics page; its value is the .NET runtime version the app runs on.</comment>
+  </data>
+  <data name="DiagnosticsSettingsVersionLabel" xml:space="preserve">
+    <value>Version</value>
+    <comment>Label in the About this install list on the Diagnostics page; its value is the BlazeHarness version number.</comment>
+  </data>
+  <data name="DiagnosticsSettingsCopyButton" xml:space="preserve">
+    <value>Copy for a bug report</value>
+    <comment>Button on the Diagnostics page that copies the install details to the clipboard as text to paste into a bug report.</comment>
+  </data>
+  <data name="DiagnosticsSettingsAboutHeading" xml:space="preserve">
+    <value>About this install</value>
+    <comment>Heading of the card on the Diagnostics page that lists the version, runtime, folders and counts of this installation.</comment>
+  </data>
+  <data name="DiagnosticsSettingsDescription" xml:space="preserve">
+    <value>What to look at when something doesn't work, and what to include when you report it.</value>
+    <comment>Introductory sentence under the title of the Diagnostics page.</comment>
+  </data>
+  <data name="DiagnosticsSettingsTitle" xml:space="preserve">
+    <value>Diagnostics</value>
+    <comment>Title of the Diagnostics page in the settings dialog.</comment>
+  </data>
+  <data name="GeneralSettingsShortcutNewLine" xml:space="preserve">
+    <value>New line in the message</value>
+    <comment>Row label in the Keyboard shortcuts list on the General page; the key combination is shown next to it. Describes what Shift+Enter does in the message box.</comment>
+  </data>
+  <data name="GeneralSettingsShortcutSend" xml:space="preserve">
+    <value>Send the message</value>
+    <comment>Row label in the Keyboard shortcuts list on the General page; the key combination is shown next to it. Describes what Enter does in the message box.</comment>
+  </data>
+  <data name="GeneralSettingsShortcutSettings" xml:space="preserve">
+    <value>Settings</value>
+    <comment>Row label in the Keyboard shortcuts list on the General page; the key combination is shown next to it. Describes the shortcut that opens the settings dialog.</comment>
+  </data>
+  <data name="GeneralSettingsShortcutFindInChat" xml:space="preserve">
+    <value>Find in the chat</value>
+    <comment>Row label in the Keyboard shortcuts list on the General page; the key combination is shown next to it. Describes the shortcut that searches the text of the open chat.</comment>
+  </data>
+  <data name="GeneralSettingsShortcutSearchChats" xml:space="preserve">
+    <value>Search chats</value>
+    <comment>Row label in the Keyboard shortcuts list on the General page; the key combination is shown next to it. Describes the shortcut that searches the list of saved chats.</comment>
+  </data>
+  <data name="GeneralSettingsShortcutNewChat" xml:space="preserve">
+    <value>New chat</value>
+    <comment>Row label in the Keyboard shortcuts list on the General page; the key combination is shown next to it. Describes the shortcut that starts a new chat.</comment>
+  </data>
+  <data name="GeneralSettingsShortcutsHeading" xml:space="preserve">
+    <value>Keyboard shortcuts</value>
+    <comment>Heading of the card on the General page that lists the keyboard shortcuts. The key names (Ctrl, Shift, Enter) are shown separately and are not part of this text.</comment>
+  </data>
+  <data name="GeneralSettingsReverseHint" xml:space="preserve">
+    <value>You can use [code]Array.Reverse[/code] on the characters:</value>
+    <comment>Hint in the Markdown example under General settings, introducing a C# code sample. Keep the [code] tags and do not translate Array.Reverse, it is a .NET method name.</comment>
+  </data>
+  <data name="GeneralSettingsPreviewQuestion" xml:space="preserve">
+    <value>How do I reverse a string in C#?</value>
+    <comment>Sample user message in the text size preview on the General page, followed by a sample assistant reply with a code block. C# is the programming language name, do not translate it.</comment>
+  </data>
+  <data name="GeneralSettingsPreviewLabel" xml:space="preserve">
+    <value>Preview of the chat text</value>
+    <comment>Accessible label (not shown on screen) of the sample conversation on the General page that shows how the chosen text sizes look.</comment>
+  </data>
+  <data name="GeneralSettingsChatTextSizeHint" xml:space="preserve">
+    <value>Messages and the message box, on top of the interface size. Code follows at a slightly smaller size.</value>
+    <comment>Hint under the Chat text size label on the General page. It explains that the size applies to messages and the message box in addition to the interface size.</comment>
+  </data>
+  <data name="GeneralSettingsChatTextSizeLabel" xml:space="preserve">
+    <value>Chat text size</value>
+    <comment>Label of the group of size options (small, default, large, extra large) that sets the text size of chat messages on the General page.</comment>
+  </data>
+  <data name="GeneralSettingsInterfaceSizeHint" xml:space="preserve">
+    <value>The sidebar, buttons, dialogs and settings.</value>
+    <comment>Hint under the Interface size label on the General page, listing the parts of the app that the size applies to.</comment>
+  </data>
+  <data name="GeneralSettingsInterfaceSizeLabel" xml:space="preserve">
+    <value>Interface size</value>
+    <comment>Label of the group of size options (small, default, large, extra large) that sets the size of the app interface on the General page.</comment>
+  </data>
+  <data name="GeneralSettingsTextSizeHint" xml:space="preserve">
+    <value>Kept in this browser and applied right away. Browser zoom still works on top.</value>
+    <comment>Hint under the Text size heading on the General page. The setting is stored in the browser, not on the server, and the browser's own zoom still applies on top of it.</comment>
+  </data>
+  <data name="GeneralSettingsTextSizeHeading" xml:space="preserve">
+    <value>Text size</value>
+    <comment>Heading of the card on the General page with the interface size and chat text size options.</comment>
+  </data>
+  <data name="GeneralSettingsFullWidthHint" xml:space="preserve">
+    <value>Expand messages and the message box to fill the available space. Kept in this browser and applied right away.</value>
+    <comment>Hint under the Use full width for chats checkbox on the General page. The setting is stored in the browser, not on the server.</comment>
+  </data>
+  <data name="GeneralSettingsFullWidthLabel" xml:space="preserve">
+    <value>Use full width for chats</value>
+    <comment>Label of a checkbox on the General page. When checked, messages and the message box are no longer limited to a narrow column.</comment>
+  </data>
+  <data name="GeneralSettingsChatWidthHeading" xml:space="preserve">
+    <value>Chat width</value>
+    <comment>Heading of the card on the General page with the full width option for chats.</comment>
+  </data>
+  <data name="GeneralSettingsCompactionLabel" xml:space="preserve">
+    <value>Compact without the model (Extraction)</value>
+    <comment>Label of a checkbox on the General page. When checked, a long chat is shortened by extracting key parts of it instead of asking the model to summarize it. "Extraction" names this compaction mode.</comment>
+  </data>
+  <data name="GeneralSettingsCompactionHeading" xml:space="preserve">
+    <value>Compaction</value>
+    <comment>Heading of the card on the General page for the option that controls how a long chat is shortened to fit the model's context.</comment>
+  </data>
+  <data name="GeneralSettingsLanguage" xml:space="preserve">
+    <value>Language</value>
+    <comment>Heading for the language setting.</comment>
+  </data>
+  <data name="GeneralSettingsDisplayLanguage" xml:space="preserve">
+    <value>Display language</value>
+    <comment>Label for the UI language picker.</comment>
+  </data>
+  <data name="GeneralSettingsEnglish" xml:space="preserve">
+    <value>English</value>
+    <comment>English option in the UI language picker.</comment>
+  </data>
+  <data name="GeneralSettingsCompactionDescription" xml:space="preserve">
+    <value>When a chat gets too long, the model normally summarizes the older messages. Extraction builds the summary from your requests, the files touched and the latest steps instead, without a model call: instant and free, but less thorough. The agent can still look up what was left out.</value>
+    <comment>Explains the extractive compaction option.</comment>
+  </data>
+  <data name="GeneralSettingsSaveFailure" xml:space="preserve">
+    <value>The setting could not be saved because the settings file could not be written.</value>
+    <comment>Toast shown when saving the general setting fails.</comment>
+  </data>
+  <data name="UiLightboxLabel" xml:space="preserve">
+    <value>Enlarged image</value>
+    <comment>Accessible label for the image lightbox dialog.</comment>
+  </data>
+  <data name="UiClose" xml:space="preserve">
+    <value>Close</value>
+    <comment>Button label for closing the image lightbox.</comment>
+  </data>
+  <data name="TokenFormatThousands" xml:space="preserve">
+    <value>{value}k</value>
+    <comment>Short token count in thousands, for example 4.2k. {value} is the number already formatted for the locale; the k stands for thousand.</comment>
+  </data>
+  <data name="TokenFormatRate" xml:space="preserve">
+    <value>{value} t/s</value>
+    <comment>Generation speed in tokens per second, for example 8.4 t/s. {value} is the number already formatted for the locale.</comment>
+  </data>
+  <data name="TokenFormatMilliseconds" xml:space="preserve">
+    <value>{value} ms</value>
+    <comment>Short duration in milliseconds. {value} is the number already formatted for the locale.</comment>
+  </data>
+  <data name="TokenFormatSeconds" xml:space="preserve">
+    <value>{value} s</value>
+    <comment>Short duration in seconds. {value} is the number already formatted for the locale.</comment>
+  </data>
+  <data name="TokenFormatMinutes" xml:space="preserve">
+    <value>{minutes}m {seconds}s</value>
+    <comment>Short duration in minutes and seconds, for example 2m 05s. {seconds} is zero-padded to two digits.</comment>
+  </data>
+  <data name="ValidationIdRequired" xml:space="preserve"><value>An identifier is required.</value><comment>Validation error under the provider id field when it is empty.</comment></data>
+  <data name="ValidationNameRequired" xml:space="preserve"><value>A name is required.</value><comment>Validation error under the provider name field when it is empty.</comment></data>
+  <data name="ValidationBaseUrlInvalid" xml:space="preserve"><value>The base URL must be an absolute http or https address, e.g. https://api.openai.com/v1.</value><comment>Validation error under the provider base URL field. Keep the example address as is.</comment></data>
+  <data name="ValidationApiKeyRefInvalid" xml:space="preserve"><value>Use the form {example}, or leave it empty to use the stored key.</value><comment>Validation error under the provider API key field. {example} is the literal text ${ENV_VAR}; do not translate it.</comment></data>
+  <data name="ValidationThinkingFieldRequired" xml:space="preserve"><value>Name the body field that carries the thinking level.</value><comment>Validation error under the field for the request body field that carries the thinking level.</comment></data>
+  <data name="ValidationThinkingFieldInvalid" xml:space="preserve"><value>Use letters, digits, dashes and underscores, with dots to reach into an object; no spaces or brackets.</value><comment>Validation error when the request body field name is not a valid path.</comment></data>
+  <data name="ValidationModelIdRequired" xml:space="preserve"><value>A model id is required.</value><comment>Validation error when a model has no id.</comment></data>
+  <data name="ValidationModelIdDuplicate" xml:space="preserve"><value>The model "{id}" is listed twice.</value><comment>Validation error when two models of a provider have the same id. {id} is the model id.</comment></data>
+  <data name="ValidationContextWindowInvalid" xml:space="preserve"><value>The context window must be a positive number of tokens.</value><comment>Validation error under the model context window field.</comment></data>
+  <data name="ValidationMaxOutputInvalid" xml:space="preserve"><value>Max output tokens must be a positive number.</value><comment>Validation error under the model max output tokens field.</comment></data>
+  <data name="ValidationMaxOutputTooLarge" xml:space="preserve"><value>Max output tokens must be less than the context window.</value><comment>Validation error under the model max output tokens field.</comment></data>
+  <data name="ValidationDefaultLevelInvalid" xml:space="preserve"><value>Pick a default thinking level from the ones the model supports.</value><comment>Validation error under the model default thinking level.</comment></data>
+  <data name="ValidationExtraFieldInvalid" xml:space="preserve"><value>The field name "{name}" is not valid. Use letters, digits, dashes and underscores, with dots to reach into an object; no spaces or brackets.</value><comment>Validation error for an extra request field. {name} is the field name the user typed.</comment></data>
+  <data name="ValidationSamplingOutOfRange" xml:space="preserve"><value>{key} must be between {min} and {max}.</value><comment>Validation error for a sampling setting outside its range. {key} is the API parameter name, for example temperature; do not translate it. {min} and {max} are numbers.</comment></data>
+  <data name="ConnectionTestConnected" xml:space="preserve"><value>Connected. The server lists {count, plural, one {# model} other {# models}}.</value><comment>Result of Test connection when the server listed models. {count} is the number of models.</comment></data>
+  <data name="ConnectionTestConnectedNoModels" xml:space="preserve"><value>Connected, but the server listed no models. Add them manually.</value><comment>Result of Test connection when the server answered but listed no models.</comment></data>
+  <data name="ConnectionTestInvalidBaseUrl" xml:space="preserve"><value>The base URL is not a valid http or https address.</value><comment>Result of Test connection when the base URL is invalid.</comment></data>
+  <data name="ConnectionTestModelListTooLarge" xml:space="preserve"><value>The server's model list is too large to be an OpenAI-style answer.</value><comment>Result of Test connection when the answer is unreasonably large.</comment></data>
+  <data name="ConnectionTestTimeout" xml:space="preserve"><value>The server did not answer within {seconds} seconds. Check that it is running and the address is right.</value><comment>Result of Test connection when the server is too slow. {seconds} is the time limit.</comment></data>
+  <data name="ConnectionTestConnectionFailed" xml:space="preserve"><value>Could not connect: {detail}. Check that the server is running and the address is right.</value><comment>Result of Test connection when the connection failed. {detail} is the system's own explanation, which is not translated.</comment></data>
+  <data name="ConnectionTestNotAModelList" xml:space="preserve"><value>The server answered, but not with an OpenAI-style model list. Check that the base URL points at the API (usually ending in /v1).</value><comment>Result of Test connection when the answer is not a model list. Keep /v1 as is.</comment></data>
+  <data name="ConnectionTestUnauthorized" xml:space="preserve"><value>The server rejected the API key. Check the key, and that it can list models.</value><comment>Result of Test connection when the API key is refused.</comment></data>
+  <data name="ConnectionTestNotFound" xml:space="preserve"><value>The server has no /models endpoint at this address. Check the base URL (usually ending in /v1), or add models manually.</value><comment>Result of Test connection when the server has no model list. Keep /models and /v1 as is.</comment></data>
+  <data name="ConnectionTestRateLimited" xml:space="preserve"><value>The server is rate limiting requests. Try again shortly.</value><comment>Result of Test connection when the server limits the request rate.</comment></data>
+  <data name="ConnectionTestHttpError" xml:space="preserve"><value>The server answered with HTTP {code} ({status}).</value><comment>Result of Test connection for any other HTTP error. {code} is the numeric status and {status} its English name; do not translate them.</comment></data>
+  <data name="UiCopy" xml:space="preserve">
+    <value>Copy</value>
+    <comment>Label for copying a code block.</comment>
+  </data>
+  <data name="UiCopied" xml:space="preserve">
+    <value>Copied</value>
+    <comment>Temporary label shown after copying a code block.</comment>
+  </data>
+  <data name="UiCopyFailed" xml:space="preserve">
+    <value>Copy failed</value>
+    <comment>Label shown when copying a code block fails.</comment>
+  </data>
+  <data name="MessageViewCopied" xml:space="preserve">
+    <value>Message copied.</value>
+    <comment>Toast shown when a chat message is copied.</comment>
+  </data>
+  <data name="MessageViewCopyFailed" xml:space="preserve">
+    <value>The message could not be copied.</value>
+    <comment>Toast shown when copying a chat message fails.</comment>
+  </data>
+  <data name="DiagnosticsSettingsReportCopied" xml:space="preserve">
+    <value>Copied. Paste it into your report.</value>
+    <comment>Toast shown after copying the diagnostics report.</comment>
+  </data>
+  <data name="DiagnosticsSettingsCopyFailed" xml:space="preserve">
+    <value>Couldn't copy. Select the text and copy it by hand.</value>
+    <comment>Toast shown when copying the diagnostics report fails.</comment>
+  </data>
+  <data name="DiagnosticsSettingsLogRetention" xml:space="preserve">
+    <value>Logs hold identifiers, counts and errors, never the text of your messages or files. Files are kept for {days} days.</value>
+    <comment>Explains the diagnostic log contents and retention period. days is the retention period.</comment>
+  </data>
+  <data name="MainLayoutShowSidebar" xml:space="preserve">
+    <value>Show sidebar</value>
+    <comment>Accessible label for showing the sidebar.</comment>
+  </data>
+  <data name="MainLayoutHideSidebar" xml:space="preserve">
+    <value>Hide sidebar</value>
+    <comment>Accessible label for hiding the sidebar.</comment>
+  </data>
+  <data name="MainLayoutUnhandledError" xml:space="preserve">
+    <value>An unhandled error has occurred.</value>
+    <comment>Message displayed when an unhandled application error occurs.</comment>
+  </data>
+  <data name="ChatViewTooLargeNotIncluded" xml:space="preserve">
+    <value>Too large, not included</value>
+    <comment>Hint shown when a project instruction file is too large to include.</comment>
+  </data>
+  <data name="ChatViewTooLargeCutOff" xml:space="preserve">
+    <value>Too large, cut off</value>
+    <comment>Hint shown when a project instruction file was truncated.</comment>
+  </data>
+  <data name="ChatViewEarlierMessages" xml:space="preserve">
+    <value>{count, plural, one {Show earlier message ({formattedCount})} other {Show earlier messages ({formattedCount})}}</value>
+    <comment>Button label for loading earlier chat messages. count selects singular or plural; formattedCount is the displayed number.</comment>
+  </data>
+  <data name="ToolCallAllowPrompt" xml:space="preserve">
+    <value>Allow this call?</value>
+    <comment>Fallback approval prompt for a tool call when no specific reason is supplied.</comment>
+  </data>
+  <data name="ToolCallShowAllCharacters" xml:space="preserve">
+    <value>{count, plural, one {Show all {formattedCount} character} other {Show all {formattedCount} characters}}</value>
+    <comment>Button label for expanding tool output. count selects singular or plural; formattedCount is the displayed number.</comment>
+  </data>
+  <data name="ToolCallMcpBadgeTitle" xml:space="preserve">
+    <value>A tool from the MCP server {server}. It runs outside the sandbox.</value>
+    <comment>Tooltip explaining that a tool comes from an MCP server; server is the server name.</comment>
+  </data>
+  <data name="ToolCallQueued" xml:space="preserve"><value>Queued</value><comment>Tool call status label.</comment></data>
+  <data name="ToolCallNeedsApproval" xml:space="preserve"><value>Needs approval</value><comment>Tool call status label.</comment></data>
+  <data name="ToolCallRunning" xml:space="preserve"><value>Running</value><comment>Tool call status label.</comment></data>
+  <data name="ToolCallDone" xml:space="preserve"><value>Done</value><comment>Tool call status label.</comment></data>
+  <data name="ToolCallFailed" xml:space="preserve"><value>Failed</value><comment>Tool call status label.</comment></data>
+  <data name="ToolCallDenied" xml:space="preserve"><value>Denied</value><comment>Tool call status label.</comment></data>
+  <data name="ToolCallStopped" xml:space="preserve"><value>Stopped</value><comment>Tool call status label.</comment></data>
+  <data name="ToolCallInterrupted" xml:space="preserve"><value>Interrupted</value><comment>Tool call status label.</comment></data>
+  <data name="ParamInputDefault" xml:space="preserve"><value>default</value><comment>Placeholder indicating that the provider default is used.</comment></data>
+  <data name="ParamInputReplaces" xml:space="preserve"><value>Replaces {value}. Clear to use it again.</value><comment>Tooltip for an overridden inherited sampling value; value is the inherited value.</comment></data>
+  <data name="ParamInputClearForServer" xml:space="preserve"><value>Clear to leave it to the server.</value><comment>Tooltip explaining that an explicit sampling value can be cleared to use the server default.</comment></data>
+  <data name="ParamInputUsesThinkingOff" xml:space="preserve"><value>Uses the Thinking off value. Type to replace it.</value><comment>Tooltip for an unset sampling value inherited from the Thinking off value.</comment></data>
+  <data name="ParamInputNotSent" xml:space="preserve"><value>Not sent; the server default applies.</value><comment>Tooltip for a sampling value that is unset and not inherited.</comment></data>
+  <data name="PermissionsRulesDescription" xml:space="preserve">
+    <value>A rule that refuses always wins. Otherwise the last matching rule decides. An allow rule skips the question but never gets a call out of the sandbox or into a protected folder. Use * for any text and ? for one character. In a path, * stays inside one folder and ** crosses folders. An MCP tool rule matches the server name and the tool name written as server/tool. A rule that refuses a file path also hides those files from listing and search. In a sandboxed shell command, those files are kept out of reach when the command starts, so they look empty or unreadable: an exact path wherever it is, and a pattern with a wildcard inside the working folder and the folders you approved. It is best effort: the shell can still read a refused file from git history, a file made later is not covered, on macOS renaming a folder above a refused file may get around it, and a command with Unrestricted access is not sandboxed. Shell commands don't run while a rule matches too many files, or a ** rule would need a look through a very large folder; a rule such as secrets/** or *.pem stays quick. They also don't run where this system's sandbox can't keep a single file out of reach.</value>
+    <comment>Explains permission rules and their safety limits.</comment>
+  </data>
+  <data name="PermissionsRemoveProtectedFolder" xml:space="preserve"><value>Remove {folder} from the protected folders</value><comment>Accessible label for removing a protected folder; folder is its path.</comment></data>
+  <data name="PermissionsRemoveRule" xml:space="preserve"><value>Remove rule {pattern}</value><comment>Accessible label for removing a permission rule; pattern is the rule pattern.</comment></data>
+  <data name="PermissionsSaveFailure" xml:space="preserve"><value>The permission settings could not be saved because the settings file could not be written.</value><comment>Toast shown when saving permission settings fails.</comment></data>
+  <data name="PermissionsTargetShellCommand" xml:space="preserve"><value>Shell command</value><comment>Permission rule target type.</comment></data>
+  <data name="PermissionsTargetMcpTool" xml:space="preserve"><value>MCP tool</value><comment>Permission rule target type.</comment></data>
+  <data name="PermissionsTargetWebHost" xml:space="preserve"><value>Web host</value><comment>Permission rule target type.</comment></data>
+  <data name="PermissionsTargetFilePath" xml:space="preserve"><value>File path</value><comment>Permission rule target type.</comment></data>
+  <data name="PermissionsActionRefuse" xml:space="preserve"><value>Refuse</value><comment>Permission rule action.</comment></data>
+  <data name="PermissionsActionAsk" xml:space="preserve"><value>Ask</value><comment>Permission rule action.</comment></data>
+  <data name="PermissionsActionAllow" xml:space="preserve"><value>Allow</value><comment>Permission rule action.</comment></data>
+  <data name="WebToolsWorking" xml:space="preserve"><value>Working</value><comment>Status label shown while testing a web search provider.</comment></data>
+  <data name="WebToolsUp" xml:space="preserve"><value>up</value><comment>Direction in an accessible label for moving a provider in the list.</comment></data>
+  <data name="WebToolsDown" xml:space="preserve"><value>down</value><comment>Direction in an accessible label for moving a provider in the list.</comment></data>
+  <data name="WebToolsMoveProvider" xml:space="preserve"><value>Move {name} {direction}</value><comment>Accessible label for moving a web search provider; name is the provider name and direction is up or down.</comment></data>
+  <data name="McpSettingsHeader" xml:space="preserve"><value>Servers that give the agent extra tools are configured in [code]{file}[/code], and each chat can turn them on or off for itself.</value><comment>Description under the MCP settings heading. {file} is the path of the MCP configuration file, shown as code. Keep the [code] tags.</comment></data>
+  <data name="McpSettingsSecretWarning" xml:space="preserve"><value>This server has what looks like a secret written into the file: {names}. Use a [code]{reference}[/code] reference to an environment variable instead, so the secret stays out of the file.</value><comment>Warning about literal secrets in an MCP config file. {names} is the list of detected environment variable names. {reference} is the literal text ${NAME}, shown as code; do not translate it. Keep the [code] tags.</comment></data>
+  <data name="McpSettingsConnecting" xml:space="preserve"><value>Connecting…</value><comment>Button label while testing an MCP server connection.</comment></data>
+  <data name="McpSettingsTestConnection" xml:space="preserve"><value>Test connection</value><comment>Button label for testing an MCP server connection.</comment></data>
+  <data name="McpSettingsTrustExplanation" xml:space="preserve"><value>The server supplies this label; BlazeHarness can't verify it. Trusted tools skip approval unless the chat is read only. Everything else asks first, unless a chat is set to Never ask.</value><comment>Explains the effect and limits of trusting MCP server tools.</comment></data>
+  <data name="McpSettingsConnected" xml:space="preserve"><value>Connected</value><comment>MCP server connection state.</comment></data>
+  <data name="McpSettingsFailed" xml:space="preserve"><value>Failed</value><comment>MCP server connection state.</comment></data>
+  <data name="McpSettingsOff" xml:space="preserve"><value>Off</value><comment>MCP server disabled state.</comment></data>
+  <data name="McpSettingsNotStarted" xml:space="preserve"><value>Not started</value><comment>MCP server state when it has not started yet.</comment></data>
+  <data name="McpSettingsRunsCommand" xml:space="preserve"><value>Runs {command}</value><comment>Transport description for a local MCP server; command is the executable command.</comment></data>
+  <data name="McpSettingsSaveFailure" xml:space="preserve"><value>The MCP settings could not be saved because the file could not be written.</value><comment>Toast shown when saving MCP settings fails.</comment></data>
+  <data name="McpSettingsToolCount" xml:space="preserve"><value>{count, plural, one {{formattedCount} tool} other {{formattedCount} tools}}</value><comment>Number of available tools; count selects singular or plural and formattedCount is the displayed number.</comment></data>
+  <data name="McpSettingsToolsSummary" xml:space="preserve"><value>Tools ({count})</value><comment>Summary label for the list of tools; count is the number of tools.</comment></data>
+  <data name="McpSettingsAlwaysLoadedHint" xml:space="preserve"><value>Always loaded, about {tokens} tokens of the prompt when it is on.</value><comment>Explains prompt size when all MCP server tools are always loaded; tokens is an estimate.</comment></data>
+  <data name="McpSettingsSearchLoadedHint" xml:space="preserve"><value>Found by search when needed, or about {tokens} tokens of the prompt if always loaded.</value><comment>Explains prompt size when MCP tools are discovered by search; tokens is an estimate.</comment></data>
+  <data name="McpSettingsChangeFailed" xml:space="preserve"><value>Could not change {name}. Fix the file first.</value><comment>Status shown when changing an MCP server fails; name is the server name.</comment></data>
+  <data name="McpSettingsSaved" xml:space="preserve"><value>Saved {name}.</value><comment>Status shown when an MCP server is saved; name is the server name.</comment></data>
+  <data name="McpSettingsSavedDiscarded" xml:space="preserve"><value>Saved {name}. Unsaved changes in the file editor were discarded.</value><comment>Status shown when saving an MCP server discards unsaved file editor changes; name is the server name.</comment></data>
+  <data name="McpSettingsRemoveFailed" xml:space="preserve"><value>Could not remove {name}. Fix the file first.</value><comment>Status shown when removing an MCP server fails; name is the server name.</comment></data>
+  <data name="McpSettingsRemoved" xml:space="preserve"><value>Removed {name}.</value><comment>Status shown when an MCP server is removed; name is the server name.</comment></data>
+  <data name="McpSettingsSavedFile" xml:space="preserve"><value>Saved.</value><comment>Status shown when the MCP configuration file is saved.</comment></data>
+  <data name="McpSettingsFileHasProblems" xml:space="preserve"><value>The file has problems, so it was not saved.</value><comment>Status shown when the MCP configuration file could not be saved because it has problems.</comment></data>
+  <data name="McpSettingsRemoveServerLabel" xml:space="preserve"><value>Remove {name}</value><comment>Accessible label for removing an MCP server; name is the server name.</comment></data>
+  <data name="McpServerFormOptional" xml:space="preserve"><value>optional</value><comment>Indicates that a form field is optional.</comment></data>
+  <data name="McpServerFormOnePerLine" xml:space="preserve"><value>one per line</value><comment>Hint that each command argument should be entered on its own line.</comment></data>
+  <data name="McpServerFormEnvironmentVariables" xml:space="preserve"><value>Environment variables</value><comment>Heading for environment variables configured for an MCP server.</comment></data>
+  <data name="McpServerFormAddVariable" xml:space="preserve"><value>Add variable</value><comment>Button label for adding an environment variable.</comment></data>
+  <data name="McpServerFormVariableName" xml:space="preserve"><value>Variable name</value><comment>Accessible label for an environment variable name field.</comment></data>
+  <data name="McpServerFormHeaders" xml:space="preserve"><value>Headers</value><comment>Heading for HTTP headers configured for an MCP server.</comment></data>
+  <data name="McpServerFormAddHeader" xml:space="preserve"><value>Add header</value><comment>Button label for adding an HTTP header.</comment></data>
+  <data name="McpServerFormHeaderName" xml:space="preserve"><value>Header name</value><comment>Accessible label for an HTTP header name field.</comment></data>
+  <data name="McpServerFormAlwaysLoadHint" xml:space="preserve"><value>Off by default: the model finds this server's tools with a search when it needs them, which keeps the prompt small. Turn it on for a small server whose tools you use in most chats.</value><comment>Explains the always-load-all MCP tools option.</comment></data>
+  <data name="McpServerFormSecretNote" xml:space="preserve"><value>Mark a value as secret to keep it in {store} instead of in the file. The file then holds a [code]{reference}[/code] reference. A variable of that name set in the environment takes its place.</value><comment>Explanation under the MCP server form when the secret store is secure. {store} is the name of the secret store, for example the OS keychain. {reference} is the literal text ${MCP_…}, shown as code; do not translate it. Keep the [code] tags.</comment></data>
+  <data name="McpServerFormSecretNoteNotEncrypted" xml:space="preserve"><value>Mark a value as secret to keep it in {store}, which is not encrypted, instead of in the file. The file then holds a [code]{reference}[/code] reference. A variable of that name set in the environment takes its place.</value><comment>Explanation under the MCP server form when the secret store is not encrypted. {store} is the name of the secret store, for example a file. {reference} is the literal text ${MCP_…}, shown as code; do not translate it. Keep the [code] tags.</comment></data>
+  <data name="McpServerFormAddServer" xml:space="preserve"><value>Add a server</value><comment>Heading and accessible name for creating a new MCP server.</comment></data>
+  <data name="McpServerFormEditServer" xml:space="preserve"><value>Edit {name}</value><comment>Heading and accessible name for editing an MCP server; name is the server name.</comment></data>
+  <data name="McpServerFormName" xml:space="preserve"><value>Name</value><comment>Placeholder for a name field in MCP server environment variables or headers.</comment></data>
+  <data name="McpServerFormSecretValue" xml:space="preserve"><value>Secret value</value><comment>Placeholder for a secret value field.</comment></data>
+  <data name="McpServerFormValue" xml:space="preserve"><value>Value</value><comment>Accessible label and placeholder for an environment variable or header value.</comment></data>
+  <data name="McpServerFormSecret" xml:space="preserve"><value>Secret</value><comment>Label for marking an environment variable as secret.</comment></data>
+  <data name="McpServerFormRemoveEntry" xml:space="preserve"><value>Remove entry</value><comment>Accessible label for removing an environment variable or header entry.</comment></data>
+  <data name="McpServerFormSaveFailure" xml:space="preserve"><value>The server could not be saved because the file or the secret store could not be written.</value><comment>Error shown when an MCP server cannot be saved.</comment></data>
+  <data name="GeneralSettingsSmall" xml:space="preserve"><value>Small</value><comment>Small interface or chat text size.</comment></data>
+  <data name="GeneralSettingsDefault" xml:space="preserve"><value>Default</value><comment>Default interface or chat text size.</comment></data>
+  <data name="GeneralSettingsLarge" xml:space="preserve"><value>Large</value><comment>Large interface or chat text size.</comment></data>
+  <data name="GeneralSettingsExtraLarge" xml:space="preserve"><value>Extra large</value><comment>Largest interface or chat text size.</comment></data>
+  <data name="ModelTuningTitle" xml:space="preserve"><value>Tune {model}</value><comment>Title of a model tuning dialog; model is the model identifier.</comment></data>
+  <data name="ModelTuningSameAsProvider" xml:space="preserve"><value>Same as provider:</value><comment>Option to use the provider's default thinking-level setting.</comment></data>
+  <data name="ModelTuningThinkingOff" xml:space="preserve"><value>Thinking off</value><comment>Column heading for sampling values when model thinking is disabled.</comment></data>
+  <data name="ModelTuningValue" xml:space="preserve"><value>Value</value><comment>Column heading for a sampling value.</comment></data>
+  <data name="ModelTuningEmptyUsesDefault" xml:space="preserve"><value>Leave a cell empty to leave it to the server.</value><comment>Hint explaining that empty sampling values use server defaults.</comment></data>
+  <data name="ModelTuningCustomFields" xml:space="preserve"><value>Custom fields</value><comment>Heading for provider-specific sampling fields.</comment></data>
+  <data name="ModelTuningCustomFieldsCount" xml:space="preserve"><value>Custom fields ({count})</value><comment>Heading for provider-specific sampling fields; count is the number of fields.</comment></data>
+  <data name="ModelTuningThinkingOnFieldsHint" xml:space="preserve"><value>Added to the Thinking off fields; a field with the same name replaces it.</value><comment>Explains how Thinking on sampling fields relate to Thinking off fields.</comment></data>
+  <data name="ModelTuningValueSentFor" xml:space="preserve"><value>Value sent for {level}</value><comment>Accessible label for a thinking-level value field; level is the thinking-level name.</comment></data>
+  <data name="ProvidersSettingsHeaderBefore" xml:space="preserve"><value>Connect any OpenAI-compatible endpoint. Keys are kept in</value><comment>First part of the providers settings description before the name of the secret store.</comment></data>
+  <data name="ProvidersSettingsSecureSuffix" xml:space="preserve"><value>.</value><comment>Ending when the key store is secure.</comment></data>
+  <data name="ProvidersSettingsInsecureSuffix" xml:space="preserve"><value>, which is not encrypted. Install a system keyring to store keys more securely.</value><comment>Warning and advice when the key store is not secure.</comment></data>
+  <data name="ProvidersSettingsNewProvider" xml:space="preserve"><value>New provider</value><comment>Heading when creating a provider.</comment></data>
+  <data name="ProvidersSettingsOptionalForLocal" xml:space="preserve"><value>Optional for local servers</value><comment>Placeholder explaining that local providers may not need an API key.</comment></data>
+  <data name="ProvidersSettingsApiKeyHint" xml:space="preserve"><value>Local servers usually need none. A stored key is never shown again; leave blank to keep it.</value><comment>Explains when an API key is needed and how stored keys are handled.</comment></data>
+  <data name="ProvidersSettingsAddSelectedModels" xml:space="preserve"><value>Add {count, plural, one {selected model} other {selected models}} ({formattedCount})</value><comment>Button label showing how many models will be added; count chooses singular or plural and formattedCount is the displayed number.</comment></data>
+  <data name="ProvidersSettingsNotSaved" xml:space="preserve"><value>This provider isn't saved yet.</value><comment>Unsaved provider status for a newly created provider.</comment></data>
+  <data name="ProvidersSettingsUnsavedChanges" xml:space="preserve"><value>You have unsaved changes.</value><comment>Unsaved provider status for an edited provider.</comment></data>
+  <data name="ProvidersSettingsDiscard" xml:space="preserve"><value>Discard</value><comment>Button label for discarding provider edits.</comment></data>
+  <data name="ProvidersSettingsSaveFailure" xml:space="preserve"><value>The provider settings could not be saved because the settings file or the key store could not be written.</value><comment>Toast shown when saving provider settings fails.</comment></data>
+  <data name="ProvidersSettingsModelCount" xml:space="preserve"><value>{count, plural, one {{formattedCount} model} other {{formattedCount} models}}</value><comment>Number of provider models; count chooses singular or plural and formattedCount is the displayed number.</comment></data>
+  <data name="ProvidersSettingsTuneModel" xml:space="preserve"><value>Tune {model}</value><comment>Accessible label for tuning a model; model is the model identifier.</comment></data>
+  <data name="ProvidersSettingsRemoveModel" xml:space="preserve"><value>Remove model {model}</value><comment>Accessible label for removing a model; model is the model identifier.</comment></data>
+  <data name="ProvidersSettingsDefaultModelSet" xml:space="preserve"><value>{model} is now the default model.</value><comment>Toast shown after a model becomes the default; model is the model identifier.</comment></data>
+  <data name="ProvidersSettingsProviderSaved" xml:space="preserve"><value>Provider saved.</value><comment>Toast shown after provider settings are saved.</comment></data>
+  <data name="ProvidersSettingsStoredKeyRemoved" xml:space="preserve"><value>Stored key removed.</value><comment>Toast shown after a stored API key is removed.</comment></data>
+  <data name="ProvidersSettingsProviderRemoved" xml:space="preserve"><value>Removed {name}.</value><comment>Toast shown after a provider is removed; name is the provider name.</comment></data>
+  <data name="ChatViewReplyStarted" xml:space="preserve"><value>Reply started</value><comment>Screen-reader announcement when the assistant begins a reply.</comment></data>
+  <data name="ChatViewReplyFailed" xml:space="preserve"><value>Reply failed</value><comment>Screen-reader announcement when an assistant reply fails.</comment></data>
+  <data name="ChatViewReplyFinished" xml:space="preserve"><value>Reply finished</value><comment>Screen-reader announcement when an assistant reply finishes.</comment></data>
+  <data name="ChatViewAttachmentLimit" xml:space="preserve"><value>The files of a message can add up to at most {size}.</value><comment>Error shown when selected files exceed the message size limit; size is the limit formatted for display.</comment></data>
+  <data name="ChatViewNoLongerExists" xml:space="preserve"><value>This chat no longer exists.</value><comment>Error shown when a chat disappears while saving an attachment.</comment></data>
+  <data name="ChatViewNotEnoughToSummarize" xml:space="preserve"><value>There is not enough earlier conversation to summarize.</value><comment>Informational toast when there is too little history to compact.</comment></data>
+  <data name="ChatViewEnableExtractionHint" xml:space="preserve"><value> You can turn on "Compact without the model (Extraction)" under Settings &gt; General.</value><comment>Hint appended to a compaction error when extractive compaction is disabled.</comment></data>
+  <data name="ChatViewSummarizeFailed" xml:space="preserve"><value>The conversation could not be summarized: {error}{hint}</value><comment>Toast shown when compaction fails; error is the failure description and hint is an optional settings hint.</comment></data>
+  <data name="ChatViewPermissionSaveFailure" xml:space="preserve"><value>The permissions could not be saved because the chat's file could not be written.</value><comment>Toast shown when chat permissions could not be saved.</comment></data>
+  <data name="PermissionPickerFolderDescription" xml:space="preserve"><value>Read and change files in this folder</value><comment>Description for folder-scoped file access.</comment></data>
+  <data name="PermissionPickerChatFolderDescription" xml:space="preserve"><value>Read and change files in this chat's folder</value><comment>Description for chat-folder-scoped file access.</comment></data>
+  <data name="PermissionPickerRiskyTitle" xml:space="preserve"><value>Some safeguards are off for this chat</value><comment>Tooltip shown when a chat has risky permissions enabled.</comment></data>
+  <data name="PermissionPickerSandboxedTitle" xml:space="preserve"><value>What tools may touch, and when you are asked. Commands, when allowed, run in a sandbox.</value><comment>Tooltip describing chat permissions when shell commands are sandboxed.</comment></data>
+  <data name="PermissionPickerNoSandboxTitle" xml:space="preserve"><value>What tools may touch, and when you are asked. There is no sandbox, so commands are blocked.</value><comment>Tooltip describing chat permissions when no shell sandbox is available.</comment></data>
+  <data name="PermissionPickerReadOnly" xml:space="preserve"><value>Read only</value><comment>Permission access level that allows reading but not changing files.</comment></data>
+  <data name="PermissionPickerFolder" xml:space="preserve"><value>Folder</value><comment>Brief label for folder-scoped access.</comment></data>
+  <data name="PermissionPickerWriteInFolder" xml:space="preserve"><value>Write in folder</value><comment>Permission access level for reading and changing files in an opened folder.</comment></data>
+  <data name="PermissionPickerChatFolder" xml:space="preserve"><value>Chat folder</value><comment>Brief label for access scoped to the chat's folder.</comment></data>
+  <data name="PermissionPickerWriteInChatFolder" xml:space="preserve"><value>Write in chat folder</value><comment>Permission access level for reading and changing files in the chat's own folder.</comment></data>
+  <data name="PermissionPickerUnrestricted" xml:space="preserve"><value>Unrestricted</value><comment>Permission access level without folder restrictions.</comment></data>
+  <data name="PermissionPickerAskFirst" xml:space="preserve"><value>Ask first</value><comment>Approval mode that asks before risky actions.</comment></data>
+  <data name="PermissionPickerAskForExceptions" xml:space="preserve"><value>Ask for exceptions</value><comment>Approval mode that automatically allows safe actions and asks about exceptions.</comment></data>
+  <data name="PermissionPickerNeverAsk" xml:space="preserve"><value>Never ask</value><comment>Approval mode that does not ask before actions.</comment></data>
+  <data name="SettingsDialogGeneral" xml:space="preserve"><value>General</value><comment>Settings section name.</comment></data>
+  <data name="SettingsDialogProviders" xml:space="preserve"><value>Providers</value><comment>Settings section name.</comment></data>
+  <data name="SettingsDialogPermissions" xml:space="preserve"><value>Permissions</value><comment>Settings section name.</comment></data>
+  <data name="SettingsDialogMcpServers" xml:space="preserve"><value>MCP servers</value><comment>Settings section name.</comment></data>
+  <data name="SettingsDialogSkills" xml:space="preserve"><value>Skills</value><comment>Settings section name.</comment></data>
+  <data name="SettingsDialogWeb" xml:space="preserve"><value>Web</value><comment>Settings section name.</comment></data>
+  <data name="SettingsDialogDiagnostics" xml:space="preserve"><value>Diagnostics</value><comment>Settings section name.</comment></data>
+  <data name="SidebarNoChatsMatch" xml:space="preserve"><value>No chats match.</value><comment>Empty state shown when chat search has no matches.</comment></data>
+  <data name="SidebarNoChatsYet" xml:space="preserve"><value>No chats yet.</value><comment>Empty state shown when there are no chats.</comment></data>
+  <data name="SidebarNewChatInFolder" xml:space="preserve"><value>New chat in {folder}</value><comment>Accessible label for creating a chat in a folder; folder is its name.</comment></data>
+  <data name="SidebarFindFolder" xml:space="preserve"><value>Find {folder}</value><comment>Accessible label for locating a missing folder; folder is its name.</comment></data>
+  <data name="SidebarFolderActions" xml:space="preserve"><value>Folder actions</value><comment>Accessible label for the folder context menu.</comment></data>
+  <data name="SidebarSwitchToLightTheme" xml:space="preserve"><value>Switch to light theme</value><comment>Accessible label for switching to the light theme.</comment></data>
+  <data name="SidebarSwitchToDarkTheme" xml:space="preserve"><value>Switch to dark theme</value><comment>Accessible label for switching to the dark theme.</comment></data>
+  <data name="SidebarRelocateHint" xml:space="preserve"><value>Choose where this folder is now. Its chats move with it.</value><comment>Hint shown when locating a moved folder.</comment></data>
+  <data name="SidebarImportFileTooLarge" xml:space="preserve"><value>That file is too large to be a chat export.</value><comment>Error shown when a chat export file exceeds the import limit.</comment></data>
+  <data name="SidebarImportReadFailed" xml:space="preserve"><value>The file could not be read.</value><comment>Error shown when a chat export file cannot be read.</comment></data>
+  <data name="SidebarOpenFolderFailed" xml:space="preserve"><value>That folder could not be opened.</value><comment>Error shown when opening a folder fails.</comment></data>
+  <data name="SidebarRelocateFolderFailed" xml:space="preserve"><value>That folder could not be used.</value><comment>Error shown when a relocated folder could not be used.</comment></data>
+  <data name="SidebarRelocateWriteFailed" xml:space="preserve"><value>The folder could not be updated because a file could not be written.</value><comment>Error shown when updating a folder location fails.</comment></data>
+  <data name="SidebarRemoveWriteFailed" xml:space="preserve"><value>The folder could not be removed because a file could not be written.</value><comment>Error shown when removing a folder fails.</comment></data>
+  <data name="ChatListActions" xml:space="preserve"><value>Chat actions</value><comment>Accessible label for the chat context menu.</comment></data>
+  <data name="ChatListNoFolderOnDisk" xml:space="preserve"><value>This chat has no folder on disk yet.</value><comment>Error shown when chat data cannot be opened because its folder does not exist.</comment></data>
+  <data name="ChatListOpenDataFailed" xml:space="preserve"><value>The chat data could not be opened.</value><comment>Error shown when the operating system cannot open the chat data folder.</comment></data>
+  <data name="ChatListUntitledChat" xml:space="preserve"><value>Untitled chat</value><comment>Fallback title for a chat with no title.</comment></data>
+  <data name="ChatListRenameFailed" xml:space="preserve"><value>The chat could not be renamed because its file could not be written.</value><comment>Error shown when renaming a chat fails.</comment></data>
+  <data name="ChatListStillReplying" xml:space="preserve"><value>This chat is still replying. Stop it first, then delete it.</value><comment>Error shown when trying to delete an active chat.</comment></data>
+  <data name="ChatListDeleteFailed" xml:space="preserve"><value>The chat could not be deleted because its files could not be removed.</value><comment>Error shown when deleting chat files fails.</comment></data>
+  <data name="ComposerChooseModel" xml:space="preserve"><value>Choose a model</value><comment>Placeholder shown when no model is selected.</comment></data>
+  <data name="ComposerLevelUnavailable" xml:space="preserve"><value>{previous} is not available for this model, so {level} will be used.</value><comment>Hint shown when changing the model makes the selected thinking level unavailable; previous and level are level names.</comment></data>
+  <data name="ComposerAnswerQuestion" xml:space="preserve"><value>Answer the question above</value><comment>Placeholder when the model is waiting for an answer.</comment></data>
+  <data name="ComposerQueuePlaceholder" xml:space="preserve"><value>Add a message for the model to see at its next step</value><comment>Placeholder for a message that will be queued for a running reply.</comment></data>
+  <data name="ComposerPlaceholder" xml:space="preserve"><value>Message the model</value><comment>Placeholder for a new message.</comment></data>
+  <data name="ComposerSendAnswer" xml:space="preserve"><value>Send answer</value><comment>Accessible label for sending an answer while a question is pending.</comment></data>
+  <data name="ComposerQueueMessage" xml:space="preserve"><value>Queue message</value><comment>Accessible label for queueing a message while a reply is running.</comment></data>
+  <data name="ComposerSendAnswerEnter" xml:space="preserve"><value>Send answer (Enter)</value><comment>Tooltip for sending an answer with the Enter key.</comment></data>
+  <data name="ComposerQueueMessageEnter" xml:space="preserve"><value>Queue message (Enter)</value><comment>Tooltip for queueing a message with the Enter key.</comment></data>
+  <data name="ComposerRemoveFile" xml:space="preserve"><value>Remove {name}</value><comment>Accessible label for removing an attached file; name is the file name.</comment></data>
+  <data name="ComposerPreviewStart" xml:space="preserve"><value>Start of {name}</value><comment>Accessible label for a preview of an attached file; name is the file name.</comment></data>
+  <data name="ComposerFilesNotQueued" xml:space="preserve"><value>Files can't be added while a reply is running. Remove them to queue the message, or send it once the reply ends.</value><comment>Hint shown when a user tries to queue a message with attached files.</comment></data>
+  <data name="ComposerQuestionAlreadyHandled" xml:space="preserve"><value>The question was answered or stopped before this arrived. Send it again.</value><comment>Hint shown when an answer can no longer be queued.</comment></data>
+  <data name="ComposerReplyEnded" xml:space="preserve"><value>The reply ended before the message could be queued. Send it again.</value><comment>Hint shown when a reply ends before a message can be queued.</comment></data>
+  <data name="ComposerMaxFiles" xml:space="preserve"><value>A message can carry at most {count} files.</value><comment>Hint shown when a user attaches more than the maximum number of files; count is the limit.</comment></data>
+  <data name="ComposerFileTooLarge" xml:space="preserve"><value>'{name}' is larger than {size}.</value><comment>Hint shown when an attached file exceeds the per-file size limit; name is the file name and size is the limit.</comment></data>
+  <data name="ComposerAttachmentImage" xml:space="preserve"><value>Sent as an image</value><comment>Attachment hint for a file sent as an image.</comment></data>
+  <data name="ComposerAttachmentInline" xml:space="preserve"><value>Added to the message</value><comment>Attachment hint for a file included directly in the message.</comment></data>
+  <data name="ComposerAttachmentTooLong" xml:space="preserve"><value>Too long to add, the model reads it as needed</value><comment>Attachment hint for a file that is not included directly because it is too long.</comment></data>
+  <data name="ContextIndicatorEstimatedSize" xml:space="preserve"><value>The size of the next request, estimated</value><comment>Detail explaining that the next request size is estimated.</comment></data>
+  <data name="ContextIndicatorServerCountedSize" xml:space="preserve"><value>The size of the next request, as the server counted it</value><comment>Detail explaining that the next request size is reported by the server.</comment></data>
+  <data name="ContextIndicatorSummarizeAfter" xml:space="preserve"><value>Older messages are summarized after {count, plural, one {{tokens} token} other {{tokens} tokens}}</value><comment>Detail stating the context limit after which older messages are summarized; count selects singular or plural and tokens is formatted for display.</comment></data>
+  <data name="ContextIndicatorCacheHits" xml:space="preserve"><value>Cache hits: {rate} of the last request</value><comment>Detail showing the share of the last request served from cache; rate is a formatted percentage.</comment></data>
+  <data name="TodoChecklistDone" xml:space="preserve"><value>Done</value><comment>Accessible status label for a completed to-do item.</comment></data>
+  <data name="TodoChecklistInProgress" xml:space="preserve"><value>In progress</value><comment>Accessible status label for an in-progress to-do item.</comment></data>
+  <data name="TodoChecklistNotStarted" xml:space="preserve"><value>Not started</value><comment>Accessible status label for a pending to-do item.</comment></data>
+  <data name="DiffViewAdded" xml:space="preserve"><value>Added</value><comment>Accessible label for an added line in a diff.</comment></data>
+  <data name="DiffViewRemoved" xml:space="preserve"><value>Removed</value><comment>Accessible label for a removed line in a diff.</comment></data>
+  <data name="FindbarNoMatches" xml:space="preserve"><value>No matches</value><comment>Status shown when a chat search has no matches.</comment></data>
+  <data name="FindbarMatchCount" xml:space="preserve"><value>{current} of {total}</value><comment>Current chat search match and total number of matches; both are formatted numbers.</comment></data>
+  <data name="ChatStatsOutputTokens" xml:space="preserve"><value>{count, plural, one {{formattedCount} token generated by the model} other {{formattedCount} tokens generated by the model}}</value><comment>Tooltip for the number of output tokens generated by the model; count chooses singular or plural and formattedCount is the displayed number.</comment></data>
+  <data name="ChatStatsOutputWithReasoning" xml:space="preserve"><value>{count, plural, one {{formattedCount} token generated, {formattedReasoning} of them thinking} other {{formattedCount} tokens generated, {formattedReasoning} of them thinking}}</value><comment>Tooltip for generated tokens including reasoning tokens; count and reasoning are counts and formatted values are shown.</comment></data>
+  <data name="CompactionMarkerTrimmed" xml:space="preserve"><value>Older tool output was trimmed to save context ({before} → {after} {count, plural, one {token} other {tokens}})</value><comment>Marker explaining that older tool output was shortened; before and after are formatted token counts and count selects the token unit.</comment></data>
+  <data name="CompactionMarkerSummarized" xml:space="preserve"><value>Earlier messages were summarized to save space ({before} → {after} {count, plural, one {token} other {tokens}})</value><comment>Marker explaining that earlier messages were summarized; before and after are formatted token counts and count selects the token unit.</comment></data>
+  <data name="MessageViewUsageIn" xml:space="preserve"><value>{tokens} in</value><comment>Compact usage label for input tokens; tokens is a formatted count.</comment></data>
+  <data name="MessageViewUsageCached" xml:space="preserve"><value>{tokens} cached</value><comment>Compact usage label for cached input tokens; tokens is a formatted count.</comment></data>
+  <data name="MessageViewUsageOut" xml:space="preserve"><value>{tokens} out</value><comment>Compact usage label for output tokens; tokens is a formatted count.</comment></data>
+  <data name="MessageViewUsagePrompt" xml:space="preserve"><value>Prompt: {promptCount, plural, one {{prompt} token} other {{prompt} tokens}}, {cachedCount, plural, one {{cached} from the cache} other {{cached} from the cache}}</value><comment>Usage tooltip for input tokens; counts choose singular or plural and prompt and cached are formatted counts.</comment></data>
+  <data name="MessageViewUsageOutput" xml:space="preserve"><value>Output: {count, plural, one {{output} token} other {{output} tokens}}</value><comment>Usage tooltip for output tokens; count chooses singular or plural and output is a formatted count.</comment></data>
+  <data name="MessageViewUsageReasoning" xml:space="preserve"><value>Reasoning: {count, plural, one {{reasoning} token} other {{reasoning} tokens}}</value><comment>Usage tooltip for reasoning tokens; count chooses singular or plural and reasoning is a formatted count.</comment></data>
+  <data name="MessageViewUsageFirstOutput" xml:space="preserve"><value>First output after {duration}</value><comment>Usage tooltip for time to first output; duration is formatted.</comment></data>
+  <data name="MessageViewUsagePrefillRate" xml:space="preserve"><value>Prompt processed at {rate}</value><comment>Usage tooltip for prompt processing speed; rate is formatted.</comment></data>
+  <data name="MessageViewUsageStreamed" xml:space="preserve"><value>Output streamed in {duration}</value><comment>Usage tooltip for output generation duration; duration is formatted.</comment></data>
+  <data name="MessageViewUsageDecodeRate" xml:space="preserve"><value>Output generated at {rate}</value><comment>Usage tooltip for output generation speed; rate is formatted.</comment></data>
+  <data name="ExtraFieldsRemoveLabel" xml:space="preserve"><value>Remove field {name}</value><comment>Accessible label for removing a custom request field; name is the field name.</comment></data>
+  <data name="DiagnosticsSettingsUnknown" xml:space="preserve"><value>unknown</value><comment>Fallback value shown when the app version is unavailable.</comment></data>
+  <data name="DiagnosticsSettingsNotAvailable" xml:space="preserve"><value>Not available</value><comment>Fallback value shown when the shell sandbox is not available.</comment></data>
+  <data name="DiagnosticsSettingsMcpSummary" xml:space="preserve"><value>{connected} of {total, plural, one {{total} MCP server connected} other {{total} MCP servers connected}}</value><comment>Summary of connected MCP servers; connected and total are their counts.</comment></data>
+  <data name="SkillsSettingsChatFolder" xml:space="preserve"><value>Chat folder</value><comment>Label for skills found in the chat's folder.</comment></data>
+  <data name="SkillsSettingsBlazeHarness" xml:space="preserve"><value>BlazeHarness</value><comment>Label for skills shipped with the application.</comment></data>
+  <data name="SkillsSettingsGlobal" xml:space="preserve"><value>Global</value><comment>Label for globally installed skills.</comment></data>
+  <data name="SkillsSettingsSaveFailure" xml:space="preserve"><value>The skill setting could not be saved because the settings file could not be written.</value><comment>Error shown when saving a skill setting fails.</comment></data>
+  <data name="QuestionCardYourAnswer" xml:space="preserve"><value>Your answer</value><comment>Placeholder and accessible label for an answer when there are no suggested options.</comment></data>
+  <data name="QuestionCardAddNoteOrAnswer" xml:space="preserve"><value>Add a note, or write your own answer</value><comment>Placeholder for an optional note or custom answer alongside suggested options.</comment></data>
+  <data name="QuestionCardNoteOrAnswer" xml:space="preserve"><value>Note or your own answer</value><comment>Accessible label for a note or custom answer field alongside suggested options.</comment></data>
+  <data name="QuestionCardNotAnswered" xml:space="preserve"><value>Not answered.</value><comment>Label shown when a question has no answer.</comment></data>
+  <data name="QuestionCardAnswerNotSent" xml:space="preserve"><value>This question was already answered or stopped, so the answer was not sent.</value><comment>Error shown when an answer can no longer be sent.</comment></data>
+  <data name="McpServerFormCancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Button in the MCP server form that discards the edits and closes the form.</comment>
+  </data>
+  <data name="McpServerFormSave" xml:space="preserve">
+    <value>Save server</value>
+    <comment>Submit button of the MCP server form that saves the server to the MCP configuration file.</comment>
+  </data>
+  <data name="McpServerFormProblemsHeading" xml:space="preserve">
+    <value>Fix these before saving:</value>
+    <comment>Heading above the list of validation problems in the MCP server form; the form cannot be saved until they are fixed.</comment>
+  </data>
+  <data name="McpServerFormAlwaysLoad" xml:space="preserve">
+    <value>Always load all of its tools</value>
+    <comment>Label of the checkbox in the MCP server form that puts all of the server's tools in the prompt instead of finding them by search. Explained further by the hint text next to it.</comment>
+  </data>
+  <data name="McpServerFormAddressPlaceholder" xml:space="preserve">
+    <value>https://example.com/mcp</value>
+    <comment>Placeholder example for the Address field of a remote MCP server. It is a sample URL; do not translate it.</comment>
+  </data>
+  <data name="McpServerFormAddress" xml:space="preserve">
+    <value>Address</value>
+    <comment>Field label in the MCP server form for the URL of a remote (HTTP or SSE) server.</comment>
+  </data>
+  <data name="McpServerFormArguments" xml:space="preserve">
+    <value>Arguments</value>
+    <comment>Field label in the MCP server form for the command-line arguments passed to a local program. Followed by a hint that each goes on its own line.</comment>
+  </data>
+  <data name="McpServerFormWorkingFolder" xml:space="preserve">
+    <value>Working folder</value>
+    <comment>Field label in the MCP server form for the directory a local program starts in. Followed by "(optional)".</comment>
+  </data>
+  <data name="McpServerFormCommandPlaceholder" xml:space="preserve">
+    <value>npx</value>
+    <comment>Placeholder example for the Command field of a local MCP server. It is a program name; do not translate it.</comment>
+  </data>
+  <data name="McpServerFormCommand" xml:space="preserve">
+    <value>Command</value>
+    <comment>Field label in the MCP server form for the program to run for a local server.</comment>
+  </data>
+  <data name="McpServerFormKindSse" xml:space="preserve">
+    <value>Remote (SSE)</value>
+    <comment>Option in the server Kind dropdown for a remote MCP server that uses Server-Sent Events (SSE). Keep "SSE".</comment>
+  </data>
+  <data name="McpServerFormKindHttp" xml:space="preserve">
+    <value>Remote (HTTP)</value>
+    <comment>Option in the server Kind dropdown for a remote MCP server reached over streamable HTTP. Keep "HTTP".</comment>
+  </data>
+  <data name="McpServerFormKindLocal" xml:space="preserve">
+    <value>Local program</value>
+    <comment>Option in the server Kind dropdown for an MCP server that runs as a program on this computer (stdio).</comment>
+  </data>
+  <data name="McpServerFormKind" xml:space="preserve">
+    <value>Kind</value>
+    <comment>Label of the dropdown in the MCP server form that chooses how to connect: local program or remote server.</comment>
+  </data>
+  <data name="McpServerFormNameHint" xml:space="preserve">
+    <value>Letters, digits, - and _. It prefixes the names of the server's tools.</value>
+    <comment>Hint under the server Name field listing the allowed characters (letters, digits, hyphen and underscore) and saying the name is used as a prefix for the server's tool names. Keep the characters "-" and "_" as written.</comment>
+  </data>
+  <data name="McpServerFormNamePlaceholder" xml:space="preserve">
+    <value>e.g. github</value>
+    <comment>Placeholder example for the server Name field. "github" is a sample server name.</comment>
+  </data>
+  <data name="McpServerFormServerName" xml:space="preserve">
+    <value>Name</value>
+    <comment>Label of the server Name field at the top of the MCP server form.</comment>
+  </data>
+  <data name="McpSettingsRemoveWarning" xml:space="preserve">
+    <value>This removes [strong]{name}[/strong] from the file and deletes its stored secrets.</value>
+    <comment>Body of the dialog that confirms removing an MCP server. {name} is the server name. Keep the [strong] tags around it; they make it bold.</comment>
+  </data>
+  <data name="McpSettingsRemoveConfirm" xml:space="preserve">
+    <value>Remove</value>
+    <comment>Confirm button of the "Remove server?" dialog; clicking it deletes the MCP server from the configuration.</comment>
+  </data>
+  <data name="McpSettingsRemoveDialogTitle" xml:space="preserve">
+    <value>Remove server?</value>
+    <comment>Title of the confirmation dialog shown before an MCP server is removed.</comment>
+  </data>
+  <data name="McpSettingsFormat" xml:space="preserve">
+    <value>Format</value>
+    <comment>Button in the advanced mcp.json editor that reformats (pretty-prints) the JSON text.</comment>
+  </data>
+  <data name="McpSettingsRevert" xml:space="preserve">
+    <value>Revert</value>
+    <comment>Button in the advanced mcp.json editor that discards unsaved edits and reloads the file's text.</comment>
+  </data>
+  <data name="McpSettingsSave" xml:space="preserve">
+    <value>Save</value>
+    <comment>Button in the advanced mcp.json editor that saves the edited file text.</comment>
+  </data>
+  <data name="McpSettingsFileHint" xml:space="preserve">
+    <value>Changes made outside BlazeHarness show up here too. Turning a server on or off for a chat that is already open changes its tools, which starts that chat's prompt cache over.</value>
+    <comment>Hint under the advanced mcp.json editor: edits made to the file by other programs are picked up, and changing a server for an open chat resets that chat's prompt cache (the model provider's cache of the conversation prefix). Keep "BlazeHarness" untranslated.</comment>
+  </data>
+  <data name="McpSettingsFileLabel" xml:space="preserve">
+    <value>mcp.json</value>
+    <comment>Label of the text area for editing the MCP configuration file. It is the file name; do not translate it.</comment>
+  </data>
+  <data name="McpSettingsAdvancedSummary" xml:space="preserve">
+    <value>Advanced: edit mcp.json</value>
+    <comment>Summary line of the collapsible section for editing the MCP configuration file by hand. "mcp.json" is the file name; do not translate it.</comment>
+  </data>
+  <data name="McpSettingsOn" xml:space="preserve">
+    <value>On</value>
+    <comment>Text next to the checkbox that sets whether an MCP server is on for new chats.</comment>
+  </data>
+  <data name="McpSettingsNewChatsLabel" xml:space="preserve">
+    <value>On for new chats</value>
+    <comment>Accessible label (aria-label) of the checkbox that sets whether an MCP server is on by default in new chats.</comment>
+  </data>
+  <data name="McpSettingsNewChatsTooltip" xml:space="preserve">
+    <value>On for new chats</value>
+    <comment>Tooltip of the "On" checkbox for an MCP server, saying it controls whether the server is on by default in new chats.</comment>
+  </data>
+  <data name="McpSettingsRemove" xml:space="preserve">
+    <value>Remove</value>
+    <comment>Button on an MCP server row that opens the "Remove server?" confirmation. Its accessible label is "Remove {name}".</comment>
+  </data>
+  <data name="McpSettingsEdit" xml:space="preserve">
+    <value>Edit</value>
+    <comment>Button on an MCP server row that opens the server form to edit it.</comment>
+  </data>
+  <data name="McpSettingsStop" xml:space="preserve">
+    <value>Stop</value>
+    <comment>Button on an MCP server row that stops the running server connection.</comment>
+  </data>
+  <data name="McpSettingsTrustReadOnly" xml:space="preserve">
+    <value>Trust tools marked read-only</value>
+    <comment>Label of the checkbox that lets an MCP server's tools skip approval when the server marks them as read-only. Explained by the trust explanation text.</comment>
+  </data>
+  <data name="McpSettingsSecretBadge" xml:space="preserve">
+    <value>Secret in file</value>
+    <comment>Warning badge on an MCP server row meaning a secret value is written directly in the configuration file.</comment>
+  </data>
+  <data name="McpSettingsNoServers" xml:space="preserve">
+    <value>No servers yet. Add one with the button above.</value>
+    <comment>Empty-state message in the MCP servers list; "the button above" is the "Add server" button.</comment>
+  </data>
+  <data name="McpSettingsAddServer" xml:space="preserve">
+    <value>＋ Add server</value>
+    <comment>Button above the MCP servers list that opens the form for a new server. The leading "＋" is a full-width plus icon; keep it.</comment>
+  </data>
+  <data name="McpSettingsServersHeading" xml:space="preserve">
+    <value>Servers</value>
+    <comment>Heading of the list of configured MCP servers on the MCP settings page.</comment>
+  </data>
+  <data name="McpSettingsInstallWarning" xml:space="preserve">
+    <value>Adding a server is like installing software. A local server runs a program on this computer with your permissions, outside the sandbox, and a remote one receives what the model sends it. Only add servers you trust.</value>
+    <comment>Security warning at the top of the MCP settings page, shown in a warning box before the server list.</comment>
+  </data>
+  <data name="McpSettingsTitle" xml:space="preserve">
+    <value>MCP servers</value>
+    <comment>Title of the MCP settings page. MCP is the Model Context Protocol; keep the abbreviation.</comment>
+  </data>
+  <data name="PermissionsSettingsAddRuleButton" xml:space="preserve">
+    <value>＋ Add rule</value>
+    <comment>Button on the Permissions page that adds the rule typed in the form next to it. The leading plus sign is part of the label.</comment>
+  </data>
+  <data name="PermissionsSettingsRulePatternLabel" xml:space="preserve">
+    <value>Rule pattern</value>
+    <comment>Accessible label (not shown on screen) of the text box for the pattern of a new rule on the Permissions page. The placeholder shows an example pattern for the chosen target.</comment>
+  </data>
+  <data name="PermissionsSettingsRuleAllow" xml:space="preserve">
+    <value>Allow</value>
+    <comment>Option in the action drop-down of a new rule on the Permissions page: matching actions run without asking.</comment>
+  </data>
+  <data name="PermissionsSettingsRuleAsk" xml:space="preserve">
+    <value>Ask</value>
+    <comment>Option in the action drop-down of a new rule on the Permissions page: matching actions need the user's approval first.</comment>
+  </data>
+  <data name="PermissionsSettingsRuleRefuse" xml:space="preserve">
+    <value>Refuse</value>
+    <comment>Option in the action drop-down of a new rule on the Permissions page: matching actions are blocked without asking.</comment>
+  </data>
+  <data name="PermissionsSettingsRuleActionLabel" xml:space="preserve">
+    <value>Rule action</value>
+    <comment>Accessible label (not shown on screen) of the drop-down on the Permissions page that chooses what a new rule does (allow, ask or refuse).</comment>
+  </data>
+  <data name="PermissionsSettingsTargetWebHost" xml:space="preserve">
+    <value>Web host</value>
+    <comment>Option in the target drop-down of a new rule on the Permissions page: the rule matches the host name of a web address.</comment>
+  </data>
+  <data name="PermissionsSettingsTargetMcpTool" xml:space="preserve">
+    <value>MCP tool</value>
+    <comment>Option in the target drop-down of a new rule on the Permissions page: the rule matches a tool provided by an MCP server. MCP is the Model Context Protocol, do not translate the abbreviation.</comment>
+  </data>
+  <data name="PermissionsSettingsTargetFilePath" xml:space="preserve">
+    <value>File path</value>
+    <comment>Option in the target drop-down of a new rule on the Permissions page: the rule matches the path of a file or folder.</comment>
+  </data>
+  <data name="PermissionsSettingsTargetShellCommand" xml:space="preserve">
+    <value>Shell command</value>
+    <comment>Option in the target drop-down of a new rule on the Permissions page: the rule matches a command line run in the shell.</comment>
+  </data>
+  <data name="PermissionsSettingsRuleTargetLabel" xml:space="preserve">
+    <value>Rule applies to</value>
+    <comment>Accessible label (not shown on screen) of the drop-down on the Permissions page that chooses what kind of action a new rule matches (shell command, file path, MCP tool or web host).</comment>
+  </data>
+  <data name="PermissionsSettingsRemoveRuleButton" xml:space="preserve">
+    <value>Remove</value>
+    <comment>Button at the end of a row in the Rules list on the Permissions page that deletes that rule. A screen reader label names the rule.</comment>
+  </data>
+  <data name="PermissionsSettingsNoRules" xml:space="preserve">
+    <value>No rules yet.</value>
+    <comment>Message on the Permissions page shown in place of the Rules list when no rule has been added.</comment>
+  </data>
+  <data name="PermissionsSettingsRulesHeading" xml:space="preserve">
+    <value>Rules</value>
+    <comment>Heading of the card on the Permissions page that lists the rules which always allow, ask about or refuse certain actions.</comment>
+  </data>
+  <data name="PermissionsSettingsProtectedFolderError" xml:space="preserve">
+    <value>Enter the full path of the folder, starting from the root.</value>
+    <comment>Error text under the Add folder form on the Permissions page, shown when the typed path is not an absolute (fully qualified) folder path.</comment>
+  </data>
+  <data name="PermissionsSettingsResetProtectedButton" xml:space="preserve">
+    <value>Reset to the built-in list</value>
+    <comment>Button on the Permissions page that replaces the protected folders list with the default one that ships with the app.</comment>
+  </data>
+  <data name="PermissionsSettingsAddProtectedButton" xml:space="preserve">
+    <value>＋ Add folder</value>
+    <comment>Button on the Permissions page that adds the folder path typed next to it to the protected folders list. The leading plus sign is part of the label.</comment>
+  </data>
+  <data name="PermissionsSettingsProtectedFolderLabel" xml:space="preserve">
+    <value>Folder to protect</value>
+    <comment>Accessible label (not shown on screen) of the text box on the Permissions page where the user types the full path of a folder to add to the protected folders list.</comment>
+  </data>
+  <data name="PermissionsSettingsRemoveProtectedButton" xml:space="preserve">
+    <value>Remove</value>
+    <comment>Button at the end of a row in the Protected folders list on the Permissions page that removes that folder from the list. A screen reader label names the folder.</comment>
+  </data>
+  <data name="PermissionsSettingsNoProtectedFolders" xml:space="preserve">
+    <value>No folders are protected.</value>
+    <comment>Message on the Permissions page shown in place of the Protected folders list when the list is empty.</comment>
+  </data>
+  <data name="PermissionsSettingsProtectedFoldersHint" xml:space="preserve">
+    <value>No tool can read or write these, in any chat, even Unrestricted. BlazeHarness's own folder is always protected and is not listed.</value>
+    <comment>Hint under the Protected folders heading on the Permissions page. "Unrestricted" is the name of an access level (see PermissionPickerUnrestricted) and should match its translation. BlazeHarness is the product name, do not translate it.</comment>
+  </data>
+  <data name="PermissionsSettingsProtectedFoldersHeading" xml:space="preserve">
+    <value>Protected folders</value>
+    <comment>Heading of the card on the Permissions page that lists the folders no tool may read or write.</comment>
+  </data>
+  <data name="PermissionsSettingsRiskyOptionsHint" xml:space="preserve">
+    <value>Turn this off to hide both options. A chat that already has one of them then behaves as if it did not. Protected folders such as your SSH keys stay blocked either way.</value>
+    <comment>Hint under the checkbox in the Risky options card on the Permissions page. "Both options" are Unrestricted and Never ask, the names of an access level and an approval mode (see PermissionPickerUnrestricted and PermissionPickerNeverAsk). SSH is a protocol name, do not translate it.</comment>
+  </data>
+  <data name="PermissionsSettingsRiskyOptionsLabel" xml:space="preserve">
+    <value>Let a chat turn on Unrestricted or Never ask</value>
+    <comment>Label of a checkbox on the Permissions page. "Unrestricted" and "Never ask" are the names of an access level and an approval mode (see PermissionPickerUnrestricted and PermissionPickerNeverAsk) and should match their translations.</comment>
+  </data>
+  <data name="PermissionsSettingsRiskyOptionsHeading" xml:space="preserve">
+    <value>Risky options</value>
+    <comment>Heading of the card on the Permissions page with the checkbox that allows or hides the Unrestricted and Never ask options.</comment>
+  </data>
+  <data name="PermissionsSettingsApprovalsAskForExceptions" xml:space="preserve">
+    <value>Ask for exceptions</value>
+    <comment>Option in the Approvals drop-down on the Permissions page: the agent asks only when an action goes beyond the access level. Should match PermissionPickerAskForExceptions.</comment>
+  </data>
+  <data name="PermissionsSettingsApprovalsAskFirst" xml:space="preserve">
+    <value>Ask first</value>
+    <comment>Option in the Approvals drop-down on the Permissions page: the agent asks before risky actions or actions outside the folder. Should match PermissionPickerAskFirst.</comment>
+  </data>
+  <data name="PermissionsSettingsApprovalsLabel" xml:space="preserve">
+    <value>Approvals</value>
+    <comment>Label of the drop-down on the Permissions page that sets when new chats ask before acting.</comment>
+  </data>
+  <data name="PermissionsSettingsAccessHint" xml:space="preserve">
+    <value>A chat without a folder always starts read only.</value>
+    <comment>Hint next to the Access level drop-down on the Permissions page. A chat without a folder is a general chat that is not tied to a folder on disk. "Read only" is the name of an access level (see PermissionPickerReadOnly).</comment>
+  </data>
+  <data name="PermissionsSettingsAccessReadOnly" xml:space="preserve">
+    <value>Read only</value>
+    <comment>Option in the Access level drop-down on the Permissions page: the agent can read files but not change them or run commands. Should match PermissionPickerReadOnly.</comment>
+  </data>
+  <data name="PermissionsSettingsAccessWriteInFolder" xml:space="preserve">
+    <value>Write in folder</value>
+    <comment>Option in the Access level drop-down on the Permissions page: the agent can change files inside the folder the chat works in. Should match PermissionPickerWriteInFolder.</comment>
+  </data>
+  <data name="PermissionsSettingsAccessLabel" xml:space="preserve">
+    <value>Access level</value>
+    <comment>Label of the drop-down on the Permissions page that sets what new chats may read and change.</comment>
+  </data>
+  <data name="PermissionsSettingsStartHeading" xml:space="preserve">
+    <value>New chats start with</value>
+    <comment>Heading of the card on the Permissions page with the default access level and approvals for new chats. It reads as the start of a sentence completed by the options below it.</comment>
+  </data>
+  <data name="PermissionsSettingsDescription" xml:space="preserve">
+    <value>What new chats start with. Each chat can still change its own settings, and changes here apply right away.</value>
+    <comment>Introductory sentence under the title of the Permissions page. Changes made on the page are saved immediately, without a save button.</comment>
+  </data>
+  <data name="PermissionsSettingsTitle" xml:space="preserve">
+    <value>Permissions</value>
+    <comment>Title of the Permissions page in the settings dialog.</comment>
+  </data>
+  <data name="ProvidersSettingsRemoveWarning" xml:space="preserve">
+    <value>This removes [strong]{name}[/strong] and its stored API key. Existing chats that used it will need another provider.</value>
+    <comment>Body of the dialog that confirms removing a model provider. {name} is the provider name. Keep the [strong] tags around it; they make it bold.</comment>
+  </data>
+  <data name="ProvidersSettingsRemoveConfirmButton" xml:space="preserve">
+    <value>Remove</value>
+    <comment>Confirm button in the dialog that asks whether to remove a model provider.</comment>
+  </data>
+  <data name="ProvidersSettingsRemoveDialogTitle" xml:space="preserve">
+    <value>Remove provider?</value>
+    <comment>Title of the dialog that asks the user to confirm removing a model provider.</comment>
+  </data>
+  <data name="ProvidersSettingsSaveButton" xml:space="preserve">
+    <value>Save provider</value>
+    <comment>Button that saves the provider form. It appears in the bar that shows when there are unsaved changes.</comment>
+  </data>
+  <data name="ProvidersSettingsSaveBarLabel" xml:space="preserve">
+    <value>Unsaved changes</value>
+    <comment>Accessible name (aria-label) of the bar with the Save and Discard buttons. Screen readers announce it as a region; it is not shown on screen.</comment>
+  </data>
+  <data name="ProvidersSettingsRemoveProviderButton" xml:space="preserve">
+    <value>Remove provider</value>
+    <comment>Button at the bottom of the provider editor that starts removing the provider. It opens a confirmation dialog.</comment>
+  </data>
+  <data name="ProvidersSettingsValidationHeading" xml:space="preserve">
+    <value>Fix these before saving:</value>
+    <comment>Heading of an error box in the provider editor. A list of validation problems follows it.</comment>
+  </data>
+  <data name="ProvidersSettingsRemoveHeaderLabel" xml:space="preserve">
+    <value>Remove header</value>
+    <comment>Accessible name (aria-label) of the icon-only button that removes one extra HTTP header row. Not shown on screen.</comment>
+  </data>
+  <data name="ProvidersSettingsHeaderValuePlaceholder" xml:space="preserve">
+    <value>Value</value>
+    <comment>Placeholder of the value input in an extra HTTP header row of the provider editor.</comment>
+  </data>
+  <data name="ProvidersSettingsHeaderValueLabel" xml:space="preserve">
+    <value>Header value</value>
+    <comment>Accessible name (aria-label) of the value input in an extra HTTP header row. Not shown on screen.</comment>
+  </data>
+  <data name="ProvidersSettingsHeaderNamePlaceholder" xml:space="preserve">
+    <value>Name</value>
+    <comment>Placeholder of the name input in an extra HTTP header row of the provider editor.</comment>
+  </data>
+  <data name="ProvidersSettingsHeaderNameLabel" xml:space="preserve">
+    <value>Header name</value>
+    <comment>Accessible name (aria-label) of the name input in an extra HTTP header row. Not shown on screen.</comment>
+  </data>
+  <data name="ProvidersSettingsAddHeaderButton" xml:space="preserve">
+    <value>＋ Add header</value>
+    <comment>Button that adds a row for an extra HTTP header in the provider editor. Keep the leading plus sign, which is an icon-like symbol.</comment>
+  </data>
+  <data name="ProvidersSettingsExtraHeadersLabel" xml:space="preserve">
+    <value>Extra headers</value>
+    <comment>Label of the section in the provider editor where the user adds custom HTTP headers sent with every request. A parenthesized "Optional" follows it.</comment>
+  </data>
+  <data name="ProvidersSettingsLegacyMaxTokens" xml:space="preserve">
+    <value>Send [code]max_tokens[/code] (most compatible servers) instead of [code]max_completion_tokens[/code]</value>
+    <comment>Checkbox label in the provider editor. Keep the [code] tags; max_tokens and max_completion_tokens are API field names and are not translated.</comment>
+  </data>
+  <data name="ProvidersSettingsStreamUsage" xml:space="preserve">
+    <value>Ask for token usage while streaming (turn off if the server rejects [code]stream_options[/code])</value>
+    <comment>Checkbox label in the provider editor. Keep the [code] tags; stream_options is an API field name and is not translated.</comment>
+  </data>
+  <data name="ProvidersSettingsThinkingFieldPlaceholder" xml:space="preserve">
+    <value>chat_template_kwargs.enable_thinking</value>
+    <comment>Example request body field path shown as the placeholder of the body field input. It is an API field name; do not translate it.</comment>
+  </data>
+  <data name="ProvidersSettingsThinkingFieldLabel" xml:space="preserve">
+    <value>Body field</value>
+    <comment>Label of the input for the request body field that carries the thinking level. It shows only when thinking is sent in the request body.</comment>
+  </data>
+  <data name="ProvidersSettingsThinkingLevelHint" xml:space="preserve">
+    <value>For every model, unless a model picks its own when you tune it.</value>
+    <comment>Hint below the provider-wide setting for how the thinking level is sent. A model can override it in its tuning dialog.</comment>
+  </data>
+  <data name="ProvidersSettingsThinkingLevelLabel" xml:space="preserve">
+    <value>Thinking level sent as</value>
+    <comment>Label of the drop-down that chooses how the thinking level is sent to the server. The options of the drop-down follow it.</comment>
+  </data>
+  <data name="ProvidersSettingsCompatibilityHint" xml:space="preserve">
+    <value>Only change these if the server rejects requests or ignores thinking.</value>
+    <comment>Hint at the top of the collapsible Compatibility section of the provider editor. "These" refers to the advanced settings in that section.</comment>
+  </data>
+  <data name="ProvidersSettingsCompatibilityHeading" xml:space="preserve">
+    <value>Compatibility</value>
+    <comment>Summary line that expands a section of advanced provider settings for servers that are not fully OpenAI-compatible.</comment>
+  </data>
+  <data name="ProvidersSettingsRemoveModelButton" xml:space="preserve">
+    <value>Remove</value>
+    <comment>Button on a model row that removes that model from the provider. Its accessible name names the model.</comment>
+  </data>
+  <data name="ProvidersSettingsMakeDefault" xml:space="preserve">
+    <value>Make default</value>
+    <comment>Button on a model row that makes it the default model for new chats. It shows only for saved models that are not the default.</comment>
+  </data>
+  <data name="ProvidersSettingsTuneModelButton" xml:space="preserve">
+    <value>Tune thinking &amp; sampling</value>
+    <comment>Button on a model row that opens a dialog to tune the model's thinking levels and sampling parameters (such as temperature).</comment>
+  </data>
+  <data name="ProvidersSettingsDefaultModelBadge" xml:space="preserve">
+    <value>default</value>
+    <comment>Small badge on the model row that is the default model. Keep it short.</comment>
+  </data>
+  <data name="ProvidersSettingsImagesLabel" xml:space="preserve">
+    <value>Images</value>
+    <comment>Checkbox label on a model row that says the model accepts image input.</comment>
+  </data>
+  <data name="ProvidersSettingsThinkingLabel" xml:space="preserve">
+    <value>Thinking</value>
+    <comment>Checkbox label on a model row that says the model is a thinking (reasoning) model.</comment>
+  </data>
+  <data name="ProvidersSettingsMaxOutputLabel" xml:space="preserve">
+    <value>Max output</value>
+    <comment>Label of the number input for the most tokens the model can write in one reply.</comment>
+  </data>
+  <data name="ProvidersSettingsContextWindowLabel" xml:space="preserve">
+    <value>Context window</value>
+    <comment>Label of the number input for the model's context window, the most tokens a chat can hold.</comment>
+  </data>
+  <data name="ProvidersSettingsModelNameLabel" xml:space="preserve">
+    <value>Name</value>
+    <comment>Label of the optional display-name input on a model row. A parenthesized "Optional" follows it.</comment>
+  </data>
+  <data name="ProvidersSettingsModelIdLabel" xml:space="preserve">
+    <value>Model id</value>
+    <comment>Label of the input for the model identifier that the server expects, such as a name from its model list.</comment>
+  </data>
+  <data name="ProvidersSettingsModelLimitsHint" xml:space="preserve">
+    <value>Servers rarely report limits, so check these. Context window feeds compaction, and max output must be smaller than it.</value>
+    <comment>Hint above the model rows about the token limits. "Context window" and "max output" name the two limit inputs; keep them the same as their labels. Compaction means summarizing old messages to free space.</comment>
+  </data>
+  <data name="ProvidersSettingsNoModelsMessage" xml:space="preserve">
+    <value>No models yet. Use Check connection &amp; list models above, or add one by hand.</value>
+    <comment>Empty-state message when the provider has no models. "Check connection &amp; list models" is the name of a button above; keep it the same as that button's text.</comment>
+  </data>
+  <data name="ProvidersSettingsAllModelsAddedMessage" xml:space="preserve">
+    <value>Every model the server lists has been added.</value>
+    <comment>Message shown after a successful connection check when all models the server reports are already in the provider.</comment>
+  </data>
+  <data name="ProvidersSettingsSelectAllButton" xml:space="preserve">
+    <value>Select all</value>
+    <comment>Button that ticks every model in the list of models found on the server.</comment>
+  </data>
+  <data name="ProvidersSettingsServerModelsLabel" xml:space="preserve">
+    <value>Models on this server</value>
+    <comment>Label above the checklist of models the server reported after a connection check. The user picks which ones to add.</comment>
+  </data>
+  <data name="ProvidersSettingsAddModelButton" xml:space="preserve">
+    <value>＋ Add model</value>
+    <comment>Button that adds an empty model row to the provider by hand. Keep the leading plus sign, which is an icon-like symbol.</comment>
+  </data>
+  <data name="ProvidersSettingsModelsHeading" xml:space="preserve">
+    <value>Models</value>
+    <comment>Heading of the card in the provider editor that lists the provider's models.</comment>
+  </data>
+  <data name="ProvidersSettingsCheckConnectionButton" xml:space="preserve">
+    <value>Check connection &amp; list models</value>
+    <comment>Button that contacts the server to test the settings and fetch its model list. Other messages refer to it by this text, so keep them the same.</comment>
+  </data>
+  <data name="ProvidersSettingsEnvVarHint" xml:space="preserve">
+    <value>When set, this replaces the stored key.</value>
+    <comment>Hint below the environment variable name input. "This" is the environment variable; the stored key is the API key saved in the key store.</comment>
+  </data>
+  <data name="ProvidersSettingsEnvVarPlaceholder" xml:space="preserve">
+    <value>DEEPSEEK_API_KEY</value>
+    <comment>Example environment variable name shown as a placeholder. Do not translate it.</comment>
+  </data>
+  <data name="ProvidersSettingsEnvVarLabel" xml:space="preserve">
+    <value>Environment variable name</value>
+    <comment>Accessible name (aria-label) of the input for the name of the environment variable that holds the API key. Not shown on screen.</comment>
+  </data>
+  <data name="ProvidersSettingsEnvVarSummary" xml:space="preserve">
+    <value>Read it from an environment variable</value>
+    <comment>Summary line that expands an option under the API key field. "It" is the API key.</comment>
+  </data>
+  <data name="ProvidersSettingsApiKeyLabel" xml:space="preserve">
+    <value>API key</value>
+    <comment>Label of the API key input in the provider editor. A parenthesized "Optional" follows it.</comment>
+  </data>
+  <data name="ProvidersSettingsBaseUrlPlaceholder" xml:space="preserve">
+    <value>https://api.example.com/v1</value>
+    <comment>Example base URL shown as a placeholder. It is a URL; do not translate it.</comment>
+  </data>
+  <data name="ProvidersSettingsBaseUrlLabel" xml:space="preserve">
+    <value>Base URL</value>
+    <comment>Label of the input for the web address of the provider's API server.</comment>
+  </data>
+  <data name="ProvidersSettingsNamePlaceholder" xml:space="preserve">
+    <value>e.g. DeepSeek</value>
+    <comment>Placeholder of the provider name input. DeepSeek is a product name and is not translated.</comment>
+  </data>
+  <data name="ProvidersSettingsNameLabel" xml:space="preserve">
+    <value>Name</value>
+    <comment>Label of the input for the provider's display name.</comment>
+  </data>
+  <data name="ProvidersSettingsAddProviderEditorButton" xml:space="preserve">
+    <value>Add provider</value>
+    <comment>Small button in the header of the provider editor that starts a new provider. It shows only when the provider list is hidden on narrow screens, next to a plus icon.</comment>
+  </data>
+  <data name="ProvidersSettingsSelectPrompt" xml:space="preserve">
+    <value>Select a provider to edit it, or add a new one.</value>
+    <comment>Message shown in place of the editor when providers exist but none is selected.</comment>
+  </data>
+  <data name="ProvidersSettingsEmptyStateDescription" xml:space="preserve">
+    <value>Pick a starting point, or add any OpenAI-compatible endpoint.</value>
+    <comment>Text under the first-provider heading. Buttons for well-known providers follow it. OpenAI is a product name and is not translated.</comment>
+  </data>
+  <data name="ProvidersSettingsEmptyStateHeading" xml:space="preserve">
+    <value>Connect your first provider</value>
+    <comment>Heading shown in the providers page when no model provider is configured yet.</comment>
+  </data>
+  <data name="ProvidersSettingsAddProviderButton" xml:space="preserve">
+    <value>Add provider</value>
+    <comment>Button below the list of configured providers that starts a new provider. It is shown next to a plus icon.</comment>
+  </data>
+  <data name="ProvidersSettingsDefaultProviderBadge" xml:space="preserve">
+    <value>default</value>
+    <comment>Small badge in the provider list that marks the provider whose default model is used for new chats. Keep it short.</comment>
+  </data>
+  <data name="ProvidersSettingsListLabel" xml:space="preserve">
+    <value>Configured providers</value>
+    <comment>Accessible name (aria-label) of the sidebar that lists the configured providers. Not shown on screen.</comment>
+  </data>
+  <data name="ProvidersSettingsPageTitle" xml:space="preserve">
+    <value>Providers</value>
+    <comment>Title of the settings page where the user manages model providers.</comment>
+  </data>
+  <data name="SkillsSettingsLocationsHint" xml:space="preserve">
+    <value>Skills from all three are used. If two have the same name, the one from the folder higher in this list is used and the other is hidden. Changes to the BlazeHarness and global folders show up here by themselves. Skills in a chat's folder are read each time the chat sends a message.</value>
+    <comment>Hint under the list of skill locations. "All three" means the chat folder, BlazeHarness folder and global folder listed above it. Keep "BlazeHarness" untranslated.</comment>
+  </data>
+  <data name="SkillsSettingsGlobalLocation" xml:space="preserve">
+    <value>Global skills, for every chat here and in other AI agent apps that read this folder.</value>
+    <comment>Description next to the global skills folder path in the "Where skills are read from" list. The folder is shared with other AI agent apps.</comment>
+  </data>
+  <data name="SkillsSettingsBlazeHarnessLocation" xml:space="preserve">
+    <value>BlazeHarness skills, for every chat here.</value>
+    <comment>Description next to the BlazeHarness skills folder path in the "Where skills are read from" list. Keep "BlazeHarness" untranslated.</comment>
+  </data>
+  <data name="SkillsSettingsFolderLocation" xml:space="preserve">
+    <value>Folder skills, for chats in that folder.</value>
+    <comment>Description next to the "&lt;chat folder&gt;/.agents/skills" path in the "Where skills are read from" list; "that folder" is the folder a chat works in.</comment>
+  </data>
+  <data name="SkillsSettingsLocationsHeading" xml:space="preserve">
+    <value>Where skills are read from</value>
+    <comment>Heading of the section on the skills settings page that lists the folders skills are loaded from.</comment>
+  </data>
+  <data name="SkillsSettingsProblemsHeading" xml:space="preserve">
+    <value>Skills that could not be read</value>
+    <comment>Heading of the list of skill files that failed to load, each shown with its error.</comment>
+  </data>
+  <data name="SkillsSettingsHiddenIn" xml:space="preserve">
+    <value>in</value>
+    <comment>Small connecting word between a hidden skill's name and the folder path it was found in, e.g. "my-skill in /home/user/skills". Not a full sentence.</comment>
+  </data>
+  <data name="SkillsSettingsHiddenHeading" xml:space="preserve">
+    <value>Hidden by another skill with the same name</value>
+    <comment>Heading of the list of skills that are not used because a skill with the same name from a higher-priority folder takes precedence.</comment>
+  </data>
+  <data name="SkillsSettingsOn" xml:space="preserve">
+    <value>On</value>
+    <comment>Text next to the checkbox that sets whether a skill is on for new chats.</comment>
+  </data>
+  <data name="SkillsSettingsNewChatsLabel" xml:space="preserve">
+    <value>On for new chats</value>
+    <comment>Accessible label (aria-label) of the checkbox that sets whether a skill is on by default in new chats.</comment>
+  </data>
+  <data name="SkillsSettingsNewChatsTooltip" xml:space="preserve">
+    <value>On for new chats</value>
+    <comment>Tooltip of the "On" checkbox for a skill, saying it controls whether the skill is on by default in new chats.</comment>
+  </data>
+  <data name="SkillsSettingsEmpty" xml:space="preserve">
+    <value>No skills yet. Put a folder with a [code]SKILL.md[/code] in one of the places below.</value>
+    <comment>Empty state on the Skills settings page. Keep the [code] tags; SKILL.md is a file name and is not translated.</comment>
+  </data>
+  <data name="SkillsSettingsInstalledHeading" xml:space="preserve">
+    <value>Installed skills</value>
+    <comment>Heading of the list of skills found on this computer, each with an on/off checkbox.</comment>
+  </data>
+  <data name="SkillsSettingsInstallWarning" xml:space="preserve">
+    <value>A skill is text the model follows, and it may come with scripts. It never gives the model more permissions, and running anything still asks first. Only install skills you trust.</value>
+    <comment>Security notice at the top of the skills settings page, shown in a warning box before the skill list.</comment>
+  </data>
+  <data name="SkillsSettingsIntro" xml:space="preserve">
+    <value>A skill is a folder with a [code]SKILL.md[/code] file that tells the model how to do one kind of work. The model sees each skill's name and description, and loads the rest only when it needs it. Each chat can turn skills on or off for itself.</value>
+    <comment>Description under the Skills settings heading. Keep the [code] tags; SKILL.md is a file name and is not translated.</comment>
+  </data>
+  <data name="SkillsSettingsTitle" xml:space="preserve">
+    <value>Skills</value>
+    <comment>Title of the skills settings page.</comment>
+  </data>
+  <data name="WebToolsSettingsModeSequential" xml:space="preserve">
+    <value>One at a time: in the order below, stopping at the first one that gives results</value>
+    <comment>Label of a radio button on the Web page that makes web search try the enabled search providers one after another in the listed order, stopping at the first that returns results. The order is the one of the list above it.</comment>
+  </data>
+  <data name="WebToolsSettingsModeParallel" xml:space="preserve">
+    <value>In parallel: ask every provider you turned on and merge the results (faster and broader, but the query goes to all of them)</value>
+    <comment>Label of a radio button on the Web page that makes web search ask every enabled search provider at once and merge the results. The text warns that the query is sent to all of them.</comment>
+  </data>
+  <data name="WebToolsSettingsModeLabel" xml:space="preserve">
+    <value>How to use the providers</value>
+    <comment>Accessible label (not shown on screen) of the group of radio buttons on the Web page that chooses between asking the search providers one at a time or in parallel.</comment>
+  </data>
+  <data name="WebToolsSettingsProvidersHint" xml:space="preserve">
+    <value>None of these need an account or key. Each one is a free public service that can change or limit access at any time.</value>
+    <comment>Hint under the Search providers heading on the Web page. It says that the listed providers are free public services that need no account or API key, and that they may change or limit access at any time.</comment>
+  </data>
+  <data name="WebToolsSettingsProvidersHeading" xml:space="preserve">
+    <value>Search providers</value>
+    <comment>Heading of the card on the Web page that lists the search services web search can use and how they are combined.</comment>
+  </data>
+  <data name="WebToolsSettingsFetchHint" xml:space="preserve">
+    <value>A fetch only reaches the public internet. Addresses on this computer or the local network are refused. The proxy settings of the system are not used. Fetched pages are kept in memory for a short while so a long page can be read in pieces.</value>
+    <comment>Hint under the Web fetch checkbox on the Web page. It explains the limits of the tool: it only reaches public internet addresses (local network addresses are refused), ignores the system proxy settings, and caches fetched pages briefly so long pages can be read in pieces.</comment>
+  </data>
+  <data name="WebToolsSettingsFetchLabel" xml:space="preserve">
+    <value>Web fetch (pages, PDF files and text)</value>
+    <comment>Label of a checkbox on the Web page that turns the web_fetch tool on or off. The tool reads web pages, PDF files and plain text from an address. PDF is a file format name.</comment>
+  </data>
+  <data name="WebToolsSettingsSearchLabel" xml:space="preserve">
+    <value>Web search</value>
+    <comment>Label of a checkbox on the Web page that turns the web_search tool on or off. The tool searches the web for the agent.</comment>
+  </data>
+  <data name="WebToolsSettingsToolsHeading" xml:space="preserve">
+    <value>Tools</value>
+    <comment>Heading of the card on the Web page with the checkboxes that turn the web search and web fetch tools on or off.</comment>
+  </data>
+  <data name="WebToolsSettingsDescription" xml:space="preserve">
+    <value>Lets the agent search the web and read pages and PDF files. Each use asks first, unless the chat's access level is Unrestricted or it never asks. The page text is treated as data, never as instructions. JavaScript is not run, so pages that need it may come out empty.</value>
+    <comment>Introductory paragraph under the title of the Web page. "Unrestricted" is the name of an access level (see PermissionPickerUnrestricted) and should match its translation. JavaScript is a technology name, do not translate it.</comment>
+  </data>
+  <data name="WebToolsSettingsTitle" xml:space="preserve">
+    <value>Web</value>
+    <comment>Title of the Web page in the settings dialog, which configures the web search and web fetch tools.</comment>
+  </data>
+  <data name="ExtraFieldsAddButton" xml:space="preserve">
+    <value>＋ Add field</value>
+    <comment>Button that adds a row for a custom request field in the model tuning dialog. Keep the leading plus sign, which is an icon-like symbol.</comment>
+  </data>
+  <data name="ExtraFieldsRemoveButton" xml:space="preserve">
+    <value>Remove</value>
+    <comment>Button on a custom request field row that removes that row. Its accessible name includes the field name.</comment>
+  </data>
+  <data name="ExtraFieldsValueLabel" xml:space="preserve">
+    <value>Field value as JSON</value>
+    <comment>Accessible name (aria-label) of the input for a custom request field's value. The user types a JSON value such as a number or text in quotes. JSON is a format name and is not translated.</comment>
+  </data>
+  <data name="ExtraFieldsNamePlaceholder" xml:space="preserve">
+    <value>mirostat</value>
+    <comment>Example custom request field name shown as a placeholder. It is an API field name (a sampling option); do not translate it.</comment>
+  </data>
+  <data name="ExtraFieldsNameLabel" xml:space="preserve">
+    <value>Field name</value>
+    <comment>Accessible name (aria-label) of the input for a custom request field's name. Not shown on screen.</comment>
+  </data>
+  <data name="ModelTuningDoneButton" xml:space="preserve">
+    <value>Done</value>
+    <comment>Button in the footer of the model tuning dialog that closes it.</comment>
+  </data>
+  <data name="ModelTuningPreviewThinkingOnHeading" xml:space="preserve">
+    <value>Thinking on</value>
+    <comment>Heading above the preview of the request settings that are sent when thinking is enabled. Keep it the same as the other "Thinking on" labels.</comment>
+  </data>
+  <data name="ModelTuningPreviewThinkingOffHeading" xml:space="preserve">
+    <value>Thinking off</value>
+    <comment>Heading above the preview of the request settings that are sent when thinking is disabled. Keep it the same as the other "Thinking off" labels.</comment>
+  </data>
+  <data name="ModelTuningPreviewSummary" xml:space="preserve">
+    <value>Preview of what is sent</value>
+    <comment>Summary line that expands a preview of the settings sent to the server in each request. The preview content is code and is not translated.</comment>
+  </data>
+  <data name="ModelTuningCustomFieldsThinkingOnHeading" xml:space="preserve">
+    <value>Thinking on</value>
+    <comment>Subheading above the custom request fields that apply when thinking is enabled. Keep it the same as the other "Thinking on" labels.</comment>
+  </data>
+  <data name="ModelTuningCustomFieldsThinkingOffHeading" xml:space="preserve">
+    <value>Thinking off</value>
+    <comment>Subheading above the custom request fields that apply when thinking is disabled. Keep it the same as the other "Thinking off" labels.</comment>
+  </data>
+  <data name="ModelTuningCustomFieldsHint" xml:space="preserve">
+    <value>For server-specific request fields. A dotted name such as chat_template_kwargs.x sets a nested field.</value>
+    <comment>Hint in the collapsible custom fields section of the model tuning dialog. chat_template_kwargs.x is an example API field path; do not translate it.</comment>
+  </data>
+  <data name="ModelTuningThinkingOnEmptyHint" xml:space="preserve">
+    <value>An empty Thinking on cell uses the Thinking off value (↳).</value>
+    <comment>Hint under the sampling table. "Thinking on" and "Thinking off" are the table column headings; keep them the same. The arrow symbol (↳) appears in an empty cell, so keep it.</comment>
+  </data>
+  <data name="ModelTuningThinkingOnColumn" xml:space="preserve">
+    <value>Thinking on</value>
+    <comment>Column heading of the sampling table for values used when model thinking is enabled.</comment>
+  </data>
+  <data name="ModelTuningParameterColumn" xml:space="preserve">
+    <value>Parameter</value>
+    <comment>Column heading of the sampling table that lists parameter names such as temperature.</comment>
+  </data>
+  <data name="ModelTuningSamplingHeading" xml:space="preserve">
+    <value>Sampling</value>
+    <comment>Heading of the section in the model tuning dialog for sampling parameters such as temperature and top-p.</comment>
+  </data>
+  <data name="ModelTuningProviderSettingHint" xml:space="preserve">
+    <value>The provider's setting is under Compatibility in its settings, and applies to every model that doesn't pick its own.</value>
+    <comment>Hint shown when the model uses the provider's way of sending the thinking level. "Compatibility" is the name of a section in the provider settings; keep it the same as that heading.</comment>
+  </data>
+  <data name="ModelTuningBodyFieldPathPlaceholder" xml:space="preserve">
+    <value>chat_template_kwargs.reasoning_effort</value>
+    <comment>Example request body field path shown as a placeholder. It is an API field name; do not translate it.</comment>
+  </data>
+  <data name="ModelTuningBodyFieldPathLabel" xml:space="preserve">
+    <value>Body field path</value>
+    <comment>Accessible name (aria-label) of the input for the request body field that carries the thinking level. Not shown on screen.</comment>
+  </data>
+  <data name="ModelTuningSentAsLabel" xml:space="preserve">
+    <value>Sent as</value>
+    <comment>Label of the drop-down that chooses how this model's thinking level is sent to the server.</comment>
+  </data>
+  <data name="ModelTuningNoLevelsHint" xml:space="preserve">
+    <value>Pick the levels this model supports. Pick none if it can't be controlled.</value>
+    <comment>Hint shown when no thinking level is selected yet. The levels are toggle buttons above it.</comment>
+  </data>
+  <data name="ModelTuningDefaultLevelLabel" xml:space="preserve">
+    <value>Default level</value>
+    <comment>Label of the drop-down that chooses which supported thinking level a new chat uses by default.</comment>
+  </data>
+  <data name="ModelTuningLevelValuesHint" xml:space="preserve">
+    <value>Pick the levels the model supports and check the value the server expects for each. Blank sends nothing.</value>
+    <comment>Hint under the list of thinking levels, each with an input for the value the server expects. "Blank" means an empty input.</comment>
+  </data>
+  <data name="ModelTuningSupportedLevelsLabel" xml:space="preserve">
+    <value>Supported thinking levels</value>
+    <comment>Accessible name (aria-label) of the group of toggle buttons that choose which thinking levels the model supports. Not shown on screen.</comment>
+  </data>
+  <data name="ModelTuningMarkThinkingButton" xml:space="preserve">
+    <value>Mark as a thinking model</value>
+    <comment>Button in the model tuning dialog that marks the model as a thinking (reasoning) model and reveals its thinking settings.</comment>
+  </data>
+  <data name="ModelTuningNotThinkingModelHint" xml:space="preserve">
+    <value>This model is not marked as a thinking model.</value>
+    <comment>Hint in the Thinking section of the model tuning dialog. A button to mark the model as a thinking model follows it.</comment>
+  </data>
+  <data name="ModelTuningThinkingHeading" xml:space="preserve">
+    <value>Thinking</value>
+    <comment>Heading of the section in the model tuning dialog for thinking (reasoning) settings.</comment>
+  </data>
+  <data name="DialogClose" xml:space="preserve">
+    <value>Close</value>
+    <comment>Accessible label (aria-label) of the icon-only close button in every dialog's header; not shown on screen.</comment>
+  </data>
+  <data name="SecretInputRemoveStored" xml:space="preserve">
+    <value>Remove stored key</value>
+    <comment>Button in the secret field that deletes the API key saved in the OS keychain or key file.</comment>
+  </data>
+  <data name="ReconnectModalRejoining" xml:space="preserve">
+    <value>Rejoining the server...</value>
+    <comment>Shown in the dialog while the browser tries to reconnect to the app's server.</comment>
+  </data>
+  <data name="ReconnectModalRepeatedAttempt" xml:space="preserve">
+    <value>Rejoin failed... trying again in [seconds] seconds.</value>
+    <comment>Shown in the reconnect dialog after a failed attempt. Keep the [seconds] tag where the countdown number should appear; it is replaced by a live number.</comment>
+  </data>
+  <data name="ReconnectModalFailed" xml:space="preserve">
+    <value>Failed to rejoin.</value>
+    <comment>First line of the reconnect dialog when all attempts failed. A second line asks the user to retry or reload.</comment>
+  </data>
+  <data name="ReconnectModalRetryOrReload" xml:space="preserve">
+    <value>Please retry or reload the page.</value>
+    <comment>Second line of the reconnect dialog after a failure; follows the failure line on a new line.</comment>
+  </data>
+  <data name="ReconnectModalRetry" xml:space="preserve">
+    <value>Retry</value>
+    <comment>Button in the reconnect dialog that tries to reconnect to the server again.</comment>
+  </data>
+  <data name="ReconnectModalPaused" xml:space="preserve">
+    <value>The session has been paused by the server.</value>
+    <comment>Shown in the reconnect dialog when the server paused the browser's connection to save resources.</comment>
+  </data>
+  <data name="ReconnectModalResumeFailed" xml:space="preserve">
+    <value>Failed to resume the session.</value>
+    <comment>First line of the reconnect dialog when resuming a paused connection failed. A second line asks the user to retry or reload.</comment>
+  </data>
+  <data name="ReconnectModalResume" xml:space="preserve">
+    <value>Resume</value>
+    <comment>Button in the reconnect dialog that resumes a paused connection.</comment>
+  </data>
+  <data name="ToastHostDismiss" xml:space="preserve">
+    <value>Dismiss</value>
+    <comment>Accessible label (aria-label) of the icon-only button that closes a toast notification; not shown on screen.</comment>
+  </data>
+  <data name="ToastHostLabel" xml:space="preserve">
+    <value>Notifications</value>
+    <comment>Accessible label (aria-label) of the region that holds toast notifications; not shown on screen.</comment>
+  </data>
+</root>

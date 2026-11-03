@@ -16,6 +16,7 @@ using BlazeHarness.Core.Web;
 using BlazeHarness.Web.Components;
 using BlazeHarness.Web.Hosting;
 using BlazeHarness.Web.Services;
+using System.Globalization;
 
 // Code colors are matched with patterns from a library, against text a model wrote, so a slow match must give up.
 AppContext.SetData("REGEX_DEFAULT_MATCH_TIMEOUT", TimeSpan.FromSeconds(2));
@@ -89,10 +90,20 @@ builder.Services.AddHttpClient(ChatClientSource.HttpClientName, client => client
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddHubOptions(options => options.MaximumReceiveMessageSize = MaxHubMessageBytes);
+builder.Services.AddLocalization();
 
 await using var app = builder.Build();
 
 app.UseMiddleware<LocalAccessMiddleware>();
+var formattingCultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+    .Select(culture => culture.Name)
+    .Append("en-US")
+    .Distinct(StringComparer.Ordinal)
+    .ToArray();
+app.UseRequestLocalization(new RequestLocalizationOptions()
+    .SetDefaultCulture("en-US")
+    .AddSupportedCultures(formattingCultures)
+    .AddSupportedUICultures("en-US"));
 
 if (!app.Environment.IsDevelopment())
 {

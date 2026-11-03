@@ -18,13 +18,13 @@
 
     @if (Entry.Origin == UserMessageOrigin.Steer)
     {
-        <div class="msg-label">Sent while the model was working</div>
+        <div class="msg-label">@WebStrings.MessageViewQueuedLabel</div>
     }
 
     @if (Entry.Reasoning.Length > 0)
     {
         <details class="msg-thinking" open="@(Entry.Status == EntryStatus.Streaming && Entry.Text.Length == 0)">
-            <summary>Thinking</summary>
+            <summary>@WebStrings.MessageViewThinkingSummary</summary>
             <div class="msg-body">@Entry.Reasoning</div>
         </details>
     }
@@ -60,11 +60,11 @@
     }
     else if (Entry.Status == EntryStatus.Streaming && Entry.Reasoning.Length == 0)
     {
-        <div class="msg-wait" role="status">Waiting for the model…</div>
+        <div class="msg-wait" role="status">@WebStrings.MessageViewWaiting</div>
     }
     else if (Entry.Role == ChatRole.Assistant && Entry is { Status: EntryStatus.Done, ToolCalls.Count: 0, Error: null })
     {
-        <div class="hint">The model ended its reply without any text.</div>
+        <div class="hint">@WebStrings.MessageViewEmptyReplyHint</div>
     }
 
     @foreach (var call in Entry.ToolCalls)
@@ -74,12 +74,12 @@
 
     @if (Entry.Status == EntryStatus.Cancelled)
     {
-        <div class="hint">Stopped.</div>
+        <div class="hint">@WebStrings.MessageViewStoppedHint</div>
     }
 
     @if (Entry.Status == EntryStatus.Interrupted)
     {
-        <div class="hint">This reply was cut off when the app stopped. Retry to generate it again.</div>
+        <div class="hint">@WebStrings.MessageViewInterruptedHint</div>
     }
 
     @if (Entry.Error is not null)
@@ -90,12 +90,12 @@
     <footer class="msg-meta">
         @if (Entry.Text.Length > 0 && Entry.Status != EntryStatus.Streaming)
         {
-            <button type="button" class="btn btn-ghost btn-sm btn-icon msg-action" aria-label="Copy this message" title="Copy message" @onclick="CopyAsync"><Icon Name="copy" /></button>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon msg-action" aria-label="@WebStrings.MessageViewCopyLabel" title="@WebStrings.MessageViewCopyTooltip" @onclick="CopyAsync"><Icon Name="copy" /></button>
         }
 
         @if (CanEdit && Entry.Role == ChatRole.User)
         {
-            <button type="button" class="btn btn-ghost btn-sm btn-icon msg-action" aria-label="Edit and resend this message" title="Edit and resend" @onclick="() => OnEdit.InvokeAsync(Entry)"><Icon Name="pencil" /></button>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon msg-action" aria-label="@WebStrings.MessageViewEditLabel" title="@WebStrings.MessageViewEditTooltip" @onclick="() => OnEdit.InvokeAsync(Entry)"><Icon Name="pencil" /></button>
         }
 
         <time class="msg-time" datetime="@Entry.At.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)"></time>
@@ -109,13 +109,22 @@
 @code {
     private static string UsageSummary(UsageReported usage)
     {
-        var parts = new List<string> { $"{TokenFormat.Of(usage.PromptTokens)} in" };
+        var parts = new List<string>
+        {
+            ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.MessageViewUsageIn),
+                new Dictionary<string, object?> { ["tokens"] = TokenFormat.Of(usage.PromptTokens) }),
+        };
         if (usage.CachedTokens > 0)
         {
-            parts.Add($"{TokenFormat.Of(usage.CachedTokens)} cached");
+            parts.Add(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.MessageViewUsageCached),
+                new Dictionary<string, object?> { ["tokens"] = TokenFormat.Of(usage.CachedTokens) }));
         }
 
-        parts.Add($"{TokenFormat.Of(usage.CompletionTokens)} out");
+        parts.Add(ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.MessageViewUsageOut),
+            new Dictionary<string, object?> { ["tokens"] = TokenFormat.Of(usage.CompletionTokens) }));
         if (usage.DecodeTokensPerSecond is { } decode)
         {
             parts.Add(TokenFormat.Rate(decode));
@@ -128,17 +137,58 @@
     {
         var lines = new List<string>
         {
-            $"Prompt: {usage.PromptTokens:N0} tokens, {usage.CachedTokens:N0} from the cache",
-            $"Output: {usage.CompletionTokens:N0} tokens" + (usage.ReasoningTokens > 0 ? $", {usage.ReasoningTokens:N0} of them thinking" : string.Empty),
+            ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.MessageViewUsagePrompt),
+                new Dictionary<string, object?>
+                {
+                    ["promptCount"] = usage.PromptTokens,
+                    ["prompt"] = usage.PromptTokens.ToString("N0", CultureInfo.CurrentCulture),
+                    ["cachedCount"] = usage.CachedTokens,
+                    ["cached"] = usage.CachedTokens.ToString("N0", CultureInfo.CurrentCulture),
+                }),
+            ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.MessageViewUsageOutput),
+                new Dictionary<string, object?>
+                {
+                    ["count"] = usage.CompletionTokens,
+                    ["output"] = usage.CompletionTokens.ToString("N0", CultureInfo.CurrentCulture),
+                }),
         };
+        if (usage.ReasoningTokens > 0)
+        {
+            lines.Add(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.MessageViewUsageReasoning),
+                new Dictionary<string, object?>
+                {
+                    ["count"] = usage.ReasoningTokens,
+                    ["reasoning"] = usage.ReasoningTokens.ToString("N0", CultureInfo.CurrentCulture),
+                }));
+        }
+
         if (usage.TimeToFirstToken is { } wait)
         {
-            lines.Add($"First output after {TokenFormat.Duration(wait)}" + (usage.PrefillTokensPerSecond is { } prefill ? $", prompt processed at {TokenFormat.Rate(prefill)}" : string.Empty));
+            lines.Add(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.MessageViewUsageFirstOutput),
+                new Dictionary<string, object?> { ["duration"] = TokenFormat.Duration(wait) }));
+            if (usage.PrefillTokensPerSecond is { } prefill)
+            {
+                lines.Add(ResourceMessageFormatter.Web.Format(
+                    nameof(WebStrings.MessageViewUsagePrefillRate),
+                    new Dictionary<string, object?> { ["rate"] = TokenFormat.Rate(prefill) }));
+            }
         }
 
         if (usage.GenerationTime is { } generation)
         {
-            lines.Add($"Output streamed in {TokenFormat.Duration(generation)}" + (usage.DecodeTokensPerSecond is { } decode ? $" at {TokenFormat.Rate(decode)}" : string.Empty));
+            lines.Add(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.MessageViewUsageStreamed),
+                new Dictionary<string, object?> { ["duration"] = TokenFormat.Duration(generation) }));
+            if (usage.DecodeTokensPerSecond is { } decode)
+            {
+                lines.Add(ResourceMessageFormatter.Web.Format(
+                    nameof(WebStrings.MessageViewUsageDecodeRate),
+                    new Dictionary<string, object?> { ["rate"] = TokenFormat.Rate(decode) }));
+            }
         }
 
         return string.Join('\n', lines);
@@ -232,6 +282,6 @@
     private async Task CopyAsync()
     {
         var copied = await JS.InvokeAsync<bool>("bhChat.copyText", Entry.Text);
-        Toasts.Show(copied ? "Message copied." : "The message could not be copied.", copied ? ToastKind.Success : ToastKind.Error);
+        Toasts.Show(copied ? WebStrings.MessageViewCopied : WebStrings.MessageViewCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
     }
 }

@@ -6,11 +6,11 @@
     <ChildContent>
         <p class="hint">@Hint</p>
         <div class="field">
-            <label for="folder-path">Folder path</label>
+            <label for="folder-path">@WebStrings.OpenFolderDialogPathLabel</label>
             <div class="row folder-path-row">
                 <input id="folder-path" class="input mono" aria-invalid="@(_error is null ? null : "true")" aria-describedby="@(_error is null ? null : "folder-error")" @bind="_path" @bind:event="oninput" @onkeydown="OnPathKey"
-                       spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Type or paste a path, such as ~/code/my-app" />
-                <button type="button" class="btn" @onclick="GoAsync">Go</button>
+                       spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="@WebStrings.OpenFolderDialogPathPlaceholder" />
+                <button type="button" class="btn" @onclick="GoAsync">@WebStrings.OpenFolderDialogGo</button>
             </div>
         </div>
 
@@ -19,7 +19,7 @@
             <Alert Id="folder-error">@_error</Alert>
         }
 
-        <div class="row" role="group" aria-label="Places">
+        <div class="row" role="group" aria-label="@WebStrings.OpenFolderDialogPlacesLabel">
             @foreach (var place in _places)
             {
                 <button type="button" class="btn btn-sm" @onclick="() => BrowseAsync(place.Path)">
@@ -31,22 +31,22 @@
         <div class="folder-browser">
             <div class="folder-browser-bar">
                 <button type="button" class="btn btn-sm" disabled="@(_listing?.ParentPath is null)" @onclick="UpAsync">
-                    <Icon Name="arrow-up" /> Up
+                    <Icon Name="arrow-up" /> @WebStrings.OpenFolderDialogUp
                 </button>
                 <label class="check">
                     <input type="checkbox" checked="@_hidden" @onchange="OnHiddenChangedAsync" />
-                    Show hidden folders
+                    @WebStrings.OpenFolderDialogShowHiddenFolders
                 </label>
             </div>
             @if (_listing is { Error: FolderError.None } listing)
             {
                 @if (listing.Folders.Count == 0)
                 {
-                    <p class="sidebar-empty">There are no folders inside this one. You can still open it.</p>
+                    <p class="sidebar-empty">@WebStrings.OpenFolderDialogNoSubfolders</p>
                 }
                 else
                 {
-                    <ul class="folder-entries" aria-label="@("Folders in " + listing.Path)">
+                    <ul class="folder-entries" aria-label="@ResourceMessageFormatter.Web.Format(nameof(WebStrings.OpenFolderDialogFoldersIn), new Dictionary<string, object?> { ["path"] = listing.Path })">
                         @foreach (var entry in listing.Folders)
                         {
                             <li @key="entry.Path">
@@ -61,7 +61,7 @@
         </div>
     </ChildContent>
     <Footer>
-        <button type="button" class="btn" @onclick="CloseAsync">Cancel</button>
+        <button type="button" class="btn" @onclick="CloseAsync">@WebStrings.OpenFolderDialogCancel</button>
         <button type="button" class="btn btn-primary" disabled="@(string.IsNullOrWhiteSpace(_path))" @onclick="PickAsync">@ConfirmText</button>
     </Footer>
 </Dialog>
@@ -96,19 +96,19 @@
     /// Gets or sets the dialog title.
     /// </summary>
     [Parameter]
-    public string Title { get; set; } = "Open a folder";
+    public string Title { get; set; } = WebStrings.OpenFolderDialogTitle;
 
     /// <summary>
     /// Gets or sets the explanation shown above the path.
     /// </summary>
     [Parameter]
-    public string Hint { get; set; } = "Choose a project folder on this computer. Chats you start in it use it as their working folder.";
+    public string Hint { get; set; } = WebStrings.OpenFolderDialogHint;
 
     /// <summary>
     /// Gets or sets the label of the confirm button.
     /// </summary>
     [Parameter]
-    public string ConfirmText { get; set; } = "Open this folder";
+    public string ConfirmText { get; set; } = WebStrings.OpenFolderDialogConfirm;
 
     protected override void OnParametersSet()
     {
@@ -125,12 +125,12 @@
 
     private static string Describe(FolderError error) => error switch
     {
-        FolderError.Empty => "Enter a folder path.",
-        FolderError.NotAbsolute => "Enter a full path, such as /home/me/my-app or C:\\Projects\\my-app. A path starting with ~ means your home folder.",
-        FolderError.NotFound => "That folder doesn't exist.",
-        FolderError.NotAFolder => "That is a file, not a folder.",
-        FolderError.AccessDenied => "BlazeHarness isn't allowed to read that folder.",
-        FolderError.NotAllowed => "That folder is too broad to work in. Pick a project folder, not the root, your home folder or BlazeHarness's own data folder.",
+        FolderError.Empty => WebStrings.OpenFolderErrorEmpty,
+        FolderError.NotAbsolute => WebStrings.OpenFolderErrorNotAbsolute,
+        FolderError.NotFound => WebStrings.OpenFolderErrorNotFound,
+        FolderError.NotAFolder => WebStrings.OpenFolderErrorNotAFolder,
+        FolderError.AccessDenied => WebStrings.OpenFolderErrorAccessDenied,
+        FolderError.NotAllowed => WebStrings.OpenFolderErrorNotAllowed,
         _ => string.Empty,
     };
 

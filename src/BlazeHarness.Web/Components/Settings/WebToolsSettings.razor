@@ -5,32 +5,32 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <PageHeader Title="Web">Lets the agent search the web and read pages and PDF files. Each use asks first, unless the chat's access level is Unrestricted or it never asks. The page text is treated as data, never as instructions. JavaScript is not run, so pages that need it may come out empty.</PageHeader>
+    <PageHeader Title="@WebStrings.WebToolsSettingsTitle">@WebStrings.WebToolsSettingsDescription</PageHeader>
 
     <section class="card stack" aria-labelledby="web-tools-heading">
-        <h2 id="web-tools-heading">Tools</h2>
+        <h2 id="web-tools-heading">@WebStrings.WebToolsSettingsToolsHeading</h2>
         <label class="check">
             <input type="checkbox" checked="@Current.SearchEnabled" @onchange="e => SaveAsync(s => s with { SearchEnabled = (bool)e.Value! })" />
-            <span>Web search</span>
+            <span>@WebStrings.WebToolsSettingsSearchLabel</span>
         </label>
         <label class="check">
             <input type="checkbox" checked="@Current.FetchEnabled" @onchange="e => SaveAsync(s => s with { FetchEnabled = (bool)e.Value! })" />
-            <span>Web fetch (pages, PDF files and text)</span>
+            <span>@WebStrings.WebToolsSettingsFetchLabel</span>
         </label>
-        <p class="hint">A fetch only reaches the public internet. Addresses on this computer or the local network are refused. The proxy settings of the system are not used. Fetched pages are kept in memory for a short while so a long page can be read in pieces.</p>
+        <p class="hint">@WebStrings.WebToolsSettingsFetchHint</p>
     </section>
 
     <section class="card stack" aria-labelledby="web-search-heading">
-        <h2 id="web-search-heading">Search providers</h2>
-        <p class="hint">None of these need an account or key. Each one is a free public service that can change or limit access at any time.</p>
-        <div class="stack" role="radiogroup" aria-label="How to use the providers">
+        <h2 id="web-search-heading">@WebStrings.WebToolsSettingsProvidersHeading</h2>
+        <p class="hint">@WebStrings.WebToolsSettingsProvidersHint</p>
+        <div class="stack" role="radiogroup" aria-label="@WebStrings.WebToolsSettingsModeLabel">
             <label class="check">
                 <input type="radio" name="web-mode" checked="@(Current.SearchMode == WebSearchMode.Parallel)" @onchange="() => SaveAsync(s => s with { SearchMode = WebSearchMode.Parallel })" />
-                <span>In parallel: ask every provider you turned on and merge the results (faster and broader, but the query goes to all of them)</span>
+                <span>@WebStrings.WebToolsSettingsModeParallel</span>
             </label>
             <label class="check">
                 <input type="radio" name="web-mode" checked="@(Current.SearchMode == WebSearchMode.Sequential)" @onchange="() => SaveAsync(s => s with { SearchMode = WebSearchMode.Sequential })" />
-                <span>One at a time: in the order below, stopping at the first one that gives results</span>
+                <span>@WebStrings.WebToolsSettingsModeSequential</span>
             </label>
         </div>
         @foreach (var (provider, index) in Providers.Select((p, i) => (p, i)))
@@ -44,12 +44,12 @@
                 </label>
                 @if (status is not null)
                 {
-                    <span class="badge">@(status.Working ? "Working" : status.Detail)</span>
+                    <span class="badge">@(status.Working ? WebStrings.WebToolsWorking : status.Detail)</span>
                 }
                 @if (Current.SearchMode == WebSearchMode.Sequential)
                 {
-                    <button type="button" class="btn btn-sm btn-icon" aria-label="Move @info.Name up" disabled="@(index == 0)" @onclick="() => MoveAsync(index, -1)"><Icon Name="arrow-up" /></button>
-                    <button type="button" class="btn btn-sm btn-icon" aria-label="Move @info.Name down" disabled="@(index == Providers.Count - 1)" @onclick="() => MoveAsync(index, 1)"><Icon Name="arrow-down" /></button>
+                    <button type="button" class="btn btn-sm btn-icon" aria-label="@MoveLabel(info.Name, WebStrings.WebToolsUp)" disabled="@(index == 0)" @onclick="() => MoveAsync(index, -1)"><Icon Name="arrow-up" /></button>
+                    <button type="button" class="btn btn-sm btn-icon" aria-label="@MoveLabel(info.Name, WebStrings.WebToolsDown)" disabled="@(index == Providers.Count - 1)" @onclick="() => MoveAsync(index, 1)"><Icon Name="arrow-down" /></button>
                 }
             </div>
         }
@@ -57,7 +57,10 @@
 </div>
 
 @code {
-    private const string SaveFailure = "The setting could not be saved because the settings file could not be written.";
+    private static string SaveFailure => WebStrings.GeneralSettingsSaveFailure;
+
+    private static string MoveLabel(string name, string direction) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.WebToolsMoveProvider), new Dictionary<string, object?> { ["name"] = name, ["direction"] = direction });
 
     private WebSettings Current => Config.Current.Web;
 

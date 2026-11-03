@@ -1,12 +1,13 @@
 @inject IJSRuntime JS
+@using System.Globalization
 
-<div class="find-bar" role="search" aria-label="Find in this chat">
-    <input type="search" class="input input-sm find-input" @ref="_input" placeholder="Find in this chat" aria-label="Find in this chat"
+<div class="find-bar" role="search" aria-label="@WebStrings.FindBarLabel">
+    <input type="search" class="input input-sm find-input" @ref="_input" placeholder="@WebStrings.FindBarPlaceholder" aria-label="@WebStrings.FindBarInputLabel"
            value="@_query" @oninput="OnInputAsync" @onkeydown="OnKeyAsync" />
     <span class="find-count muted" role="status" aria-live="polite">@Summary</span>
-    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Previous match" title="Previous match (Shift+Enter)" disabled="@(_matches.Count == 0)" @onclick="PreviousAsync"><Icon Name="arrow-up" /></button>
-    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Next match" title="Next match (Enter)" disabled="@(_matches.Count == 0)" @onclick="NextAsync"><Icon Name="arrow-down" /></button>
-    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Close find" title="Close (Esc)" @onclick="CloseAsync"><Icon Name="close" /></button>
+    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.FindBarPreviousLabel" title="@WebStrings.FindBarPreviousTooltip" disabled="@(_matches.Count == 0)" @onclick="PreviousAsync"><Icon Name="arrow-up" /></button>
+    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.FindBarNextLabel" title="@WebStrings.FindBarNextTooltip" disabled="@(_matches.Count == 0)" @onclick="NextAsync"><Icon Name="arrow-down" /></button>
+    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.FindBarCloseLabel" title="@WebStrings.FindBarCloseTooltip" @onclick="CloseAsync"><Icon Name="close" /></button>
 </div>
 
 @code {
@@ -42,7 +43,15 @@
                 return string.Empty;
             }
 
-            return _matches.Count == 0 ? "No matches" : $"{_current + 1} of {_matches.Count}";
+            return _matches.Count == 0
+                ? WebStrings.FindbarNoMatches
+                : ResourceMessageFormatter.Web.Format(
+                    nameof(WebStrings.FindbarMatchCount),
+                    new Dictionary<string, object?>
+                    {
+                        ["current"] = (_current + 1).ToString("N0", CultureInfo.CurrentCulture),
+                        ["total"] = _matches.Count.ToString("N0", CultureInfo.CurrentCulture),
+                    });
         }
     }
 

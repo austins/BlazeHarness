@@ -17,53 +17,53 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <PageHeader Title="Diagnostics">What to look at when something doesn't work, and what to include when you report it.</PageHeader>
+    <PageHeader Title="@WebStrings.DiagnosticsSettingsTitle">@WebStrings.DiagnosticsSettingsDescription</PageHeader>
 
     <section class="card stack" aria-labelledby="about-heading">
         <div class="card-header">
-            <h2 id="about-heading">About this install</h2>
-            <button type="button" class="btn btn-sm" @onclick="CopyAsync"><Icon Name="copy" /> Copy for a bug report</button>
+            <h2 id="about-heading">@WebStrings.DiagnosticsSettingsAboutHeading</h2>
+            <button type="button" class="btn btn-sm" @onclick="CopyAsync"><Icon Name="copy" /> @WebStrings.DiagnosticsSettingsCopyButton</button>
         </div>
         <dl class="facts">
-            <dt>Version</dt>
+            <dt>@WebStrings.DiagnosticsSettingsVersionLabel</dt>
             <dd>@Version</dd>
-            <dt>Runtime</dt>
+            <dt>@WebStrings.DiagnosticsSettingsRuntimeLabel</dt>
             <dd>@RuntimeInformation.FrameworkDescription</dd>
-            <dt>System</dt>
+            <dt>@WebStrings.DiagnosticsSettingsSystemLabel</dt>
             <dd>@RuntimeInformation.OSDescription</dd>
-            <dt>Data folder</dt>
+            <dt>@WebStrings.DiagnosticsSettingsDataFolderLabel</dt>
             <dd class="mono">@Paths.Home</dd>
-            <dt>Log folder</dt>
+            <dt>@WebStrings.DiagnosticsSettingsLogFolderLabel</dt>
             <dd class="mono">@Paths.LogsDirectory</dd>
-            <dt>Shell sandbox</dt>
+            <dt>@WebStrings.DiagnosticsSettingsShellSandboxLabel</dt>
             <dd>
                 @SandboxName
                 <div class="hint">@Sandbox.Status.Detail</div>
             </dd>
-            <dt>Chats</dt>
+            <dt>@WebStrings.DiagnosticsSettingsChatsLabel</dt>
             <dd>@ChatCount</dd>
-            <dt>Folders</dt>
+            <dt>@WebStrings.DiagnosticsSettingsFoldersLabel</dt>
             <dd>@FolderCount</dd>
-            <dt>MCP servers</dt>
+            <dt>@WebStrings.DiagnosticsSettingsMcpServersLabel</dt>
             <dd>@McpSummary</dd>
-            <dt>Skills</dt>
+            <dt>@WebStrings.DiagnosticsSettingsSkillsLabel</dt>
             <dd>@_skillCount</dd>
         </dl>
     </section>
 
     <section class="card stack" aria-labelledby="log-heading">
         <div class="card-header">
-            <h2 id="log-heading">Recent log</h2>
-            <button type="button" class="btn btn-sm" @onclick="LoadAsync"><Icon Name="retry" /> Refresh</button>
+            <h2 id="log-heading">@WebStrings.DiagnosticsSettingsRecentLogHeading</h2>
+            <button type="button" class="btn btn-sm" @onclick="LoadAsync"><Icon Name="retry" /> @WebStrings.DiagnosticsSettingsRefreshButton</button>
         </div>
-        <p class="hint">Logs hold identifiers, counts and errors, never the text of your messages or files. Files are kept for @FileLoggerProvider.RetainedDays days.</p>
+        <p class="hint">@LogRetention()</p>
         @if (_lines.Count == 0)
         {
-            <p class="muted">Nothing has been logged yet.</p>
+            <p class="muted">@WebStrings.DiagnosticsSettingsLogEmpty</p>
         }
         else
         {
-            <pre class="log-tail mono" tabindex="0" aria-label="Recent log lines">@string.Join('\n', _lines)</pre>
+            <pre class="log-tail mono" tabindex="0" aria-label="@WebStrings.DiagnosticsSettingsRecentLogLabel">@string.Join('\n', _lines)</pre>
         }
     </section>
 </div>
@@ -75,15 +75,22 @@
     private IReadOnlyList<McpServerStatus> _servers = [];
     private int _skillCount;
 
-    private static string Version => typeof(DiagnosticsSettings).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "unknown";
+    private static string Version => typeof(DiagnosticsSettings).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? WebStrings.DiagnosticsSettingsUnknown;
 
     private int ChatCount => ChatService.Store.List().Count;
 
     private int FolderCount => Folders.List().Count;
 
-    private string McpSummary => $"{_servers.Count(s => s.State == McpServerState.Connected)} connected of {_servers.Count}";
+    private string McpSummary =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.DiagnosticsSettingsMcpSummary),
+            new Dictionary<string, object?>
+            {
+                ["connected"] = _servers.Count(s => s.State == McpServerState.Connected),
+                ["total"] = _servers.Count,
+            });
 
-    private string SandboxName => Sandbox.Status.IsAvailable ? Sandbox.Status.Name : "Not available";
+    private string SandboxName => Sandbox.Status.IsAvailable ? Sandbox.Status.Name : WebStrings.DiagnosticsSettingsNotAvailable;
 
     protected override async Task OnInitializedAsync()
     {
@@ -111,6 +118,11 @@
             {string.Join('\n', _lines)}
             """;
         var copied = await JS.InvokeAsync<bool>("bhChat.copyText", report);
-        Toasts.Show(copied ? "Copied. Paste it into your report." : "Couldn't copy. Select the text and copy it by hand.", copied ? ToastKind.Success : ToastKind.Error);
+        Toasts.Show(copied ? WebStrings.DiagnosticsSettingsReportCopied : WebStrings.DiagnosticsSettingsCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
     }
+
+    private static string LogRetention() =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.DiagnosticsSettingsLogRetention),
+            new Dictionary<string, object?> { ["days"] = FileLoggerProvider.RetainedDays });
 }

@@ -22,32 +22,36 @@ internal static class ProviderValidator
 
         if (string.IsNullOrWhiteSpace(provider.Id))
         {
-            issues.Add(new ValidationIssue("id", "An identifier is required."));
+            issues.Add(new ValidationIssue("id", ValidationCode.IdRequired, "An identifier is required."));
         }
 
         if (string.IsNullOrWhiteSpace(provider.DisplayName))
         {
-            issues.Add(new ValidationIssue("displayName", "A name is required."));
+            issues.Add(new ValidationIssue("displayName", ValidationCode.NameRequired, "A name is required."));
         }
 
         if (!provider.BaseUrl.IsAbsoluteUri || provider.BaseUrl.Scheme is not ("http" or "https"))
         {
-            issues.Add(new ValidationIssue("baseUrl", "The base URL must be an absolute http or https address, e.g. https://api.openai.com/v1."));
+            issues.Add(new ValidationIssue("baseUrl", ValidationCode.BaseUrlInvalid, "The base URL must be an absolute http or https address, e.g. https://api.openai.com/v1."));
         }
 
         if (!string.IsNullOrWhiteSpace(provider.ApiKeyRef) && !ApiKeyResolver.IsEnvironmentReference(provider.ApiKeyRef))
         {
-            issues.Add(new ValidationIssue("apiKeyRef", "Use the form ${ENV_VAR}, or leave it empty to use the stored key."));
+            issues.Add(new ValidationIssue(
+                "apiKeyRef",
+                ValidationCode.ApiKeyRefInvalid,
+                "Use the form ${ENV_VAR}, or leave it empty to use the stored key.",
+                new Dictionary<string, object?> { ["example"] = "${ENV_VAR}" }));
         }
 
         if (provider.ThinkingSend is { Mode: ThinkingSendMode.BodyField, Field: null or "" })
         {
-            issues.Add(new ValidationIssue("thinkingSend.field", "Name the body field that carries the thinking level."));
+            issues.Add(new ValidationIssue("thinkingSend.field", ValidationCode.ThinkingFieldRequired, "Name the body field that carries the thinking level."));
         }
 
         if (provider.ThinkingSend is { Mode: ThinkingSendMode.BodyField, Field: { } thinkingField } && thinkingField.Length > 0 && !IsBodyPath(thinkingField))
         {
-            issues.Add(new ValidationIssue("thinkingSend.field", InvalidPathMessage));
+            issues.Add(new ValidationIssue("thinkingSend.field", ValidationCode.ThinkingFieldInvalid, InvalidPathMessage));
         }
 
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -63,31 +67,35 @@ internal static class ProviderValidator
     {
         if (string.IsNullOrWhiteSpace(model.Id))
         {
-            issues.Add(new ValidationIssue($"{path}.id", "A model id is required."));
+            issues.Add(new ValidationIssue($"{path}.id", ValidationCode.ModelIdRequired, "A model id is required."));
         }
         else if (!seen.Add(model.Id))
         {
-            issues.Add(new ValidationIssue($"{path}.id", $"The model \"{model.Id}\" is listed twice."));
+            issues.Add(new ValidationIssue(
+                $"{path}.id",
+                ValidationCode.ModelIdDuplicate,
+                $"The model \"{model.Id}\" is listed twice.",
+                new Dictionary<string, object?> { ["id"] = model.Id }));
         }
 
         if (model.ContextWindow <= 0)
         {
-            issues.Add(new ValidationIssue($"{path}.contextWindow", "The context window must be a positive number of tokens."));
+            issues.Add(new ValidationIssue($"{path}.contextWindow", ValidationCode.ContextWindowInvalid, "The context window must be a positive number of tokens."));
         }
 
         if (model.MaxOutputTokens <= 0)
         {
-            issues.Add(new ValidationIssue($"{path}.maxOutputTokens", "Max output tokens must be a positive number."));
+            issues.Add(new ValidationIssue($"{path}.maxOutputTokens", ValidationCode.MaxOutputInvalid, "Max output tokens must be a positive number."));
         }
         else if (model.ContextWindow > 0 && model.MaxOutputTokens >= model.ContextWindow)
         {
-            issues.Add(new ValidationIssue($"{path}.maxOutputTokens", "Max output tokens must be less than the context window."));
+            issues.Add(new ValidationIssue($"{path}.maxOutputTokens", ValidationCode.MaxOutputTooLarge, "Max output tokens must be less than the context window."));
         }
 
         ValidateSampling(model.SamplingParams, $"{path}.samplingParams", issues);
         if (model.DefaultLevel is { } defaultLevel ? model.Levels?.ContainsKey(defaultLevel) != true : model.Levels is { Count: > 0 })
         {
-            issues.Add(new ValidationIssue($"{path}.defaultLevel", "Pick a default thinking level from the ones the model supports."));
+            issues.Add(new ValidationIssue($"{path}.defaultLevel", ValidationCode.DefaultLevelInvalid, "Pick a default thinking level from the ones the model supports."));
         }
 
         if (model.Levels is null)
@@ -117,7 +125,11 @@ internal static class ProviderValidator
         {
             foreach (var key in sampling.Extra.Keys.Where(k => !IsBodyPath(k)))
             {
-                issues.Add(new ValidationIssue($"{path}.extra", $"The field name \"{key}\" is not valid. {InvalidPathMessage}"));
+                issues.Add(new ValidationIssue(
+                    $"{path}.extra",
+                    ValidationCode.ExtraFieldInvalid,
+                    $"The field name \"{key}\" is not valid. {InvalidPathMessage}",
+                    new Dictionary<string, object?> { ["name"] = key }));
             }
         }
 
@@ -127,7 +139,9 @@ internal static class ProviderValidator
             {
                 issues.Add(new ValidationIssue(
                     $"{path}.{range.Key}",
-                    string.Create(CultureInfo.InvariantCulture, $"{range.Key} must be between {range.Min} and {range.Max}.")));
+                    ValidationCode.SamplingOutOfRange,
+                    string.Create(CultureInfo.InvariantCulture, $"{range.Key} must be between {range.Min} and {range.Max}."),
+                    new Dictionary<string, object?> { ["key"] = range.Key, ["min"] = range.Min, ["max"] = range.Max }));
             }
         }
     }

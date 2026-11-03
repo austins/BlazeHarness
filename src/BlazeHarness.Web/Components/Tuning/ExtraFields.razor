@@ -4,12 +4,12 @@
 @foreach (var row in Rows)
 {
     <div class="input-group" @key="row">
-        <input class="input mono" aria-label="Field name" placeholder="mirostat" @bind="row.Name" />
-        <input class="input mono" aria-label="Field value as JSON" placeholder="2" @bind="row.Json" />
-        <button type="button" class="btn btn-ghost btn-danger btn-sm" aria-label="Remove field @row.Name" @onclick="() => Rows.Remove(row)">Remove</button>
+        <input class="input mono" aria-label="@WebStrings.ExtraFieldsNameLabel" placeholder="@WebStrings.ExtraFieldsNamePlaceholder" @bind="row.Name" />
+        <input class="input mono" aria-label="@WebStrings.ExtraFieldsValueLabel" placeholder="2" @bind="row.Json" />
+        <button type="button" class="btn btn-ghost btn-danger btn-sm" aria-label="@RemoveFieldLabel(row.Name)" @onclick="() => Rows.Remove(row)">@WebStrings.ExtraFieldsRemoveButton</button>
     </div>
 }
-<div><button type="button" class="btn btn-sm" @onclick="() => Rows.Add(new ExtraParamRow())">＋ Add field</button></div>
+<div><button type="button" class="btn btn-sm" @onclick="() => Rows.Add(new ExtraParamRow())">@WebStrings.ExtraFieldsAddButton</button></div>
 
 @code {
     /// <summary>
@@ -17,4 +17,9 @@
     /// </summary>
     [Parameter, EditorRequired]
     public Collection<ExtraParamRow> Rows { get; set; } = null!;
+
+    private static string RemoveFieldLabel(string name) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.ExtraFieldsRemoveLabel),
+            new Dictionary<string, object?> { ["name"] = name });
 }

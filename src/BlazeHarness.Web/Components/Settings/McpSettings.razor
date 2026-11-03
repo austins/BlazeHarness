@@ -1,4 +1,5 @@
 @using BlazeHarness.Core.Compaction
+@using System.Globalization
 @using BlazeHarness.Core.Mcp
 @using BlazeHarness.Core.Mcp.Config
 @using BlazeHarness.Core.Permissions
@@ -10,11 +11,11 @@
 @inject ToastService Toasts
 
 <div class="page">
-    <PageHeader Title="MCP servers">Servers that give the model more tools. They are listed in <code class="mono">@File.FilePath</code>, and each chat can turn them on or off for itself.</PageHeader>
+    <PageHeader Title="@WebStrings.McpSettingsTitle">@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.McpSettingsHeader), new Dictionary<string, object?> { ["file"] = File.FilePath })</PageHeader>
 
     <Alert Kind="AlertKind.Warning">
         <Icon Name="alert" />
-        <span>Adding a server is like installing software. A local server runs a program on this computer with your permissions, outside the sandbox, and a remote one receives what the model sends it. Only add servers you trust.</span>
+        <span>@WebStrings.McpSettingsInstallWarning</span>
     </Alert>
 
     @if (_status is not null)
@@ -24,8 +25,8 @@
 
     <section class="card stack" aria-labelledby="servers-heading">
         <div class="row row-spread">
-            <h2 id="servers-heading">Servers</h2>
-            <button type="button" class="btn" disabled="@(_draft is not null)" @onclick="StartNew">＋ Add server</button>
+            <h2 id="servers-heading">@WebStrings.McpSettingsServersHeading</h2>
+            <button type="button" class="btn" disabled="@(_draft is not null)" @onclick="StartNew">@WebStrings.McpSettingsAddServer</button>
         </div>
         @if (_draft is { IsNew: true })
         {
@@ -34,7 +35,7 @@
         }
         @if (_statuses.Count == 0 && _draft is null)
         {
-            <p class="muted">No servers yet. Add one with the button above.</p>
+            <p class="muted">@WebStrings.McpSettingsNoServers</p>
         }
         <div class="skill-list">
             @foreach (var status in _statuses)
@@ -51,7 +52,7 @@
                                     <span class="badge @StateBadge(status)">@StateText(status)</span>
                                     @if (literals.Count > 0)
                                     {
-                                        <span class="badge badge-warning">Secret in file</span>
+                                        <span class="badge badge-warning">@WebStrings.McpSettingsSecretBadge</span>
                                     }
                                 </span>
                                 <span class="skill-blurb">@TransportText(server)</span>
@@ -71,40 +72,40 @@
                             {
                                 <Alert Kind="AlertKind.Warning">
                                     <Icon Name="alert" />
-                                    <span>This server has what looks like a secret written into the file: @string.Join(", ", literals). Use a <code class="mono">${NAME}</code> reference to an environment variable instead, so the secret stays out of the file.</span>
+                                    <span>@SecretWarning(literals)</span>
                                 </Alert>
                             }
                             <div class="row">
                                 <label class="check">
                                     <input type="checkbox" checked="@Defaults.IsMcpServerTrusted(server.Name)" @onchange="e => SetTrustedAsync(server.Name, (bool)e.Value!)" />
-                                    <span>Trust tools marked read-only</span>
+                                    <span>@WebStrings.McpSettingsTrustReadOnly</span>
                                 </label>
                             </div>
                             <div class="row">
                                 <button type="button" class="btn btn-sm" disabled="@_busy.Contains(server.Name)" @onclick="() => TestAsync(server.Name)">
-                                    @(_busy.Contains(server.Name) ? "Connecting…" : "Test connection")
+                                    @(_busy.Contains(server.Name) ? WebStrings.McpSettingsConnecting : WebStrings.McpSettingsTestConnection)
                                 </button>
-                                <button type="button" class="btn btn-sm" disabled="@(status.State is McpServerState.Stopped)" @onclick="() => StopAsync(server.Name)">Stop</button>
-                                <button type="button" class="btn btn-sm" disabled="@(_draft is not null)" @onclick="() => EditAsync(server)">Edit</button>
-                                <button type="button" class="btn btn-sm btn-ghost btn-danger" aria-label="Remove @server.Name" @onclick="() => _removing = server.Name">Remove</button>
+                                <button type="button" class="btn btn-sm" disabled="@(status.State is McpServerState.Stopped)" @onclick="() => StopAsync(server.Name)">@WebStrings.McpSettingsStop</button>
+                                <button type="button" class="btn btn-sm" disabled="@(_draft is not null)" @onclick="() => EditAsync(server)">@WebStrings.McpSettingsEdit</button>
+                                <button type="button" class="btn btn-sm btn-ghost btn-danger" aria-label="@RemoveServerLabel(server.Name)" @onclick="() => _removing = server.Name">@WebStrings.McpSettingsRemove</button>
                             </div>
                             @if (status.Tools.Count > 0)
                             {
                                 var visible = status.Tools.Where(t => !server.IsExcluded(t.Name)).ToList();
                                 var loaded = visible.Count(t => server.LoadsAlways(t.Name));
                                 <p class="hint">
-                                    @(visible.Count == 1 ? "1 tool" : $"{visible.Count} tools"):
+                                    @ToolCountLabel(visible.Count):
                                     @if (loaded == visible.Count)
                                     {
-                                        <text>always loaded, about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens of the prompt when it is on.</text>
+                                        <text>@AlwaysLoadedHint(status.PromptCharacters)</text>
                                     }
                                     else
                                     {
-                                        <text>found by search when needed, or about @TokenEstimate.OfCharacters(status.PromptCharacters) tokens of the prompt if always loaded.</text>
+                                        <text>@SearchLoadedHint(status.PromptCharacters)</text>
                                     }
                                 </p>
                                 <details>
-                                    <summary><Icon Name="chevron-right" /> Tools (@visible.Count)</summary>
+                                    <summary><Icon Name="chevron-right" /> @ToolsSummary(visible.Count)</summary>
                                     <ul class="stack">
                                         @foreach (var tool in visible)
                                         {
@@ -115,22 +116,22 @@
                             }
                         </div>
                     </details>
-                    <label class="check" title="On for new chats">
-                        <input type="checkbox" aria-label="On for new chats" checked="@(!server.Disabled)" @onchange="e => SetEnabledAsync(server.Name, (bool)e.Value!)" />
-                        <span>On</span>
+                    <label class="check" title="@WebStrings.McpSettingsNewChatsTooltip">
+                        <input type="checkbox" aria-label="@WebStrings.McpSettingsNewChatsLabel" checked="@(!server.Disabled)" @onchange="e => SetEnabledAsync(server.Name, (bool)e.Value!)" />
+                        <span>@WebStrings.McpSettingsOn</span>
                     </label>
                 </div>
             }
         </div>
-        <p class="hint">The server supplies this label; BlazeHarness can't verify it. Trusted tools skip approval unless the chat is read only. Everything else asks first, unless a chat is set to Never ask.</p>
+        <p class="hint">@WebStrings.McpSettingsTrustExplanation</p>
     </section>
 
     <details class="card stack" open="@_openAtStart">
-        <summary class="label">Advanced: edit mcp.json</summary>
+        <summary class="label">@WebStrings.McpSettingsAdvancedSummary</summary>
         <div class="field">
-            <label for="mcp-text">mcp.json</label>
+            <label for="mcp-text">@WebStrings.McpSettingsFileLabel</label>
             <textarea id="mcp-text" class="input mono" rows="14" spellcheck="false" aria-invalid="@(Problems.Count > 0 ? "true" : null)" aria-describedby="@(Problems.Count > 0 ? "mcp-problems" : null)" @bind="_text" @bind:event="oninput"></textarea>
-            <span class="hint">Changes made outside BlazeHarness show up here too. Turning a server on or off for a chat that is already open changes its tools, which starts that chat's prompt cache over.</span>
+            <span class="hint">@WebStrings.McpSettingsFileHint</span>
         </div>
         @if (Problems.Count > 0)
         {
@@ -142,15 +143,15 @@
             </div>
         }
         <div class="row">
-            <button type="button" class="btn btn-primary" disabled="@(!Dirty || _saving || Problems.Count > 0)" @onclick="SaveAsync">Save</button>
-            <button type="button" class="btn" disabled="@(!Dirty)" @onclick="Revert">Revert</button>
-            <button type="button" class="btn" disabled="@(string.IsNullOrWhiteSpace(_text))" @onclick="FormatText">Format</button>
+            <button type="button" class="btn btn-primary" disabled="@(!Dirty || _saving || Problems.Count > 0)" @onclick="SaveAsync">@WebStrings.McpSettingsSave</button>
+            <button type="button" class="btn" disabled="@(!Dirty)" @onclick="Revert">@WebStrings.McpSettingsRevert</button>
+            <button type="button" class="btn" disabled="@(string.IsNullOrWhiteSpace(_text))" @onclick="FormatText">@WebStrings.McpSettingsFormat</button>
         </div>
     </details>
 </div>
 
-<ConfirmDialog Title="Remove server?" Open="_removing is not null" ConfirmText="Remove" OnConfirm="RemoveAsync" OnCancel="() => _removing = null">
-    <p>This removes <strong>@_removing</strong> from the file and deletes its stored secrets.</p>
+<ConfirmDialog Title="@WebStrings.McpSettingsRemoveDialogTitle" Open="_removing is not null" ConfirmText="@WebStrings.McpSettingsRemoveConfirm" OnConfirm="RemoveAsync" OnCancel="() => _removing = null">
+    <p>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.McpSettingsRemoveWarning), new Dictionary<string, object?> { ["name"] = _removing })</p>
 </ConfirmDialog>
 
 @code {
@@ -201,10 +202,10 @@
 
     private static string StateText(McpServerStatus status) => status.State switch
     {
-        McpServerState.Connected => "Connected",
-        McpServerState.Connecting => "Connecting",
-        McpServerState.Failed => "Failed",
-        _ => status.Config.Disabled ? "Off" : "Not started",
+        McpServerState.Connected => WebStrings.McpSettingsConnected,
+        McpServerState.Connecting => WebStrings.McpSettingsConnecting,
+        McpServerState.Failed => WebStrings.McpSettingsFailed,
+        _ => status.Config.Disabled ? WebStrings.McpSettingsOff : WebStrings.McpSettingsNotStarted,
     };
 
     private static string StateBadge(McpServerStatus status) => status.State switch
@@ -217,12 +218,48 @@
 
     private static string TransportText(McpServerConfig server) => server.Transport switch
     {
-        McpTransport.Stdio => $"Runs {server.Command}",
+        McpTransport.Stdio => ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.McpSettingsRunsCommand),
+            new Dictionary<string, object?> { ["command"] = server.Command }),
         _ => server.Url ?? string.Empty,
     };
 
     private const int DescriptionLength = 120;
-    private const string FileFailure = "The MCP settings could not be saved because the file could not be written.";
+    private static string FileFailure => WebStrings.McpSettingsSaveFailure;
+
+    private static MarkupString SecretWarning(IReadOnlyCollection<string> names) =>
+        ResourceMessageFormatter.Web.FormatMarkup(
+            nameof(WebStrings.McpSettingsSecretWarning),
+            new Dictionary<string, object?> { ["names"] = string.Join(", ", names), ["reference"] = "${NAME}" });
+
+    private static string RemoveServerLabel(string name) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.McpSettingsRemoveServerLabel),
+            new Dictionary<string, object?> { ["name"] = name });
+
+    private static string ToolCountLabel(int count) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.McpSettingsToolCount),
+            new Dictionary<string, object?>
+            {
+                ["count"] = count,
+                ["formattedCount"] = count.ToString("N0", CultureInfo.CurrentCulture),
+            });
+
+    private static string ToolsSummary(int count) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.McpSettingsToolsSummary),
+            new Dictionary<string, object?> { ["count"] = count });
+
+    private static string AlwaysLoadedHint(int characters) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.McpSettingsAlwaysLoadedHint),
+            new Dictionary<string, object?> { ["tokens"] = TokenEstimate.OfCharacters(characters) });
+
+    private static string SearchLoadedHint(int characters) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.McpSettingsSearchLoadedHint),
+            new Dictionary<string, object?> { ["tokens"] = TokenEstimate.OfCharacters(characters) });
 
     private static string FirstLine(string? description)
     {
@@ -263,7 +300,9 @@
     {
         if (!await File.SetDisabledAsync(name, !enabled))
         {
-            Say($"Could not change {name}. Fix the file first.", error: true);
+            Say(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.McpSettingsChangeFailed),
+                new Dictionary<string, object?> { ["name"] = name }), error: true);
         }
     }
 
@@ -314,7 +353,9 @@
         _draft = null;
         _loaded = _text = File.Text;
         _statuses = Manager.Statuses();
-        Say(wasDirty ? $"Saved {name}. Unsaved changes in the file editor were discarded." : $"Saved {name}.");
+        Say(wasDirty
+            ? ResourceMessageFormatter.Web.Format(nameof(WebStrings.McpSettingsSavedDiscarded), new Dictionary<string, object?> { ["name"] = name })
+            : ResourceMessageFormatter.Web.Format(nameof(WebStrings.McpSettingsSaved), new Dictionary<string, object?> { ["name"] = name }));
     }
 
     private async Task RemoveAsync()
@@ -334,13 +375,15 @@
 
         if (!removed)
         {
-            Say($"Could not remove {name}. Fix the file first.", error: true);
+            Say(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.McpSettingsRemoveFailed),
+                new Dictionary<string, object?> { ["name"] = name }), error: true);
             return;
         }
 
         _loaded = _text = File.Text;
         _statuses = Manager.Statuses();
-        Say($"Removed {name}.");
+        Say(ResourceMessageFormatter.Web.Format(nameof(WebStrings.McpSettingsRemoved), new Dictionary<string, object?> { ["name"] = name }));
     }
 
     private async Task SaveAsync()
@@ -357,11 +400,11 @@
             if (result!.Errors.Count == 0)
             {
                 _loaded = _text = File.Text;
-                Say("Saved.");
+                Say(WebStrings.McpSettingsSavedFile);
             }
             else
             {
-                Say("The file has problems, so it was not saved.", error: true);
+                Say(WebStrings.McpSettingsFileHasProblems, error: true);
             }
         }
         finally

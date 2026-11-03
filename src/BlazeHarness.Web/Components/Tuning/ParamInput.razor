@@ -41,16 +41,18 @@
 
     private bool OutOfRange(double value) => double.IsNaN(value) || value < Range.Min || value > Range.Max;
 
-    private string Placeholder() => Inherited is { } inherited ? $"↳ {Format(inherited)}" : "default";
+    private string Placeholder() => Inherited is { } inherited ? $"↳ {Format(inherited)}" : WebStrings.ParamInputDefault;
 
     private string Title()
     {
         if (Value is not null)
         {
-            return Inherited is { } inherited ? $"Replaces {Format(inherited)}. Clear to use it again." : "Clear to leave it to the server.";
+            return Inherited is { } inherited
+                ? ResourceMessageFormatter.Web.Format(nameof(WebStrings.ParamInputReplaces), new Dictionary<string, object?> { ["value"] = Format(inherited) })
+                : WebStrings.ParamInputClearForServer;
         }
 
-        return Inherited is not null ? "Uses the Thinking off value. Type to replace it." : "Not sent; the server default applies.";
+        return Inherited is not null ? WebStrings.ParamInputUsesThinkingOff : WebStrings.ParamInputNotSent;
     }
 
     private Task OnInput(ChangeEventArgs e)

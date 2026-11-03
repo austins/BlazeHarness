@@ -3,6 +3,32 @@ namespace BlazeHarness.Web.Tests.E2E.Components.Settings;
 public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(browser)
 {
     [Fact]
+    public async Task LanguagePicker_OnlyEnglishIsSupported_ShowsEnglish()
+    {
+        // Arrange
+        await LaunchAsync();
+        await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Settings" }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "General" }).ClickAsync();
+
+        // Act
+        var language = Page.GetByLabel("Display language");
+
+        // Assert
+        await Expect(language).ToHaveValueAsync("en-US");
+        await Expect(Page.Locator("html")).ToHaveAttributeAsync("lang", "en-US");
+        (await language.Locator("option").AllTextContentsAsync()).Should().ContainSingle().Which.Should().Be("English");
+
+        // Act
+        await language.SelectOptionAsync("en-US");
+
+        // Assert
+        var cultureCookie = (await Page.Context.CookiesAsync())
+            .SingleOrDefault(cookie => cookie.Name == ".AspNetCore.Culture");
+        cultureCookie.Should().NotBeNull();
+        Uri.UnescapeDataString(cultureCookie.Value).Should().Be("c=en-US|uic=en-US");
+    }
+
+    [Fact]
     public async Task Toggle_TurnedOn_StaysOnWhenTheSectionIsOpenedAgain()
     {
         // Arrange

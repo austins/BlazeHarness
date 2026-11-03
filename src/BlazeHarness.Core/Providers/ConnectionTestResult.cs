@@ -4,6 +4,13 @@ namespace BlazeHarness.Core.Providers;
 /// The outcome of "Test connection".
 /// </summary>
 /// <param name="Success">Whether the endpoint answered and accepted the credentials.</param>
-/// <param name="Message">A user-readable explanation, with a suggested fix when it failed.</param>
+/// <param name="Code">Which outcome it is, so a UI can show it in the user's language.</param>
+/// <param name="Message">An English explanation, with a suggested fix when it failed, for callers without a translation.</param>
 /// <param name="ModelIds">The model ids the endpoint listed; empty when it lists none or the test failed.</param>
-public sealed record ConnectionTestResult(bool Success, string Message, IReadOnlyList<string> ModelIds);
+/// <param name="Arguments">Values the explanation mentions, by the name a translated message uses.</param>
+public sealed record ConnectionTestResult(
+    bool Success,
+    ConnectionTestCode Code,
+    string Message,
+    IReadOnlyList<string> ModelIds,
+    IReadOnlyDictionary<string, object?>? Arguments = null);

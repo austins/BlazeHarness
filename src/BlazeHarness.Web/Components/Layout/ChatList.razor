@@ -13,7 +13,7 @@
         <li @key="chat.Id" class="chat-item" @oncontextmenu="e => OpenMenu(chat, e)" @oncontextmenu:preventDefault="_renaming != chat.Id">
             @if (_renaming == chat.Id)
             {
-                <input class="input input-sm" @ref="_renameInput" aria-label="Chat name" maxlength="@MaxTitleLength"
+                <input class="input input-sm" @ref="_renameInput" aria-label="@WebStrings.ChatListRenameLabel" maxlength="@MaxTitleLength"
                        @bind="_renameText" @bind:event="oninput"
                        @onkeydown="OnRenameKey" @onblur="CommitRenameAsync" />
             }
@@ -23,11 +23,11 @@
                     <span class="chat-title">@DisplayTitle(chat)</span>
                     @if (ChatService.NeedsUser(chat.Id))
                     {
-                        <span class="badge badge-accent chat-needs" role="status" title="Waiting for your answer or approval">Needs you</span>
+                        <span class="badge badge-accent chat-needs" role="status" title="@WebStrings.ChatListNeedsYouTooltip">@WebStrings.ChatListNeedsYouBadge</span>
                     }
                     else if (ChatService.IsRunning(chat.Id))
                     {
-                        <span class="chat-busy" role="status" title="Replying" aria-label="Replying"><Icon Name="spinner" Spin="true" /></span>
+                        <span class="chat-busy" role="status" title="@WebStrings.ChatListReplyingTooltip" aria-label="@WebStrings.ChatListReplyingLabel"><Icon Name="spinner" Spin="true" /></span>
                     }
                 </NavLink>
             }
@@ -35,25 +35,25 @@
     }
 </ul>
 
-<div @ref="_menu" id="@_menuId" class="menu context-menu" popover="auto" role="menu" aria-label="@(_menuChat is null ? "Chat actions" : DisplayTitle(_menuChat))" data-bh-menu>
+<div @ref="_menu" id="@_menuId" class="menu context-menu" popover="auto" role="menu" aria-label="@(_menuChat is null ? WebStrings.ChatListActions : DisplayTitle(_menuChat))" data-bh-menu>
     @if (_menuChat is { } target)
     {
         <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                @onclick="() => StartRename(target)"><Icon Name="pencil" />Rename</button>
+                @onclick="() => StartRename(target)"><Icon Name="pencil" />@WebStrings.ChatListRenameMenuItem</button>
         <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                @onclick="() => _moving = target"><Icon Name="arrow-right" />Move to folder</button>
+                @onclick="() => _moving = target"><Icon Name="arrow-right" />@WebStrings.ChatListMoveMenuItem</button>
         <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                @onclick="() => OpenChatData(target)"><Icon Name="folder" />Open chat data</button>
+                @onclick="() => OpenChatData(target)"><Icon Name="folder" />@WebStrings.ChatListOpenDataMenuItem</button>
         <div class="menu-sep" role="separator"></div>
         <button type="button" class="menu-item menu-item-danger" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                @onclick="() => _deleting = target"><Icon Name="trash" />Delete</button>
+                @onclick="() => _deleting = target"><Icon Name="trash" />@WebStrings.ChatListDeleteMenuItem</button>
     }
 </div>
 
 <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
 
-<ConfirmDialog Title="Delete this chat?" Open="_deleting is not null" ConfirmText="Delete" OnConfirm="DeleteAsync" OnCancel="() => _deleting = null">
-    <p>This can't be undone. <strong>@(_deleting is null ? string.Empty : DisplayTitle(_deleting))</strong> and everything stored for it is removed. Files in your project folder are not touched.</p>
+<ConfirmDialog Title="@WebStrings.ChatListDeleteTitle" Open="_deleting is not null" ConfirmText="@WebStrings.ChatListDeleteConfirm" OnConfirm="DeleteAsync" OnCancel="() => _deleting = null">
+    <p>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.ChatListDeleteWarning), new Dictionary<string, object?> { ["title"] = _deleting is null ? string.Empty : DisplayTitle(_deleting) })</p>
 </ConfirmDialog>
 
 @code {
@@ -109,7 +109,7 @@
         {
             if (!Directory.Exists(path))
             {
-                Toasts.Show("This chat has no folder on disk yet.", ToastKind.Error);
+                Toasts.Show(WebStrings.ChatListNoFolderOnDisk, ToastKind.Error);
                 return;
             }
 
@@ -117,13 +117,13 @@
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
-            Toasts.Show("The chat data could not be opened.", ToastKind.Error);
+            Toasts.Show(WebStrings.ChatListOpenDataFailed, ToastKind.Error);
         }
     }
 
     private static string DisplayTitle(ChatInfo chat)
     {
-        return string.IsNullOrWhiteSpace(chat.Title) ? "Untitled chat" : chat.Title;
+        return string.IsNullOrWhiteSpace(chat.Title) ? WebStrings.ChatListUntitledChat : chat.Title;
     }
 
     private void StartRename(ChatInfo chat)
@@ -166,7 +166,7 @@
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Toasts.Show("The chat could not be renamed because its file could not be written.", ToastKind.Error);
+            Toasts.Show(WebStrings.ChatListRenameFailed, ToastKind.Error);
         }
     }
 
@@ -183,13 +183,13 @@
         {
             if (!await ChatService.DeleteAsync(chat.Id))
             {
-                Toasts.Show("This chat is still replying. Stop it first, then delete it.", ToastKind.Error);
+                Toasts.Show(WebStrings.ChatListStillReplying, ToastKind.Error);
                 return;
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Toasts.Show("The chat could not be deleted because its files could not be removed.", ToastKind.Error);
+            Toasts.Show(WebStrings.ChatListDeleteFailed, ToastKind.Error);
             return;
         }
 

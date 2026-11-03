@@ -9,11 +9,11 @@
                 <circle class="context-ring-fill" cx="10" cy="10" r="@RingRadius" stroke-dasharray="@Dash(share)" />
             </svg>
         }
-        <span class="context-text">@_text</span><span class="sr-only"> tokens</span>
+        <span class="context-text">@_text</span><span class="sr-only"> @WebStrings.ContextIndicatorTokensUnit</span>
     </span>
 </button>
-<div id="@_id" class="menu context-panel" popover="auto" role="dialog" aria-label="Context" style="position-anchor: --@_id">
-    <div class="menu-heading">Context</div>
+<div id="@_id" class="menu context-panel" popover="auto" role="dialog" aria-label="@WebStrings.ContextIndicatorDialogLabel" style="position-anchor: --@_id">
+    <div class="menu-heading">@WebStrings.ContextIndicatorHeading</div>
     @foreach (var line in _details)
     {
         <p class="context-detail">@line</p>
@@ -29,8 +29,8 @@
         <button type="button" class="menu-item" popovertarget="@_id" popovertargetaction="hide" @onclick="OnCompact">
             <Icon Name="compress" />
             <span class="menu-item-text">
-                <span class="menu-item-label">Compact now</span>
-                <span class="menu-item-description">Replace older messages with a summary</span>
+                <span class="menu-item-label">@WebStrings.ContextIndicatorCompactNow</span>
+                <span class="menu-item-description">@WebStrings.ContextIndicatorCompactDescription</span>
             </span>
         </button>
     }
@@ -113,16 +113,24 @@
     {
         var lines = new List<string>
         {
-            status.Approximate ? "The size of the next request, estimated" : "The size of the next request, as the server counted it",
+            status.Approximate ? WebStrings.ContextIndicatorEstimatedSize : WebStrings.ContextIndicatorServerCountedSize,
         };
         if (status.Limit > 0)
         {
-            lines.Add($"Older messages are summarized after {TokenFormat.Of(status.Limit)} tokens");
+            lines.Add(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.ContextIndicatorSummarizeAfter),
+                new Dictionary<string, object?>
+                {
+                    ["count"] = status.Limit,
+                    ["tokens"] = TokenFormat.Of(status.Limit),
+                }));
         }
 
         if (status.CacheHitRate is { } rate)
         {
-            lines.Add($"Cache hits: {rate.ToString("P0", System.Globalization.CultureInfo.CurrentCulture)} of the last request");
+            lines.Add(ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.ContextIndicatorCacheHits),
+                new Dictionary<string, object?> { ["rate"] = rate.ToString("P0", System.Globalization.CultureInfo.CurrentCulture) }));
         }
 
         return lines;

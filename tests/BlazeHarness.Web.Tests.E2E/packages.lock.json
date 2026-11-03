@@ -121,6 +121,11 @@
         "resolved": "1.5.0",
         "contentHash": "oEm6N4PYFPUZiJ5e89993AE6hfC8EWRGD5M8nyoSJbwD4GgW818mjlQCk++SdTV4godaN50Ybcmm4j2Dp76oIQ=="
       },
+      "MessageFormat": {
+        "type": "Transitive",
+        "resolved": "8.0.0",
+        "contentHash": "+nmYgGQVhGXmvQd+AMYILZGTxOP4J9tOR3KbjoxMDDICRrSzHYB9v1aRRVnXkD1ZeBapscFWIf5B/ck3p9R1mg=="
+      },
       "Microsoft.ApplicationInsights": {
         "type": "Transitive",
         "resolved": "2.23.0",
@@ -715,7 +720,8 @@
         "dependencies": {
           "BlazeHarness.Core": "[1.0.0, )",
           "ColorCode.Core": "[2.0.15, )",
-          "Markdig": "[1.5.0, )"
+          "Markdig": "[1.5.0, )",
+          "MessageFormat": "[8.0.0, )"
         }
       }
     }

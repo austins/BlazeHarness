@@ -108,7 +108,8 @@ public sealed class ProviderValidatorTests
         var issues = ProviderValidator.Validate(Valid with { Models = [model, model] });
 
         // Assert
-        issues.Should().Contain(i => i.Message.Contains("twice", StringComparison.Ordinal));
+        issues.Should().Contain(i => i.Code == ValidationCode.ModelIdDuplicate
+            && i.Arguments != null && (string?)i.Arguments["id"] == "m");
     }
 
     [Fact]

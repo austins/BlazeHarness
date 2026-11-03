@@ -4,19 +4,19 @@
 @inject NavigationManager Navigation
 @inject SettingsDialogState SettingsState
 
-<button type="button" class="skip-link" data-bh-action="skipToChat">Skip to chat</button>
+<button type="button" class="skip-link" data-bh-action="skipToChat">@WebStrings.MainLayoutSkipToChat</button>
 
 <div class="app" data-circuit="@(_connected ? "ready" : "pending")">
     <Sidebar Collapsed="_collapsed" />
     @if (!_collapsed)
     {
-        <button type="button" class="sidebar-backdrop" aria-label="Close sidebar" tabindex="-1" @onclick="() => _collapsed = true"></button>
+        <button type="button" class="sidebar-backdrop" aria-label="@WebStrings.MainLayoutCloseSidebar" tabindex="-1" @onclick="() => _collapsed = true"></button>
     }
 
     <div class="app-shell">
         <header class="topbar">
-            <button type="button" class="btn btn-ghost btn-icon" aria-label="@(_collapsed ? "Show sidebar" : "Hide sidebar")" aria-expanded="@(_collapsed ? "false" : "true")" @onclick="() => _collapsed = !_collapsed"><Icon Name="menu" /></button>
-            <span class="title">BlazeHarness</span>
+            <button type="button" class="btn btn-ghost btn-icon" aria-label="@(_collapsed ? WebStrings.MainLayoutShowSidebar : WebStrings.MainLayoutHideSidebar)" aria-expanded="@(_collapsed ? "false" : "true")" @onclick="() => _collapsed = !_collapsed"><Icon Name="menu" /></button>
+            <span class="title">@WebStrings.MainLayoutTitle</span>
         </header>
         <main class="content">
             @Body
@@ -28,8 +28,8 @@
 <SettingsDialog />
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
+    @WebStrings.MainLayoutUnhandledError
+    <a href="." class="reload">@WebStrings.MainLayoutReload</a>
     <span class="dismiss">🗙</span>
 </div>
 

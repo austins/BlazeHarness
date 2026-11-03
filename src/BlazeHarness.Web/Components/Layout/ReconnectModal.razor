@@ -7,25 +7,25 @@
             <div></div>
         </div>
         <p class="components-reconnect-first-attempt-visible">
-            Rejoining the server...
+            @WebStrings.ReconnectModalRejoining
         </p>
         <p class="components-reconnect-repeated-attempt-visible">
-            Rejoin failed... trying again in <span id="components-seconds-to-next-attempt"></span> seconds.
+            @ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.ReconnectModalRepeatedAttempt))
         </p>
         <p class="components-reconnect-failed-visible">
-            Failed to rejoin.<br />Please retry or reload the page.
+            @WebStrings.ReconnectModalFailed<br />@WebStrings.ReconnectModalRetryOrReload
         </p>
         <button id="components-reconnect-button" class="btn btn-primary components-reconnect-failed-visible">
-            Retry
+            @WebStrings.ReconnectModalRetry
         </button>
         <p class="components-pause-visible">
-            The session has been paused by the server.
+            @WebStrings.ReconnectModalPaused
         </p>
         <p class="components-resume-failed-visible">
-            Failed to resume the session.<br />Please retry or reload the page.
+            @WebStrings.ReconnectModalResumeFailed<br />@WebStrings.ReconnectModalRetryOrReload
         </p>
         <button id="components-resume-button" class="btn btn-primary components-pause-visible components-resume-failed-visible">
-            Resume
+            @WebStrings.ReconnectModalResume
         </button>
     </div>
 </dialog>

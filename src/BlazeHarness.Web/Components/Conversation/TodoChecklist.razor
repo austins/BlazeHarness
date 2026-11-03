@@ -1,6 +1,6 @@
 @using BlazeHarness.Core.Agent
 
-<ol class="todo-list" aria-label="To-do list">
+<ol class="todo-list" aria-label="@WebStrings.TodoChecklistLabel">
     @foreach (var item in Items)
     {
         <li class="todo-item" data-status="@StatusKey(item.Status)">
@@ -27,8 +27,8 @@
 
     private static string StatusText(TodoStatus status) => status switch
     {
-        TodoStatus.Completed => "Done",
-        TodoStatus.InProgress => "In progress",
-        _ => "Not started",
+        TodoStatus.Completed => WebStrings.TodoChecklistDone,
+        TodoStatus.InProgress => WebStrings.TodoChecklistInProgress,
+        _ => WebStrings.TodoChecklistNotStarted,
     };
 }

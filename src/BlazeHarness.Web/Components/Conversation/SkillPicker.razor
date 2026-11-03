@@ -7,8 +7,8 @@
 
 @if (_available.Skills.Count > 0)
 {
-    <Popover Label="Skills" Title="Skills this chat can load">
-        <Trigger><Icon Name="book" /> Skills <span class="badge">@_available.Skills.Count(IsOn) / @_available.Skills.Count</span></Trigger>
+    <Popover Label="@WebStrings.SkillPickerLabel" Title="@WebStrings.SkillPickerTitle">
+        <Trigger><Icon Name="book" /> @WebStrings.SkillPickerTrigger <span class="badge">@_available.Skills.Count(IsOn) / @_available.Skills.Count</span></Trigger>
         <ChildContent>
             <ul class="panel-list">
                 @foreach (var skill in _available.Skills)
@@ -22,8 +22,8 @@
                 }
             </ul>
             <p class="panel-note">
-                <Icon Name="info" /> <span>Applies to this chat only, from the next reply. Changing it resets the model's prompt cache, so that reply may be slower.</span>
-                <button type="button" class="link-button" @onclick="() => SettingsState.Open(SettingsSection.Skills)">Manage</button>
+                <Icon Name="info" /> <span>@WebStrings.SkillPickerScopeNote</span>
+                <button type="button" class="link-button" @onclick="() => SettingsState.Open(SettingsSection.Skills)">@WebStrings.SkillPickerManage</button>
             </p>
         </ChildContent>
     </Popover>

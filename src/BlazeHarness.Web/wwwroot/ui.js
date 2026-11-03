@@ -10,6 +10,10 @@ window.bhUi = {
             input.select();
         }
     },
+    setCulture: (culture) => {
+        document.cookie = `.AspNetCore.Culture=${encodeURIComponent(`c=${culture}|uic=${culture}`)}; path=/; max-age=31536000; samesite=lax`;
+        window.location.reload();
+    },
     skipToChat: () => {
         const target = document.querySelector(".composer-input") ?? document.querySelector("main");
         if (target) {
@@ -98,12 +102,12 @@ document.addEventListener("click", (event) => {
     if (!dialog) {
         dialog = document.createElement("dialog");
         dialog.className = "lightbox";
-        dialog.setAttribute("aria-label", "Enlarged image");
+        dialog.setAttribute("aria-label", document.documentElement.dataset.lightboxLabel);
         const big = document.createElement("img");
         const close = document.createElement("button");
         close.type = "button";
         close.className = "btn btn-sm lightbox-close";
-        close.textContent = "Close";
+        close.textContent = document.documentElement.dataset.closeLabel;
         close.addEventListener("click", () => dialog.close());
         dialog.addEventListener("click", (e) => {
             if (e.target === dialog) {
