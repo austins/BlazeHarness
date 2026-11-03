@@ -97,7 +97,7 @@ public sealed partial class ChatService : IDisposable
     }
 
     /// <summary>
-    /// Raised, on any thread, when a chat starts or stops replying.
+    /// Raised, on any thread, when a chat starts or stops replying, or starts or stops waiting for the user.
     /// </summary>
     public event EventHandler? ActivityChanged;
 
@@ -528,6 +528,16 @@ public sealed partial class ChatService : IDisposable
     }
 
     /// <summary>
+    /// Get whether a chat waits for the user, either to answer a question or to allow a tool call.
+    /// </summary>
+    /// <param name="id">The chat id.</param>
+    /// <returns>True when the chat is waiting for the user.</returns>
+    public bool NeedsUser(string id)
+    {
+        return _live.TryGetValue(id, out var chat) && chat.NeedsUser;
+    }
+
+    /// <summary>
     /// Delete a chat and everything stored for it, unless it is producing a reply.
     /// </summary>
     /// <param name="id">The chat id.</param>
@@ -788,16 +798,16 @@ public sealed partial class ChatService : IDisposable
             chat.Permissions.TrustedMcpServer = trust.IsMcpServerTrusted;
         }
 
-        var wasRunning = false;
+        var wasActive = (Running: false, NeedsUser: false);
         var activityGate = new Lock();
         chat.Changed += (_, _) =>
         {
             bool flipped;
             lock (activityGate)
             {
-                var running = chat.IsRunning;
-                flipped = running != wasRunning;
-                wasRunning = running;
+                var active = (chat.IsRunning, chat.NeedsUser);
+                flipped = active != wasActive;
+                wasActive = active;
             }
 
             if (flipped)

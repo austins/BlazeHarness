@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent.Events;
+using BlazeHarness.Core.Agent.Questions;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Permissions;
@@ -49,6 +50,8 @@ internal static class ChatRunner
     /// <param name="approver">Asks the user before a call that needs approval runs.</param>
     /// <param name="permissions">Decides which calls run, ask or are refused. Null means the default settings.</param>
     /// <param name="context">Chooses what part of <paramref name="history"/> is sent and compacts it before a call when it has grown too large. Null sends all of it.</param>
+    /// <param name="inbox">Where messages the user wrote during the run are taken from, or null for none.</param>
+    /// <param name="asker">Asks the user the questions the model puts with <c>ask_user</c>. Null means such a call fails, because nobody can be asked.</param>
     /// <param name="cancellationToken">A token that stops the run.</param>
     /// <returns>The events of the run.</returns>
     public static IAsyncEnumerable<AgentEvent> RunAsync(
@@ -60,12 +63,14 @@ internal static class ChatRunner
         IToolApprover? approver = null,
         PermissionEngine? permissions = null,
         ConversationContext? context = null,
+        IRunInbox? inbox = null,
+        IUserAsker? asker = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(history);
         ArgumentNullException.ThrowIfNull(time);
-        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), context, time, cancellationToken);
+        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), context, inbox, asker, time, cancellationToken);
     }
 
     /// <summary>
@@ -88,6 +93,8 @@ internal static class ChatRunner
         IToolApprover? approver,
         PermissionEngine permissions,
         ConversationContext? context,
+        IRunInbox? inbox,
+        IUserAsker? asker,
         TimeProvider time,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -99,16 +106,17 @@ internal static class ChatRunner
         // There is no limit on rounds: the user can stop a run, and compaction keeps the context in bounds.
         var firstResponse = true;
         var textCallRetries = 0;
+        var questions = new QuestionBudget();
         while (true)
         {
             if (context is not null && context.ShouldCompact(history))
             {
-                ContextCompacted? compacted = null;
+                AgentEvent? compacted = context.TrimOutput(history);
                 string? failure = null;
                 var stopped = false;
                 try
                 {
-                    compacted = await context.CompactAsync(history, manual: false, cancellationToken);
+                    compacted ??= await context.CompactAsync(history, manual: false, cancellationToken);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -122,6 +130,12 @@ internal static class ChatRunner
 
                 if (stopped)
                 {
+                    // The previous response is closed already, so the stop ends a new one instead of reopening it.
+                    if (!firstResponse)
+                    {
+                        yield return new NewResponse();
+                    }
+
                     yield return new Done(StopReason.Cancelled);
                     yield break;
                 }
@@ -279,6 +293,13 @@ internal static class ChatRunner
                     continue;
                 }
 
+                // End-of-run hook: a message the user queued during the run continues the loop instead of ending it.
+                if (AddQueuedMessages(inbox, history, contents.Count == 0) is { } queued)
+                {
+                    yield return queued;
+                    continue;
+                }
+
                 yield return new Done(StopReason.Completed);
                 yield break;
             }
@@ -286,7 +307,7 @@ internal static class ChatRunner
             textCallRetries = 0;
 
             var outcome = new RoundOutcome();
-            await foreach (var e in ExecuteCallsAsync(calls, tools, approver, permissions, history, outcome, cancellationToken))
+            await foreach (var e in ExecuteCallsAsync(calls, tools, approver, asker, questions, permissions, history, outcome, cancellationToken))
             {
                 yield return e;
             }
@@ -296,13 +317,48 @@ internal static class ChatRunner
                 yield return new Done(StopReason.Cancelled);
                 yield break;
             }
+
+            // The tool results are in the history now, so a user message can follow them.
+            if (AddQueuedMessages(inbox, history, false) is { } steering)
+            {
+                yield return steering;
+            }
         }
+    }
+
+    /// <summary>
+    /// Add the messages the user queued to the history between two model calls.
+    /// </summary>
+    /// <remarks>
+    /// Call it only where the history ends with a tool result or a reply without calls, never right after
+    /// <see cref="TextCallNotice"/>, so two user messages never follow each other.
+    /// </remarks>
+    /// <param name="inbox">Where queued messages wait, or null when the run has none.</param>
+    /// <param name="history">The history of the run.</param>
+    /// <param name="afterEmptyReply">True when the last reply had no text and no calls, which the history does not hold; a placeholder reply is added so the roles alternate.</param>
+    /// <returns>The event that tells the consumer to add a chat entry for the message, or null when nothing waited.</returns>
+    private static MessagesInjected? AddQueuedMessages(IRunInbox? inbox, IList<ChatMessage> history, bool afterEmptyReply)
+    {
+        if (inbox?.TakeMessages() is not { Length: > 0 } text)
+        {
+            return null;
+        }
+
+        if (afterEmptyReply)
+        {
+            history.Add(new ChatMessage(ChatRole.Assistant, Chat.EmptyReplyText));
+        }
+
+        history.Add(new ChatMessage(ChatRole.User, text));
+        return new MessagesInjected(text);
     }
 
     private static async IAsyncEnumerable<AgentEvent> ExecuteCallsAsync(
         List<FunctionCallContent> calls,
         ToolSet? tools,
         IToolApprover? approver,
+        IUserAsker? asker,
+        QuestionBudget questions,
         PermissionEngine permissions,
         IList<ChatMessage> history,
         RoundOutcome outcome,
@@ -311,6 +367,7 @@ internal static class ChatRunner
         List<PlannedCall> planned = [];
         var results = new ToolResult?[calls.Count];
         var statuses = new ToolCallStatus[calls.Count];
+        var askedInResponse = false;
 
         try
         {
@@ -355,11 +412,46 @@ internal static class ChatRunner
                     continue;
                 }
 
+                // A question is asked on its own and never runs as a tool, so it has no timeout and is not batched with reads.
+                if (p.Tool is AskUserTool)
+                {
+                    var firstInResponse = !askedInResponse;
+                    askedInResponse = true;
+                    string? problem = null;
+                    var question = firstInResponse ? ParseQuestion(p, questions, asker, out problem) : null;
+                    if (question is null)
+                    {
+                        results[index] = ToolResult.Error(firstInResponse ? problem! : AskUserTool.OneAtATime);
+                        statuses[index] = ToolCallStatus.Failed;
+                        yield return Finished(p, results[index]!, statuses[index]);
+                        index++;
+                        continue;
+                    }
+
+                    questions.Asked++;
+                    var reply = asker!.AskAsync(p.Call.CallId, question, cancellationToken);
+                    yield return new ToolAwaitingAnswer(p.Call.CallId, question);
+                    try
+                    {
+                        results[index] = ToolResult.Ok((await reply).ForModel());
+                        statuses[index] = ToolCallStatus.Succeeded;
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        outcome.Cancelled = true;
+                        break;
+                    }
+
+                    yield return Finished(p, results[index]!, statuses[index]);
+                    index++;
+                    continue;
+                }
+
                 if (p.Tool!.IsReadOnly && decision.Verdict == PermissionVerdict.Allow)
                 {
                     var contexts = new List<ToolContext> { ContextFor(tools, decision, permissions) };
                     while (index + contexts.Count < planned.Count
-                        && planned[index + contexts.Count] is { CanRun: true, Tool.IsReadOnly: true } next
+                        && planned[index + contexts.Count] is { CanRun: true, Tool.IsReadOnly: true, Tool: not AskUserTool } next
                         && permissions.Evaluate(next.Tool, next.Json, tools.Context) is { Verdict: PermissionVerdict.Allow } nextDecision)
                     {
                         contexts.Add(ContextFor(tools, nextDecision, permissions));
@@ -444,7 +536,7 @@ internal static class ChatRunner
                 if (results[i] is null)
                 {
                     statuses[i] = ToolCallStatus.Cancelled;
-                    results[i] = ToolResult.Error(ToolCallEntry.Unfinished(ToolCallStatus.Cancelled));
+                    results[i] = ToolResult.Error(ToolCallEntry.Unfinished(ToolCallStatus.Cancelled, planned[i].Call.Name));
                     yield return Finished(planned[i], results[i]!, statuses[i]);
                 }
             }
@@ -456,12 +548,41 @@ internal static class ChatRunner
             {
                 var text = results[i] is { } result
                     ? ToolCallEntry.ForModel(statuses[i], result.Output)
-                    : ToolCallEntry.Unfinished(ToolCallStatus.Cancelled);
+                    : ToolCallEntry.Unfinished(ToolCallStatus.Cancelled, calls[i].Name);
                 answers.Add(new FunctionResultContent(calls[i].CallId, text));
             }
 
             history.Add(new ChatMessage(ChatRole.Tool, answers));
         }
+    }
+
+    private static UserQuestion? ParseQuestion(PlannedCall call, QuestionBudget budget, IUserAsker? asker, out string? problem)
+    {
+        problem = null;
+        UserQuestion question;
+        try
+        {
+            question = AskUserTool.Parse(ToolArguments.Parse(call.Json));
+        }
+        catch (ToolArgumentException ex)
+        {
+            problem = ex.Message;
+            return null;
+        }
+
+        if (budget.Asked >= AskUserTool.MaxPerRun)
+        {
+            problem = AskUserTool.TooMany;
+            return null;
+        }
+
+        if (asker is null)
+        {
+            problem = AskUserTool.NoAsker;
+            return null;
+        }
+
+        return question;
     }
 
     // A call to a forwarding tool is planned as the tool it names, so permissions and approvals judge the tool that really runs.
@@ -528,6 +649,11 @@ internal static class ChatRunner
     private static string ArgumentsJson(FunctionCallContent call)
     {
         return call.Arguments is null ? "{}" : JsonSerializer.Serialize(call.Arguments, CompactJson);
+    }
+
+    private sealed class QuestionBudget
+    {
+        public int Asked { get; set; }
     }
 
     private sealed class RoundOutcome

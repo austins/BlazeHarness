@@ -41,6 +41,18 @@ else
                 }
             </ul>
         }
+        @if (Queued.Count > 0)
+        {
+            <ul class="composer-queued" aria-label="Queued messages">
+                @foreach (var queued in Queued)
+                {
+                    <li class="chip">
+                        <span class="badge badge-accent">Queued</span>
+                        <span class="chip-name" title="@queued">@queued</span>
+                    </li>
+                }
+            </ul>
+        }
         <div class="composer-box">
         @if (_files.Count > 0)
         {
@@ -68,7 +80,7 @@ else
             }
         }
         <textarea class="composer-input" rows="1" @ref="_input" @bind="_text" @bind:event="oninput"
-                  placeholder="Message the model" aria-label="Message"></textarea>
+                  placeholder="@Placeholder" aria-label="Message"></textarea>
         <div class="composer-bar">
             @if (Editing is null)
             {
@@ -118,6 +130,10 @@ else
             }
             @if (Running)
             {
+                @if (CanQueue && !string.IsNullOrWhiteSpace(_text))
+                {
+                    <button type="submit" class="btn btn-primary btn-send" aria-label="@(Asked ? "Send answer" : "Queue message")" title="@(Asked ? "Send answer (Enter)" : "Queue message (Enter)")"><Icon Name="arrow-up" /></button>
+                }
                 <button type="button" class="btn btn-send btn-stop" aria-label="Stop" title="Stop" @onclick="OnStop"><Icon Name="stop" /></button>
             }
             else
@@ -195,6 +211,30 @@ else
     public bool Running { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether a message typed now is queued for the running reply, which is true while a reply is produced but not while the chat is compacted.
+    /// </summary>
+    [Parameter]
+    public bool CanQueue { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the model waits for the answer to a question, which a message typed now gives.
+    /// </summary>
+    [Parameter]
+    public bool Asked { get; set; }
+
+    /// <summary>
+    /// Gets or sets the messages that wait to be added to the running reply.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<string> Queued { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the function that queues a text for the running reply and returns whether it was accepted.
+    /// </summary>
+    [Parameter]
+    public Func<string, bool>? OnQueue { get; set; }
+
+    /// <summary>
     /// Gets or sets a value indicating whether the last reply can be retried.
     /// </summary>
     [Parameter]
@@ -263,6 +303,17 @@ else
     public void Dispose()
     {
         Providers.Changed -= OnProvidersChanged;
+    }
+
+    /// <summary>
+    /// Put text back in front of what the user has typed, for messages that were queued and then not added because the reply stopped.
+    /// </summary>
+    /// <param name="text">The text to restore.</param>
+    public void Restore(string text)
+    {
+        _text = string.IsNullOrWhiteSpace(_text) ? text : $"{text}\n\n{_text}";
+        _resize = true;
+        StateHasChanged();
     }
 
     protected override void OnInitialized()
@@ -467,10 +518,29 @@ else
         await _input.FocusAsync();
     }
 
+    private string Placeholder
+    {
+        get
+        {
+            if (Asked)
+            {
+                return "Answer the question above";
+            }
+
+            return CanQueue ? "Add a message for the model to see at its next step" : "Message the model";
+        }
+    }
+
     private async Task SubmitAsync()
     {
+        if (Running)
+        {
+            Enqueue();
+            return;
+        }
+
         var target = CurrentTarget();
-        if (target is null || Running || OnSend is null || (string.IsNullOrWhiteSpace(_text) && _files.Count == 0))
+        if (target is null || OnSend is null || (string.IsNullOrWhiteSpace(_text) && _files.Count == 0))
         {
             return;
         }
@@ -490,6 +560,31 @@ else
             _files.AddRange(files);
             _note = error;
             _resize = true;
+        }
+    }
+
+    private void Enqueue()
+    {
+        if (!CanQueue || OnQueue is null || string.IsNullOrWhiteSpace(_text))
+        {
+            return;
+        }
+
+        if (_files.Count > 0)
+        {
+            _note = "Files can't be added while a reply is running. Remove them to queue the message, or send it once the reply ends.";
+            return;
+        }
+
+        if (OnQueue(_text))
+        {
+            _text = string.Empty;
+            _note = null;
+            _resize = true;
+        }
+        else
+        {
+            _note = Asked ? "The question was answered or stopped before this arrived. Send it again." : "The reply ended before the message could be queued. Send it again.";
         }
     }
 

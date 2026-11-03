@@ -65,6 +65,23 @@ public sealed class SearchChatToolTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_OutputThatWasTrimmedFromTheRequest_IsStillFound()
+    {
+        // Arrange
+        var entry = new ChatEntry(ChatRole.Assistant);
+        entry.AddToolCall(new ToolCallEntry("c1", "read_file", """{"path":"a.txt"}""", "a.txt") { Output = "the long file about zebras" });
+        _entries.Add(entry);
+        _entries.Add(new ChatEntry(ChatRole.Assistant) { Compaction = new CompactionInfo(string.Empty, 900, 300, OutputTrimmed: true) });
+
+        // Act
+        var result = await RunAsync("""{"query":"zebras"}""");
+
+        // Assert
+        result.Output.Should().Contain("#1 read_file output: the long file about zebras");
+        result.Output.Should().StartWith("1 match");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_MoreMatchesThanTheLimit_SaysHowManyWereLeftOut()
     {
         // Arrange

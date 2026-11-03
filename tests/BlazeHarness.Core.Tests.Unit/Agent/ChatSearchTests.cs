@@ -81,4 +81,20 @@ public sealed class ChatSearchTests
         // Assert
         found.Should().Equal(entry.Id);
     }
+
+    [Fact]
+    public void Find_AnswerOfAnAskUserCall_MatchesButOtherToolOutputDoesNot()
+    {
+        // Arrange
+        var asked = new ChatEntry(ChatRole.Assistant);
+        asked.AddToolCall(new ToolCallEntry("1", "ask_user", """{"question":"Which?"}""", string.Empty) { Output = "The user answered: use Postgres" });
+        var read = new ChatEntry(ChatRole.Assistant);
+        read.AddToolCall(new ToolCallEntry("2", "read_file", "{}", string.Empty) { Output = "Postgres is mentioned here" });
+
+        // Act
+        var found = ChatSearch.Find([asked, read], "postgres");
+
+        // Assert
+        found.Should().Equal(asked.Id);
+    }
 }

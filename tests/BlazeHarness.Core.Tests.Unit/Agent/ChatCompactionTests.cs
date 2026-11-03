@@ -13,6 +13,8 @@ namespace BlazeHarness.Core.Tests.Unit.Agent;
 
 public sealed class ChatCompactionTests
 {
+    private static readonly string BigRead = new('x', 4_000);
+
     private readonly RecordingChatLog _log = new();
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
     private int _clientsCreated;
@@ -315,7 +317,7 @@ public sealed class ChatCompactionTests
 
         // Assert
         status.Approximate.Should().BeTrue();
-        status.Tokens.Should().BeLessThan(100);
+        status.Tokens.Should().BeLessThan(150);
     }
 
     [Fact]
@@ -335,6 +337,126 @@ public sealed class ChatCompactionTests
         // Assert
         sut.Entries.Should().Contain(e => e.Compaction != null);
         client.Requests.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task SendAsync_OldToolOutputFillsTheWindow_TrimsItAndSavesAMarkerWithoutASummary()
+    {
+        // Arrange
+        using var client = ToolRounds(3);
+        using var sut = CreateWithBigReads(client);
+
+        // Act
+        await sut.SendAsync("go", ToolWindow());
+
+        // Assert
+        var marker = sut.Entries.Should().ContainSingle(e => e.Compaction != null).Subject.Compaction!;
+        marker.OutputTrimmed.Should().BeTrue();
+        marker.TokensAfter.Should().BeLessThan(marker.TokensBefore);
+        _log.Events.OfType<ContextTrimEvent>().Should().ContainSingle();
+        _log.Events.OfType<CompactionEvent>().Should().BeEmpty();
+        sut.Entries.SelectMany(e => e.ToolCalls).Should().OnlyContain(c => c.Output == BigRead);
+        sut.History.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().OnlyContain(r => (string?)r.Result == BigRead);
+        client.Requests[^1].SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().Contain(r => (string?)r.Result == OutputStub.Text);
+    }
+
+    [Fact]
+    public async Task SendAsync_AfterATrim_TheNextRequestKeepsTheSameStubs()
+    {
+        // Arrange
+        using var client = ToolRounds(3).Enqueue([ScriptedChatClient.Text("more")]);
+        using var sut = CreateWithBigReads(client);
+        await sut.SendAsync("go", ToolWindow());
+        var before = client.Requests[^1].SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Select(r => (string?)r.Result).ToList();
+
+        // Act
+        await sut.SendAsync("next", ToolWindow());
+
+        // Assert
+        var after = client.Requests[^1].SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Select(r => (string?)r.Result).ToList();
+        after.Take(before.Count).Should().Equal(before);
+        _log.Events.OfType<ContextTrimEvent>().Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Restore_ASavedTrim_SendsTheSameRequestAsTheLiveChat()
+    {
+        // Arrange
+        using var live = ToolRounds(3).Enqueue([ScriptedChatClient.Text("more")]);
+        using var original = CreateWithBigReads(live);
+        await original.SendAsync("go", ToolWindow());
+        var saved = await _log.ReadAsync(TestContext.Current.CancellationToken);
+        using var restoredClient = new ScriptedChatClient([ScriptedChatClient.Text("more")]);
+        using var restored = Create(restoredClient);
+        restored.Restore(saved);
+
+        // Act
+        await original.SendAsync("next", ToolWindow());
+        await restored.SendAsync("next", ToolWindow());
+
+        // Assert
+        restored.Entries.Select(e => e.Compaction is not null ? "marker" : e.Text).Should().Equal(original.Entries.Select(e => e.Compaction is not null ? "marker" : e.Text));
+        restored.Entries.Single(e => e.Compaction != null).Compaction!.OutputTrimmed.Should().BeTrue();
+        TextOf(restoredClient.Requests[^1]).Should().Equal(TextOf(live.Requests[^1]));
+    }
+
+    [Fact]
+    public async Task GetContextStatus_AfterATrim_IsEstimatedFromTheSmallerRequest()
+    {
+        // Arrange
+        using var client = ToolRounds(3);
+        using var sut = CreateWithBigReads(client);
+        await sut.SendAsync("go", ToolWindow());
+        var marker = sut.Entries.Single(e => e.Compaction != null).Compaction!;
+
+        // Act
+        var status = sut.GetContextStatus(ToolWindow());
+
+        // Assert
+        status.Approximate.Should().BeTrue();
+        status.Tokens.Should().BeLessThan(marker.TokensBefore);
+    }
+
+    [Fact]
+    public async Task CompactAsync_AfterATrim_AddsASummaryMarkerAndKeepsTheTrimMarker()
+    {
+        // Arrange
+        using var client = ToolRounds(3).Enqueue([ScriptedChatClient.Text("sum")]);
+        using var sut = CreateWithBigReads(client);
+        await sut.SendAsync("go", ToolWindow());
+
+        // Act
+        var compacted = await sut.CompactAsync(ToolWindow());
+
+        // Assert
+        compacted.Should().BeTrue();
+        sut.Entries.Where(e => e.Compaction != null).Select(e => e.Compaction!.OutputTrimmed).Should().BeEquivalentTo([true, false]);
+        _log.Events.OfType<ContextTrimEvent>().Should().ContainSingle();
+        _log.Events.OfType<CompactionEvent>().Should().ContainSingle();
+    }
+
+    private static ChatTarget ToolWindow() => TestTargets.Create(contextWindow: 4_000);
+
+    private static ScriptedChatClient ToolRounds(int rounds)
+    {
+        var client = new ScriptedChatClient([ScriptedChatClient.Call("c0", "read")]);
+        for (var i = 1; i < rounds; i++)
+        {
+            client.Enqueue([ScriptedChatClient.Call("c" + i, "read")]);
+        }
+
+        return client.Enqueue([ScriptedChatClient.Text("fin")]);
+    }
+
+    private static List<string> TextOf(IEnumerable<ChatMessage> messages)
+    {
+        return [.. messages.Select(m => string.Concat(m.Contents.Select(c => c switch
+        {
+            TextContent text => text.Text,
+            FunctionResultContent result => result.CallId + ":" + result.Result,
+            FunctionCallContent call => call.CallId + "=" + call.Name,
+            _ => string.Empty,
+        })))];
     }
 
     private static ChatTarget SmallWindow()
@@ -365,6 +487,15 @@ public sealed class ChatCompactionTests
 
     private Chat Create(ScriptedChatClient client) =>
         new((_, _) => Task.FromResult<IChatClient>(client), _time, _log);
+
+    private Chat CreateWithBigReads(ScriptedChatClient client)
+    {
+        var read = new FakeTool("read", isReadOnly: true, (_, _) => Task.FromResult(ToolResult.Ok(BigRead)));
+        return new Chat((_, _) => Task.FromResult<IChatClient>(client), _time, _log)
+        {
+            Tools = new ToolSet([read], new ToolContext(Path.GetTempPath()), TimeProvider.System),
+        };
+    }
 
     private Chat CreateExtractive(ScriptedChatClient client)
     {

@@ -10,11 +10,11 @@ namespace BlazeHarness.Core.Chats;
 internal static class ChatReplay
 {
     /// <summary>
-    /// Create the entry that marks where a compaction summary begins to stand in for older messages.
+    /// Create the entry that marks where a compaction summary begins to stand in for older messages, or where older tool output begins to be trimmed.
     /// </summary>
     /// <param name="id">The id of the marker.</param>
     /// <param name="at">When the compaction happened.</param>
-    /// <param name="info">The summary and token counts.</param>
+    /// <param name="info">The summary, or for a trim the flag that says so, and the token counts.</param>
     /// <returns>An entry with an empty text and <see cref="ChatEntry.Compaction"/> set.</returns>
     public static ChatEntry NewMarker(Guid id, DateTimeOffset at, CompactionInfo info)
     {
@@ -25,7 +25,7 @@ internal static class ChatReplay
     /// Replay events into messages.
     /// </summary>
     /// <remarks>
-    /// A rewind drops the messages after the one it names, and a compaction marker sits before the first message it kept.
+    /// A rewind drops the messages after the one it names, and a compaction or trim marker sits before the first message it left as it was.
     /// A reply with no end event stays <see cref="EntryStatus.Interrupted"/>. Events about an unknown message are ignored.
     /// </remarks>
     /// <param name="events">The events, in the order they were written.</param>
@@ -46,7 +46,7 @@ internal static class ChatReplay
             switch (e)
             {
                 case UserMessageEvent user:
-                    Add(new ChatEntry(ChatRole.User, user.Text, user.EntryId) { Status = EntryStatus.Done, At = user.At, Attachments = user.Attachments ?? [] });
+                    Add(new ChatEntry(ChatRole.User, user.Text, user.EntryId) { Status = EntryStatus.Done, At = user.At, Attachments = user.Attachments ?? [], Origin = user.Origin });
                     break;
                 case AssistantStartEvent start:
                     Add(new ChatEntry(ChatRole.Assistant, id: start.EntryId) { Status = EntryStatus.Interrupted, Label = start.Label, At = start.At });
@@ -70,6 +70,9 @@ internal static class ChatReplay
                     break;
                 case CompactionEvent compaction when entries.FindIndex(x => x.Id == compaction.FirstKeptEntryId) is var at and >= 0:
                     Add(NewMarker(compaction.EntryId, compaction.At, new CompactionInfo(compaction.Summary, compaction.TokensBefore, compaction.TokensAfter)), at);
+                    break;
+                case ContextTrimEvent trim when entries.FindIndex(x => x.Id == trim.TrimmedBeforeEntryId) is var at and >= 0:
+                    Add(NewMarker(trim.EntryId, trim.At, new CompactionInfo(string.Empty, trim.TokensBefore, trim.TokensAfter, OutputTrimmed: true)), at);
                     break;
                 case RewindEvent rewind:
                     var keep = rewind.ToEntryId == Guid.Empty ? -1 : entries.FindIndex(x => x.Id == rewind.ToEntryId);
@@ -102,7 +105,7 @@ internal static class ChatReplay
             foreach (var call in entry.ToolCalls.Where(c => !c.IsFinished))
             {
                 call.Status = ToolCallStatus.Interrupted;
-                call.Output = ToolCallEntry.Unfinished(ToolCallStatus.Interrupted);
+                call.Output = ToolCallEntry.Unfinished(ToolCallStatus.Interrupted, call.Name);
                 dangling = true;
             }
 

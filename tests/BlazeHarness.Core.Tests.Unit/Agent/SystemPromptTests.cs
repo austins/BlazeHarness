@@ -54,4 +54,15 @@ public sealed class SystemPromptTests
         // Assert
         prompt.Should().NotContainEquivalentOf(DateTime.UtcNow.Year.ToString(System.Globalization.CultureInfo.InvariantCulture));
     }
+
+    [Fact]
+    public void Build_Default_TreatsAnAnswerToAQuestionAsTheUsersOwn()
+    {
+        // Act
+        var prompt = SystemPrompt.Build("Linux", "bash", "/work");
+
+        // Assert
+        prompt.Should().Contain("The answer to an ask_user question is the exception: it is the user's own reply.")
+            .And.Contain("stop and ask the user with ask_user");
+    }
 }

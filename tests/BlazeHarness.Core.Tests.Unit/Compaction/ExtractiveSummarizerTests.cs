@@ -178,6 +178,44 @@ public sealed class ExtractiveSummarizerTests
         summary.Split('\n').Should().Contain($"- {new string('x', 240)}…");
     }
 
+    [Fact]
+    public async Task SummarizeAsync_AnsweredQuestion_KeepsTheQuestionAndAnswerWithTheUsersMessages()
+    {
+        // Arrange
+        List<ChatMessage> messages =
+        [
+            new(ChatRole.User, "set up storage"),
+            Call("c1", "ask_user", "question", "Which database?"),
+            Result("c1", "The user chose: \"Postgres\"."),
+            Call("c2", "read_file", "path", "a.cs"),
+            Result("c2", "secret file text"),
+        ];
+
+        // Act
+        var summary = await Summarize(null, messages);
+
+        // Assert
+        summary.Should().Contain("- answered \"Which database?\": Postgres").And.NotContain("secret file text");
+    }
+
+    [Fact]
+    public async Task SummarizeAsync_QuestionWithoutAnAnswer_IsLeftOut()
+    {
+        // Arrange
+        List<ChatMessage> messages =
+        [
+            new(ChatRole.User, "set up storage"),
+            Call("c1", "ask_user", "question", "Which database?"),
+            Result("c1", "The run was stopped before the user answered."),
+        ];
+
+        // Act
+        var summary = await Summarize(null, messages);
+
+        // Assert
+        summary.Should().NotContain("answered");
+    }
+
     private static ChatMessage Call(string id, string tool, string argument, string value) =>
         new(ChatRole.Assistant, [new FunctionCallContent(id, tool, new Dictionary<string, object?> { [argument] = value })]);
 

@@ -14,6 +14,11 @@ namespace BlazeHarness.Core.Compaction;
 /// a user or assistant message.
 /// </para>
 /// <para>
+/// Compaction goes in steps. First <see cref="TrimOutput"/> replaces large tool results older than a cut with a short stub (see <see cref="OutputStub"/>)
+/// in the request, which keeps every message and call. Only when that is not enough does <see cref="CompactAsync"/> write a summary.
+/// Summarizers always get the full messages, never the stubs.
+/// </para>
+/// <para>
 /// The size is the prompt size the server reported for the last request plus an estimate for what was added since,
 /// or an estimate for everything when the server reports no usage.
 /// </para>
@@ -41,6 +46,7 @@ public sealed class ConversationContext
     private readonly long _overhead;
     private string? _summary;
     private int _keptFrom;
+    private int _stubbedBefore;
     private long? _promptTokens;
     private int _promptMessages;
     private long _compactedSize;
@@ -55,19 +61,22 @@ public sealed class ConversationContext
     /// <param name="summary">The summary from an earlier compaction, or null.</param>
     /// <param name="keptFrom">The index, after the leading messages, where the messages that are sent as they were begin.</param>
     /// <param name="overheadTokens">The estimated size in tokens of what each request carries besides the messages, such as the tool definitions.</param>
-    public ConversationContext(int limit, ISummarizer summarizer, int leadingMessages = 0, string? summary = null, int keptFrom = 0, long overheadTokens = 0)
+    /// <param name="stubbedBefore">The index, after the leading messages, before which large tool results are replaced by a stub.</param>
+    public ConversationContext(int limit, ISummarizer summarizer, int leadingMessages = 0, string? summary = null, int keptFrom = 0, long overheadTokens = 0, int stubbedBefore = 0)
     {
         ArgumentNullException.ThrowIfNull(summarizer);
         ArgumentOutOfRangeException.ThrowIfNegative(limit);
         ArgumentOutOfRangeException.ThrowIfNegative(leadingMessages);
         ArgumentOutOfRangeException.ThrowIfNegative(keptFrom);
         ArgumentOutOfRangeException.ThrowIfNegative(overheadTokens);
+        ArgumentOutOfRangeException.ThrowIfNegative(stubbedBefore);
         _limit = limit;
         _summarizer = summarizer;
         _leading = leadingMessages;
         _overhead = overheadTokens;
         _summary = summary;
         _keptFrom = summary is null ? 0 : keptFrom;
+        _stubbedBefore = stubbedBefore;
     }
 
     /// <summary>
@@ -93,28 +102,9 @@ public sealed class ConversationContext
     /// <returns>
     /// The list itself before any compaction, otherwise the system prompt, the summary and the messages that were kept,
     /// with a short reply after the summary when the first kept message is from the user.
+    /// Large tool results before the trim boundary are stubs in new messages; the messages of the list are never changed.
     /// </returns>
-    public IList<ChatMessage> View(IList<ChatMessage> messages)
-    {
-        ArgumentNullException.ThrowIfNull(messages);
-
-        if (_summary is null)
-        {
-            return messages;
-        }
-
-        List<ChatMessage> view = [.. messages.Take(_leading), SummaryMessage(_summary)];
-        var kept = messages.Skip(_leading + _keptFrom).ToList();
-
-        // Strict chat templates reject two user messages in a row, so a reply sits between the summary and a kept user message.
-        if (kept is [{ } head, ..] && head.Role == ChatRole.User)
-        {
-            view.Add(new ChatMessage(ChatRole.Assistant, SummaryAcknowledgement));
-        }
-
-        view.AddRange(kept);
-        return view;
-    }
+    public IList<ChatMessage> View(IList<ChatMessage> messages) => BuildView(messages, _stubbedBefore);
 
     /// <summary>
     /// Record the prompt size the server reported for a request.
@@ -164,6 +154,45 @@ public sealed class ConversationContext
     public void Suspend() => _suspended = true;
 
     /// <summary>
+    /// Replace large tool results older than the cut that <see cref="CompactAsync"/> would make with a stub in the request, instead of summarizing.
+    /// </summary>
+    /// <remarks>
+    /// Nothing is removed and no model is asked. The step only counts when it brings the request down to the size a summary aims for;
+    /// otherwise nothing changes and the caller goes on to <see cref="CompactAsync"/>, which then covers these messages with a summary.
+    /// The boundary only moves forward, and the request stays the same until it does, so the server's prompt cache is only lost at a step.
+    /// </remarks>
+    /// <param name="messages">The full list.</param>
+    /// <returns>What was done, or null when there is no limit, no new result is large enough to replace, or replacing them is not enough.</returns>
+    public ContextTrimmed? TrimOutput(IList<ChatMessage> messages)
+    {
+        ArgumentNullException.ThrowIfNull(messages);
+
+        if (_limit <= 0)
+        {
+            return null;
+        }
+
+        var cut = ChooseCut(messages, manual: false);
+        if (cut <= Math.Max(_keptFrom, _stubbedBefore))
+        {
+            return null;
+        }
+
+        var before = Size(messages).Tokens;
+        var saved = TokenEstimate.OfRequest(View(messages)) - TokenEstimate.OfRequest(BuildView(messages, cut));
+        if (saved <= 0 || before - saved > (long)(_limit * TargetAfterFraction))
+        {
+            return null;
+        }
+
+        _stubbedBefore = cut;
+        _promptTokens = null;
+        var after = _overhead + TokenEstimate.OfRequest(View(messages));
+        _compactedSize = after;
+        return new ContextTrimmed(cut, before, after);
+    }
+
+    /// <summary>
     /// Replace older messages with a summary.
     /// </summary>
     /// <remarks>
@@ -186,7 +215,7 @@ public sealed class ConversationContext
 
         var before = Size(messages).Tokens;
         var older = messages.Skip(_leading + _keptFrom).Take(cut - _keptFrom).ToList();
-        var summary = await _summarizer.SummarizeAsync(_summary, older, cancellationToken);
+        var summary = TodoNotes.Append(await _summarizer.SummarizeAsync(TodoNotes.Strip(_summary), older, cancellationToken), messages);
 
         _summary = summary;
         _keptFrom = cut;
@@ -194,6 +223,93 @@ public sealed class ConversationContext
         var after = _overhead + TokenEstimate.OfRequest(View(messages));
         _compactedSize = after;
         return new ContextCompacted(summary, cut, before, after);
+    }
+
+    private IList<ChatMessage> BuildView(IList<ChatMessage> messages, int stubbedBefore)
+    {
+        ArgumentNullException.ThrowIfNull(messages);
+
+        var stubbed = Stub(messages, stubbedBefore);
+        if (_summary is null)
+        {
+            return stubbed;
+        }
+
+        List<ChatMessage> view = [.. stubbed.Take(_leading), SummaryMessage(_summary)];
+        var kept = stubbed.Skip(_leading + _keptFrom).ToList();
+
+        // Strict chat templates reject two user messages in a row, so a reply sits between the summary and a kept user message.
+        if (kept is [{ } head, ..] && head.Role == ChatRole.User)
+        {
+            view.Add(new ChatMessage(ChatRole.Assistant, SummaryAcknowledgement));
+        }
+
+        view.AddRange(kept);
+        return view;
+    }
+
+    // Returns the list itself when no result in [kept, boundary) is large enough to replace, otherwise a copy with new messages for the ones that change.
+    private IList<ChatMessage> Stub(IList<ChatMessage> messages, int boundary)
+    {
+        var from = _leading + _keptFrom;
+        var to = Math.Min(_leading + boundary, messages.Count);
+        if (to <= from)
+        {
+            return messages;
+        }
+
+        Dictionary<string, string>? names = null;
+        List<ChatMessage>? copy = null;
+        for (var i = from; i < to; i++)
+        {
+            var message = messages[i];
+            if (message.Role != ChatRole.Tool)
+            {
+                continue;
+            }
+
+            names ??= CallNames(messages, to);
+            List<AIContent>? contents = null;
+            for (var c = 0; c < message.Contents.Count; c++)
+            {
+                if (message.Contents[c] is FunctionResultContent result
+                    && names.TryGetValue(result.CallId, out var name)
+                    && OutputStub.For(name, result.Result?.ToString()) is { } stub)
+                {
+                    contents ??= [.. message.Contents];
+                    contents[c] = new FunctionResultContent(result.CallId, stub);
+                }
+            }
+
+            if (contents is not null)
+            {
+                copy ??= [.. messages];
+                copy[i] = new ChatMessage(message.Role, contents)
+                {
+                    AuthorName = message.AuthorName,
+                    CreatedAt = message.CreatedAt,
+                    MessageId = message.MessageId,
+                    AdditionalProperties = message.AdditionalProperties,
+                    RawRepresentation = message.RawRepresentation,
+                };
+            }
+        }
+
+        return copy ?? messages;
+    }
+
+    private static Dictionary<string, string> CallNames(IList<ChatMessage> messages, int count)
+    {
+        Dictionary<string, string> names = new(StringComparer.Ordinal);
+        for (var i = 0; i < count; i++)
+        {
+            foreach (var call in messages[i].Contents.OfType<FunctionCallContent>())
+            {
+                names[call.CallId] = call.Name;
+            }
+        }
+
+        return names;
     }
 
     // A message a cut can start at: one that has an entry in the chat, and not a tool result, which must stay with its call.

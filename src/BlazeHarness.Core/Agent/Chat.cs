@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Agent.Questions;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Chats;
 using BlazeHarness.Core.Compaction;
@@ -31,7 +32,7 @@ namespace BlazeHarness.Core.Agent;
 /// With a <see cref="ChatLog"/>, every message is saved as it arrives, in batches rather than per token.
 /// </para>
 /// </remarks>
-public sealed partial class Chat : IDisposable, IToolApprover
+public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserAsker
 {
     /// <summary>
     /// How long a tool call waits for an answer before it is denied, so a turn nobody is watching ends by itself.
@@ -39,7 +40,7 @@ public sealed partial class Chat : IDisposable, IToolApprover
     public static readonly TimeSpan ApprovalTimeout = TimeSpan.FromMinutes(30);
 
     // Stands in for a reply that ended with nothing, so the next user message doesn't follow another one, which strict chat templates reject.
-    private const string EmptyReplyText = "(No reply was produced.)";
+    internal const string EmptyReplyText = "(No reply was produced.)";
 
     private static readonly TimeSpan FlushInterval = TimeSpan.FromMilliseconds(250);
 
@@ -50,6 +51,7 @@ public sealed partial class Chat : IDisposable, IToolApprover
     private readonly ILogger _logger;
     private readonly List<ChatEntry> _entries = [];
     private readonly List<ChatMessage> _history = [];
+    private readonly List<string> _queued = [];
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ApprovalChoice>> _approvals = new(StringComparer.Ordinal);
     private IReadOnlyList<ChatEntry> _snapshot = [];
     private ProjectContext? _project;
@@ -59,6 +61,7 @@ public sealed partial class Chat : IDisposable, IToolApprover
     private ChatAttachments? _attachments;
     private string? _basePrompt;
     private Action? _stop;
+    private bool _replying;
     private bool _closed;
 
     /// <summary>
@@ -91,6 +94,14 @@ public sealed partial class Chat : IDisposable, IToolApprover
     /// Gets the messages in order, as a snapshot that stays valid while the conversation grows.
     /// </summary>
     public IReadOnlyList<ChatEntry> Entries => Volatile.Read(ref _snapshot);
+
+    /// <summary>
+    /// Gets the agent's to-do list, which is the one the last successful <c>update_todos</c> call set.
+    /// </summary>
+    /// <remarks>
+    /// It is read from the messages each time, so it follows a rewind, an edit and a restored chat without being saved on its own.
+    /// </remarks>
+    public TodoList Todos => TodoList.From(Entries);
 
     /// <summary>
     /// Gets a copy of the messages that are sent to the model.
@@ -204,9 +215,44 @@ public sealed partial class Chat : IDisposable, IToolApprover
     public bool IsRunning => Volatile.Read(ref _stop) is not null;
 
     /// <summary>
-    /// Gets a value indicating whether the last reply failed, was stopped or was interrupted, so it can be retried.
+    /// Gets a value indicating whether a reply is being produced, which is when <see cref="Queue"/> accepts a message.
     /// </summary>
-    public bool CanRetry => !IsRunning && Entries is [.., { Role: var role, Status: EntryStatus.Failed or EntryStatus.Cancelled or EntryStatus.Interrupted }] && role == ChatRole.Assistant;
+    /// <remarks>
+    /// Unlike <see cref="IsRunning"/>, it is false while the chat is only being compacted.
+    /// </remarks>
+    public bool IsReplying
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _replying;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the messages that wait to be added to the running reply, oldest first.
+    /// </summary>
+    /// <remarks>
+    /// After a reply that was stopped or failed, what was still waiting stays here until <see cref="TakeQueued"/> takes it.
+    /// </remarks>
+    public IReadOnlyList<string> Queued
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _queued];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the last reply failed, was stopped or was interrupted, or ended right after a message that was added to it, so it can be retried.
+    /// </summary>
+    public bool CanRetry => !IsRunning && Entries is [.., { Role: var role, Status: var status, Origin: var origin }]
+        && (role == ChatRole.Assistant ? status is EntryStatus.Failed or EntryStatus.Cancelled or EntryStatus.Interrupted : role == ChatRole.User && origin is not null);
 
     /// <summary>
     /// Rebuild the conversation from a saved log.
@@ -315,6 +361,64 @@ public sealed partial class Chat : IDisposable, IToolApprover
     }
 
     /// <summary>
+    /// Queue a message for the reply that is running.
+    /// </summary>
+    /// <remarks>
+    /// The message is added to the conversation after the tool results of the current round, or when the model would otherwise finish, and the reply goes on.
+    /// Messages that wait together are merged into one. A message still waiting when the reply is stopped or fails is kept in <see cref="Queued"/>.
+    /// While an <c>ask_user</c> question waits, the message is its free-text answer instead and nothing is queued.
+    /// </remarks>
+    /// <param name="text">The message text. Attachments are not supported.</param>
+    /// <returns>True when the message was queued or answered a question; false when no reply is running, the chat is closed, or the text is blank.</returns>
+    public bool Queue(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        if (TryAnswerWithText(text))
+        {
+            return true;
+        }
+
+        lock (_gate)
+        {
+            if (!_replying || _closed)
+            {
+                return false;
+            }
+
+            _queued.Add(text);
+        }
+
+        RaiseChanged();
+        return true;
+    }
+
+    /// <summary>
+    /// Take the messages that wait, for example to give them back to the user after a stop.
+    /// </summary>
+    /// <returns>The messages, oldest first; empty when none waited.</returns>
+    public IReadOnlyList<string> TakeQueued()
+    {
+        string[] taken;
+        lock (_gate)
+        {
+            taken = [.. _queued];
+            _queued.Clear();
+        }
+
+        if (taken.Length > 0)
+        {
+            RaiseChanged();
+        }
+
+        return taken;
+    }
+
+    /// <summary>
     /// Request a new reply after the last reply failed, was stopped or was interrupted.
     /// </summary>
     /// <remarks>
@@ -332,6 +436,12 @@ public sealed partial class Chat : IDisposable, IToolApprover
             target,
             () =>
             {
+                // A message added to a reply that then ended has no reply of its own yet, so the retry just answers it.
+                if (_entries is [.., { Role: var last, Origin: not null }] && last == ChatRole.User)
+                {
+                    return true;
+                }
+
                 if (_entries is not [.., { Role: var role, Status: EntryStatus.Failed or EntryStatus.Cancelled or EntryStatus.Interrupted } failed] || role != ChatRole.Assistant)
                 {
                     return false;
@@ -455,6 +565,23 @@ public sealed partial class Chat : IDisposable, IToolApprover
     }
 
     /// <inheritdoc />
+    string? IRunInbox.TakeMessages()
+    {
+        lock (_gate)
+        {
+            // A waiting question is answered by the user's next message; a steer message must not jump the queue.
+            if (_queued.Count == 0 || IsWaitingForUser)
+            {
+                return null;
+            }
+
+            var text = string.Join("\n\n", _queued);
+            _queued.Clear();
+            return text;
+        }
+    }
+
+    /// <inheritdoc />
     Task<ApprovalChoice> IToolApprover.RequestAsync(ApprovalRequest request, CancellationToken cancellationToken)
     {
         return WaitForApprovalAsync(request.CallId, cancellationToken);
@@ -511,19 +638,59 @@ public sealed partial class Chat : IDisposable, IToolApprover
                 return;
             }
 
+            // What an earlier reply left queued was shown to the user to take back; it must not leak into this one.
+            _queued.Clear();
             _stop = run.Cancel;
+            _replying = true;
             Publish();
         }
 
         RaiseChanged();
         try
         {
-            await Task.Run(() => ReplyAsync(target, leading(), run.Token), CancellationToken.None);
+            var completed = await Task.Run(() => ReplyAsync(target, leading(), run.Token), CancellationToken.None);
+            while (TakeFollowUp(completed && !run.IsCancellationRequested) is { } next)
+            {
+                RaiseChanged();
+                completed = await Task.Run(() => ReplyAsync(target, next, run.Token), CancellationToken.None);
+            }
         }
         finally
         {
-            Volatile.Write(ref _stop, null);
+            EndTurn();
             RaiseChanged();
+        }
+    }
+
+    // A message that was queued too late for the running reply starts the next one, but only after a normal finish.
+    // Taking it and ending the turn happen under one lock, so a message is either taken here or refused by Queue.
+    private IReadOnlyList<ChatEvent>? TakeFollowUp(bool finishedNormally)
+    {
+        lock (_gate)
+        {
+            if (!finishedNormally || _closed || _queued.Count == 0)
+            {
+                EndTurn();
+                return null;
+            }
+
+            var text = string.Join("\n\n", _queued);
+            _queued.Clear();
+            var sentAt = _time.GetUtcNow();
+            var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt, Origin = UserMessageOrigin.Steer, HistoryIndex = _history.Count };
+            _entries.Add(user);
+            _history.Add(new ChatMessage(ChatRole.User, text));
+            Publish();
+            return [new UserMessageEvent(sentAt, user.Id, text, null, UserMessageOrigin.Steer)];
+        }
+    }
+
+    private void EndTurn()
+    {
+        lock (_gate)
+        {
+            _replying = false;
+            Volatile.Write(ref _stop, null);
         }
     }
 

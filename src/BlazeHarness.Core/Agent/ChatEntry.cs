@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Chats;
 using BlazeHarness.Core.Compaction;
 using Microsoft.Extensions.AI;
 using System.Text;
@@ -93,6 +94,11 @@ public sealed class ChatEntry
     public IReadOnlyList<SentAttachment> Attachments { get; set; } = [];
 
     /// <summary>
+    /// Gets or sets why a user message was added other than by the user starting a turn, or null for one that did.
+    /// </summary>
+    public UserMessageOrigin? Origin { get; set; }
+
+    /// <summary>
     /// Gets or sets the state of the message.
     /// </summary>
     public EntryStatus Status { get; set; }
@@ -116,7 +122,7 @@ public sealed class ChatEntry
     /// Gets or sets what this entry stands for when it is a compaction marker, or null for a message.
     /// </summary>
     /// <remarks>
-    /// A marker sits between the messages that were summarized and the ones that are still sent as they were.
+    /// A marker sits between the messages that were summarized, or whose large tool output was trimmed, and the ones that are still sent as they were.
     /// It is never part of the history sent to the model, and its text is empty.
     /// </remarks>
     public CompactionInfo? Compaction { get; set; }

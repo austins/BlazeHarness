@@ -49,6 +49,7 @@ public sealed class ChatLogTests : IDisposable
             new AssistantDeltaEvent(at, reply, "Hi", "thinking"),
             new AssistantEndEvent(at, reply, EntryStatus.Done, null, new UsageReported(12, 40, 3)),
             new CompactionEvent(at, Guid.NewGuid(), reply, "Summary\nof \"it\"", 9000, 700),
+            new ContextTrimEvent(at, Guid.NewGuid(), reply, 9000, 4000),
             new RewindEvent(at, user),
         ];
 
@@ -58,7 +59,7 @@ public sealed class ChatLogTests : IDisposable
 
         // Assert
         read.Should().Equal(written);
-        (await File.ReadAllLinesAsync(_path, TestContext.Current.CancellationToken)).Should().HaveCount(6);
+        (await File.ReadAllLinesAsync(_path, TestContext.Current.CancellationToken)).Should().HaveCount(7);
     }
 
     [Theory]

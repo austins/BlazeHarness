@@ -1,0 +1,136 @@
+@using BlazeHarness.Core.Agent.Questions
+
+<section class="question" data-state="@(Waiting ? "waiting" : "done")" aria-live="polite" aria-label="Question from the assistant">
+    <p class="question-from">Asked by the assistant</p>
+    @if (Waiting)
+    {
+        <form class="question-form" @onsubmit="SendAsync">
+            <fieldset class="question-fieldset">
+                <legend class="question-text">@Question.Question</legend>
+                @foreach (var option in Question.Options)
+                {
+                    var label = option.Label;
+                    <label class="question-option" data-picked="@(_picked.Contains(label) ? "true" : null)">
+                        @if (Question.MultiSelect)
+                        {
+                            <input type="checkbox" name="@_name" checked="@_picked.Contains(label)" @onchange="e => Toggle(label, e.Value is true)" />
+                        }
+                        else
+                        {
+                            <input type="radio" name="@_name" checked="@_picked.Contains(label)" @onclick="() => Choose(label)" />
+                        }
+
+                        <span class="question-option-text">
+                            <span class="question-option-label">@label</span>
+                            @if (option.Description is { Length: > 0 } description)
+                            {
+                                <span class="question-option-hint">@description</span>
+                            }
+                        </span>
+                    </label>
+                }
+            </fieldset>
+            <textarea class="input question-input" rows="@(Question.Options.Count == 0 ? 3 : 2)" data-bh-submit="true" @bind="_text" @bind:event="oninput"
+                      placeholder="@(Question.Options.Count == 0 ? "Your answer" : "Add a note, or write your own answer")"
+                      aria-label="@(Question.Options.Count == 0 ? "Your answer" : "Note or your own answer")"></textarea>
+            <div class="question-actions">
+                <button type="submit" class="btn btn-primary" disabled="@(!CanSend)"><Icon Name="check" /> Send answer</button>
+                <button type="button" class="btn" @onclick="() => ReplyAsync(UserAnswer.LeaveToModel())">You decide</button>
+                <button type="button" class="btn" @onclick="() => ReplyAsync(UserAnswer.Skip())">Skip</button>
+                <span class="question-hint">Ctrl+Enter sends</span>
+            </div>
+            @if (_note is not null)
+            {
+                <div class="hint" role="alert">@_note</div>
+            }
+        </form>
+    }
+    else
+    {
+        <p class="question-text">@Question.Question</p>
+        @if (Answer is { } answer)
+        {
+            <p class="question-answer"><span class="question-answer-label">Your answer:</span> @answer.Display</p>
+        }
+        else if (Call.Status is ToolCallStatus.Cancelled or ToolCallStatus.Interrupted)
+        {
+            <p class="question-answer question-answer-none">Not answered. @Call.Output</p>
+        }
+    }
+</section>
+
+@code {
+    private readonly string _name = "question-" + Guid.NewGuid().ToString("N");
+    private readonly HashSet<string> _picked = new(StringComparer.Ordinal);
+    private string _text = string.Empty;
+    private string? _note;
+
+    /// <summary>
+    /// Gets or sets the <c>ask_user</c> call to show.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public ToolCallEntry Call { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets the function for the user answering, with the call id and the answer, which returns whether the answer was taken.
+    /// </summary>
+    [Parameter]
+    public Func<(string CallId, UserAnswer Answer), bool>? OnAnswer { get; set; }
+
+    private UserQuestion Question => Call.Question!;
+
+    private bool Waiting => Call.Status == ToolCallStatus.AwaitingAnswer;
+
+    private UserAnswer? Answer => Call.Status == ToolCallStatus.Succeeded ? UserAnswer.TryRead(Call.Output) : null;
+
+    private bool CanSend => _picked.Count > 0 || !string.IsNullOrWhiteSpace(_text);
+
+    // A radio fires no change event when it is clicked again, so a click on the picked option unpicks it.
+    private void Choose(string label)
+    {
+        var wasPicked = _picked.Contains(label);
+        _picked.Clear();
+        if (!wasPicked)
+        {
+            _picked.Add(label);
+        }
+    }
+
+    private void Toggle(string label, bool on)
+    {
+        if (on)
+        {
+            _picked.Add(label);
+        }
+        else
+        {
+            _picked.Remove(label);
+        }
+    }
+
+    private Task SendAsync()
+    {
+        if (!CanSend)
+        {
+            return Task.CompletedTask;
+        }
+
+        // The options keep the order the model gave them, whatever order the user ticked them in.
+        var picked = Question.Options.Select(o => o.Label).Where(_picked.Contains).ToList();
+        return ReplyAsync(picked.Count > 0 ? UserAnswer.Chose(picked, _text) : UserAnswer.Answered(_text));
+    }
+
+    private Task ReplyAsync(UserAnswer answer)
+    {
+        if (OnAnswer is null || OnAnswer((Call.CallId, answer)))
+        {
+            _note = null;
+        }
+        else
+        {
+            _note = "This question was already answered or stopped, so the answer was not sent.";
+        }
+
+        return Task.CompletedTask;
+    }
+}

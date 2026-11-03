@@ -113,6 +113,57 @@ public sealed class ChatRunnerCompactionTests
         client.Requests.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task RunAsync_OldToolOutputIsEnoughToFitTheLimit_TrimsItInsteadOfSummarizing()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        var history = ToolConversation(6);
+        var context = new ConversationContext(5_000, _summarizer);
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, context: context);
+
+        // Assert
+        events.OfType<ContextCompacted>().Should().BeEmpty();
+        var trimmed = events.OfType<ContextTrimmed>().Should().ContainSingle().Subject;
+        trimmed.TrimmedBefore.Should().Be(11);
+        trimmed.TokensAfter.Should().BeLessThan(trimmed.TokensBefore);
+        await _summarizer.DidNotReceiveWithAnyArgs().SummarizeAsync(null, [], TestContext.Current.CancellationToken);
+        var sent = client.Requests.Single();
+        sent.Should().HaveCount(13);
+        sent.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Count(r => (string?)r.Result == OutputStub.Text).Should().Be(5);
+        history.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().OnlyContain(r => (string?)r.Result != OutputStub.Text);
+    }
+
+    [Fact]
+    public async Task RunAsync_TrimmingAloneCannotReachTheTarget_SummarizesWithoutATrimMarker()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        var history = ToolConversation(6);
+        var context = new ConversationContext(5_000, _summarizer, overheadTokens: 2_900);
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, context: context);
+
+        // Assert
+        events.OfType<ContextTrimmed>().Should().BeEmpty();
+        events.OfType<ContextCompacted>().Should().ContainSingle();
+    }
+
+    private static List<ChatMessage> ToolConversation(int rounds)
+    {
+        List<ChatMessage> messages = [new ChatMessage(ChatRole.User, "go")];
+        for (var i = 0; i < rounds; i++)
+        {
+            messages.Add(new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("c" + i, "read_file", new Dictionary<string, object?>())]));
+            messages.Add(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("c" + i, new string('x', 4_000))]));
+        }
+
+        return messages;
+    }
+
     // Messages that alternate between user and assistant, ending with the user's, at about 100 tokens each.
     private static List<ChatMessage> Conversation(int count)
     {

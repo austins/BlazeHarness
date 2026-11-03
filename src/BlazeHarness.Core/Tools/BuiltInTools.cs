@@ -30,7 +30,7 @@ internal static class BuiltInTools
         string? scratchDirectory = null,
         ITool? chatSearch = null)
     {
-        List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool()];
+        List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool(), new TodoTool(), new AskUserTool()];
         if (chatSearch is not null)
         {
             tools.Add(chatSearch);
@@ -62,7 +62,7 @@ internal static class BuiltInTools
     {
         ArgumentNullException.ThrowIfNull(attachments);
         Directory.CreateDirectory(attachments.Directory);
-        List<ITool> tools = [new ReadAttachmentTool(attachments)];
+        List<ITool> tools = [new ReadAttachmentTool(attachments), new AskUserTool()];
         if (chatSearch is not null)
         {
             tools.Add(chatSearch);

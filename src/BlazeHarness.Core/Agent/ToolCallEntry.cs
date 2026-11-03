@@ -1,3 +1,6 @@
+using BlazeHarness.Core.Agent.Questions;
+using BlazeHarness.Core.Tools;
+
 namespace BlazeHarness.Core.Agent;
 
 /// <summary>
@@ -69,6 +72,11 @@ public sealed class ToolCallEntry
     public bool CanRemember { get; set; }
 
     /// <summary>
+    /// Gets the question of an <c>ask_user</c> call, read from its arguments, or null for any other call or when the arguments are not a valid question.
+    /// </summary>
+    public UserQuestion? Question => Name == UserQuestion.ToolName ? AskUserTool.TryParse(ArgumentsJson) : null;
+
+    /// <summary>
     /// Gets a value indicating whether the call has ended, one way or another.
     /// </summary>
     public bool IsFinished => Status is ToolCallStatus.Succeeded or ToolCallStatus.Failed or ToolCallStatus.Denied or ToolCallStatus.Cancelled or ToolCallStatus.Interrupted;
@@ -89,9 +97,15 @@ public sealed class ToolCallEntry
     /// Get the text the model is given as the result of a call that never finished.
     /// </summary>
     /// <param name="status">Either <see cref="ToolCallStatus.Cancelled"/> or <see cref="ToolCallStatus.Interrupted"/>.</param>
+    /// <param name="toolName">The name of the tool, because a question that was not answered is not one that "may or may not have run".</param>
     /// <returns>A sentence saying the call did not complete.</returns>
-    public static string Unfinished(ToolCallStatus status)
+    public static string Unfinished(ToolCallStatus status, string toolName)
     {
+        if (toolName == UserQuestion.ToolName)
+        {
+            return status == ToolCallStatus.Interrupted ? AnswerText.Interrupted : AnswerText.Stopped;
+        }
+
         return status == ToolCallStatus.Interrupted
             ? "The app stopped before this call finished, so it may or may not have run. Check the current state before doing it again."
             : "The user stopped the run before this call finished, so it may or may not have run. Check the current state before doing it again.";

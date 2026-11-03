@@ -1,3 +1,4 @@
+@using BlazeHarness.Core.Agent.Questions
 @using BlazeHarness.Core.Compaction
 @using BlazeHarness.Core.Config
 @using BlazeHarness.Core.Permissions
@@ -130,7 +131,7 @@ else
                         previousLabel = entry.Label;
                     }
 
-                    <MessageView @key="entry.Id" Entry="entry" ChatId="@_openId" ShowLabel="showLabel" CanEdit="!(_chat?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" />
+                    <MessageView @key="entry.Id" Entry="entry" ChatId="@_openId" ShowLabel="showLabel" CanEdit="!(_chat?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" OnAnswer="Answer" />
                 }
             </div>
         </div>
@@ -139,7 +140,8 @@ else
 
         @if (!_loading)
         {
-            <Composer ChatId="@ChatId" Entries="_entries" FolderPath="@ContextPath" Remembered="_info" Running="_chat?.IsRunning ?? false" CanRetry="_chat?.CanRetry ?? false" CanCompact="_chat?.CanCompact ?? false" ContextOf="_chat is null ? null : _chat.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop">
+            <TodoPanel @key="_openId" Todos="_chat?.Todos" />
+            <Composer @ref="_composer" ChatId="@ChatId" Entries="_entries" FolderPath="@ContextPath" Remembered="_info" Running="_chat?.IsRunning ?? false" CanQueue="_chat?.IsReplying ?? false" Asked="_chat?.IsWaitingForUser ?? false" Queued="_chat?.Queued ?? []" OnQueue="Queue" CanRetry="_chat?.CanRetry ?? false" CanCompact="_chat?.CanCompact ?? false" ContextOf="_chat is null ? null : _chat.GetContextStatus" Editing="_editing" OnCancelEdit="CancelEdit" OnSend="SendAsync" OnRetry="RetryAsync" OnCompact="CompactAsync" OnStop="Stop">
                 <PermissionPicker Settings="CurrentPermissions" HasFolder="ContextPath is not null" OnChange="ChangePermissionsAsync" />
             </Composer>
         }
@@ -157,6 +159,7 @@ else
     private RenderThrottle _throttle = null!;
     private IReadOnlyList<ChatEntry> _entries = [];
     private Chat? _chat;
+    private Composer? _composer;
     private ChatInfo? _info;
     private string? _openId;
     private bool _missing;
@@ -274,6 +277,8 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // A chat opened after its reply stopped has no Refresh coming, so the composer takes the queued text back here.
+        ReturnQueued();
         if (_focusFind && _findBar is not null)
         {
             _focusFind = false;
@@ -388,8 +393,20 @@ else
             _info = ChatService.Store.Find(_openId);
         }
 
+        ReturnQueued();
         StateHasChanged();
     }
+
+    // Messages still queued once the reply has stopped or failed were never added, so they go back in the message box.
+    private void ReturnQueued()
+    {
+        if (_composer is not null && _chat is { IsRunning: false, Queued.Count: > 0 } chat && chat.TakeQueued() is { Count: > 0 } returned)
+        {
+            _composer.Restore(string.Join("\n\n", returned));
+        }
+    }
+
+    private bool Queue(string text) => _chat?.Queue(text) ?? false;
 
     private void Announce()
     {
@@ -555,6 +572,11 @@ else
     private void Decide((string CallId, ApprovalChoice Choice) answer)
     {
         _chat?.Approve(answer.CallId, answer.Choice);
+    }
+
+    private bool Answer((string CallId, UserAnswer Answer) reply)
+    {
+        return _chat?.Answer(reply.CallId, reply.Answer) ?? false;
     }
 
     private void Stop()

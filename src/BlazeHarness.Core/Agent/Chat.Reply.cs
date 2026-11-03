@@ -13,7 +13,7 @@ namespace BlazeHarness.Core.Agent;
 
 public sealed partial class Chat
 {
-    private async Task ReplyAsync(ChatTarget target, IReadOnlyList<ChatEvent> leading, CancellationToken cancellation)
+    private async Task<bool> ReplyAsync(ChatTarget target, IReadOnlyList<ChatEvent> leading, CancellationToken cancellation)
     {
         var startedAt = _time.GetUtcNow();
         var entry = new ChatEntry(ChatRole.Assistant)
@@ -56,7 +56,7 @@ public sealed partial class Chat
             Interlocked.Exchange(ref _toolTokens, toolTokens);
             EnsureToolsFit(target, prompt, toolTokens);
             var context = CreateContext(client, target, prompt.Length > 0 ? 1 : 0, toolTokens);
-            await foreach (var e in ChatRunner.RunAsync(client, working, options, _time, tools, this, Permissions, context: context, cancellationToken: cancellation))
+            await foreach (var e in ChatRunner.RunAsync(client, working, options, _time, tools, this, Permissions, context: context, inbox: this, asker: this, cancellationToken: cancellation))
             {
                 await ApplyAsync(reply, e);
                 RaiseChanged();
@@ -76,6 +76,8 @@ public sealed partial class Chat
         {
             await CloseAsync(reply);
         }
+
+        return reply.Entry.Status == EntryStatus.Done;
     }
 
     private static void EnsureToolsFit(ChatTarget target, string prompt, long toolTokens)
@@ -144,8 +146,14 @@ public sealed partial class Chat
             case NewResponse:
                 await StartNextResponseAsync(reply);
                 break;
+            case MessagesInjected injected:
+                await AddInjectedMessageAsync(reply, injected);
+                break;
             case ContextCompacted compacted:
                 await ApplyCompactionAsync(compacted);
+                break;
+            case ContextTrimmed trimmed:
+                await ApplyTrimAsync(trimmed);
                 break;
             case ContextCompactionFailed:
                 LogCompactionFailed();
@@ -167,6 +175,9 @@ public sealed partial class Chat
                 }
 
                 SetStatus(entry, awaiting.CallId, ToolCallStatus.AwaitingApproval);
+                break;
+            case ToolAwaitingAnswer answering:
+                SetStatus(entry, answering.CallId, ToolCallStatus.AwaitingAnswer);
                 break;
             case ToolCallRunning running:
                 SetStatus(entry, running.CallId, ToolCallStatus.Running);
@@ -244,6 +255,26 @@ public sealed partial class Chat
         return SaveAsync([new AssistantStartEvent(startedAt, next.Id, next.Label)]);
     }
 
+    // The loop has already put the message at the end of the working history, so the entry points at that index.
+    private async Task AddInjectedMessageAsync(Reply reply, MessagesInjected injected)
+    {
+        if (reply.Entry.Status == EntryStatus.Streaming)
+        {
+            await EndResponseAsync(reply);
+        }
+
+        var sentAt = _time.GetUtcNow();
+        var user = new ChatEntry(ChatRole.User, injected.Text) { Status = EntryStatus.Done, At = sentAt, Origin = UserMessageOrigin.Steer };
+        lock (_gate)
+        {
+            user.HistoryIndex = _history.Count + reply.Working.Count - reply.Before - 1;
+            _entries.Add(user);
+            Publish();
+        }
+
+        await SaveAsync([new UserMessageEvent(sentAt, user.Id, injected.Text, null, UserMessageOrigin.Steer)]);
+    }
+
     private Task CloseAsync(Reply reply)
     {
         var entry = reply.Entry;
@@ -271,7 +302,7 @@ public sealed partial class Chat
         foreach (var call in entry.ToolCalls.Where(c => !c.IsFinished))
         {
             call.Status = ToolCallStatus.Cancelled;
-            call.Output = ToolCallEntry.Unfinished(ToolCallStatus.Cancelled);
+            call.Output = ToolCallEntry.Unfinished(ToolCallStatus.Cancelled, call.Name);
             closing.Add(new ToolResultEvent(endedAt, entry.Id, call.CallId, call.Status, call.Output));
         }
 

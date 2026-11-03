@@ -11,6 +11,9 @@ public enum ToolCallStatus
     /// <summary>The call is waiting for the user to allow or deny it.</summary>
     AwaitingApproval,
 
+    /// <summary>The call is an <c>ask_user</c> question that waits for the user's answer. It is never saved, so older apps can still read the log.</summary>
+    AwaitingAnswer,
+
     /// <summary>The call is running.</summary>
     Running,
 

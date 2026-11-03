@@ -1,13 +1,20 @@
 @using BlazeHarness.Core.Compaction
 
-<details class="compaction">
-    <summary>@($"Earlier messages were summarized to save space ({TokenFormat.Of(Info.TokensBefore)} → {TokenFormat.Of(Info.TokensAfter)} tokens)")</summary>
-    <div class="compaction-body">@Info.Summary</div>
-</details>
+@if (Info.OutputTrimmed)
+{
+    <div class="compaction compaction-trim">@($"Older tool output was trimmed to save context ({TokenFormat.Of(Info.TokensBefore)} → {TokenFormat.Of(Info.TokensAfter)} tokens)")</div>
+}
+else
+{
+    <details class="compaction">
+        <summary>@($"Earlier messages were summarized to save space ({TokenFormat.Of(Info.TokensBefore)} → {TokenFormat.Of(Info.TokensAfter)} tokens)")</summary>
+        <div class="compaction-body">@Info.Summary</div>
+    </details>
+}
 
 @code {
     /// <summary>
-    /// Gets or sets the summary that stands in for the messages above it.
+    /// Gets or sets what the marker stands for: the summary that stands in for the messages above it, or a trim of their large tool output.
     /// </summary>
     [Parameter, EditorRequired]
     public CompactionInfo Info { get; set; } = null!;

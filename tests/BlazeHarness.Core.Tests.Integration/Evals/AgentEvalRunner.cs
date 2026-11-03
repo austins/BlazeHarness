@@ -30,7 +30,7 @@ internal static class AgentEvalRunner
         var tools = BuiltInTools.Create(folder, time);
         List<ChatMessage> history = [new(ChatRole.User, "Do the task.")];
         List<AgentEvent> events = [];
-        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), time, tools, approver, permissions, context: null, cancellationToken))
+        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), time, tools, approver, permissions, context: null, cancellationToken: cancellationToken))
         {
             events.Add(e);
         }

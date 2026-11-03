@@ -13,6 +13,7 @@
 ## Architecture
 
 - `BlazeHarness.Core` has no UI dependency. The agent loop emits an `IAsyncEnumerable<AgentEvent>`; the UI only consumes it.
+- The agent loop, approvals and persistence stay in `BlazeHarness.Core` on `Microsoft.Extensions.AI`; don't replace them with Microsoft Agent Framework (see the README for why and when to revisit).
 - `BlazeHarness.Web` is Blazor Server with hand-written CSS and no npm. Singleton services own chats and runs, not components.
 - All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher). A file it can't serve (`McpConfigFile` keeps raw text) follows the same reload rules: an unreadable or invalid file keeps the last good value and retries.
 - API keys live in `ISecretStore` (OS keychain, owner-only file fallback), never in `config.json`, `providers.json`, chat files or logs.

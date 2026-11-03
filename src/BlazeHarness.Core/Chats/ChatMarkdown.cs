@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Agent.Questions;
 using BlazeHarness.Core.Attachments;
 using Microsoft.Extensions.AI;
 using System.Globalization;
@@ -24,7 +25,11 @@ internal static class ChatMarkdown
 
         foreach (var turn in ChatReplay.Replay(events))
         {
-            if (turn.Compaction is { } compaction)
+            if (turn.Compaction is { OutputTrimmed: true })
+            {
+                text.Append("---\n\n*Older tool output was trimmed at this point to save context.*\n\n---\n\n");
+            }
+            else if (turn.Compaction is { } compaction)
             {
                 text.Append("---\n\n*Earlier messages were summarized at this point.*\n\n");
                 Details(text, "Summary", compaction.Summary);
@@ -73,6 +78,12 @@ internal static class ChatMarkdown
 
         foreach (var call in turn.ToolCalls)
         {
+            if (call.Question is { } question)
+            {
+                WriteQuestion(text, call, question);
+                continue;
+            }
+
             text.Append("<details>\n<summary><code>").Append(WebUtility.HtmlEncode(call.Name)).Append("</code>");
             if (call.Summary.Length > 0)
             {
@@ -102,6 +113,33 @@ internal static class ChatMarkdown
                 break;
             default:
                 break;
+        }
+    }
+
+    // The question and the answer are the user's side of the conversation, so they are quoted in the open rather than collapsed.
+    private static void WriteQuestion(StringBuilder text, ToolCallEntry call, UserQuestion question)
+    {
+        Quote(text, "**The assistant asked:** " + question.Question);
+        if (question.Options.Count > 0)
+        {
+            text.Append(">\n");
+            foreach (var option in question.Options)
+            {
+                Quote(text, "- " + OneLine(option.Label) + (option.Description is null ? string.Empty : ": " + OneLine(option.Description)));
+            }
+        }
+
+        text.Append(">\n");
+        var answer = call.Status == ToolCallStatus.Succeeded && UserAnswer.TryRead(call.Output) is { } read ? read.Display : null;
+        Quote(text, answer is not null ? "**Your answer:** " + answer : "*No answer: " + OneLine(call.Output.Length > 0 ? call.Output : "the question was not answered.") + "*");
+        text.Append('\n');
+    }
+
+    private static void Quote(StringBuilder text, string block)
+    {
+        foreach (var line in block.ReplaceLineEndings("\n").Split('\n'))
+        {
+            text.Append("> ").Append(line).Append('\n');
         }
     }
 

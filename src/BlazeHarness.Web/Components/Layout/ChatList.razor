@@ -21,7 +21,11 @@
             {
                 <NavLink class="chat-link" href="@Routes.Chat(chat.Id)">
                     <span class="chat-title">@DisplayTitle(chat)</span>
-                    @if (ChatService.IsRunning(chat.Id))
+                    @if (ChatService.NeedsUser(chat.Id))
+                    {
+                        <span class="badge badge-accent chat-needs" role="status" title="Waiting for your answer or approval">Needs you</span>
+                    }
+                    else if (ChatService.IsRunning(chat.Id))
                     {
                         <span class="chat-busy" role="status" title="Replying" aria-label="Replying"><Icon Name="spinner" Spin="true" /></span>
                     }

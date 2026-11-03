@@ -20,4 +20,5 @@ namespace BlazeHarness.Core.Chats;
 [JsonDerivedType(typeof(RewindEvent), "rewind")]
 [JsonDerivedType(typeof(PermissionsChangedEvent), "permissionsChanged")]
 [JsonDerivedType(typeof(CompactionEvent), "compaction")]
+[JsonDerivedType(typeof(ContextTrimEvent), "contextTrim")]
 public abstract record ChatEvent(DateTimeOffset At);

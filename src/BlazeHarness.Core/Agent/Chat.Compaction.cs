@@ -8,8 +8,9 @@ namespace BlazeHarness.Core.Agent;
 
 public sealed partial class Chat
 {
-    // The summary that replaces older messages and the history index where the messages that are sent as they were begin. Guarded by _gate.
-    private (string Summary, int KeptFrom)? _compaction;
+    // The summary that replaces older messages (null when only tool output was trimmed), the history index where the messages that are sent as they were begin,
+    // and the history index before which large tool output is a stub. Null when the conversation has no marker. Guarded by _gate.
+    private (string? Summary, int KeptFrom, int StubbedBefore)? _compaction;
 
     // The newest entry when the conversation was last compacted. Its prompt size, and that of the ones before it, was reported for a request that was not compacted.
     private ChatEntry? _compactedAfter;
@@ -37,7 +38,7 @@ public sealed partial class Chat
     /// </summary>
     /// <remarks>
     /// The size is the prompt size the server reported for the last reply plus an estimate for what came after.
-    /// Without a reported size, or right after a compaction, it is an estimate of the whole request.
+    /// Without a reported size, or right after a compaction or a trim of old tool output, it is an estimate of the whole request.
     /// </remarks>
     /// <param name="target">The model the next message would go to.</param>
     /// <returns>The size of the next request, the limits, and the cache hit rate when the server reports one.</returns>
@@ -49,17 +50,18 @@ public sealed partial class Chat
         {
             var lastUsage = _entries.FindLastIndex(e => e.Usage is { PromptTokens: > 0 });
             var stale = UsageIsStale(lastUsage);
-            long tokens;
+
+            // The same context a reply builds, so the figure follows what the request really holds, including the stubs.
+            var prompt = SystemPromptText();
+            var leading = prompt.Length > 0 ? 1 : 0;
+            List<ChatMessage> messages = leading > 0 ? [new ChatMessage(ChatRole.System, prompt), .. _history] : [.. _history];
+            var context = NewContext(ContextBudget.Limit(target.Model), new ExtractiveSummarizer(), leading, _compaction, ToolTokens());
             if (lastUsage >= 0 && !stale)
             {
-                var last = _entries[lastUsage];
-                tokens = last.Usage!.PromptTokens + TokenEstimate.OfRequest(_history, last.HistoryIndex);
+                context.RecordUsage(_entries[lastUsage].Usage!.PromptTokens, leading + _entries[lastUsage].HistoryIndex);
             }
-            else
-            {
-                tokens = TokenEstimate.Of(SystemPromptText()) + ToolTokens() + TokenEstimate.OfRequest(_history, _compaction?.KeptFrom ?? 0);
-                tokens += _compaction is { } compaction ? TokenEstimate.Of(ConversationContext.SummaryMessage(compaction.Summary)) : 0;
-            }
+
+            var tokens = context.Size(messages).Tokens;
 
             double? cache = lastUsage >= 0 && _entries.Exists(e => e.Usage is { CachedTokens: > 0 })
                 ? (double)_entries[lastUsage].Usage!.CachedTokens / _entries[lastUsage].Usage!.PromptTokens
@@ -84,7 +86,7 @@ public sealed partial class Chat
 
         using var run = new CancellationTokenSource();
         List<ChatMessage> working;
-        (string Summary, int KeptFrom)? state;
+        (string? Summary, int KeptFrom, int StubbedBefore)? state;
         lock (_gate)
         {
             if (_stop is not null || _closed || _history.Count < 2)
@@ -112,7 +114,7 @@ public sealed partial class Chat
                 summarizer = ModelSummarizer.For(client, target, _time);
             }
 
-            var context = new ConversationContext(ContextBudget.Limit(target.Model), summarizer, 0, state?.Summary, state?.KeptFrom ?? 0, TokenEstimate.Of(SystemPromptText()) + ToolTokens());
+            var context = NewContext(ContextBudget.Limit(target.Model), summarizer, 0, state, TokenEstimate.Of(SystemPromptText()) + ToolTokens());
             if (await context.CompactAsync(working, manual: true, run.Token) is not { } result)
             {
                 return false;
@@ -147,7 +149,7 @@ public sealed partial class Chat
 
     private ConversationContext CreateContext(IChatClient client, ChatTarget target, int leadingMessages, long toolTokens)
     {
-        (string Summary, int KeptFrom)? state;
+        (string? Summary, int KeptFrom, int StubbedBefore)? state;
         (long PromptTokens, int HistoryIndex)? usage = null;
         lock (_gate)
         {
@@ -159,7 +161,7 @@ public sealed partial class Chat
             }
         }
 
-        var context = new ConversationContext(ContextBudget.Limit(target.Model), UsesExtractiveCompaction ? new ExtractiveSummarizer() : ModelSummarizer.For(client, target, _time), leadingMessages, state?.Summary, state?.KeptFrom ?? 0, toolTokens);
+        var context = NewContext(ContextBudget.Limit(target.Model), UsesExtractiveCompaction ? new ExtractiveSummarizer() : ModelSummarizer.For(client, target, _time), leadingMessages, state, toolTokens);
 
         // The size the server reported for the last request is more exact than an estimate, even at the start of a reply.
         if (usage is { } reported)
@@ -170,7 +172,12 @@ public sealed partial class Chat
         return context;
     }
 
-    // Must be called with the gate held. A reported size from before a compaction describes a request that no longer exists.
+    private static ConversationContext NewContext(int limit, ISummarizer summarizer, int leadingMessages, (string? Summary, int KeptFrom, int StubbedBefore)? state, long overheadTokens)
+    {
+        return new ConversationContext(limit, summarizer, leadingMessages, state?.Summary, state?.KeptFrom ?? 0, overheadTokens, state?.StubbedBefore ?? 0);
+    }
+
+    // Must be called with the gate held. A reported size from before a compaction or a trim describes a request that no longer exists.
     private bool UsageIsStale(int lastUsage)
     {
         return lastUsage >= 0 && (lastUsage < _entries.FindLastIndex(e => e.Compaction is not null) || (_compactedAfter is not null && lastUsage <= _entries.IndexOf(_compactedAfter)));
@@ -180,12 +187,42 @@ public sealed partial class Chat
     private void RefreshCompaction()
     {
         _compaction = null;
-        var marker = _entries.FindLastIndex(e => e.Compaction is not null);
-        if (marker >= 0)
+        var summary = _entries.FindLastIndex(e => e.Compaction is { OutputTrimmed: false });
+        var trim = _entries.FindLastIndex(e => e.Compaction is { OutputTrimmed: true });
+        if (summary >= 0 || trim >= 0)
         {
-            var next = _entries.Skip(marker + 1).FirstOrDefault(e => e.Compaction is null);
-            _compaction = (_entries[marker].Compaction!.Summary, next?.HistoryIndex ?? _history.Count);
+            _compaction = (summary >= 0 ? _entries[summary].Compaction!.Summary : null, summary >= 0 ? NextHistoryIndex(summary) : 0, trim >= 0 ? NextHistoryIndex(trim) : 0);
         }
+    }
+
+    // Must be called with the gate held. The history index of the first message after a marker.
+    private int NextHistoryIndex(int marker)
+    {
+        return _entries.Skip(marker + 1).FirstOrDefault(e => e.Compaction is null)?.HistoryIndex ?? _history.Count;
+    }
+
+    private async Task<bool> ApplyTrimAsync(ContextTrimmed trimmed)
+    {
+        var at = _time.GetUtcNow();
+        ContextTrimEvent saved;
+        lock (_gate)
+        {
+            var next = _entries.Find(e => e.Compaction is null && e.HistoryIndex == trimmed.TrimmedBefore);
+            if (next is null)
+            {
+                return false;
+            }
+
+            var marker = ChatReplay.NewMarker(Guid.NewGuid(), at, new CompactionInfo(string.Empty, trimmed.TokensBefore, trimmed.TokensAfter, OutputTrimmed: true));
+            _entries.Insert(_entries.IndexOf(next), marker);
+            _compactedAfter = _entries[^1];
+            RefreshCompaction();
+            Publish();
+            saved = new ContextTrimEvent(at, marker.Id, next.Id, trimmed.TokensBefore, trimmed.TokensAfter);
+        }
+
+        await SaveAsync([saved]);
+        return true;
     }
 
     private async Task<bool> ApplyCompactionAsync(ContextCompacted compacted)

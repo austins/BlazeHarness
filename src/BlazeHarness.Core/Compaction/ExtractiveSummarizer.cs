@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Agent.Questions;
 using Microsoft.Extensions.AI;
 using System.Text;
 using System.Text.Json;
@@ -12,7 +13,7 @@ namespace BlazeHarness.Core.Compaction;
 /// <para>
 /// The summary has short sections of one-line entries: the first requests, the files touched, the latest commands, the user's newest messages
 /// and the latest steps. Each section is capped, and a new summary merges the previous one into it, so repeated compactions stay about the same size.
-/// Tool output is never copied; only the names, paths and commands of the calls are, with a note when one failed.
+/// Tool output is never copied, except the user's answer to an <c>ask_user</c> question; only the names, paths and commands of the calls are, with a note when one failed.
 /// </para>
 /// <para>
 /// The same messages always give the same summary, and the text is copied as written, so it works in any language.
@@ -85,11 +86,10 @@ internal sealed class ExtractiveSummarizer : ISummarizer
 
     private static void Fold(Dictionary<string, List<string>> sections, IReadOnlyList<ChatMessage> messages, bool firstSummary)
     {
-        var failed = messages
+        var results = messages
             .SelectMany(m => m.Contents.OfType<FunctionResultContent>())
-            .Where(r => r.Result?.ToString()?.StartsWith(ToolCallEntry.ErrorPrefix, StringComparison.Ordinal) == true)
-            .Select(r => r.CallId)
-            .ToHashSet(StringComparer.Ordinal);
+            .GroupBy(r => r.CallId, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.Last().Result?.ToString() ?? string.Empty, StringComparer.Ordinal);
 
         foreach (var message in messages)
         {
@@ -109,7 +109,8 @@ internal sealed class ExtractiveSummarizer : ISummarizer
                         sections[Steps].Add("- assistant: " + Flatten(text, StepCharacters));
                         break;
                     case FunctionCallContent call:
-                        FoldCall(sections, call, failed.Contains(call.CallId));
+                        var result = results.GetValueOrDefault(call.CallId);
+                        FoldCall(sections, call, result?.StartsWith(ToolCallEntry.ErrorPrefix, StringComparison.Ordinal) == true, result);
                         break;
                     default:
                         break;
@@ -123,8 +124,14 @@ internal sealed class ExtractiveSummarizer : ISummarizer
         CapFiles(sections[Files]);
     }
 
-    private static void FoldCall(Dictionary<string, List<string>> sections, FunctionCallContent call, bool failed)
+    private static void FoldCall(Dictionary<string, List<string>> sections, FunctionCallContent call, bool failed, string? result)
     {
+        // An answer is the user's own words, so it is kept with their messages. Other tool output is never copied.
+        if (call.Name == UserQuestion.ToolName && Argument(call, "question") is { } question && result is not null && UserAnswer.TryRead(result) is { } answer)
+        {
+            sections[UserMessages].Add($"- answered \"{Flatten(question, MessageCharacters)}\": {Flatten(answer.Display, MessageCharacters)}");
+        }
+
         var path = Argument(call, "path");
         var command = Argument(call, "command");
         var note = failed ? " (failed)" : string.Empty;

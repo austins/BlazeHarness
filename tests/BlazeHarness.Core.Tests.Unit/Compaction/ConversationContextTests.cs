@@ -112,6 +112,31 @@ public sealed class ConversationContextTests
     }
 
     [Fact]
+    public async Task CompactAsync_ConversationWithATodoList_AddsItToTheSummaryAndNotToWhatTheSummarizerSees()
+    {
+        // Arrange
+        var sut = new ConversationContext(1_000, _summarizer);
+        var messages = Conversation(10);
+        messages.Insert(1, new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("t1", "update_todos", new Dictionary<string, object?>
+        {
+            ["items"] = new[] { new Dictionary<string, object?> { ["text"] = "write tests", ["status"] = "in_progress" } },
+        })]));
+        messages.Insert(2, new ChatMessage(ChatRole.Tool, [new FunctionResultContent("t1", "Todo list updated: 0 of 1 done.")]));
+
+        // Act
+        var first = await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+        messages.AddRange(Conversation(10));
+        var second = await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        first.Should().NotBeNull();
+        second.Should().NotBeNull();
+        first.Summary.Should().StartWith("the summary").And.Contain("- in progress: write tests");
+        second.Summary.Split("[Todo list").Should().HaveCount(2);
+        await _summarizer.Received(1).SummarizeAsync("the summary", Arg.Any<IReadOnlyList<ChatMessage>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task CompactAsync_WithToolCalls_NeverCutsBetweenACallAndItsResult()
     {
         // Arrange
@@ -484,6 +509,299 @@ public sealed class ConversationContextTests
 
         // Assert
         result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void View_WithAStubBoundary_ReplacesLargeResultsBeforeItAndKeepsTheCallIds()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 4, 1_000);
+        var sut = new ConversationContext(10_000, _summarizer, stubbedBefore: 5);
+
+        // Act
+        var view = sut.View(messages);
+
+        // Assert
+        view.Should().HaveCount(messages.Count);
+        view.Select(m => m.Role).Should().Equal(messages.Select(m => m.Role));
+        view.SelectMany(m => m.Contents.OfType<FunctionCallContent>()).Select(c => c.CallId).Should().Equal("c0", "c1", "c2", "c3");
+        view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Select(r => (r.CallId, r.Result)).Should().Equal(
+            ("c0", OutputStub.Text),
+            ("c1", OutputStub.Text),
+            ("c2", Text(1_000)),
+            ("c3", Text(1_000)));
+    }
+
+    [Fact]
+    public void View_WithAStubBoundary_NeverChangesTheMessagesOfTheList()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 3, 1_000);
+        var before = messages.ToList();
+        var sut = new ConversationContext(10_000, _summarizer, stubbedBefore: 7);
+
+        // Act
+        var view = sut.View(messages);
+
+        // Assert
+        messages.Should().Equal(before);
+        messages.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().OnlyContain(r => (string?)r.Result == Text(1_000));
+        view[2].Should().NotBeSameAs(messages[2]);
+        view[1].Should().BeSameAs(messages[1]);
+    }
+
+    [Fact]
+    public void View_CalledTwice_GivesTheSameRequest()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 4, 1_000);
+        var sut = new ConversationContext(10_000, _summarizer, stubbedBefore: 5);
+
+        // Act
+        var first = sut.View(messages);
+        var second = sut.View(messages);
+
+        // Assert
+        TextOf(second).Should().Equal(TextOf(first));
+    }
+
+    [Fact]
+    public void View_ResultsOfTheTodoSkillAndQuestionTools_AreNeverStubbed()
+    {
+        // Arrange
+        List<ChatMessage> messages = [new ChatMessage(ChatRole.User, "go")];
+        foreach (var name in new[] { "update_todos", "load_skill", "ask_user", "shell" })
+        {
+            messages.AddRange(ToolRound("id-" + name, name, Text(1_000)));
+        }
+
+        var sut = new ConversationContext(10_000, _summarizer, stubbedBefore: messages.Count);
+
+        // Act
+        var view = sut.View(messages);
+
+        // Assert
+        view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Select(r => (r.CallId, Stubbed: (string?)r.Result == OutputStub.Text)).Should().Equal(
+            ("id-update_todos", false),
+            ("id-load_skill", false),
+            ("id-ask_user", false),
+            ("id-shell", true));
+    }
+
+    [Fact]
+    public void View_SmallResultsAndFailedOnes_KeepWhatTheModelNeeds()
+    {
+        // Arrange
+        List<ChatMessage> messages = [new ChatMessage(ChatRole.User, "go")];
+        messages.AddRange(ToolRound("small", "shell", "ok"));
+        messages.AddRange(ToolRound("failed", "shell", "Error: exit code 1\n" + Text(1_000)));
+        var sut = new ConversationContext(10_000, _summarizer, stubbedBefore: messages.Count);
+
+        // Act
+        var view = sut.View(messages);
+
+        // Assert
+        var results = view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).ToDictionary(r => r.CallId, r => (string?)r.Result);
+        results["small"].Should().Be("ok");
+        results["failed"].Should().Be("Error: exit code 1\n" + OutputStub.Text);
+        view[1].Should().BeSameAs(messages[1]);
+    }
+
+    [Fact]
+    public void View_AfterASummary_StubsOnlyTheMessagesBetweenTheKeptStartAndTheBoundary()
+    {
+        // Arrange
+        List<ChatMessage> messages = [new ChatMessage(ChatRole.System, "system"), new ChatMessage(ChatRole.User, "go")];
+        for (var i = 0; i < 6; i++)
+        {
+            messages.AddRange(ToolRound("c" + i, "read_file", Text(1_000)));
+        }
+
+        var sut = new ConversationContext(10_000, _summarizer, 1, "the notes", keptFrom: 5, stubbedBefore: 9);
+
+        // Act
+        var view = sut.View(messages);
+
+        // Assert
+        view[0].Should().BeSameAs(messages[0]);
+        view[1].Text.Should().Contain("the notes");
+        view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Select(r => (r.CallId, Stubbed: (string?)r.Result == OutputStub.Text)).Should().Equal(
+            ("c2", true),
+            ("c3", true),
+            ("c4", false),
+            ("c5", false));
+    }
+
+    [Fact]
+    public void TrimOutput_OldResultsAreEnoughToReachTheTarget_StubsThemAndNeverAsksTheSummarizer()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 6, 1_000);
+        var sut = new ConversationContext(5_000, _summarizer);
+
+        // Act
+        var trimmed = sut.TrimOutput(messages);
+
+        // Assert
+        trimmed.Should().NotBeNull();
+        trimmed.TrimmedBefore.Should().Be(11);
+        trimmed.TokensAfter.Should().BeLessThan(trimmed.TokensBefore / 2);
+        sut.View(messages).SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Count(r => (string?)r.Result == OutputStub.Text).Should().Be(5);
+        sut.Summary.Should().BeNull();
+        sut.ShouldCompact(messages).Should().BeFalse();
+        _summarizer.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void TrimOutput_StubbingIsNotEnough_ChangesNothing()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 6, 1_000);
+        var sut = new ConversationContext(5_000, _summarizer, overheadTokens: 2_900);
+        var before = TextOf(sut.View(messages));
+
+        // Act
+        var trimmed = sut.TrimOutput(messages);
+
+        // Assert
+        trimmed.Should().BeNull();
+        TextOf(sut.View(messages)).Should().Equal(before);
+    }
+
+    [Fact]
+    public void TrimOutput_NoResultIsLargeEnough_ReturnsNull()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 40, 100);
+        var sut = new ConversationContext(2_000, _summarizer);
+
+        // Act
+        var trimmed = sut.TrimOutput(messages);
+
+        // Assert
+        trimmed.Should().BeNull();
+    }
+
+    [Fact]
+    public void TrimOutput_WithNoLimit_ReturnsNull()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 6, 1_000);
+        var sut = new ConversationContext(0, _summarizer);
+
+        // Act
+        var trimmed = sut.TrimOutput(messages);
+
+        // Assert
+        trimmed.Should().BeNull();
+    }
+
+    [Fact]
+    public void TrimOutput_CalledAgainAfterTheConversationGrew_MovesTheBoundaryForwardOnly()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 6, 1_000);
+        var sut = new ConversationContext(5_000, _summarizer);
+        var first = sut.TrimOutput(messages)!;
+        var viewAfterFirst = TextOf(sut.View(messages));
+        var again = sut.TrimOutput(messages);
+
+        // Act
+        messages.AddRange(Enumerable.Range(10, 6).SelectMany(i => ToolRound("c" + i, "read_file", Text(1_000))));
+        var second = sut.TrimOutput(messages);
+
+        // Assert
+        again.Should().BeNull();
+        TextOf(sut.View(messages)).Take(first.TrimmedBefore).Should().Equal(viewAfterFirst.Take(first.TrimmedBefore));
+        second.Should().NotBeNull();
+        second.TrimmedBefore.Should().BeGreaterThan(first.TrimmedBefore);
+    }
+
+    [Fact]
+    public async Task CompactAsync_AfterATrimThenGrowth_SummarizesTheFullResultsAndCoversTheStubs()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 6, 1_000);
+        var sut = new ConversationContext(5_000, _summarizer);
+        var trimmed = sut.TrimOutput(messages)!;
+        messages.AddRange(Enumerable.Range(10, 6).SelectMany(i => ToolRound("c" + i, "read_file", Text(1_000))));
+        IReadOnlyList<ChatMessage>? seen = null;
+        _summarizer.SummarizeAsync(Arg.Any<string?>(), Arg.Do<IReadOnlyList<ChatMessage>>(m => seen = m), Arg.Any<CancellationToken>()).Returns("later summary");
+
+        // Act
+        var result = await sut.CompactAsync(messages, manual: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.FirstKept.Should().BeGreaterThan(trimmed.TrimmedBefore);
+        seen.Should().NotBeNull();
+        seen.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().OnlyContain(r => (string?)r.Result == Text(1_000));
+        var view = sut.View(messages);
+        view[0].Text.Should().Contain("later summary");
+        view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().OnlyContain(r => (string?)r.Result == Text(1_000));
+    }
+
+    [Fact]
+    public async Task CompactAsync_Manual_KeepsTheStubsThatAlreadyAppliedToTheKeptMessages()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 6, 1_000);
+        messages.Add(new ChatMessage(ChatRole.User, "next"));
+        var sut = new ConversationContext(5_000, _summarizer, stubbedBefore: 11);
+
+        // Act
+        var result = await sut.CompactAsync(messages, manual: true, TestContext.Current.CancellationToken);
+
+        // Assert
+        result!.FirstKept.Should().Be(13);
+        await _summarizer.Received(1).SummarizeAsync(null, Arg.Is<IReadOnlyList<ChatMessage>>(m => m.SelectMany(x => x.Contents.OfType<FunctionResultContent>()).All(r => (string?)r.Result == Text(1_000))), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void Size_WithAStubBoundary_CountsTheStubsNotTheOutput()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddToolRounds(messages, 4, 1_000);
+        var full = new ConversationContext(10_000, _summarizer).Size(messages).Tokens;
+        var sut = new ConversationContext(10_000, _summarizer, stubbedBefore: 7);
+
+        // Act
+        var size = sut.Size(messages);
+
+        // Assert
+        size.Approximate.Should().BeTrue();
+        size.Tokens.Should().BeLessThan(full - 2_000);
+    }
+
+    private static List<string> TextOf(IList<ChatMessage> messages)
+    {
+        return [.. messages.Select(m => string.Concat(m.Contents.Select(c => c switch
+        {
+            TextContent text => text.Text,
+            FunctionResultContent result => result.CallId + ":" + result.Result,
+            FunctionCallContent call => call.CallId + "=" + call.Name,
+            _ => string.Empty,
+        })))];
+    }
+
+    private static ChatMessage[] ToolRound(string callId, string tool, string result)
+    {
+        return
+        [
+            new ChatMessage(ChatRole.Assistant, [new FunctionCallContent(callId, tool, new Dictionary<string, object?>())]),
+            new ChatMessage(ChatRole.Tool, [new FunctionResultContent(callId, result)]),
+        ];
     }
 
     // Messages that alternate between user and assistant and are about 100 tokens each.

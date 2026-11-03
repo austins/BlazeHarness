@@ -1,0 +1,34 @@
+@using BlazeHarness.Core.Agent
+
+<ol class="todo-list" aria-label="To-do list">
+    @foreach (var item in Items)
+    {
+        <li class="todo-item" data-status="@StatusKey(item.Status)">
+            <span class="todo-mark" aria-hidden="true">@if (item.Status == TodoStatus.Completed) { <Icon Name="check" /> }</span>
+            <span class="visually-hidden">@StatusText(item.Status): </span>
+            <span class="todo-text">@item.Text</span>
+        </li>
+    }
+</ol>
+
+@code {
+    /// <summary>
+    /// Gets or sets the items to show, in order.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<TodoItem> Items { get; set; } = [];
+
+    private static string StatusKey(TodoStatus status) => status switch
+    {
+        TodoStatus.Completed => "completed",
+        TodoStatus.InProgress => "in-progress",
+        _ => "pending",
+    };
+
+    private static string StatusText(TodoStatus status) => status switch
+    {
+        TodoStatus.Completed => "Done",
+        TodoStatus.InProgress => "In progress",
+        _ => "Not started",
+    };
+}

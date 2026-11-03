@@ -56,6 +56,46 @@ public sealed class PermissionEngineTests : IDisposable
         decision.Verdict.Should().Be(PermissionVerdict.Allow);
     }
 
+    [Theory]
+    [InlineData(AccessLevel.ReadOnly, ApprovalMode.AskFirst)]
+    [InlineData(AccessLevel.ReadOnly, ApprovalMode.AutoApprove)]
+    [InlineData(AccessLevel.ReadOnly, ApprovalMode.NeverAsk)]
+    [InlineData(AccessLevel.WriteInFolder, ApprovalMode.AskFirst)]
+    [InlineData(AccessLevel.WriteInFolder, ApprovalMode.AutoApprove)]
+    [InlineData(AccessLevel.WriteInFolder, ApprovalMode.NeverAsk)]
+    [InlineData(AccessLevel.Unrestricted, ApprovalMode.AskFirst)]
+    [InlineData(AccessLevel.Unrestricted, ApprovalMode.AutoApprove)]
+    [InlineData(AccessLevel.Unrestricted, ApprovalMode.NeverAsk)]
+    public void Evaluate_UpdateTodos_AllowsAtEveryLevel(AccessLevel access, ApprovalMode approvals)
+    {
+        // Arrange
+        _sut.Settings = new PermissionSettings(access, approvals);
+
+        // Act
+        var decision = Evaluate(new TodoTool(), new { items = new[] { new { text = "a", status = "pending" } } });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Allow);
+    }
+
+    [Fact]
+    public void Evaluate_UpdateTodosWithRules_IgnoresRulesThatMatchOtherTargets()
+    {
+        // Arrange
+        _sut.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst);
+        _sut.Rules = () =>
+        [
+            new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Deny, "**"),
+            new PermissionRule(RuleTarget.ShellCommand, PermissionVerdict.Deny, "*"),
+        ];
+
+        // Act
+        var decision = Evaluate(new TodoTool(), new { items = new[] { new { text = ".env", status = "pending" } } });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Allow);
+    }
+
     [Fact]
     public void Evaluate_ReadFileOutsideTheFolder_AsksAndKeysByThatFile()
     {
@@ -667,6 +707,33 @@ public sealed class PermissionEngineTests : IDisposable
 
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Deny);
+    }
+
+    [Theory]
+    [InlineData(AccessLevel.ReadOnly, ApprovalMode.AskFirst)]
+    [InlineData(AccessLevel.ReadOnly, ApprovalMode.AutoApprove)]
+    [InlineData(AccessLevel.ReadOnly, ApprovalMode.NeverAsk)]
+    [InlineData(AccessLevel.WriteInFolder, ApprovalMode.AskFirst)]
+    [InlineData(AccessLevel.WriteInFolder, ApprovalMode.AutoApprove)]
+    [InlineData(AccessLevel.WriteInFolder, ApprovalMode.NeverAsk)]
+    [InlineData(AccessLevel.Unrestricted, ApprovalMode.AskFirst)]
+    [InlineData(AccessLevel.Unrestricted, ApprovalMode.AutoApprove)]
+    [InlineData(AccessLevel.Unrestricted, ApprovalMode.NeverAsk)]
+    public void Evaluate_AskUser_AllowsAtEveryLevel(AccessLevel access, ApprovalMode approvals)
+    {
+        // Arrange
+        _sut.Settings = new PermissionSettings(access, approvals);
+        _sut.Rules = () =>
+        [
+            new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Deny, "**"),
+            new PermissionRule(RuleTarget.ShellCommand, PermissionVerdict.Deny, "*"),
+        ];
+
+        // Act
+        var decision = Evaluate(new AskUserTool(), new { question = "Which?", options = "A,B" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Allow);
     }
 
     private static ShellTool NewShell() => new(

@@ -85,6 +85,24 @@ public sealed class ChatExportTests
         content.IndexOf("A missing file.", StringComparison.Ordinal).Should().BeLessThan(content.IndexOf("We fixed the build.", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void Export_Markdown_AfterATrim_NotesWhereOlderToolOutputWasTrimmed()
+    {
+        // Arrange
+        var events = SampleChat.Events();
+        events.Add(new UserMessageEvent(SampleChat.Time, SampleChat.SecondUser, "Next question"));
+        events.Add(new ContextTrimEvent(SampleChat.Time, Guid.NewGuid(), SampleChat.SecondUser, 900, 100));
+
+        // Act
+        var content = ChatExport.Export(SampleChat.Info(), events, ExportFormat.Markdown, SampleChat.Time).Content;
+
+        // Assert
+        content.Should().Contain("*Older tool output was trimmed at this point to save context.*");
+        content.Should().NotContain("<summary>Summary</summary>");
+        content.IndexOf("A missing file.", StringComparison.Ordinal).Should().BeLessThan(content.IndexOf("trimmed at this point", StringComparison.Ordinal));
+        content.IndexOf("trimmed at this point", StringComparison.Ordinal).Should().BeLessThan(content.IndexOf("Next question", StringComparison.Ordinal));
+    }
+
     [Theory]
     [InlineData(EntryStatus.Failed, "> The reply failed: boom")]
     [InlineData(EntryStatus.Cancelled, "> The reply was stopped.")]
@@ -168,5 +186,42 @@ public sealed class ChatExportTests
         root.GetProperty("events").GetArrayLength().Should().Be(8);
         file.Content.Should().NotContain("secret-project");
         file.Content.Should().NotContain("Unrestricted");
+    }
+
+    [Fact]
+    public void Export_Markdown_AskUserCall_QuotesTheQuestionAndTheAnswerInTheOpen()
+    {
+        // Arrange
+        var events = SampleChat.Events();
+        var reply = Guid.NewGuid();
+        events.Add(new AssistantStartEvent(SampleChat.Time, reply, null));
+        events.Add(new ToolCallEvent(SampleChat.Time, reply, "q1", "ask_user", """{"question":"Which database?","options":[{"label":"Postgres","description":"relational"},{"label":"SQLite"}]}""", "Which database?"));
+        events.Add(new ToolResultEvent(SampleChat.Time, reply, "q1", ToolCallStatus.Succeeded, "The user chose: \"Postgres\". They added: for joins", null));
+        events.Add(new AssistantEndEvent(SampleChat.Time, reply, EntryStatus.Done, null, null));
+
+        // Act
+        var content = ChatExport.Export(SampleChat.Info(), events, ExportFormat.Markdown, SampleChat.Time).Content;
+
+        // Assert
+        content.Should().Contain("> **The assistant asked:** Which database?\n>\n> - Postgres: relational\n> - SQLite\n>\n> **Your answer:** Postgres — for joins\n");
+        content.Should().NotContain("<code>ask_user</code>");
+    }
+
+    [Fact]
+    public void Export_Markdown_UnansweredAskUserCall_SaysWhyThereIsNoAnswer()
+    {
+        // Arrange
+        var events = SampleChat.Events();
+        var reply = Guid.NewGuid();
+        events.Add(new AssistantStartEvent(SampleChat.Time, reply, null));
+        events.Add(new ToolCallEvent(SampleChat.Time, reply, "q1", "ask_user", """{"question":"Why?"}""", "Why?"));
+        events.Add(new ToolResultEvent(SampleChat.Time, reply, "q1", ToolCallStatus.Cancelled, "The run was stopped before the user answered.", null));
+        events.Add(new AssistantEndEvent(SampleChat.Time, reply, EntryStatus.Cancelled, null, null));
+
+        // Act
+        var content = ChatExport.Export(SampleChat.Info(), events, ExportFormat.Markdown, SampleChat.Time).Content;
+
+        // Assert
+        content.Should().Contain("> **The assistant asked:** Why?\n>\n> *No answer: The run was stopped before the user answered.*\n");
     }
 }

@@ -33,12 +33,15 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 
 * Chat and coding in one interface, with streamed replies and multiple providers.
 * Tools for shell commands, reading, writing and editing files, listing folders, and searching files. Read-only tools run in parallel.
+* A to-do list the agent keeps up to date with `update_todos` during long tasks. It is shown above the message box (collapsed to "n of m done" and the current step) and survives compaction. It needs no approval, because it only changes what the chat shows.
+* An `ask_user` tool for questions the agent can't settle itself: a question with up to 8 options (single or multiple choice) or free text. The run pauses until you answer, choose "You decide" or skip, and the chat shows "Needs you" in the list. Text typed in the message box answers the question. It works at every access level, needs no approval, and is limited to 3 questions per run. A question still open when the app restarts is marked as not answered.
+* Messages sent while a reply is running (text only). They wait above the message box as "Queued" and are added as one message after the next tool results, or when the reply would end, so the reply continues with them without changing the start of the request. Stop does not send them; it puts the text back in the message box.
 * A `search_chat` tool lets the agent look back through the full chat (including tool output) for something compaction summarized away, and optionally through the other chats of the same folder.
 * Attachments from the composer. Images go to the model as image input, and text files are added to the message, or read on demand with `read_attachment` when they are large. An image's path is in the message, and tools and sandboxed commands can read the chat's attachments without asking, so a text-only model can still inspect an image.
 * Approvals let you decide, per tool and per action, what runs without asking.
 * Shell sandboxing where the platform supports it, so commands can stay inside the folder you opened. Files that a file path rule refuses are also kept out of a sandboxed command's reach: an exact path wherever it is, and a wildcard pattern inside the working folder and approved folders. This is best effort: only files that exist when the command starts, not what git history holds, and on macOS renaming a folder above one may get around it. Where the sandbox can't keep a single file out, those commands don't run. Otherwise commands run directly, behind approvals.
 * Folders and chats. Open a folder and run chats inside it, grouped by folder. A chat can also exist without a folder, as a general chat.
-* Persistent history in plain, human-readable files, with context compaction for long conversations. By default the model writes the summary; Settings > General can switch to deterministic extraction (no model request), which lists the requests, changed and read files, and commands, and relies on `search_chat` for detail.
+* Persistent history in plain, human-readable files, with context compaction for long conversations. It works in steps: first, old large tool results (file reads, command logs) are replaced in the request by a short stub, keeping every call and its result paired, and a marker shows where; only if that is not enough are the older messages summarized. The full output stays in the chat and its log, and `search_chat` still finds it. To-do, skill and question results are never replaced. By default the model writes the summary; Settings > General can switch to deterministic extraction (no model request), which lists the requests, changed and read files, and commands, and relies on `search_chat` for detail.
 * Diffs, syntax highlighting, and find in the chat, with smooth scrolling in very long chats.
 * Export and import of chats.
 * MCP servers, added and edited in a form (secrets go in the OS keychain) or in a standard `mcp.json`, and enabled globally or per chat. A server's tools are found by search when needed (`find_tools`, then `use_tool`) so a pile of servers doesn't fill the context window. Tick "Always load all of its tools" for a small server, or set `"alwaysLoad"` in `mcp.json` to `true` or a list of tool name patterns. List tool name patterns in `"excludeTools"` to keep a server's tools from the model entirely. The tool lists are remembered in `cache/mcp-tools.json`, which is safe to delete.
@@ -53,8 +56,8 @@ Not built yet, and not promised:
 * Localization of the web UI, starting with English.
 * An in-app browser that the agent can use to open a running service, read the page, and take a screenshot, so it can check its own UI changes (for example a click-through or a download) instead of only running tests.
 * Reading Office documents (docx, xlsx, pptx) in the web fetch tool, which reads HTML, PDF and text.
-* An "Ask user" tool that lets the agent pause and ask you a question, with free text or choices. It is also the way for the agent to stop and ask for help when it is stuck, instead of retrying. A limit on repeated failed attempts, after which the run pauses and asks, could build on it; today a run has no round limit and the user stops it.
-* Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits.
+* A limit on repeated failed attempts, after which the run pauses and uses `ask_user` to ask for help instead of retrying; today a run has no round limit and the user stops it.
+* Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits. A subagent would run the same loop at the same or a lower access level, and its approval requests would go to the parent chat's approver, never be granted on their own.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
 * Smaller additions: a command palette, per-tool MCP toggles, a sandbox network allow-list (so commands can only reach hosts you list), message search across all folders, a duplicate-provider action, and a per-folder `.mcp.json`.
@@ -64,3 +67,13 @@ Not built yet, and not promised:
 * Multi-user hosting or scaling.
 * Offline or WebAssembly operation.
 * A UI component framework or an npm toolchain.
+
+## Why not Microsoft Agent Framework?
+
+BlazeHarness builds on `Microsoft.Extensions.AI` (`IChatClient`, `AIFunction`) and keeps its own agent loop rather than using Microsoft Agent Framework (AF).
+
+* The loop, approvals, access levels and chat persistence are the security-critical parts, and they depend on exact behaviour: every tool call gets a result in the saved chat, approvals are checked per call, and the request prefix stays stable and append-only. AF's `ToolApprovalAgent`, context providers and history handling don't guarantee these.
+* The pieces we would need from AF are not settled. Its shell tool is preview, its MCP package is alpha, and it has no `AGENTS.md` support.
+* An app that runs shell commands and fetches web pages needs a command sandbox, a web client that only reaches public addresses, and Host and Origin checks on its local server. AF offers an optional Docker shell executor and neither of the other two, so we would write most of this ourselves and still take on a large dependency tree.
+
+Worth another look once AF stabilises (for example per-tool approvals, no history loss when a call is terminated, and MCP GA).

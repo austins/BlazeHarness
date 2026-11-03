@@ -275,6 +275,14 @@ window.bhChat = {
     },
     // The page's script policy blocks inline handlers, so buttons name an action and one listener runs it.
     initActions: () => {
+        // Ctrl or Cmd+Enter sends a form whose text area asks for it, such as the answer to a question.
+        document.addEventListener("keydown", (e) => {
+            const target = e.target instanceof Element ? e.target.closest("[data-bh-submit]") : null;
+            if (target && e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.isComposing) {
+                e.preventDefault();
+                target.form?.requestSubmit();
+            }
+        });
         document.addEventListener("click", (e) => {
             const button = e.target instanceof Element ? e.target.closest("[data-bh-action]") : null;
             switch (button?.dataset.bhAction) {

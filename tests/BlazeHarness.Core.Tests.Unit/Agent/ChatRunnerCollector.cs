@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Agent.Events;
+using BlazeHarness.Core.Agent.Questions;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.AI;
 namespace BlazeHarness.Core.Tests.Unit.Agent;
 
 /// <summary>Runs the chat runner to the end and gathers its events.</summary>
-public static class ChatRunnerCollector
+internal static class ChatRunnerCollector
 {
     /// <summary>Run the chat runner and collect every event it emits.</summary>
     /// <param name="client">The chat client to call.</param>
@@ -18,6 +19,8 @@ public static class ChatRunnerCollector
     /// <param name="approver">Asks the user to approve tool calls.</param>
     /// <param name="permissions">The permission rules for tool calls.</param>
     /// <param name="context">The compaction state, when the test needs it.</param>
+    /// <param name="inbox">The messages the user wrote during the run, when the test needs them.</param>
+    /// <param name="asker">Asks the user the questions the model puts, when the test needs it.</param>
     /// <returns>The events in the order they were emitted.</returns>
     public static async Task<List<AgentEvent>> CollectAsync(
         IChatClient client,
@@ -26,10 +29,12 @@ public static class ChatRunnerCollector
         ToolSet? tools = null,
         IToolApprover? approver = null,
         PermissionEngine? permissions = null,
-        ConversationContext? context = null)
+        ConversationContext? context = null,
+        IRunInbox? inbox = null,
+        IUserAsker? asker = null)
     {
         var events = new List<AgentEvent>();
-        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(), tools, approver, permissions, context, cancellationToken))
+        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(), tools, approver, permissions, context, inbox, asker, cancellationToken))
         {
             events.Add(e);
         }

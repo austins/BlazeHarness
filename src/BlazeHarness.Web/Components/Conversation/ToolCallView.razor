@@ -1,5 +1,7 @@
 @using System.Globalization
 @using System.Text.Json
+@using BlazeHarness.Core.Agent
+@using BlazeHarness.Core.Agent.Questions
 @using BlazeHarness.Core.Diff
 @using BlazeHarness.Core.Mcp
 @using BlazeHarness.Core.Mcp.Tools
@@ -7,6 +9,12 @@
 @using BlazeHarness.Core.Tools
 @using BlazeHarness.Core.Tools.Files
 @using BlazeHarness.Web.Hosting
+
+@if (Call.Question is not null)
+{
+    <QuestionCard Call="Call" OnAnswer="OnAnswer" />
+    return;
+}
 
 <div class="tool" data-status="@StatusKey" role="group" aria-label="@Label">
     <button type="button" class="tool-head" aria-expanded="@(Open ? "true" : "false")" aria-controls="@_bodyId" @onclick="Toggle">
@@ -81,6 +89,11 @@
                 <DiffView Lines="_diff" />
             }
 
+            @if (_todos is not null)
+            {
+                <TodoChecklist Items="_todos.Items" />
+            }
+
             @foreach (var (name, value) in _arguments)
             {
                 <div class="tool-arg">
@@ -89,7 +102,7 @@
                 </div>
             }
 
-            @if (Call.Output.Length > 0)
+            @if (Call.Output.Length > 0 && !(_todos is not null && Call.Status == ToolCallStatus.Succeeded))
             {
                 <div class="tool-arg">
                     <span class="tool-arg-name">Output</span>
@@ -116,6 +129,7 @@
     private string? _imageAddress;
     private bool _detailsReady;
     private IReadOnlyList<DiffLine>? _diff;
+    private TodoList? _todos;
     private List<(string Name, string Value)> _arguments = [];
 
     /// <summary>
@@ -135,6 +149,12 @@
     /// </summary>
     [Parameter]
     public EventCallback<(string CallId, ApprovalChoice Choice)> OnDecide { get; set; }
+
+    /// <summary>
+    /// Gets or sets the function for the user answering an <c>ask_user</c> question, with the call id and the answer, which returns whether the answer was taken.
+    /// </summary>
+    [Parameter]
+    public Func<(string CallId, UserAnswer Answer), bool>? OnAnswer { get; set; }
 
     protected override void OnParametersSet()
     {
@@ -206,7 +226,8 @@
 
         _detailsReady = true;
         _diff = Call.Name == EditFileTool.ToolName ? EditDiff() : null;
-        _arguments = Arguments(_diff is not null);
+        _todos = Call.Name == TodoList.ToolName ? TodoList.TryParse(Call.ArgumentsJson) : null;
+        _arguments = _todos is null ? Arguments(_diff is not null) : [];
     }
 
     private IReadOnlyList<DiffLine>? EditDiff()

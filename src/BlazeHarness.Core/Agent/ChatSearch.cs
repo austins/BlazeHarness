@@ -1,3 +1,5 @@
+using BlazeHarness.Core.Agent.Questions;
+
 namespace BlazeHarness.Core.Agent;
 
 /// <summary>
@@ -9,8 +11,8 @@ public static class ChatSearch
     /// Finds the messages that contain the text, ignoring case.
     /// </summary>
     /// <remarks>
-    /// A message matches on its text, or on the name or arguments of one of its tool calls. Thinking text and
-    /// tool output are not searched.
+    /// A message matches on its text, or on the name or arguments of one of its tool calls, or on the answer of an <c>ask_user</c> call.
+    /// Thinking text and other tool output are not searched.
     /// </remarks>
     /// <param name="entries">The messages of the conversation, oldest first.</param>
     /// <param name="query">The text to look for; it is trimmed, and a null or blank query matches nothing.</param>
@@ -31,6 +33,7 @@ public static class ChatSearch
     {
         return entry.Text.Contains(text, StringComparison.OrdinalIgnoreCase)
             || entry.ToolCalls.Any(call => call.Name.Contains(text, StringComparison.OrdinalIgnoreCase)
-            || call.ArgumentsJson.Contains(text, StringComparison.OrdinalIgnoreCase));
+            || call.ArgumentsJson.Contains(text, StringComparison.OrdinalIgnoreCase)
+            || (call.Name == UserQuestion.ToolName && call.Output.Contains(text, StringComparison.OrdinalIgnoreCase)));
     }
 }

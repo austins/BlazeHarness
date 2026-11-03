@@ -1,0 +1,37 @@
+@using System.Globalization
+@using BlazeHarness.Core.Agent
+
+@if (Todos is { Items.Count: > 0 })
+{
+    <section class="todo-panel" aria-label="To-do list">
+        <button type="button" class="todo-head" aria-expanded="@(_open ? "true" : "false")" aria-controls="@_bodyId" @onclick="Toggle">
+            <Icon Name="@(_open ? "chevron-down" : "chevron-right")" />
+            <span class="todo-count">@Count</span>
+            @if (Todos.Current is { } current)
+            {
+                <span class="todo-current">@current.Text</span>
+            }
+        </button>
+        @if (_open)
+        {
+            <div class="todo-body" id="@_bodyId">
+                <TodoChecklist Items="Todos.Items" />
+            </div>
+        }
+    </section>
+}
+
+@code {
+    private readonly string _bodyId = "todo-" + Guid.NewGuid().ToString("N");
+    private bool _open;
+
+    /// <summary>
+    /// Gets or sets the chat's to-do list, or null while no chat is open.
+    /// </summary>
+    [Parameter]
+    public TodoList? Todos { get; set; }
+
+    private string Count => string.Create(CultureInfo.CurrentCulture, $"{Todos!.CompletedCount} of {Todos.Items.Count} done") + (Todos.Current is null ? string.Empty : ":");
+
+    private void Toggle() => _open = !_open;
+}
