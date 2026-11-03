@@ -11,7 +11,7 @@
 @inject TimeProvider Time
 
 <nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="@WebStrings.SidebarNavigationLabel">
-    <div class="sidebar-brand"><span class="logo" aria-hidden="true">🔥</span> @WebStrings.SidebarBrand</div>
+    <div class="sidebar-brand"><img class="logo" src="favicon.svg" alt="" aria-hidden="true" /> @WebStrings.SidebarBrand</div>
 
     <NavLink class="btn btn-primary" href="" Match="NavLinkMatch.All" data-shortcut="new-chat" title="@WebStrings.SidebarNewChatTooltip"><Icon Name="plus" /> @WebStrings.SidebarNewChat</NavLink>
 
