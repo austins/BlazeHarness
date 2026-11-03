@@ -43,11 +43,12 @@
         <div class="sidebar-heading">
             <Icon Name="chat" /><span id="chats-heading">@WebStrings.SidebarChatsHeading</span>
             <div class="sidebar-heading-actions">
+                <label class="btn btn-ghost btn-sm btn-icon import-chat" title="@WebStrings.SidebarImportChatTooltip">
+                    <InputFile @ref="_importInput" OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="@WebStrings.SidebarImportChatLabel" />
+                    <Icon Name="import" />
+                </label>
                 @if (_searching || all.Count > 0)
                 {
-                    <button type="button" class="btn btn-ghost btn-sm btn-icon sidebar-search-toggle" aria-expanded="@(_searching ? "true" : "false")"
-                            aria-controls="sidebar-search" title="@WebStrings.SidebarSearchChatsTooltip" aria-label="@WebStrings.SidebarSearchChatsLabel"
-                            data-shortcut="search" @onclick="ToggleSearch"><Icon Name="search" /></button>
                     <Menu Label="@WebStrings.SidebarSortLabel" Title="@WebStrings.SidebarSortTooltip" IconOnly="true">
                         <Trigger><Icon Name="sort" /></Trigger>
                         <ChildContent>
@@ -55,11 +56,10 @@
                             <MenuItem Label="@WebStrings.SidebarSortName" Checked="_sort == ChatSortOrder.Name" OnSelect="() => SetSortAsync(ChatSortOrder.Name)" />
                         </ChildContent>
                     </Menu>
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon sidebar-search-toggle" aria-expanded="@(_searching ? "true" : "false")"
+                            aria-controls="sidebar-search" title="@WebStrings.SidebarSearchChatsTooltip" aria-label="@WebStrings.SidebarSearchChatsLabel"
+                            data-shortcut="search" @onclick="ToggleSearch"><Icon Name="search" /></button>
                 }
-                <label class="btn btn-ghost btn-sm btn-icon import-chat" title="@WebStrings.SidebarImportChatTooltip">
-                    <InputFile @ref="_importInput" OnChange="ImportAsync" accept=".json,application/json" class="visually-hidden" aria-label="@WebStrings.SidebarImportChatLabel" />
-                    <Icon Name="import" />
-                </label>
                 <a class="btn btn-ghost btn-sm btn-icon" href="" title="@WebStrings.SidebarNewGeneralChatTooltip" aria-label="@WebStrings.SidebarNewGeneralChatLabel"><Icon Name="plus" /></a>
             </div>
         </div>
