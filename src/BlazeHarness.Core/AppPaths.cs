@@ -54,6 +54,11 @@ public sealed class AppPaths
     public string CacheDirectory => Path.Combine(Home, "cache");
 
     /// <summary>
+    /// Gets the folder <c>cache/browser</c>, where the browser the agent's browser tools use is downloaded to.
+    /// </summary>
+    public string BrowserDirectory => Path.Combine(CacheDirectory, "browser");
+
+    /// <summary>
     /// Gets the path of <c>cache/mcp-tools.json</c> (the tools each MCP server offered when it last connected).
     /// </summary>
     public string McpToolsFile => Path.Combine(CacheDirectory, "mcp-tools.json");

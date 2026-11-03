@@ -2020,6 +2020,34 @@
     <value>Skills</value>
     <comment>Title of the skills settings page.</comment>
   </data>
+  <data name="WebToolsSettingsBrowserLabel" xml:space="preserve">
+    <value>Browser (open pages on this computer)</value>
+    <comment>Label of a checkbox on the Web page that turns the browser tools on or off. They let the agent open a page of a web app running on this computer in a headless browser, read it and check its own UI changes.</comment>
+  </data>
+  <data name="WebToolsSettingsBrowserHint" xml:space="preserve">
+    <value>The agent can open pages on this computer (localhost) in a hidden browser that runs their scripts, and read what they show and any errors. It can't open the internet or BlazeHarness itself; each address asks first, like web fetch. The browser is downloaded once, about 170 MB.</value>
+    <comment>Hint under the Browser checkbox on the Web page. It explains that the tool opens only addresses on this computer (localhost), runs the page's scripts in a hidden (headless) browser, cannot open internet addresses or the app itself, asks for approval per address, and needs a one-time download of about 170 MB.</comment>
+  </data>
+  <data name="WebToolsSettingsBrowserInstalled" xml:space="preserve">
+    <value>Browser installed</value>
+    <comment>Status badge on the Web page: the browser the agent's browser tools use has been downloaded and is ready.</comment>
+  </data>
+  <data name="WebToolsSettingsBrowserMissing" xml:space="preserve">
+    <value>Browser not installed</value>
+    <comment>Status badge on the Web page: the browser the agent's browser tools use has not been downloaded yet, so the tools can't open pages.</comment>
+  </data>
+  <data name="WebToolsSettingsBrowserInstall" xml:space="preserve">
+    <value>Install browser</value>
+    <comment>Button on the Web page that downloads the browser the agent's browser tools use (about 170 MB).</comment>
+  </data>
+  <data name="WebToolsSettingsBrowserInstalling" xml:space="preserve">
+    <value>Installing…</value>
+    <comment>Label of the Install browser button on the Web page while the download is running.</comment>
+  </data>
+  <data name="WebToolsSettingsBrowserInstallFailed" xml:space="preserve">
+    <value>The browser could not be installed. Check the internet connection and the app log.</value>
+    <comment>Message shown when downloading the browser for the agent's browser tools fails.</comment>
+  </data>
   <data name="WebToolsSettingsModeSequential" xml:space="preserve">
     <value>One at a time: in the order below, stopping at the first one that gives results</value>
     <comment>Label of a radio button on the Web page that makes web search try the enabled search providers one after another in the listed order, stopping at the first that returns results. The order is the one of the list above it.</comment>
@@ -2054,15 +2082,15 @@
   </data>
   <data name="WebToolsSettingsToolsHeading" xml:space="preserve">
     <value>Tools</value>
-    <comment>Heading of the card on the Web page with the checkboxes that turn the web search and web fetch tools on or off.</comment>
+    <comment>Heading of the card on the Web page with the checkboxes that turn the web search, web fetch and browser tools on or off.</comment>
   </data>
   <data name="WebToolsSettingsDescription" xml:space="preserve">
-    <value>Lets the agent search the web and read pages, PDF files and Office documents. Each use asks first, unless the chat's access level is Unrestricted or it never asks. The page text is treated as data, never as instructions. JavaScript is not run, so pages that need it may come out empty.</value>
+    <value>Lets the agent search the web, read pages, PDF files and Office documents, and open pages on this computer in a browser. Each use asks first, unless the chat's access level is Unrestricted or it never asks. The page text is treated as data, never as instructions. Web fetch does not run JavaScript, so pages that need it may come out empty.</value>
     <comment>Introductory paragraph under the title of the Web page. "Unrestricted" is the name of an access level (see PermissionPickerUnrestricted) and should match its translation. JavaScript is a technology name, do not translate it.</comment>
   </data>
   <data name="WebToolsSettingsTitle" xml:space="preserve">
     <value>Web</value>
-    <comment>Title of the Web page in the settings dialog, which configures the web search and web fetch tools.</comment>
+    <comment>Title of the Web page in the settings dialog, which configures the web search, web fetch and browser tools.</comment>
   </data>
   <data name="ExtraFieldsAddButton" xml:space="preserve">
     <value>＋ Add field</value>

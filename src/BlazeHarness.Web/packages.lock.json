@@ -123,6 +123,11 @@
           "Microsoft.Extensions.Compliance.Abstractions": "10.11.0"
         }
       },
+      "Microsoft.IO.RecyclableMemoryStream": {
+        "type": "Transitive",
+        "resolved": "3.0.1",
+        "contentHash": "s/s20YTVY9r9TPfTrN5g8zPF1YhwxyqO6PxUkrYTGI2B+OGPe9AdajWZrLhFqXIvqIW23fnUE4+ztrUWNU1+9g=="
+      },
       "Microsoft.Mxc.Sdk": {
         "type": "Transitive",
         "resolved": "1.0.1",
@@ -170,6 +175,21 @@
           "Polly.Core": "8.4.2"
         }
       },
+      "PuppeteerSharp": {
+        "type": "Transitive",
+        "resolved": "25.15.0",
+        "contentHash": "iTM/9GBCzgAjRA18zIH5g4yoy4nDlT4LEfKDIm2YyciDywC9HvVCQj97RAmMefPSoaKkA5PfmRrO0Z2+LfzmQg==",
+        "dependencies": {
+          "Microsoft.IO.RecyclableMemoryStream": "3.0.1",
+          "ReactiveExtensionsSharp": "0.3.0",
+          "WebDriverBiDi": "0.0.61"
+        }
+      },
+      "ReactiveExtensionsSharp": {
+        "type": "Transitive",
+        "resolved": "0.3.0",
+        "contentHash": "7rF0x9AnfwuDl20ojNmGBK53Cqqr9aaxiCQ5MMnZHlhAiXZr8STN1IjTZJoA75GZVxv1ugz++UNphEy/bcSMMg=="
+      },
       "StyleCop.Analyzers.Unstable": {
         "type": "Transitive",
         "resolved": "1.2.0.556",
@@ -198,6 +218,11 @@
         "resolved": "10.0.14",
         "contentHash": "UuaBUHgmtc9h6CMxaQqFDDJxkS5JVy7XEB+DbtCvD68GFcVM9/AccuNwFpARx8nwCnvjaxzoOBjG3gPz32P1Eg=="
       },
+      "WebDriverBiDi": {
+        "type": "Transitive",
+        "resolved": "0.0.61",
+        "contentHash": "UJGHt0DqU2nNHf8l12QvJZvj47dFb0VUcKsY6KTn+Cm6tlwXfcmkftfsED9ce+KJCmx4ZgvcaBZjWlae3GKunw=="
+      },
       "blazeharness.core": {
         "type": "Project",
         "dependencies": {
@@ -208,6 +233,7 @@
           "Microsoft.Mxc.Sdk": "[1.0.1, )",
           "ModelContextProtocol.Core": "[2.3.1, )",
           "PdfPig": "[0.1.16, )",
+          "PuppeteerSharp": "[25.15.0, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.14, )"
         }
       }

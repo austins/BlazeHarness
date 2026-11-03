@@ -16,6 +16,11 @@ public sealed record WebSettings
     public bool FetchEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets a value indicating whether the model gets the <c>browser_*</c> tools, which open pages on this computer in a headless browser.
+    /// </summary>
+    public bool BrowserEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets how the enabled providers are used for one search.
     /// </summary>
     public WebSearchMode SearchMode { get; init; } = WebSearchMode.Parallel;

@@ -33,7 +33,8 @@ if (listenOnAllInterfaces)
     builder.Configuration["AllowedHosts"] = "*"; // LocalAccessMiddleware does the Host check in this mode.
 }
 
-HostLauncher.ConfigureKestrel(builder, listenAddress, HostLauncher.ConfiguredPort(args, builder.Configuration));
+var listenPort = HostLauncher.ConfiguredPort(args, builder.Configuration);
+HostLauncher.ConfigureKestrel(builder, listenAddress, listenPort);
 builder.Services.AddSingleton(new AccessPolicy(listenOnAllInterfaces) { MachineName = Environment.MachineName });
 
 var paths = AppPaths.FromConfiguration(builder.Configuration);
@@ -68,7 +69,9 @@ builder.Services.AddSingleton(sp => new WebServices(
     () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.Web,
     sp.GetRequiredService<IHttpClientFactory>().CreateClient(WebSearchClientName),
     sp.GetRequiredService<ILoggerFactory>(),
-    sp.GetRequiredService<TimeProvider>()));
+    sp.GetRequiredService<TimeProvider>(),
+    paths.BrowserDirectory,
+    listenPort));
 builder.Services.AddSingleton(sp => new ChatService(
     sp.GetRequiredService<ChatStore>(),
     sp.GetRequiredService<ChatClientSource>().CreateAsync,

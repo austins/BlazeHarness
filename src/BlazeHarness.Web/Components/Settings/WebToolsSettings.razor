@@ -18,6 +18,21 @@
             <span>@WebStrings.WebToolsSettingsFetchLabel</span>
         </label>
         <p class="hint">@WebStrings.WebToolsSettingsFetchHint</p>
+        <label class="check">
+            <input type="checkbox" checked="@Current.BrowserEnabled" @onchange="e => SaveAsync(s => s with { BrowserEnabled = (bool)e.Value! })" />
+            <span>@WebStrings.WebToolsSettingsBrowserLabel</span>
+        </label>
+        <p class="hint">@WebStrings.WebToolsSettingsBrowserHint</p>
+        @if (_browserInstalled is { } installed)
+        {
+            <div class="row">
+                <span class="badge" role="status">@(installed ? WebStrings.WebToolsSettingsBrowserInstalled : WebStrings.WebToolsSettingsBrowserMissing)</span>
+                @if (!installed)
+                {
+                    <button type="button" class="btn btn-sm" disabled="@_installing" @onclick="InstallBrowserAsync">@(_installing ? WebStrings.WebToolsSettingsBrowserInstalling : WebStrings.WebToolsSettingsBrowserInstall)</button>
+                }
+            </div>
+        }
     </section>
 
     <section class="card stack" aria-labelledby="web-search-heading">
@@ -57,10 +72,36 @@
 </div>
 
 @code {
+    private bool? _browserInstalled;
+    private bool _installing;
+
     private static string SaveFailure => WebStrings.GeneralSettingsSaveFailure;
 
     private static string MoveLabel(string name, string direction) =>
         ResourceMessageFormatter.Web.Format(nameof(WebStrings.WebToolsMoveProvider), new Dictionary<string, object?> { ["name"] = name, ["direction"] = direction });
+
+    protected override async Task OnInitializedAsync()
+    {
+        _browserInstalled = await Web.IsBrowserInstalledAsync(CancellationToken.None);
+    }
+
+    private async Task InstallBrowserAsync()
+    {
+        _installing = true;
+        try
+        {
+            _browserInstalled = await Web.InstallBrowserAsync(CancellationToken.None);
+        }
+        finally
+        {
+            _installing = false;
+        }
+
+        if (_browserInstalled != true)
+        {
+            Toasts.Show(WebStrings.WebToolsSettingsBrowserInstallFailed, ToastKind.Error);
+        }
+    }
 
     private WebSettings Current => Config.Current.Web;
 
