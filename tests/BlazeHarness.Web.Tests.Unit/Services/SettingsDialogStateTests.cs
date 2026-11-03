@@ -13,13 +13,13 @@ public sealed class SettingsDialogStateTests
     }
 
     [Fact]
-    public void Open_NoSection_ShowsProviders()
+    public void Open_NoSection_ShowsGeneral()
     {
         // Act
         _sut.Open();
 
         // Assert
-        _sut.Section.Should().Be(SettingsSection.Providers);
+        _sut.Section.Should().Be(SettingsSection.General);
         _changes.Should().Be(1);
     }
 

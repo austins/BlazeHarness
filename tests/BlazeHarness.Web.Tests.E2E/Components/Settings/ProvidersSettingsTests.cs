@@ -10,6 +10,7 @@ public sealed class ProvidersSettingsTests(BrowserFixture browser) : TestBase(br
 
         // Act
         await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Settings" }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Providers" }).ClickAsync();
 
         // Assert
         await Expect(Page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Name = "Providers" })).ToBeVisibleAsync();
@@ -23,6 +24,7 @@ public sealed class ProvidersSettingsTests(BrowserFixture browser) : TestBase(br
         // Arrange
         await LaunchAsync();
         await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Settings" }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Providers" }).ClickAsync();
         var name = Page.GetByLabel("Name", new PageGetByLabelOptions { Exact = true });
         var saveBar = Page.GetByRole(AriaRole.Region, new PageGetByRoleOptions { Name = "Unsaved changes" });
         await Expect(saveBar).ToHaveCountAsync(0);

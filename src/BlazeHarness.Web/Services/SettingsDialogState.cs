@@ -22,7 +22,7 @@ public sealed class SettingsDialogState
     /// Open the dialog, or switch it to another section.
     /// </summary>
     /// <param name="section">The section to show.</param>
-    public void Open(SettingsSection section = SettingsSection.Providers)
+    public void Open(SettingsSection section = SettingsSection.General)
     {
         Section = section;
         Changed?.Invoke(this, EventArgs.Empty);
