@@ -736,10 +736,14 @@ public sealed class PermissionEngineTests : IDisposable
         decision.Verdict.Should().Be(PermissionVerdict.Allow);
     }
 
+    // Permission checks never start a job, so one registry for the whole class is enough.
+    private static readonly BackgroundShells NoJobs = new(TimeProvider.System);
+
     private static ShellTool NewShell() => new(
         ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false),
         new NoShellSandbox("none"),
         Path.GetTempPath(),
+        NoJobs,
         TimeProvider.System);
 
     private PermissionDecision Evaluate(ITool tool, object arguments)

@@ -7,6 +7,7 @@ using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Shell;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -84,12 +85,19 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         _log = log;
         _time = time;
         _logger = logger ?? NullLogger.Instance;
+        BackgroundShells = new BackgroundShells(time);
+        BackgroundShells.Changed += (_, _) => RaiseChanged();
     }
 
     /// <summary>
     /// Raised whenever an entry or the running state changes, on the thread that made the change.
     /// </summary>
     public event EventHandler? Changed;
+
+    /// <summary>
+    /// Gets the commands the agent started in the background, which end when the chat is disposed.
+    /// </summary>
+    public BackgroundShells BackgroundShells { get; }
 
     /// <summary>
     /// Gets the messages in order, as a snapshot that stays valid while the conversation grows.
@@ -598,11 +606,12 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     }
 
     /// <summary>
-    /// Stop any reply that is being produced, so nothing keeps running after the chat is gone.
+    /// Stop any reply that is being produced and every background command, so nothing keeps running after the chat is gone.
     /// </summary>
     public void Dispose()
     {
         Stop();
+        BackgroundShells.Dispose();
     }
 
     /// <summary>

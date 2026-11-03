@@ -676,7 +676,7 @@ public sealed partial class ChatService : IDisposable
             }
 
             var shell = ShellInfo.DetectCurrent();
-            var tools = BuiltInTools.Create(root, _time, shell, chat.Attachments, _sandbox, _store.ShellDirectory(id), ChatSearchFor(id, chat, folderPath));
+            var tools = BuiltInTools.Create(root, _time, shell, chat.Attachments, _sandbox, _store.ShellDirectory(id), ChatSearchFor(id, chat, folderPath), chat.BackgroundShells);
             chat.UseTools(tools, SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)

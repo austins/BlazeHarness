@@ -237,7 +237,8 @@ public sealed class MxcShellSandboxTests : IDisposable
     private async Task<ToolResult> RunAsync(string command, ShellMode mode, IShellSandbox? sandbox = null, int timeoutSeconds = 30, IReadOnlyList<string>? readFolders = null, RefusedPaths? refused = null)
     {
         var shell = ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false);
-        var tool = new ShellTool(shell, sandbox ?? new MxcShellSandbox(() => SensitivePaths.None), _scratchFolder.Root, _time);
+        using var background = new BackgroundShells(_time);
+        var tool = new ShellTool(shell, sandbox ?? new MxcShellSandbox(() => SensitivePaths.None), _scratchFolder.Root, background, _time);
         return await tool.ExecuteAsync(
             TempRoot.Args(new { command, timeout_seconds = timeoutSeconds }),
             _root.Context.WithShell(mode).WithShellReadFolders(readFolders ?? []).WithRefused(refused ?? RefusedPaths.None),

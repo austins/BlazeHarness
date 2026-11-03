@@ -10,6 +10,7 @@ public sealed class ShellToolRefusedFilesTests : IDisposable
 {
     private readonly TempRoot _root = new();
     private readonly IShellSandbox _sandbox = Substitute.For<IShellSandbox>();
+    private readonly BackgroundShells _background = new(TimeProvider.System);
     private readonly ShellTool _sut;
     private ShellLaunch? _launch;
 
@@ -24,10 +25,14 @@ public sealed class ShellToolRefusedFilesTests : IDisposable
             process.WaitAsync(Arg.Any<CancellationToken>()).Returns(0);
             return Task.FromResult(process);
         });
-        _sut = new ShellTool(new ShellInfo("sh", "/bin/sh", IsPowerShell: false), _sandbox, _root.Root, new FakeTimeProvider());
+        _sut = new ShellTool(new ShellInfo("sh", "/bin/sh", IsPowerShell: false), _sandbox, _root.Root, _background, new FakeTimeProvider());
     }
 
-    public void Dispose() => _root.Dispose();
+    public void Dispose()
+    {
+        _background.Dispose();
+        _root.Dispose();
+    }
 
     [Fact]
     public async Task ExecuteAsync_SandboxedWithARefusingRule_StartsTheCommandWithTheRefusedFiles()

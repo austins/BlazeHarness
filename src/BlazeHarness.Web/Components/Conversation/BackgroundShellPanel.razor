@@ -1,0 +1,60 @@
+@using BlazeHarness.Core.Tools.Shell
+@using BlazeHarness.Web.Resources
+
+@{
+    var running = Running;
+}
+@if (running.Count > 0)
+{
+    <section class="todo-panel" aria-label="@WebStrings.BackgroundShellPanelLabel">
+        <button type="button" class="todo-head" aria-expanded="@(_open ? "true" : "false")" aria-controls="@_bodyId" @onclick="Toggle">
+            <Icon Name="@(_open ? "chevron-down" : "chevron-right")" />
+            <span class="todo-count">@Count(running.Count)</span>
+            <span class="todo-current">@FirstLine(running[0].Command)</span>
+        </button>
+        @if (_open)
+        {
+            <div class="todo-body" id="@_bodyId">
+                <ul class="jobs-list">
+                    @foreach (var job in running)
+                    {
+                        <li class="jobs-item" @key="job.Id">
+                            <code class="jobs-command" title="@job.Command">@FirstLine(job.Command)</code>
+                            <button type="button" class="btn btn-sm btn-danger" aria-label="@StopLabel(job)" @onclick="() => Shells?.Stop(job.Id)">
+                                <Icon Name="stop" /> @WebStrings.BackgroundShellPanelStop
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </section>
+}
+
+@code {
+    private readonly string _bodyId = "jobs-" + Guid.NewGuid().ToString("N");
+    private bool _open;
+
+    /// <summary>
+    /// Gets or sets the chat's background commands, or null while no chat is open.
+    /// </summary>
+    [Parameter]
+    public BackgroundShells? Shells { get; set; }
+
+    private IReadOnlyList<BackgroundShellInfo> Running => Shells is null ? [] : [.. Shells.Jobs.Where(job => job.Status == BackgroundShellStatus.Running)];
+
+    private static string Count(int running) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.BackgroundShellPanelCount), new Dictionary<string, object?> { ["count"] = running });
+
+    private static string StopLabel(BackgroundShellInfo job) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.BackgroundShellPanelStopCommand), new Dictionary<string, object?> { ["command"] = FirstLine(job.Command) });
+
+    private static string FirstLine(string command)
+    {
+        var text = command.Trim();
+        var newline = text.IndexOf('\n', StringComparison.Ordinal);
+        return newline < 0 ? text : text[..newline].TrimEnd() + " …";
+    }
+
+    private void Toggle() => _open = !_open;
+}

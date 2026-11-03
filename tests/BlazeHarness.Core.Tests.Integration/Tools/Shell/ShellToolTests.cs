@@ -11,11 +11,13 @@ public sealed class ShellToolTests : IDisposable
 {
     private readonly TempRoot _root = new();
     private readonly FakeTimeProvider _time = new();
+    private readonly BackgroundShells _background;
     private readonly ShellTool _sut;
 
     public ShellToolTests()
     {
-        _sut = new ShellTool(Sh, new NoShellSandbox("none"), _root.Root, _time);
+        _background = new BackgroundShells(_time);
+        _sut = new ShellTool(Sh, new NoShellSandbox("none"), _root.Root, _background, _time);
     }
 
     public static bool IsWindows => OperatingSystem.IsWindows();
@@ -24,7 +26,11 @@ public sealed class ShellToolTests : IDisposable
 
     private ToolContext Context => _root.Context.WithShell(ShellMode.Unconfined);
 
-    public void Dispose() => _root.Dispose();
+    public void Dispose()
+    {
+        _background.Dispose();
+        _root.Dispose();
+    }
 
     [Fact(Skip = "These tests use POSIX shell syntax.", SkipWhen = nameof(IsWindows))]
     public async Task ExecuteAsync_SuccessfulCommand_ReturnsOutputAndExitCode()
@@ -125,7 +131,7 @@ public sealed class ShellToolTests : IDisposable
     public async Task ExecuteAsync_ShellThatCannotStart_ReturnsAnError()
     {
         // Arrange
-        var sut = new ShellTool(new ShellInfo("bash", Path.Combine(_root.Root, "missing-shell"), IsPowerShell: false), new NoShellSandbox("none"), _root.Root, _time);
+        var sut = new ShellTool(new ShellInfo("bash", Path.Combine(_root.Root, "missing-shell"), IsPowerShell: false), new NoShellSandbox("none"), _root.Root, _background, _time);
 
         // Act
         var result = await sut.ExecuteAsync(TempRoot.Args(new { command = "true" }), Context, TestContext.Current.CancellationToken);

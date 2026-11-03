@@ -2040,6 +2040,22 @@
     <value>Install browser</value>
     <comment>Button on the Web page that downloads the browser the agent's browser tools use (about 125 MB).</comment>
   </data>
+  <data name="BackgroundShellPanelLabel" xml:space="preserve">
+    <value>Background commands</value>
+    <comment>Accessible name (aria-label) of the collapsible panel above the composer that lists the commands the agent keeps running in the background, such as a dev server.</comment>
+  </data>
+  <data name="BackgroundShellPanelCount" xml:space="preserve">
+    <value>{count, plural, one {# command running} other {# commands running}}</value>
+    <comment>Summary in the header of the panel of background commands. count is the number of commands still running.</comment>
+  </data>
+  <data name="BackgroundShellPanelStop" xml:space="preserve">
+    <value>Stop</value>
+    <comment>Button in the panel of background commands that stops one running command and everything it started.</comment>
+  </data>
+  <data name="BackgroundShellPanelStopCommand" xml:space="preserve">
+    <value>Stop {command}</value>
+    <comment>Accessible name (aria-label) of the Stop button of one background command. command is the command text, which is not translated.</comment>
+  </data>
   <data name="BrowserPanelLabel" xml:space="preserve">
     <value>Browser</value>
     <comment>Accessible name of the side panel next to the chat that shows the page the assistant has open in its browser.</comment>

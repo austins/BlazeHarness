@@ -20,6 +20,7 @@ internal static class BuiltInTools
     /// <param name="sandbox">Starts the shell commands. Required when <paramref name="shell"/> is set.</param>
     /// <param name="scratchDirectory">The folder confined shell commands may always write to. Required when <paramref name="shell"/> is set.</param>
     /// <param name="chatSearch">The <c>search_chat</c> tool, or null to leave it out.</param>
+    /// <param name="background">Keeps the commands started in the background. Required when <paramref name="shell"/> is set.</param>
     /// <returns>The tool set.</returns>
     public static ToolSet Create(
         string folder,
@@ -28,7 +29,8 @@ internal static class BuiltInTools
         ChatAttachments? attachments = null,
         IShellSandbox? sandbox = null,
         string? scratchDirectory = null,
-        ITool? chatSearch = null)
+        ITool? chatSearch = null,
+        BackgroundShells? background = null)
     {
         List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool(), new TodoTool(), new AskUserTool()];
         if (chatSearch is not null)
@@ -40,7 +42,9 @@ internal static class BuiltInTools
         {
             ArgumentNullException.ThrowIfNull(sandbox);
             ArgumentException.ThrowIfNullOrWhiteSpace(scratchDirectory);
-            tools.Add(new ShellTool(shell, sandbox, scratchDirectory, time));
+            ArgumentNullException.ThrowIfNull(background);
+            tools.Add(new ShellTool(shell, sandbox, scratchDirectory, background, time));
+            tools.Add(new ShellJobsTool(background, time));
         }
 
         if (attachments is not null)
