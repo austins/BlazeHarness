@@ -136,6 +136,59 @@ public sealed class ForbiddenCommandsTests
         opaque.Should().NotBeNull();
     }
 
+    [Theory]
+    [InlineData("rm -rf build")]
+    [InlineData("rm -rf \"$TMPDIR/copy\"")]
+    [InlineData("find . -delete")]
+    [InlineData("chmod -R 777 .")]
+    [InlineData("dd if=/dev/zero of=out.bin")]
+    public void Find_ReadOnlyFileChange_IsNotFlagged(string command)
+    {
+        // Arrange
+        var sut = ForbiddenCommands.BuiltIn;
+
+        // Act
+        var match = sut.Find(command, readOnly: true);
+
+        // Assert
+        match.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("sudo ls")]
+    [InlineData("shutdown now")]
+    [InlineData("printenv API_KEY")]
+    [InlineData("dotnet user-secrets list")]
+    [InlineData("rm -rf ~/.ssh")]
+    [InlineData("rm -rf build && cat ~/.aws/credentials")]
+    [InlineData("eval \"$X\"")]
+    public void Find_ReadOnlyRiskBeyondFiles_IsStillFlagged(string command)
+    {
+        // Arrange
+        var sut = ForbiddenCommands.BuiltIn;
+
+        // Act
+        var match = sut.Find(command, readOnly: true);
+
+        // Assert
+        match.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void FromJson_ChangesFiles_IsSkippedOnlyWhenReadOnly()
+    {
+        // Arrange
+        var sut = ForbiddenCommands.FromJson("""{ "rules": [ { "programs": ["wipe"], "changesFiles": true, "risk": "Wipes." } ] }""", SandboxPlatform.Linux);
+
+        // Act
+        var writable = sut.Find("wipe x");
+        var readOnly = sut.Find("wipe x", readOnly: true);
+
+        // Assert
+        writable.Should().Be(new ForbiddenMatch("Wipes."));
+        readOnly.Should().BeNull();
+    }
+
     [Fact]
     public void FromJson_RuleForAnotherPlatform_IsLeftOut()
     {

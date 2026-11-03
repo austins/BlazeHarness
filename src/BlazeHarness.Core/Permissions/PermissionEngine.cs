@@ -27,6 +27,7 @@ namespace BlazeHarness.Core.Permissions;
 /// <para>
 /// A command on the <see cref="Forbidden"/> list, such as a recursive delete, always asks, under every approval mode, and the answer can't be
 /// remembered. <see cref="AccessLevel.Unrestricted"/> skips the list, because the user has already accepted that commands run unconfined.
+/// <see cref="AccessLevel.ReadOnly"/> skips the rules whose only risk is changing files, because its sandbox already makes them fail.
 /// </para>
 /// <para>
 /// An MCP tool is not covered by the access level, because the harness can't see what a server touches. It asks first, unless the chat is
@@ -305,7 +306,7 @@ public sealed class PermissionEngine
         }
 
         var mode = settings.Access == AccessLevel.ReadOnly ? ShellMode.ReadOnly : ShellMode.Writable;
-        if (Forbidden.Find(Text(arguments, "command") ?? string.Empty) is { } forbidden)
+        if (Forbidden.Find(Text(arguments, "command") ?? string.Empty, readOnly: mode == ShellMode.ReadOnly) is { } forbidden)
         {
             return new PermissionDecision(PermissionVerdict.Ask, $"{forbidden.Risk} This kind of command needs your approval every time.", GrantKey: null, Shell: mode, Sticky: true);
         }

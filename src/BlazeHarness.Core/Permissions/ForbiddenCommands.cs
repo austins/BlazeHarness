@@ -39,8 +39,9 @@ public sealed class ForbiddenCommands
     /// Check a shell command line.
     /// </summary>
     /// <param name="command">The command text the model passed to the shell tool.</param>
+    /// <param name="readOnly">Whether the command runs in a read-only sandbox, so rules whose only risk is changing files are skipped.</param>
     /// <returns>What is risky about it, or null when no part of it is on the list.</returns>
-    public ForbiddenMatch? Find(string command)
+    public ForbiddenMatch? Find(string command, bool readOnly = false)
     {
         var text = command.Replace('\\', '/');
         foreach (var segment in ShellCommandParser.Parse(command))
@@ -50,7 +51,7 @@ public sealed class ForbiddenCommands
                 return new ForbiddenMatch(reason);
             }
 
-            var rule = _rules.Find(r => Matches(r, segment, text));
+            var rule = _rules.Find(r => !(readOnly && r.ChangesFiles) && Matches(r, segment, text));
             if (rule is not null)
             {
                 return new ForbiddenMatch(rule.Risk);

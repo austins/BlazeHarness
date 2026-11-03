@@ -41,6 +41,11 @@ internal sealed record ForbiddenRule
     public IReadOnlyList<SandboxPlatform> Platforms { get; init; } = [];
 
     /// <summary>
+    /// Gets a value indicating whether the only risk is changing files or disks, which a read-only sandbox already prevents.
+    /// </summary>
+    public bool ChangesFiles { get; init; }
+
+    /// <summary>
     /// Gets the sentence that tells the user and the model what is risky about the command.
     /// </summary>
     public string Risk { get; init; } = string.Empty;
