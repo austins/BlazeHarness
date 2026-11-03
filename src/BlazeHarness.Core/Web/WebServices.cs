@@ -86,7 +86,7 @@ public sealed class WebServices : IDisposable
     public Task<bool> IsBrowserInstalledAsync(CancellationToken cancellationToken) => _browser.IsInstalledAsync(cancellationToken);
 
     /// <summary>
-    /// Download the browser behind the <c>browser_*</c> tools (Chrome), about 170 MB.
+    /// Download the browser behind the <c>browser_*</c> tools (headless Chrome), about 125 MB.
     /// </summary>
     /// <param name="cancellationToken">A token that stops waiting for the download.</param>
     /// <returns>True when the browser is installed afterwards.</returns>

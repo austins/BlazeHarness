@@ -29,9 +29,23 @@
                 <span class="badge" role="status">@(installed ? WebStrings.WebToolsSettingsBrowserInstalled : WebStrings.WebToolsSettingsBrowserMissing)</span>
                 @if (!installed)
                 {
-                    <button type="button" class="btn btn-sm" disabled="@_installing" @onclick="InstallBrowserAsync">@(_installing ? WebStrings.WebToolsSettingsBrowserInstalling : WebStrings.WebToolsSettingsBrowserInstall)</button>
+                    <button type="button" class="btn btn-sm" disabled="@_installing" @onclick="InstallBrowserAsync">
+                        @if (_installing)
+                        {
+                            <Icon Name="spinner" Spin="true" />
+                            @WebStrings.WebToolsSettingsBrowserInstalling
+                        }
+                        else
+                        {
+                            @WebStrings.WebToolsSettingsBrowserInstall
+                        }
+                    </button>
                 }
             </div>
+            @if (_installing)
+            {
+                <p class="hint" role="status">@WebStrings.WebToolsSettingsBrowserInstallingHint</p>
+            }
         }
     </section>
 

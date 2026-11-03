@@ -58,7 +58,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(time);
         _appPort = appPort;
-        _fetcher = new BrowserFetcher(new BrowserFetcherOptions { Browser = SupportedBrowser.Chrome, Path = browserDirectory });
+        _fetcher = new BrowserFetcher(new BrowserFetcherOptions { Browser = SupportedBrowser.ChromeHeadlessShell, Path = browserDirectory });
         _executablePath = executablePath;
         _logger = logger;
         _time = time;
@@ -339,9 +339,10 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         {
             _browser = await Puppeteer.LaunchAsync(new LaunchOptions
             {
-                Browser = SupportedBrowser.Chrome,
+                Browser = SupportedBrowser.ChromeHeadlessShell,
                 ExecutablePath = executable,
                 Headless = true,
+                HeadlessMode = HeadlessMode.Shell,
                 AcceptInsecureCerts = true,
                 DefaultViewport = null,
                 Args = ["--proxy-server=http://127.0.0.1:1"],
