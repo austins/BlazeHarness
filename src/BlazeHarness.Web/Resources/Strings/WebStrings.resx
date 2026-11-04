@@ -481,7 +481,7 @@
     <comment>Hint at the bottom of the confirmation dialog shown before a risky permission option is turned on. It reassures the user that the change affects only the current chat. SSH is a protocol name, do not translate it.</comment>
   </data>
   <data name="PermissionPickerNeverAskWarning" xml:space="preserve">
-    <value>Never ask: tool calls run without asking you first. Text the model reads from files or web pages could trick it into running harmful commands.</value>
+    <value>Never ask: the agent works without stopping to ask you anything. MCP tools and web requests run without approval, and text it reads from files or web pages could steer them. Actions that would need your approval are refused.</value>
     <comment>Warning paragraph in the confirmation dialog shown before the Never ask approval mode is turned on. "Never ask" is the name of that option (see PermissionPickerNeverAsk) and should match its translation.</comment>
   </data>
   <data name="PermissionPickerUnrestrictedWarning" xml:space="preserve">
@@ -505,8 +505,8 @@
     <comment>Short note at the bottom of the permission menu, shown when the access level is Unrestricted, so shell commands run outside the sandbox. The sandbox is the isolated environment commands normally run in.</comment>
   </data>
   <data name="PermissionPickerNeverAskDescription" xml:space="preserve">
-    <value>Run allowed actions and block the rest</value>
-    <comment>Description under the Never ask item in the permission menu's Approvals section: actions the rules allow run, everything else is blocked without a prompt.</comment>
+    <value>Run allowed actions, block the rest and never stop to ask</value>
+    <comment>Description under the Never ask item in the permission menu's Approvals section: actions the rules allow run, everything else is blocked without a prompt, and the agent doesn't ask the user questions.</comment>
   </data>
   <data name="PermissionPickerAskForExceptionsDescription" xml:space="preserve">
     <value>Ask only when an action exceeds the access level</value>

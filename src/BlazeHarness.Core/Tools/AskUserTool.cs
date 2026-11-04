@@ -34,6 +34,11 @@ internal sealed class AskUserTool : ITool
     public const string NoAsker = "This question was not asked because there is no way to ask the user.";
 
     /// <summary>
+    /// The result of an <c>ask_user</c> call in a chat set to never ask.
+    /// </summary>
+    public const string NeverAsks = "This chat runs without asking the user, so the question was not asked. Decide with your best judgment and keep working, and list any open questions in your reply.";
+
+    /// <summary>
     /// The result of an <c>ask_user</c> call when the run has asked <see cref="MaxPerRun"/> questions already.
     /// </summary>
     public static readonly string TooMany = string.Create(CultureInfo.InvariantCulture, $"You've asked {MaxPerRun} questions in this run. Finish with your best judgment and list any open questions in your reply.");

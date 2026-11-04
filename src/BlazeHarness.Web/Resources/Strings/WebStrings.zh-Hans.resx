@@ -356,7 +356,7 @@
     <value>这仅适用于此聊天。受保护的文件夹（如 SSH 密钥）仍会被阻止。</value>
   </data>
   <data name="PermissionPickerNeverAskWarning" xml:space="preserve">
-    <value>从不询问：工具调用无需先询问你即可运行。模型从文件或网页中读取的文本可能会诱导其运行有害命令。</value>
+    <value>从不询问：代理工作时不会停下来向你询问任何事。MCP 工具和网络请求无需批准即可运行，代理从文件或网页中读取的文本可能会操纵它们。需要你批准的操作会被拒绝。</value>
   </data>
   <data name="PermissionPickerUnrestrictedWarning" xml:space="preserve">
     <value>无限制：工具和命令可在无沙箱的情况下读取和更改你的用户账户可访问的任何内容。</value>
@@ -374,7 +374,7 @@
     <value>命令在无沙箱的情况下运行</value>
   </data>
   <data name="PermissionPickerNeverAskDescription" xml:space="preserve">
-    <value>运行允许的操作并阻止其余操作</value>
+    <value>运行允许的操作，阻止其余操作，从不停下来询问</value>
   </data>
   <data name="PermissionPickerAskForExceptionsDescription" xml:space="preserve">
     <value>仅当操作超出访问级别时询问</value>

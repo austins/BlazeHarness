@@ -524,8 +524,7 @@ public sealed class PermissionEngineTests : IDisposable
     [Theory]
     [InlineData(ApprovalMode.AskFirst)]
     [InlineData(ApprovalMode.AutoApprove)]
-    [InlineData(ApprovalMode.NeverAsk)]
-    public void Evaluate_ForbiddenShellCommand_AsksUnderEveryApprovalMode(ApprovalMode approvals)
+    public void Evaluate_ForbiddenShellCommand_AsksUnderEveryApprovalModeThatAsks(ApprovalMode approvals)
     {
         // Arrange
         _sut.Sandbox = Available;
@@ -539,6 +538,21 @@ public sealed class PermissionEngineTests : IDisposable
         decision.Reason.Should().Contain("every time");
         decision.GrantKey.Should().BeNull();
         decision.Shell.Should().Be(ShellMode.Writable);
+    }
+
+    [Fact]
+    public void Evaluate_ForbiddenShellCommandNeverAsk_Denies()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        _sut.Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.NeverAsk);
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "echo ok && rm -rf build" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Deny);
+        decision.Reason.Should().Contain("never asks");
     }
 
     [Fact]
@@ -638,6 +652,22 @@ public sealed class PermissionEngineTests : IDisposable
         // Assert
         decision.Verdict.Should().Be(PermissionVerdict.Ask);
         decision.GrantKey.Should().BeNull();
+    }
+
+    [Fact]
+    public void Evaluate_AskRuleOnACommandNeverAsk_Denies()
+    {
+        // Arrange
+        _sut.Sandbox = Available;
+        _sut.Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.NeverAsk);
+        _sut.Rules = () => [new PermissionRule(RuleTarget.ShellCommand, PermissionVerdict.Ask, "git push*")];
+
+        // Act
+        var decision = Evaluate(NewShell(), new { command = "git push" });
+
+        // Assert
+        decision.Verdict.Should().Be(PermissionVerdict.Deny);
+        decision.Reason.Should().Contain("git push*").And.Contain("never asks");
     }
 
     [Fact]

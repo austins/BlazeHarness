@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Agent.Questions;
+using BlazeHarness.Core.Permissions;
 using System.Collections.Concurrent;
 
 namespace BlazeHarness.Core.Agent;
@@ -67,11 +68,13 @@ public sealed partial class Chat
     }
 
     // The question must be registered before the first await, because the loop announces it only after this call returns.
+    // It is registered before the settings are checked, and SetPermissionsAsync sets them before sweeping, so a switch to Never ask can't miss it.
     private async Task<UserAnswer> WaitForAnswerAsync(string callId, UserQuestion question, CancellationToken cancellationToken)
     {
         var waiting = new TaskCompletionSource<UserAnswer>(TaskCreationOptions.RunContinuationsAsynchronously);
         _questions[callId] = new PendingQuestion(question, waiting);
         using var registration = cancellationToken.Register(() => waiting.TrySetCanceled(cancellationToken));
+        LeaveQuestionsToModelIfNeverAsk();
         try
         {
             return await waiting.Task;
@@ -79,6 +82,20 @@ public sealed partial class Chat
         finally
         {
             _questions.TryRemove(callId, out _);
+        }
+    }
+
+    // A chat switched to Never ask has nobody to wait for, so a waiting question is answered as if the user chose "You decide".
+    private void LeaveQuestionsToModelIfNeverAsk()
+    {
+        if (Permissions.Settings.Approvals != ApprovalMode.NeverAsk)
+        {
+            return;
+        }
+
+        foreach (var pending in _questions.Values)
+        {
+            pending.Answer.TrySetResult(UserAnswer.LeaveToModel());
         }
     }
 

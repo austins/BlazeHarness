@@ -150,6 +150,25 @@ public sealed class ChatRunnerQuestionTests
     }
 
     [Fact]
+    public async Task RunAsync_ChatThatNeverAsks_FailsTheCallWithoutAsking()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", UserQuestion.ToolName, Open)])
+            .Enqueue([ScriptedChatClient.Text("ok")]);
+        var asker = FakeUserAsker.Always(UserAnswer.Skip());
+        var permissions = new PermissionEngine { Settings = new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.NeverAsk) };
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(), permissions: permissions, asker: asker);
+
+        // Assert
+        asker.Asked.Should().BeEmpty();
+        events.OfType<ToolAwaitingAnswer>().Should().BeEmpty();
+        events.OfType<ToolCallFinished>().Should().ContainSingle().Which.Should().Be(
+            new ToolCallFinished("c1", UserQuestion.ToolName, AskUserTool.NeverAsks, ToolCallStatus.Failed));
+    }
+
+    [Fact]
     public async Task RunAsync_QuestionBesideReads_IsNotBatchedWithThem()
     {
         // Arrange

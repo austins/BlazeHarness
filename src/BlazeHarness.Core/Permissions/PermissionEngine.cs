@@ -25,8 +25,9 @@ namespace BlazeHarness.Core.Permissions;
 /// runs unconfined unless the user chose <see cref="AccessLevel.Unrestricted"/>.
 /// </para>
 /// <para>
-/// A command on the <see cref="Forbidden"/> list, such as a recursive delete, always asks, under every approval mode, and the answer can't be
-/// remembered. <see cref="AccessLevel.Unrestricted"/> skips the list, because the user has already accepted that commands run unconfined.
+/// A command on the <see cref="Forbidden"/> list, such as a recursive delete, always asks, under every approval mode except
+/// <see cref="ApprovalMode.NeverAsk"/>, which refuses it, and the answer can't be remembered.
+/// <see cref="AccessLevel.Unrestricted"/> skips the list, because the user has already accepted that commands run unconfined.
 /// <see cref="AccessLevel.ReadOnly"/> skips the rules whose only risk is changing files, because its sandbox already makes them fail.
 /// </para>
 /// <para>
@@ -34,11 +35,16 @@ namespace BlazeHarness.Core.Permissions;
 /// <see cref="ApprovalMode.NeverAsk"/>, or the user trusts the server and the server marks the tool read-only and not destructive. A Read only
 /// chat never skips the question, and refuses under <see cref="ApprovalMode.NeverAsk"/>.
 /// </para>
+/// <para>
+/// <see cref="ApprovalMode.NeverAsk"/> never waits for the user: any call that would still ask, including one an ask rule or a safety rule
+/// asks about, is refused instead, with a reason the model can read.
+/// </para>
 /// </remarks>
 public sealed class PermissionEngine
 {
     private const string FolderGrantPrefix = "dir:";
     private const string FileGrantPrefix = "file:";
+    private const string NeverAsksRefusal = "This chat never asks, so it was refused. Do not retry it; say in your reply what you wanted to do and why.";
 
     private readonly object _gate = new();
     private readonly ConcurrentDictionary<string, byte> _grants = new(StringComparer.Ordinal);
@@ -223,6 +229,11 @@ public sealed class PermissionEngine
             decision = PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell };
         }
 
+        if (decision.Verdict == PermissionVerdict.Ask && settings.Approvals == ApprovalMode.NeverAsk)
+        {
+            decision = new PermissionDecision(PermissionVerdict.Deny, $"{decision.Reason} {NeverAsksRefusal}");
+        }
+
         return tool.RunsCommands && decision.Verdict != PermissionVerdict.Deny
             ? decision with { ShellReadFolders = GrantedFolders() }
             : decision;
@@ -329,8 +340,8 @@ public sealed class PermissionEngine
             return new PermissionDecision(PermissionVerdict.Deny, resolution.Error ?? "That chat can't be used.");
         }
 
-        // Another folder's chat has its own files and access, and a Read only chat shouldn't start work anywhere, so these ask every time,
-        // even in a chat that never asks: the user is right there, as for a forbidden command.
+        // Another folder's chat has its own files and access, and a Read only chat shouldn't start work anywhere, so these ask every time
+        // (and are refused in a chat that never asks).
         if (!plan.SameScope || settings.Access == AccessLevel.ReadOnly)
         {
             return new PermissionDecision(PermissionVerdict.Ask, plan.Reason, Sticky: true);

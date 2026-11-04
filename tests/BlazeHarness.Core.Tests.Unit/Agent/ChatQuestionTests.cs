@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Agent.Questions;
 using BlazeHarness.Core.Chats.Events;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Tests.Shared.Agent;
@@ -169,6 +170,25 @@ public sealed class ChatQuestionTests
         sut.Queued.Should().BeEmpty();
         sut.Entries[1].ToolCalls.Single().Output.Should().Be("The user answered: neither, use C");
         sut.Entries.Select(e => e.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.Assistant);
+    }
+
+    [Fact]
+    public async Task SetPermissionsAsync_NeverAskWhileAQuestionWaits_LeavesItToTheModel()
+    {
+        // Arrange
+        using var client = Asking("c1", Choice);
+        using var sut = Create(client);
+        var turn = sut.SendAsync("go", TestTargets.Create());
+        await WaitUntilWaiting(sut);
+
+        // Act
+        await sut.SetPermissionsAsync(new PermissionSettings(AccessLevel.WriteInFolder, ApprovalMode.NeverAsk));
+        await turn.Bounded();
+
+        // Assert
+        sut.IsWaitingForUser.Should().BeFalse();
+        var call = sut.Entries[1].ToolCalls.Single();
+        (call.Status, call.Output).Should().Be((ToolCallStatus.Succeeded, AnswerText.YouDecide));
     }
 
     [Fact]

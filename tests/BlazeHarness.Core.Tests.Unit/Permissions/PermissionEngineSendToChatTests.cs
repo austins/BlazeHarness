@@ -88,7 +88,7 @@ public sealed class PermissionEngineSendToChatTests
     [Theory]
     [InlineData(AccessLevel.WriteInFolder)]
     [InlineData(AccessLevel.Unrestricted)]
-    public void Evaluate_OtherFolderThatNeverAsks_AsksEveryTime(AccessLevel access)
+    public void Evaluate_OtherFolderThatNeverAsks_Denies(AccessLevel access)
     {
         // Arrange
         _resolution = new SendToChatResolution(new SendToChatPlan("abc", "Story 2", "/other", SameScope: false, "hello"));
@@ -98,8 +98,7 @@ public sealed class PermissionEngineSendToChatTests
         var decision = Evaluate();
 
         // Assert
-        decision.Verdict.Should().Be(PermissionVerdict.Ask);
-        decision.Sticky.Should().BeTrue();
+        decision.Verdict.Should().Be(PermissionVerdict.Deny);
     }
 
     [Fact]
@@ -118,7 +117,7 @@ public sealed class PermissionEngineSendToChatTests
     }
 
     [Fact]
-    public void Evaluate_ReadOnlyChatThatNeverAsks_AsksEveryTime()
+    public void Evaluate_ReadOnlyChatThatNeverAsks_Denies()
     {
         // Arrange
         _sut.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.NeverAsk);
@@ -127,8 +126,7 @@ public sealed class PermissionEngineSendToChatTests
         var decision = Evaluate();
 
         // Assert
-        decision.Verdict.Should().Be(PermissionVerdict.Ask);
-        decision.Sticky.Should().BeTrue();
+        decision.Verdict.Should().Be(PermissionVerdict.Deny);
     }
 
     [Fact]

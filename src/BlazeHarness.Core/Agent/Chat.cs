@@ -616,6 +616,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         }
 
         Permissions.Settings = settings;
+        LeaveQuestionsToModelIfNeverAsk();
         await SaveAsync([new PermissionsChangedEvent(_time.GetUtcNow(), settings.Access, settings.Approvals)]);
         RaiseChanged();
     }

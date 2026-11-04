@@ -496,7 +496,7 @@ internal static class ChatRunner
                     var firstInResponse = !askedInResponse;
                     askedInResponse = true;
                     string? problem = null;
-                    var question = firstInResponse ? ParseQuestion(p, questions, asker, out problem) : null;
+                    var question = firstInResponse ? ParseQuestion(p, questions, asker, permissions.Settings.Approvals, out problem) : null;
                     if (question is null)
                     {
                         results[index] = ToolResult.Error(firstInResponse ? problem! : AskUserTool.OneAtATime);
@@ -662,7 +662,7 @@ internal static class ChatRunner
         }
     }
 
-    private static UserQuestion? ParseQuestion(PlannedCall call, QuestionBudget budget, IUserAsker? asker, out string? problem)
+    private static UserQuestion? ParseQuestion(PlannedCall call, QuestionBudget budget, IUserAsker? asker, ApprovalMode approvals, out string? problem)
     {
         problem = null;
         UserQuestion question;
@@ -673,6 +673,12 @@ internal static class ChatRunner
         catch (ToolArgumentException ex)
         {
             problem = ex.Message;
+            return null;
+        }
+
+        if (approvals == ApprovalMode.NeverAsk)
+        {
+            problem = AskUserTool.NeverAsks;
             return null;
         }
 

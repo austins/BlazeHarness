@@ -11,6 +11,6 @@ public enum ApprovalMode
     /// <summary>Ask only when the access level would otherwise block the action or the call reads outside the folder.</summary>
     AutoApprove,
 
-    /// <summary>Never ask; calls that need approval run, and calls the access level forbids are refused.</summary>
+    /// <summary>Never ask; calls that need approval run, and calls the access level forbids, or that would still ask, are refused. <c>ask_user</c> isn't asked either.</summary>
     NeverAsk,
 }
