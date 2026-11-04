@@ -1,4 +1,4 @@
-# Blaze Harness
+# <img src="src/BlazeHarness.Web/wwwroot/favicon.svg" alt="" width="32" height="32"> Blaze Harness
 
 A local web app for chatting and coding with any OpenAI-compatible LLM. It runs on Windows, macOS and Linux. The model can read, edit and search files and run shell commands, and you approve what it may do.
 
