@@ -153,7 +153,7 @@ A browser the agent can use without any extra MCP server (Settings > Web, on by 
 
 Not built yet, and not promised:
 
-* Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits. A subagent would run the same loop at the same or a lower access level, and its approval requests would go to the parent chat's approver, never be granted on their own.
+* Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits. A subagent would run the same loop at the same or a lower access level, and its approval requests would go to the parent chat's approver, never be granted on their own. A subagent starts without the parent's history, so it would need the to-do list passed in or a `get_todos` tool; a chat today needs neither, because the list is in its own history and in compaction summaries.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
 * Custom system prompt or instructions, appended to the built-in system prompt rather than replacing it.
