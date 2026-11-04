@@ -1660,14 +1660,8 @@
   <data name="CompactionMarkerSummarized" xml:space="preserve">
     <value>已摘要较早的消息以节省空间（{before} → {after} {count, plural, other {个 token}}）</value>
   </data>
-  <data name="MessageViewUsageIn" xml:space="preserve">
-    <value>输入 {tokens}</value>
-  </data>
-  <data name="MessageViewUsageCached" xml:space="preserve">
-    <value>缓存 {tokens}</value>
-  </data>
-  <data name="MessageViewUsageOut" xml:space="preserve">
-    <value>输出 {tokens}</value>
+  <data name="MessageViewUsageLabel" xml:space="preserve">
+    <value>消息统计</value>
   </data>
   <data name="MessageViewUsagePrompt" xml:space="preserve">
     <value>提示词：{promptCount, plural, other {{prompt} 个 token}}，{cachedCount, plural, other {{cached} 个来自缓存}}</value>

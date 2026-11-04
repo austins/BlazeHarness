@@ -11,88 +11,112 @@
 @inject ToastService Toasts
 
 <article class="msg" data-entry="@Entry.Id" data-role="@(Entry.Role == ChatRole.User ? "user" : "assistant")" data-status="@Entry.Status.ToString().ToLowerInvariant()" data-editing="@(Editing ? "true" : null)">
-    @if (ShowLabel && !string.IsNullOrEmpty(Entry.Label))
-    {
-        <div class="msg-label">@Entry.Label</div>
-    }
+    <div class="msg-content">
+        @if (ShowLabel && !string.IsNullOrEmpty(Entry.Label))
+        {
+            <div class="msg-label">@Entry.Label</div>
+        }
 
-    @if (Entry.Origin == UserMessageOrigin.Steer)
-    {
-        <div class="msg-label">@WebStrings.MessageViewQueuedLabel</div>
-    }
+        @if (Entry.Origin == UserMessageOrigin.Steer)
+        {
+            <div class="msg-label">@WebStrings.MessageViewQueuedLabel</div>
+        }
 
-    @if (Entry.Origin == UserMessageOrigin.FromChat && Entry.Source is { } source)
-    {
-        <div class="msg-label">@ResourceMessageFormatter.Web.Format(nameof(WebStrings.MessageViewFromChatLabel), new Dictionary<string, object?> { ["title"] = source.Title })</div>
-    }
+        @if (Entry.Origin == UserMessageOrigin.FromChat && Entry.Source is { } source)
+        {
+            <div class="msg-label">@ResourceMessageFormatter.Web.Format(nameof(WebStrings.MessageViewFromChatLabel), new Dictionary<string, object?> { ["title"] = source.Title })</div>
+        }
 
-    @if (Entry.Reasoning.Length > 0)
-    {
-        <details class="msg-thinking" open="@(Entry.Status == EntryStatus.Streaming && Entry.Text.Length == 0)">
-            <summary>@WebStrings.MessageViewThinkingSummary</summary>
-            <div class="msg-body">@Entry.Reasoning</div>
-        </details>
-    }
+        @if (Entry.Reasoning.Length > 0)
+        {
+            <details class="msg-thinking" open="@(Entry.Status == EntryStatus.Streaming && Entry.Text.Length == 0)">
+                <summary>@WebStrings.MessageViewThinkingSummary</summary>
+                <div class="msg-body">@Entry.Reasoning</div>
+            </details>
+        }
 
-    @if (Entry.Attachments.Count > 0)
-    {
-        <div class="msg-files">
-            @foreach (var file in Entry.Attachments.Select(a => a.File))
+        @if (Entry.Attachments.Count > 0)
+        {
+            <div class="msg-files">
+                @foreach (var file in Entry.Attachments.Select(a => a.File))
+                {
+                    var address = AttachmentEndpoints.AddressOf(ChatId ?? string.Empty, file.Id);
+                    @if (file.IsImage)
+                    {
+                        <a href="@address" target="_blank" rel="noopener"><img class="msg-image" src="@address" alt="@file.Name" loading="lazy" /></a>
+                    }
+                    else
+                    {
+                        <a class="chip" href="@address" target="_blank" rel="noopener" title="@file.Name"><Icon Name="file" /><span class="chip-name">@file.Name</span><span class="chip-size">@FileSize.Format(file.Size)</span></a>
+                    }
+                }
+            </div>
+        }
+
+        @if (Entry.Text.Length > 0)
+        {
+            @if (Entry.Role == ChatRole.Assistant)
             {
-                var address = AttachmentEndpoints.AddressOf(ChatId ?? string.Empty, file.Id);
-                @if (file.IsImage)
-                {
-                    <a href="@address" target="_blank" rel="noopener"><img class="msg-image" src="@address" alt="@file.Name" loading="lazy" /></a>
-                }
-                else
-                {
-                    <a class="chip" href="@address" target="_blank" rel="noopener" title="@file.Name"><Icon Name="file" /><span class="chip-name">@file.Name</span><span class="chip-size">@FileSize.Format(file.Size)</span></a>
-                }
+                <div class="msg-body md">@((MarkupString)_settledHtml)@((MarkupString)_tailHtml)</div>
             }
-        </div>
-    }
-
-    @if (Entry.Text.Length > 0)
-    {
-        @if (Entry.Role == ChatRole.Assistant)
-        {
-            <div class="msg-body md">@((MarkupString)_settledHtml)@((MarkupString)_tailHtml)</div>
+            else
+            {
+                <div class="msg-body">@Entry.Text</div>
+            }
         }
-        else
+        else if (Entry.Status == EntryStatus.Streaming && Entry.Reasoning.Length == 0)
         {
-            <div class="msg-body">@Entry.Text</div>
+            <div class="msg-wait" role="status">@WebStrings.MessageViewWaiting</div>
         }
-    }
-    else if (Entry.Status == EntryStatus.Streaming && Entry.Reasoning.Length == 0)
-    {
-        <div class="msg-wait" role="status">@WebStrings.MessageViewWaiting</div>
-    }
-    else if (Entry.Role == ChatRole.Assistant && Entry is { Status: EntryStatus.Done, ToolCalls.Count: 0, Error: null })
-    {
-        <div class="hint">@WebStrings.MessageViewEmptyReplyHint</div>
-    }
+        else if (Entry.Role == ChatRole.Assistant && Entry is { Status: EntryStatus.Done, ToolCalls.Count: 0, Error: null })
+        {
+            <div class="hint">@WebStrings.MessageViewEmptyReplyHint</div>
+        }
 
-    @foreach (var call in Entry.ToolCalls)
-    {
-        <ToolCallView @key="call.CallId" Call="call" ChatId="@ChatId" OnDecide="OnDecide" OnDecideHost="OnDecideHost" OnAnswer="OnAnswer" />
-    }
+        @foreach (var call in Entry.ToolCalls)
+        {
+            <ToolCallView @key="call.CallId" Call="call" ChatId="@ChatId" OnDecide="OnDecide" OnDecideHost="OnDecideHost" OnAnswer="OnAnswer" />
+        }
 
-    @if (Entry.Status == EntryStatus.Cancelled)
-    {
-        <div class="hint">@WebStrings.MessageViewStoppedHint</div>
-    }
+        @if (Entry.Status == EntryStatus.Cancelled)
+        {
+            <div class="hint">@WebStrings.MessageViewStoppedHint</div>
+        }
 
-    @if (Entry.Status == EntryStatus.Interrupted)
-    {
-        <div class="hint">@WebStrings.MessageViewInterruptedHint</div>
-    }
+        @if (Entry.Status == EntryStatus.Interrupted)
+        {
+            <div class="hint">@WebStrings.MessageViewInterruptedHint</div>
+        }
 
-    @if (Entry.Error is not null)
-    {
-        <Alert>@Entry.Error</Alert>
-    }
+        @if (Entry.Error is not null)
+        {
+            <Alert>@Entry.Error</Alert>
+        }
+    </div>
 
     <footer class="msg-meta">
+        <time class="msg-time" datetime="@Entry.At.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)"></time>
+        @if (Entry.Usage is { } usage)
+        {
+            <Popover Label="@WebStrings.MessageViewUsageLabel" Title="@WebStrings.MessageViewUsageLabel">
+                <Trigger>
+                    <span class="sr-only">@WebStrings.MessageViewUsageLabel </span>
+                    @if (usage.DecodeTokensPerSecond is { } rate)
+                    {
+                        <span class="mono">@TokenFormat.Rate(rate)</span>
+                    }
+                    else
+                    {
+                        <Icon Name="gauge" />
+                    }
+                </Trigger>
+                <ChildContent>
+                    <div class="panel-head">@WebStrings.MessageViewUsageLabel</div>
+                    <div class="msg-usage-details">@UsageDetails(usage)</div>
+                </ChildContent>
+            </Popover>
+        }
+
         @if (Entry.Text.Length > 0 && Entry.Status != EntryStatus.Streaming)
         {
             <button type="button" class="btn btn-ghost btn-sm btn-icon msg-action" aria-label="@WebStrings.MessageViewCopyLabel" title="@WebStrings.MessageViewCopyTooltip" @onclick="CopyAsync"><Icon Name="copy" /></button>
@@ -102,42 +126,10 @@
         {
             <button type="button" class="btn btn-ghost btn-sm btn-icon msg-action" aria-label="@WebStrings.MessageViewEditLabel" title="@WebStrings.MessageViewEditTooltip" @onclick="() => OnEdit.InvokeAsync(Entry)"><Icon Name="pencil" /></button>
         }
-
-        <time class="msg-time" datetime="@Entry.At.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)"></time>
-        @if (Entry.Usage is { } usage)
-        {
-            <span class="msg-usage mono" title="@UsageDetails(usage)">@UsageSummary(usage)</span>
-        }
     </footer>
 </article>
 
 @code {
-    private static string UsageSummary(UsageReported usage)
-    {
-        var parts = new List<string>
-        {
-            ResourceMessageFormatter.Web.Format(
-                nameof(WebStrings.MessageViewUsageIn),
-                new Dictionary<string, object?> { ["tokens"] = TokenFormat.Of(usage.PromptTokens) }),
-        };
-        if (usage.CachedTokens > 0)
-        {
-            parts.Add(ResourceMessageFormatter.Web.Format(
-                nameof(WebStrings.MessageViewUsageCached),
-                new Dictionary<string, object?> { ["tokens"] = TokenFormat.Of(usage.CachedTokens) }));
-        }
-
-        parts.Add(ResourceMessageFormatter.Web.Format(
-            nameof(WebStrings.MessageViewUsageOut),
-            new Dictionary<string, object?> { ["tokens"] = TokenFormat.Of(usage.CompletionTokens) }));
-        if (usage.DecodeTokensPerSecond is { } decode)
-        {
-            parts.Add(TokenFormat.Rate(decode));
-        }
-
-        return string.Join(" · ", parts);
-    }
-
     private static string UsageDetails(UsageReported usage)
     {
         var lines = new List<string>

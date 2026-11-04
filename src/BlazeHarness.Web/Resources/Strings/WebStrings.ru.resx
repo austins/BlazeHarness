@@ -1660,14 +1660,8 @@
   <data name="CompactionMarkerSummarized" xml:space="preserve">
     <value>Предыдущие сообщения суммированы для экономии места ({before} → {after} {count, plural, one {токен} few {токена} many {токенов} other {токена}})</value>
   </data>
-  <data name="MessageViewUsageIn" xml:space="preserve">
-    <value>{tokens} вх.</value>
-  </data>
-  <data name="MessageViewUsageCached" xml:space="preserve">
-    <value>{tokens} в кэше</value>
-  </data>
-  <data name="MessageViewUsageOut" xml:space="preserve">
-    <value>{tokens} вых.</value>
+  <data name="MessageViewUsageLabel" xml:space="preserve">
+    <value>Статистика сообщения</value>
   </data>
   <data name="MessageViewUsagePrompt" xml:space="preserve">
     <value>Промпт: {promptCount, plural, one {{prompt} токен} few {{prompt} токена} many {{prompt} токенов} other {{prompt} токена}}, {cachedCount, plural, one {{cached} из кэша} few {{cached} из кэша} many {{cached} из кэша} other {{cached} из кэша}}</value>

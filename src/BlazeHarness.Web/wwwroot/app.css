@@ -494,14 +494,15 @@ dialog.dialog.dialog-settings { width: min(68rem, calc(100vw - 2rem)); height: m
 /* Primitives: toast -------------------------------------------------------------- */
 .toasts { position: fixed; inset-block-end: var(--space-4); inset-inline-end: var(--space-4); z-index: 50; display: flex; flex-direction: column; gap: var(--space-2); max-width: min(24rem, calc(100vw - 2rem)); }
 .toast {
-    display: flex; align-items: flex-start; gap: var(--space-3);
-    padding: var(--space-3); border-radius: var(--radius); border: 1px solid var(--border);
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: var(--space-2) var(--space-3); border-radius: var(--radius); border: 1px solid var(--border);
     background: var(--bg-raised); box-shadow: var(--shadow-lg); font-size: var(--text-sm);
     animation: pop var(--duration) var(--ease);
 }
 .toast-error { border-color: var(--danger); }
 .toast-success { border-color: var(--success); }
-.toast .msg { flex: 1; }
+.toast-message { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.toast > .btn { flex: none; }
 
 /* Providers settings -------------------------------------------------------------- */
 .split { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); align-items: start; }
@@ -688,22 +689,26 @@ html[data-chat-full-width] .chat { --chat-width: 100%; }
 ::highlight(bh-find) { background-color: var(--warning-soft); color: inherit; outline: 1px solid var(--border-strong); }
 .chat-earlier { align-self: center; }
 .msg { content-visibility: auto; contain-intrinsic-size: auto 6rem; display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-.msg[data-role="user"] { align-self: flex-end; max-width: 85%; background: var(--accent-soft); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3); }
+.msg[data-role="user"] { align-self: flex-end; align-items: flex-end; max-width: 85%; }
 .msg[data-role="assistant"] { align-self: stretch; }
+.msg-content { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; max-width: 100%; }
+.msg[data-role="user"] > .msg-content { background: var(--accent-soft); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3); }
 .msg-body { white-space: pre-wrap; overflow-wrap: anywhere; }
 .msg-label { font-size: var(--text-xs); color: var(--fg-muted); font-family: var(--font-mono); }
-.msg-meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); font-size: var(--text-xs); color: var(--fg-muted); }
+.msg-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); max-width: 100%; font-size: var(--text-xs); color: var(--fg-muted); }
+.msg-meta > .popover-trigger { padding: var(--space-1); gap: var(--space-1); color: inherit; font-weight: 400; }
+.msg-meta > .popover-trigger > .icon:last-child { width: 0.75rem; height: 0.75rem; opacity: 0.7; }
+.msg-usage-details { padding: var(--space-2) var(--space-3); white-space: pre-line; overflow-wrap: anywhere; overflow-y: auto; }
 .msg[data-role="user"] > .msg-meta { justify-content: flex-end; }
 .msg-time:empty { display: none; }
-.msg-action { order: 1; }
 .msg-action { opacity: 0; padding: var(--space-1); transition: opacity var(--duration) var(--ease), background var(--duration) var(--ease); }
 .msg:hover .msg-action, .msg:focus-within .msg-action, .msg[data-editing] .msg-action { opacity: 1; }
-.msg[data-editing] { outline: 2px solid var(--accent); }
+.msg[data-editing] > .msg-content { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (hover: none) { .msg-action { opacity: 1; } }
 .composer-editing { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm); color: var(--fg-muted); }
 .chat-thread > .msg { animation: rise var(--duration-slow) var(--ease); }
 .msg-wait { color: var(--fg-muted); font-size: var(--text-sm); }
-.msg[data-status="streaming"] > .msg-body:last-of-type:not(.md)::after, .msg[data-status="streaming"] > .md:last-of-type > :last-child::after { content: "▍"; color: var(--fg-muted); }
+.msg[data-status="streaming"] > .msg-content > .msg-body:last-of-type:not(.md)::after, .msg[data-status="streaming"] > .msg-content > .md:last-of-type > :last-child::after { content: "▍"; color: var(--fg-muted); }
 .msg-thinking { color: var(--fg-muted); font-size: var(--text-sm); border-inline-start: 2px solid var(--border); padding-inline-start: var(--space-3); }
 
 .compaction { align-self: stretch; border-block: 1px dashed var(--border-strong); padding-block: var(--space-2); font-size: var(--text-sm); color: var(--fg-muted); }
@@ -901,6 +906,6 @@ a.chip:hover { background: var(--bg-hover); }
 
 /* Looping motion only when the user hasn't asked for less. */
 @media (prefers-reduced-motion: no-preference) {
-    .msg[data-status="streaming"] > .msg-body:last-of-type:not(.md)::after, .msg[data-status="streaming"] > .md:last-of-type > :last-child::after { animation: blink 1s steps(1) infinite; }
+    .msg[data-status="streaming"] > .msg-content > .msg-body:last-of-type:not(.md)::after, .msg[data-status="streaming"] > .msg-content > .md:last-of-type > :last-child::after { animation: blink 1s steps(1) infinite; }
     .tool[data-status="awaitingapproval"] { animation: pulse 1.4s var(--ease) 3; }
 }
