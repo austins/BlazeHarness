@@ -1,0 +1,174 @@
+@using BlazeHarness.Core.Git
+@inject GitChangesReader Git
+@inject ILogger<ChangesPanel> Logger
+
+<div class="changes-bar">
+    <label class="visually-hidden" for="changes-scope">@WebStrings.ChangesScopeLabel</label>
+    <select id="changes-scope" class="select changes-scope" @onchange="OnScopeChanged">
+        <option value="@GitChangeScope.All" selected="@(Scope == GitChangeScope.All)">@Format(nameof(WebStrings.ChangesScopeAll), Status.AllCount)</option>
+        <option value="@GitChangeScope.Staged" selected="@(Scope == GitChangeScope.Staged)">@Format(nameof(WebStrings.ChangesScopeStaged), Status.StagedCount)</option>
+        <option value="@GitChangeScope.Unstaged" selected="@(Scope == GitChangeScope.Unstaged)">@Format(nameof(WebStrings.ChangesScopeUnstaged), Status.UnstagedCount)</option>
+    </select>
+    <button type="button" class="btn btn-icon" aria-label="@WebStrings.ChangesRefresh" title="@WebStrings.ChangesRefresh" disabled="@Refreshing" @onclick="OnRefresh"><Icon Name="retry" Spin="Refreshing" /></button>
+</div>
+
+@if (Status.Files.Count == 0)
+{
+    <p class="changes-empty">@WebStrings.ChangesEmpty</p>
+}
+else
+{
+    <ul class="changes-files" aria-label="@WebStrings.ChangesFilesLabel">
+        @foreach (var file in Status.Files)
+        {
+            <li>
+                <button type="button" class="changes-file" aria-current="@(file.Path == _selected?.Path ? "true" : null)" title="@file.Path" @onclick="() => SelectAsync(file)">
+                    <span class="changes-kind" data-kind="@file.Kind.ToString().ToLowerInvariant()" aria-hidden="true">@file.Kind.ToString()[0]</span>
+                    <span class="visually-hidden">@KindLabel(file.Kind)</span>
+                    <span class="changes-path"><bdi>@FileName(file.Path)</bdi><span class="changes-dir">@DirectoryOf(file.Path)</span></span>
+                    @if (file.Added is { } added && file.Removed is { } removed)
+                    {
+                        <span class="changes-counts"><span class="changes-added">+@added</span> <span class="changes-removed">−@removed</span></span>
+                    }
+                </button>
+            </li>
+        }
+    </ul>
+    <div class="changes-diff" role="region" aria-label="@WebStrings.ChangesDiffLabel" tabindex="0">
+        @if (_failed)
+        {
+            <p class="changes-empty">@WebStrings.ChangesLoadFailed</p>
+        }
+        else if (_diff is null)
+        {
+            <p class="changes-empty">@(_loading ? WebStrings.ChangesLoading : WebStrings.ChangesSelectFile)</p>
+        }
+        else if (_diff.IsBinary)
+        {
+            <p class="changes-empty">@WebStrings.ChangesBinary</p>
+        }
+        else if (_diff.Hunks.Count == 0)
+        {
+            <p class="changes-empty">@WebStrings.ChangesNoLines</p>
+        }
+        else
+        {
+            <GitDiffView Diff="_diff" />
+            @if (_diff.IsTruncated)
+            {
+                <p class="changes-note">@WebStrings.ChangesTruncated</p>
+            }
+        }
+    </div>
+}
+
+@code {
+    private GitStatus? _seen;
+    private GitChangedFile? _selected;
+    private GitFileDiff? _diff;
+    private bool _loading;
+    private bool _failed;
+    private int _loadVersion;
+
+    /// <summary>
+    /// Gets or sets the changes to list.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public GitStatus Status { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets which changes <see cref="Status"/> lists.
+    /// </summary>
+    [Parameter]
+    public GitChangeScope Scope { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the changes are being read again.
+    /// </summary>
+    [Parameter]
+    public bool Refreshing { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user choosing which changes to list.
+    /// </summary>
+    [Parameter]
+    public EventCallback<GitChangeScope> OnScopeChange { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user asking to read the changes again.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnRefresh { get; set; }
+
+    /// <inheritdoc />
+    protected override Task OnParametersSetAsync()
+    {
+        if (ReferenceEquals(_seen, Status))
+        {
+            return Task.CompletedTask;
+        }
+
+        _seen = Status;
+        var file = Status.Files.FirstOrDefault(f => f.Path == _selected?.Path) ?? Status.Files.FirstOrDefault();
+        return SelectAsync(file);
+    }
+
+    private static string DirectoryOf(string path)
+    {
+        var slash = path.LastIndexOf('/');
+        return slash < 0 ? string.Empty : " " + path[..slash];
+    }
+
+    private static string FileName(string path) => path[(path.LastIndexOf('/') + 1)..];
+
+    private static string Format(string key, int count) =>
+        ResourceMessageFormatter.Web.Format(key, new Dictionary<string, object?> { ["count"] = count });
+
+    private static string KindLabel(GitChangeKind kind) => kind switch
+    {
+        GitChangeKind.Added => WebStrings.ChangesKindAdded,
+        GitChangeKind.Deleted => WebStrings.ChangesKindDeleted,
+        GitChangeKind.TypeChanged => WebStrings.ChangesKindTypeChanged,
+        GitChangeKind.Untracked => WebStrings.ChangesKindUntracked,
+        GitChangeKind.Conflicted => WebStrings.ChangesKindConflicted,
+        _ => WebStrings.ChangesKindModified,
+    };
+
+    private Task OnScopeChanged(ChangeEventArgs e) =>
+        Enum.TryParse<GitChangeScope>(e.Value?.ToString(), out var scope) ? OnScopeChange.InvokeAsync(scope) : Task.CompletedTask;
+
+    private async Task SelectAsync(GitChangedFile? file)
+    {
+        var version = ++_loadVersion;
+        _selected = file;
+        _failed = false;
+        if (file is null)
+        {
+            _diff = null;
+            _loading = false;
+            return;
+        }
+
+        _loading = true;
+        GitFileDiff? diff = null;
+        var failed = false;
+        try
+        {
+            diff = await Git.GetDiffAsync(Status.Root, Scope, file);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Logger.LogWarning(ex, "Reading the diff of a changed file failed.");
+            failed = true;
+        }
+
+        if (version != _loadVersion)
+        {
+            return;
+        }
+
+        _loading = false;
+        _failed = failed;
+        _diff = diff;
+    }
+}

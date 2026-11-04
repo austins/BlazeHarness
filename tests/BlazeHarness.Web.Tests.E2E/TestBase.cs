@@ -41,7 +41,7 @@ public abstract class TestBase : IAsyncLifetime
                     Id = "fake",
                     DisplayName = ProviderName,
                     BaseUrl = _provider.BaseUrl,
-                    Models = [new ModelConfig { Id = ModelId, ContextWindow = 8192, MaxOutputTokens = 1024 }],
+                    Models = [new ModelConfig { Id = ModelId, ContextWindow = 16384, MaxOutputTokens = 1024 }],
                 },
             ],
         };

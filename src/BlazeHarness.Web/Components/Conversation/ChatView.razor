@@ -153,7 +153,7 @@ else
 
             <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
         </section>
-        <BrowserPanel ChatId="@_openId" />
+        <SidePanel ChatId="@_openId" FolderPath="@ContextPath" Running="_chat?.IsRunning ?? false" />
     </div>
 }
 

@@ -5,48 +5,42 @@
 @inject WebServices Web
 @inject IJSRuntime JS
 
-@if (_frame is { } frame && frame.Url.AbsoluteUri != _dismissedUrl)
+<div class="browser-bar">
+    <Icon Name="globe" />
+    <span class="browser-url" title="@Frame.Url">@Frame.Url</span>
+    <a class="btn btn-icon" href="@BrowserEndpoints.ScreenshotAddressOf(ChatId)" download="@BrowserEndpoints.ScreenshotFileName" aria-label="@WebStrings.BrowserPanelSaveScreenshot" title="@WebStrings.BrowserPanelSaveScreenshot"><Icon Name="image" /></a>
+</div>
+<div class="browser-view" tabindex="0" title="@WebStrings.BrowserPanelHint" @ref="_view">
+    <canvas role="img" aria-label="@(Frame.Title.Length > 0 ? Frame.Title : WebStrings.BrowserPanelImageAlt)" @ref="_image"></canvas>
+</div>
+@if (Frame.Title.Length > 0)
 {
-    <aside class="browser-panel" aria-label="@WebStrings.BrowserPanelLabel">
-        <div class="browser-bar">
-            <Icon Name="globe" />
-            <span class="browser-url" title="@frame.Url">@frame.Url</span>
-            <a class="btn btn-icon" href="@BrowserEndpoints.ScreenshotAddressOf(_shownChatId ?? string.Empty)" download="@BrowserEndpoints.ScreenshotFileName" aria-label="@WebStrings.BrowserPanelSaveScreenshot" title="@WebStrings.BrowserPanelSaveScreenshot"><Icon Name="image" /></a>
-            <button type="button" class="btn btn-icon" aria-label="@WebStrings.BrowserPanelClose" title="@WebStrings.BrowserPanelClose" @onclick="Dismiss"><Icon Name="close" /></button>
-        </div>
-        <div class="browser-view" tabindex="0" title="@WebStrings.BrowserPanelHint" @ref="_view">
-            <canvas role="img" aria-label="@(frame.Title.Length > 0 ? frame.Title : WebStrings.BrowserPanelImageAlt)" @ref="_image"></canvas>
-        </div>
-        @if (frame.Title.Length > 0)
-        {
-            <div class="browser-title">@frame.Title</div>
-        }
-    </aside>
+    <div class="browser-title">@Frame.Title</div>
 }
 
 @code {
-    private BrowserFrame? _frame;
-    private string? _shownChatId;
-    private string? _dismissedUrl;
     private ElementReference _view;
     private ElementReference _image;
     private string? _bound;
     private DotNetObjectReference<BrowserPanel>? _self;
     private bool _disposed;
 
-    private bool Visible => _frame is { } frame && frame.Url.AbsoluteUri != _dismissedUrl;
+    /// <summary>
+    /// Gets or sets the id of the chat whose page is shown.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string ChatId { get; set; } = default!;
 
     /// <summary>
-    /// Gets or sets the id of the open chat, or null while a new chat has none yet.
+    /// Gets or sets the address and title of the page being shown.
     /// </summary>
-    [Parameter]
-    public string? ChatId { get; set; }
+    [Parameter, EditorRequired]
+    public BrowserFrame Frame { get; set; } = default!;
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         _disposed = true;
-        Web.BrowserFrameChanged -= OnFrameChanged;
         _self?.Dispose();
         await StopStreamAsync();
     }
@@ -88,24 +82,10 @@
     public Task Scroll(double x, double y, double deltaY) => Forward(chatId => Web.BrowserScrollAsync(chatId, x, y, deltaY, CancellationToken.None));
 
     /// <inheritdoc />
-    protected override void OnInitialized() => Web.BrowserFrameChanged += OnFrameChanged;
-
-    /// <inheritdoc />
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!Visible)
-        {
-            if (_bound is not null)
-            {
-                _bound = null;
-                await StopStreamAsync();
-            }
-
-            return;
-        }
-
-        var key = _view.Id + ":" + _shownChatId;
-        if (_disposed || _bound == key || _shownChatId is not { } chatId)
+        var key = _view.Id + ":" + ChatId;
+        if (_disposed || _bound == key)
         {
             return;
         }
@@ -114,25 +94,12 @@
         _self ??= DotNetObjectReference.Create(this);
         try
         {
-            await JS.InvokeVoidAsync("bhBrowser.bind", _view, _image, _self, BrowserEndpoints.StreamAddressOf(chatId));
+            await JS.InvokeVoidAsync("bhBrowser.bind", _view, _image, _self, BrowserEndpoints.StreamAddressOf(ChatId));
         }
         catch (JSDisconnectedException)
         {
             // The circuit is gone; there is nothing left to bind.
         }
-    }
-
-    /// <inheritdoc />
-    protected override void OnParametersSet()
-    {
-        if (ChatId == _shownChatId)
-        {
-            return;
-        }
-
-        _shownChatId = ChatId;
-        _dismissedUrl = null;
-        _frame = ChatId is null ? null : Web.LatestBrowserFrame(ChatId);
     }
 
     private async ValueTask StopStreamAsync()
@@ -149,51 +116,13 @@
 
     private async Task Forward(Func<string, Task> send)
     {
-        if (_shownChatId is not { } chatId)
-        {
-            return;
-        }
-
         try
         {
-            await send(chatId);
+            await send(ChatId);
         }
         catch (BrowserException)
         {
             // The page closed or moved on between the click and its arrival; the next picture shows what happened.
         }
-    }
-
-    private void Dismiss() => _dismissedUrl = _frame?.Url.AbsoluteUri;
-
-    private void OnFrameChanged(object? sender, BrowserFrameChangedEventArgs e)
-    {
-        if (e.ChatId != _shownChatId)
-        {
-            return;
-        }
-
-        _ = InvokeAsync(() =>
-        {
-            if (e.ChatId != _shownChatId)
-            {
-                return;
-            }
-
-            // The pictures travel over their own connection, so the panel only draws again when the address or title changes.
-            if (_frame is { } shown && e.Frame is { } next && shown.Url == next.Url && shown.Title == next.Title)
-            {
-                return;
-            }
-
-            // A closed page clears the choice; so does the agent moving to another address, which the user will want to see.
-            if (e.Frame is null || e.Frame.Url.AbsoluteUri != _dismissedUrl)
-            {
-                _dismissedUrl = null;
-                _frame = e.Frame;
-            }
-
-            StateHasChanged();
-        });
     }
 }

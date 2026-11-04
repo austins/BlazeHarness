@@ -8,6 +8,7 @@
 
 <div class="app" data-circuit="@(_connected ? "ready" : "pending")">
     <Sidebar Collapsed="_collapsed" />
+    <div class="resizer resizer-sidebar" data-resizer="sidebar" role="separator" aria-orientation="vertical" tabindex="0" aria-label="@WebStrings.MainLayoutResizeSidebar"></div>
     @if (!_collapsed)
     {
         <button type="button" class="sidebar-backdrop" aria-label="@WebStrings.MainLayoutCloseSidebar" tabindex="-1" @onclick="() => _collapsed = true"></button>
@@ -17,6 +18,7 @@
         <header class="topbar">
             <button type="button" class="btn btn-ghost btn-icon" aria-label="@(_collapsed ? WebStrings.MainLayoutShowSidebar : WebStrings.MainLayoutHideSidebar)" aria-expanded="@(_collapsed ? "false" : "true")" @onclick="() => _collapsed = !_collapsed"><Icon Name="menu" /></button>
             <span class="title">@WebStrings.MainLayoutTitle</span>
+            <SidePanelToggle />
         </header>
         <main class="content">
             @Body

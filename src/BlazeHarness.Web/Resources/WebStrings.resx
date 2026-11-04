@@ -2057,8 +2057,8 @@
     <comment>Label of a checkbox on the Web page that turns the browser tools on or off. They let the agent open a page of a web app running on this computer in a headless browser, read it and check its own UI changes.</comment>
   </data>
   <data name="WebToolsSettingsBrowserHint" xml:space="preserve">
-    <value>The agent can open pages on this computer (localhost) in a hidden browser that runs their scripts, and read what they show and any errors. It can't open the internet or BlazeHarness itself; each address asks first, like web fetch. The browser is downloaded once, about 125 MB.</value>
-    <comment>Hint under the Browser checkbox on the Web page. It explains that the tool opens only addresses on this computer (localhost), runs the page's scripts in a hidden (headless) browser, cannot open internet addresses or the app itself, asks for approval per address, and needs a one-time download of about 125 MB.</comment>
+    <value>The agent can open pages on this computer (localhost) in a hidden browser that runs their scripts, and read what they show and any errors. It can't open the internet or BlazeHarness itself; each address asks first, like web fetch. This is a remote-controlled test browser, not a full one: it has no tabs, extensions or developer tools, and the agent can navigate, click, type, scroll, wait and take screenshots, but not drag, upload files or reach pages inside iframes. The side panel shows a live picture of the page that you can click, hover, type and scroll in. The browser is downloaded once, about 125 MB.</value>
+    <comment>Hint under the Browser checkbox on the Web page. It explains that the tool opens only addresses on this computer (localhost), runs the page's scripts in a hidden (headless) browser, cannot open internet addresses or the app itself, asks for approval per address, is a remote-controlled test browser with limited features (no tabs, extensions or developer tools; no dragging, file uploads or iframe pages), shows a live picture in the side panel, and needs a one-time download of about 125 MB.</comment>
   </data>
   <data name="WebToolsSettingsBrowserForwarded" xml:space="preserve">
     <value>The browser tools are offered in every chat. A server that a sandboxed command starts can be opened when the command runs in the background: its ports are forwarded to localhost. A server started without background can't be reached from outside its command.</value>
@@ -2100,13 +2100,113 @@
     <value>Stop {command}</value>
     <comment>Accessible name (aria-label) of the Stop button of one background command. command is the command text, which is not translated.</comment>
   </data>
-  <data name="BrowserPanelLabel" xml:space="preserve">
-    <value>Browser</value>
-    <comment>Accessible name of the side panel next to the chat that shows the page the assistant has open in its browser.</comment>
+  <data name="SidePanelLabel" xml:space="preserve">
+    <value>Side panel</value>
+    <comment>Accessible name of the panel next to the chat that holds the browser page and the changed files.</comment>
   </data>
-  <data name="BrowserPanelClose" xml:space="preserve">
-    <value>Hide browser</value>
-    <comment>Tooltip and accessible name of the button that hides the browser side panel. It reappears when the assistant opens another page.</comment>
+  <data name="SidePanelTabsLabel" xml:space="preserve">
+    <value>Panel views</value>
+    <comment>Accessible name of the group of buttons at the top of the side panel that switch between the browser and the changed files.</comment>
+  </data>
+  <data name="SidePanelTabBrowser" xml:space="preserve">
+    <value>Browser</value>
+    <comment>Button in the side panel that shows the page the assistant has open in its browser. Appears next to the globe icon.</comment>
+  </data>
+  <data name="SidePanelTabChanges" xml:space="preserve">
+    <value>Changes</value>
+    <comment>Button in the side panel that lists the files changed in the git repository of the chat folder. Followed by the number of changed files.</comment>
+  </data>
+  <data name="SidePanelResize" xml:space="preserve">
+    <value>Resize side panel</value>
+    <comment>Accessible name of the draggable divider between the chat and the side panel. Arrow keys move it.</comment>
+  </data>
+  <data name="SidePanelToggleTooltip" xml:space="preserve">
+    <value>Show or hide the side panel (browser and changes)</value>
+    <comment>Tooltip and accessible name of the icon-only button at the right end of the top bar that shows or hides the side panel. The button also shows the number of changed files as a badge.</comment>
+  </data>
+  <data name="MainLayoutResizeSidebar" xml:space="preserve">
+    <value>Resize sidebar</value>
+    <comment>Accessible name of the draggable divider between the left sidebar and the page. Arrow keys move it.</comment>
+  </data>
+  <data name="ChangesScopeLabel" xml:space="preserve">
+    <value>Show changes</value>
+    <comment>Accessible name of the list in the Changes panel that chooses which changes to show: all, staged or unstaged.</comment>
+  </data>
+  <data name="ChangesScopeAll" xml:space="preserve">
+    <value>All changes ({count})</value>
+    <comment>Choice in the Changes panel that lists every change since the last git commit. {count} is the number of changed files. Do not translate the word git.</comment>
+  </data>
+  <data name="ChangesScopeStaged" xml:space="preserve">
+    <value>Staged ({count})</value>
+    <comment>Choice in the Changes panel that lists only the changes added to the git index with git add. {count} is the number of files. Do not translate the word git.</comment>
+  </data>
+  <data name="ChangesScopeUnstaged" xml:space="preserve">
+    <value>Unstaged ({count})</value>
+    <comment>Choice in the Changes panel that lists only the changes not yet added to the git index, including new files git does not track. {count} is the number of files. Do not translate the word git.</comment>
+  </data>
+  <data name="ChangesRefresh" xml:space="preserve">
+    <value>Refresh changes</value>
+    <comment>Tooltip and accessible name of the button in the Changes panel that reads the git changes again.</comment>
+  </data>
+  <data name="ChangesFilesLabel" xml:space="preserve">
+    <value>Changed files</value>
+    <comment>Accessible name of the list of changed files in the Changes panel.</comment>
+  </data>
+  <data name="ChangesDiffLabel" xml:space="preserve">
+    <value>Changes in the selected file</value>
+    <comment>Accessible name of the scrollable code view in the Changes panel that shows the lines added and removed in the selected file.</comment>
+  </data>
+  <data name="ChangesEmpty" xml:space="preserve">
+    <value>No changes in this view.</value>
+    <comment>Shown in the Changes panel when the chosen list (all, staged or unstaged) has no files.</comment>
+  </data>
+  <data name="ChangesSelectFile" xml:space="preserve">
+    <value>Select a file to see its changes.</value>
+    <comment>Shown in the Changes panel before a file is selected.</comment>
+  </data>
+  <data name="ChangesLoading" xml:space="preserve">
+    <value>Loading…</value>
+    <comment>Shown in the Changes panel while the changes of the selected file are being read.</comment>
+  </data>
+  <data name="ChangesLoadFailed" xml:space="preserve">
+    <value>Could not read the changes of this file.</value>
+    <comment>Shown in the Changes panel when git could not give the changes of the selected file.</comment>
+  </data>
+  <data name="ChangesBinary" xml:space="preserve">
+    <value>This is a binary file, so there is no text to show.</value>
+    <comment>Shown in the Changes panel when the selected changed file is not text, such as an image.</comment>
+  </data>
+  <data name="ChangesNoLines" xml:space="preserve">
+    <value>There are no lines to show for this file.</value>
+    <comment>Shown in the Changes panel when the selected file has a change without changed lines, such as a changed file mode or a merge conflict.</comment>
+  </data>
+  <data name="ChangesTruncated" xml:space="preserve">
+    <value>Only the first part of this file is shown.</value>
+    <comment>Note below the code view in the Changes panel when the changes were too long to show completely.</comment>
+  </data>
+  <data name="ChangesKindAdded" xml:space="preserve">
+    <value>Added</value>
+    <comment>Spoken status of a file in the Changes panel that was newly added to the git index. Shown as the letter A.</comment>
+  </data>
+  <data name="ChangesKindModified" xml:space="preserve">
+    <value>Modified</value>
+    <comment>Spoken status of a file in the Changes panel whose content changed. Shown as the letter M.</comment>
+  </data>
+  <data name="ChangesKindDeleted" xml:space="preserve">
+    <value>Deleted</value>
+    <comment>Spoken status of a file in the Changes panel that was removed. Shown as the letter D.</comment>
+  </data>
+  <data name="ChangesKindTypeChanged" xml:space="preserve">
+    <value>Type changed</value>
+    <comment>Spoken status of a file in the Changes panel that changed type, for example from a file to a link. Shown as the letter T.</comment>
+  </data>
+  <data name="ChangesKindUntracked" xml:space="preserve">
+    <value>Untracked</value>
+    <comment>Spoken status of a new file in the Changes panel that git does not track yet. Shown as the letter U.</comment>
+  </data>
+  <data name="ChangesKindConflicted" xml:space="preserve">
+    <value>Conflicted</value>
+    <comment>Spoken status of a file in the Changes panel with an unresolved merge conflict. Shown as the letter C.</comment>
   </data>
   <data name="BrowserPanelHint" xml:space="preserve">
     <value>Click the page to use it; hover, type and scroll while it has focus.</value>

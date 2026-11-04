@@ -1,0 +1,35 @@
+@implements IDisposable
+@inject SidePanelState State
+
+@if (State.HasBrowser || State.HasChanges)
+{
+    <button type="button" class="btn btn-ghost btn-icon side-panel-toggle" aria-pressed="@(State.IsVisible ? "true" : "false")" aria-label="@WebStrings.SidePanelToggleTooltip" title="@WebStrings.SidePanelToggleTooltip" @onclick="State.Toggle">
+        <Icon Name="panel-right" />
+        @if (State.HasChanges)
+        {
+            <span class="side-panel-toggle-badge" aria-hidden="true">@State.ChangeCount</span>
+        }
+    </button>
+}
+
+@code {
+    private bool _disposed;
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _disposed = true;
+        State.Changed -= OnChanged;
+    }
+
+    /// <inheritdoc />
+    protected override void OnInitialized() => State.Changed += OnChanged;
+
+    private void OnChanged(object? sender, EventArgs e)
+    {
+        if (!_disposed)
+        {
+            _ = InvokeAsync(StateHasChanged);
+        }
+    }
+}

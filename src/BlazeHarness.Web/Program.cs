@@ -3,6 +3,7 @@ using BlazeHarness.Core.Chats;
 using BlazeHarness.Core.Chats.Titles;
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Git;
 using BlazeHarness.Core.Logging;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Mcp.Config;
@@ -56,6 +57,8 @@ builder.Services.AddSingleton(sp => new PermissionDefaults(sp.GetRequiredService
 builder.Services.AddSingleton<MarkdownRenderer>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<SettingsDialogState>();
+builder.Services.AddScoped<SidePanelState>();
+builder.Services.AddSingleton(sp => new GitChangesReader(sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<ChatClientSource>();
 builder.Services.AddSingleton(sp => new ChatStore(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<IShellSandbox>(sp => new MxcShellSandbox(() => sp.GetRequiredService<PermissionDefaults>().Sensitive()));

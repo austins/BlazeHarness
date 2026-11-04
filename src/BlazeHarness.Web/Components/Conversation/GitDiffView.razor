@@ -1,0 +1,65 @@
+@using BlazeHarness.Core.Diff
+@using BlazeHarness.Core.Git
+@using System.Globalization
+
+<div class="gdiff" role="table" aria-label="@WebStrings.ChangesDiffLabel">
+    @foreach (var hunk in _rows)
+    {
+        <div class="gdiff-hunk" role="row"><span role="cell">@hunk.Header</span></div>
+        @foreach (var row in hunk.Lines)
+        {
+            <div class="gdiff-line" role="row" data-kind="@row.Kind">
+                <span class="gdiff-num" role="cell" aria-hidden="true">@row.Old</span>
+                <span class="gdiff-num" role="cell" aria-hidden="true">@row.New</span>
+                <span class="gdiff-sign" role="cell" aria-hidden="true">@row.Sign</span>
+                <code class="gdiff-code" role="cell">@row.Code</code>
+                @if (row.Hidden is { } hidden)
+                {
+                    <span class="visually-hidden">@hidden</span>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private sealed record Row(string Kind, string Old, string New, string Sign, MarkupString Code, string? Hidden);
+
+    private sealed record HunkRows(string Header, List<Row> Lines);
+
+    private GitFileDiff? _seen;
+    private List<HunkRows> _rows = [];
+
+    /// <summary>
+    /// Gets or sets the diff to show.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public GitFileDiff Diff { get; set; } = default!;
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_seen, Diff))
+        {
+            return;
+        }
+
+        _seen = Diff;
+
+        // Each line is colored alone, so a block comment that spans lines is not recognized; the cost is one small parse per line.
+        var language = Path.GetExtension(Diff.Path).TrimStart('.');
+        _rows = [.. Diff.Hunks.Select(hunk => new HunkRows(hunk.Header, [.. hunk.Lines.Select(line => ToRow(line, language))]))];
+    }
+
+    private static Row ToRow(GitDiffLine line, string language)
+    {
+        var html = SyntaxHighlighter.TryHighlight(line.Text, language);
+        return new Row(
+            line.Kind.ToString().ToLowerInvariant(),
+            line.OldNumber?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+            line.NewNumber?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+            line.Kind switch { DiffKind.Added => "+", DiffKind.Removed => "−", _ => " " },
+            new MarkupString(html ?? System.Net.WebUtility.HtmlEncode(line.Text)),
+            line.Kind switch { DiffKind.Added => WebStrings.DiffViewAdded, DiffKind.Removed => WebStrings.DiffViewRemoved, _ => null });
+    }
+}

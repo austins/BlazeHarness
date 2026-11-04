@@ -1,0 +1,223 @@
+@using BlazeHarness.Core.Git
+@using BlazeHarness.Core.Web
+@using BlazeHarness.Core.Web.Browser
+@implements IDisposable
+@inject WebServices Web
+@inject GitChangesReader Git
+@inject SidePanelState State
+@inject ILogger<SidePanel> Logger
+
+@if (State.IsVisible && State.Current is { } tab)
+{
+    <aside class="side-panel" aria-label="@WebStrings.SidePanelLabel">
+        <div class="resizer" data-resizer="panel" role="separator" aria-orientation="vertical" tabindex="0" aria-label="@WebStrings.SidePanelResize"></div>
+        <div class="side-panel-bar">
+            <div class="side-tabs" role="group" aria-label="@WebStrings.SidePanelTabsLabel">
+                @if (State.HasBrowser)
+                {
+                    <button type="button" class="btn btn-ghost btn-sm" aria-pressed="@(tab == SidePanelTab.Browser ? "true" : "false")" @onclick="() => State.Open(SidePanelTab.Browser)"><Icon Name="globe" /> @WebStrings.SidePanelTabBrowser</button>
+                }
+
+                @if (State.HasChanges)
+                {
+                    <button type="button" class="btn btn-ghost btn-sm" aria-pressed="@(tab == SidePanelTab.Changes ? "true" : "false")" @onclick="() => State.Open(SidePanelTab.Changes)"><Icon Name="diff" /> @WebStrings.SidePanelTabChanges <span class="badge">@State.ChangeCount</span></button>
+                }
+            </div>
+        </div>
+        <div class="side-panel-body">
+            @if (tab == SidePanelTab.Browser && _frame is not null && _chatId is not null)
+            {
+                <BrowserPanel @key="_chatId" ChatId="@_chatId" Frame="_frame" />
+            }
+            else if (tab == SidePanelTab.Changes && _status is not null)
+            {
+                <ChangesPanel Status="_status" Scope="_scope" Refreshing="_refreshing" OnScopeChange="ChangeScopeAsync" OnRefresh="RefreshAsync" />
+            }
+        </div>
+    </aside>
+}
+
+@code {
+    private readonly CancellationTokenSource _stop = new();
+
+    private bool _initialized;
+    private string? _chatId;
+    private string? _folder;
+    private bool _wasRunning;
+    private SidePanelTab? _shown;
+    private BrowserFrame? _frame;
+    private GitStatus? _status;
+    private GitChangeScope _scope;
+    private bool _refreshing;
+    private int _refreshVersion;
+
+    /// <summary>
+    /// Gets or sets the id of the open chat, or null while a new chat has none yet.
+    /// </summary>
+    [Parameter]
+    public string? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the folder the chat works in, or null for a chat without one, which has no changes to show.
+    /// </summary>
+    [Parameter]
+    public string? FolderPath { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the assistant is replying, so the changes are read again when it stops.
+    /// </summary>
+    [Parameter]
+    public bool Running { get; set; }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        Web.BrowserFrameChanged -= OnFrameChanged;
+        State.Changed -= OnStateChanged;
+        State.Reset();
+        _stop.Cancel();
+        _stop.Dispose();
+    }
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        Web.BrowserFrameChanged += OnFrameChanged;
+        State.Changed += OnStateChanged;
+    }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        var refresh = false;
+        if (!_initialized || ChatId != _chatId)
+        {
+            _initialized = true;
+            _chatId = ChatId;
+            _folder = FolderPath;
+            _status = null;
+            _scope = GitChangeScope.All;
+            _shown = null;
+            State.Reset();
+            _frame = ChatId is null ? null : Web.LatestBrowserFrame(ChatId);
+            State.SetBrowser(_frame is not null);
+            if (_frame is not null)
+            {
+                State.Open(SidePanelTab.Browser);
+            }
+
+            refresh = true;
+        }
+        else if (FolderPath != _folder)
+        {
+            _folder = FolderPath;
+            refresh = true;
+        }
+        else if (_wasRunning && !Running)
+        {
+            // Whatever the assistant did in its turn is done, so this is when to look at the files again.
+            refresh = true;
+        }
+
+        _wasRunning = Running;
+        if (refresh)
+        {
+            _ = RefreshAsync();
+        }
+    }
+
+    // Reading the changes costs a few git runs, so it only happens when the panel opens, a turn ends or the user asks.
+    private async Task RefreshAsync()
+    {
+        var version = ++_refreshVersion;
+        var folder = _folder;
+        var chatId = _chatId;
+        GitStatus? status = null;
+        if (folder is not null)
+        {
+            _refreshing = true;
+            StateHasChanged();
+            try
+            {
+                status = await Git.GetStatusAsync(folder, _scope, _stop.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                Logger.LogWarning(ex, "Reading the changes of chat {ChatId} failed.", chatId);
+            }
+        }
+
+        if (version != _refreshVersion || _stop.IsCancellationRequested)
+        {
+            return;
+        }
+
+        _refreshing = false;
+        _status = status;
+        State.SetChangeCount(status?.AllCount ?? 0);
+        StateHasChanged();
+    }
+
+    private Task ChangeScopeAsync(GitChangeScope scope)
+    {
+        _scope = scope;
+        return RefreshAsync();
+    }
+
+    private void OnStateChanged(object? sender, EventArgs e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (_stop.IsCancellationRequested)
+            {
+                return;
+            }
+
+            var shown = State.IsVisible ? State.Current : null;
+            var opened = shown == SidePanelTab.Changes && _shown != SidePanelTab.Changes;
+            _shown = shown;
+            if (opened)
+            {
+                _ = RefreshAsync();
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    private void OnFrameChanged(object? sender, BrowserFrameChangedEventArgs e)
+    {
+        if (e.ChatId != _chatId)
+        {
+            return;
+        }
+
+        _ = InvokeAsync(() =>
+        {
+            if (e.ChatId != _chatId || _stop.IsCancellationRequested)
+            {
+                return;
+            }
+
+            var previous = _frame;
+            _frame = e.Frame;
+            State.SetBrowser(_frame is not null);
+
+            // The agent moving to another address is something the user will want to see, even if they hid the panel.
+            if (_frame is not null && (previous is null || previous.Url != _frame.Url))
+            {
+                State.Open(SidePanelTab.Browser);
+            }
+
+            // The pictures travel over their own connection, so the panel only draws again when the address or title changes.
+            if (previous is null || _frame is null || previous.Url != _frame.Url || previous.Title != _frame.Title)
+            {
+                StateHasChanged();
+            }
+        });
+    }
+}
