@@ -392,6 +392,122 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
         view.Snapshot.Should().Contain("clicked").And.Contain("typed A").And.Contain("enter");
     }
 
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task UserMoveAsync_OverElement_ShowsItsHoverEffect()
+    {
+        // Arrange
+        using var sut = Create();
+        await sut.NavigateAsync(Chat, Url("/hover"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        await sut.UserMoveAsync(Chat, 0.5, 0.5, TestContext.Current.CancellationToken).Bounded();
+        var view = await sut.SnapshotAsync(Chat, TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        view.Snapshot.Should().Contain("hovered");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task ScrollAsync_DownAndUp_MovesThePageByAScreen()
+    {
+        // Arrange
+        using var sut = Create();
+        await sut.NavigateAsync(Chat, Url("/scroll"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        var down = await sut.ScrollAsync(Chat, BrowserScrollDirection.Down, TestContext.Current.CancellationToken).Bounded();
+        var up = await sut.ScrollAsync(Chat, BrowserScrollDirection.Up, TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        down.Snapshot.Should().Contain("scrolled 640");
+        up.Snapshot.Should().Contain("scrolled 0");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task ScrollAsync_BottomThenTop_ReachesBothEnds()
+    {
+        // Arrange
+        using var sut = Create();
+        await sut.NavigateAsync(Chat, Url("/scroll"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        var bottom = await sut.ScrollAsync(Chat, BrowserScrollDirection.Bottom, TestContext.Current.CancellationToken).Bounded();
+        var top = await sut.ScrollAsync(Chat, BrowserScrollDirection.Top, TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        bottom.Snapshot.Should().MatchRegex("scrolled [1-9]\\d{3}");
+        top.Snapshot.Should().Contain("scrolled 0");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task ScrollAsync_NothingOpened_Throws()
+    {
+        // Arrange
+        using var sut = Create();
+
+        // Act
+        var act = async () => await sut.ScrollAsync(Chat, BrowserScrollDirection.Down, TestContext.Current.CancellationToken);
+
+        // Assert
+        await act.Should().ThrowAsync<BrowserException>().WithMessage("*browser_navigate*");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task WaitAsync_TextAppearsLater_ReturnsThePageWithIt()
+    {
+        // Arrange
+        using var sut = Create(time: TimeProvider.System);
+        await sut.NavigateAsync(Chat, Url("/delayed"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        var view = await sut.WaitAsync(Chat, TimeSpan.FromSeconds(10), "Finally ready", TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        view.Snapshot.Should().Contain("Finally ready");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task WaitAsync_TextNeverAppears_ReturnsThePageAfterTheLimit()
+    {
+        // Arrange
+        using var sut = Create(time: TimeProvider.System);
+        await sut.NavigateAsync(Chat, Url("/"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        var view = await sut.WaitAsync(Chat, TimeSpan.FromMilliseconds(300), "never shown", TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        view.Title.Should().Be("Demo page");
+        view.Snapshot.Should().NotContain("never shown");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task WaitAsync_NoText_WaitsThenReadsThePage()
+    {
+        // Arrange
+        using var sut = Create(time: TimeProvider.System);
+        await sut.NavigateAsync(Chat, Url("/delayed"), TestContext.Current.CancellationToken).Bounded();
+
+        // Act
+        var view = await sut.WaitAsync(Chat, TimeSpan.FromSeconds(1), null, TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        view.Snapshot.Should().Contain("Finally ready");
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task WaitAsync_NothingOpened_Throws()
+    {
+        // Arrange
+        using var sut = Create(time: TimeProvider.System);
+
+        // Act
+        var act = async () => await sut.WaitAsync(Chat, TimeSpan.FromMilliseconds(100), null, TestContext.Current.CancellationToken);
+
+        // Assert
+        await act.Should().ThrowAsync<BrowserException>().WithMessage("*browser_navigate*");
+    }
+
     private static string RefOf(BrowserPageView view, string line) =>
         Regex.Match(view.Snapshot, Regex.Escape(line) + @" .*?\[ref=(e\d+)\]").Groups[1].Value;
 
@@ -444,6 +560,23 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
                         "<style>body{margin:0}#target{width:1280px;height:800px;display:block}</style>" +
                         "<div id=\"log\"></div><button id=\"target\" onclick=\"log.append('clicked ')\">Target</button>" +
                         "<script>document.addEventListener('keydown', event => log.append(event.key === 'Enter' ? 'enter ' : 'typed ' + event.key + ' '));</script>");
+                    break;
+                case "/hover":
+                    body = Html(
+                        "Hover",
+                        "<style>body{margin:0}#target{width:1280px;height:800px}</style>" +
+                        "<div id=\"target\">Target</div><p id=\"out\">waiting</p>" +
+                        "<script>target.addEventListener('mouseover', () => out.textContent = 'hovered');</script>");
+                    break;
+                case "/scroll":
+                    body = Html(
+                        "Scroll",
+                        "<style>body{margin:0}#y{position:fixed;top:0}#tall{height:5000px}</style>" +
+                        "<div id=\"y\">scrolled 0</div><div id=\"tall\"></div>" +
+                        "<script>addEventListener('scroll', () => y.textContent = 'scrolled ' + Math.round(scrollY));</script>");
+                    break;
+                case "/delayed":
+                    body = Html("Delayed", "<div id=\"out\">loading</div><script>setTimeout(() => out.textContent = 'Finally ready', 400);</script>");
                     break;
                 case "/file":
                     response.ContentType = "application/octet-stream";

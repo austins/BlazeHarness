@@ -15,6 +15,9 @@ internal sealed class BrowserSession
     private readonly List<string> _problems = [];
     private DateTimeOffset _lastUsed;
     private bool _closed;
+    private Uri? _titleUrl;
+    private string _title = string.Empty;
+    private DateTimeOffset _titleRead;
 
     public BrowserSession(IBrowserContext context, IPage page, ICDPSession client, ICDPSession browserClient, DateTimeOffset now)
     {
@@ -90,6 +93,31 @@ internal sealed class BrowserSession
         lock (_gate)
         {
             return _approved.Contains(origin);
+        }
+    }
+
+    /// <summary>
+    /// Gets the title read for an address if it is still fresh enough to show again.
+    /// </summary>
+    /// <param name="url">The address of the page.</param>
+    /// <param name="now">The current time.</param>
+    /// <param name="maxAge">How long a title stays fresh.</param>
+    /// <returns>The title, or null when it has to be read again.</returns>
+    public string? FreshTitle(Uri url, DateTimeOffset now, TimeSpan maxAge)
+    {
+        lock (_gate)
+        {
+            return _titleUrl == url && now - _titleRead < maxAge ? _title : null;
+        }
+    }
+
+    public void RememberTitle(Uri url, string title, DateTimeOffset now)
+    {
+        lock (_gate)
+        {
+            _titleUrl = url;
+            _title = title;
+            _titleRead = now;
         }
     }
 

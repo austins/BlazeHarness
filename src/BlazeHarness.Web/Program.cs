@@ -116,10 +116,12 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
+app.UseWebSockets();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapAttachments();
+app.MapBrowser();
 app.MapExport();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

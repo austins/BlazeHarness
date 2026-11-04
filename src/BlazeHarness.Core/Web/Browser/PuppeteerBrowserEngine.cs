@@ -24,6 +24,9 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
 
     private const int ViewportWidth = 1280;
     private const int ViewportHeight = 800;
+    private const int ScreencastQuality = 85;
+    private const int ScrollStep = ViewportHeight * 4 / 5;
+    private const int ScrollToEnd = 1_000_000;
 
     private static readonly HashSet<string> UserKeys = new(StringComparer.Ordinal)
     {
@@ -34,8 +37,10 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     private static readonly TimeSpan SettleTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan SweepInterval = TimeSpan.FromMinutes(1);
     // Chrome sends the next screencast frame only after the last one is acknowledged, so waiting before the
-    // acknowledgement caps the frame rate without dropping the frame that shows where the page ended up.
-    private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(100);
+    // acknowledgement caps the frame rate (about 30 per second) without dropping the frame that shows where the page ended up.
+    private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(33);
+    // Reading the title is a round trip to the page, so a frame of the same page reuses a title read this recently.
+    private static readonly TimeSpan TitleMaxAge = TimeSpan.FromSeconds(1);
 
     private readonly int? _appPort;
     private readonly BrowserFetcher _fetcher;
@@ -233,6 +238,53 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     }
 
     /// <inheritdoc />
+    public Task<BrowserPageView> ScrollAsync(string chatId, BrowserScrollDirection direction, CancellationToken cancellationToken) =>
+        WithPageAsync(
+            chatId,
+            async session =>
+            {
+                session.TakeProblems();
+                await session.Page.Mouse.MoveAsync(ViewportX(0.5), ViewportY(0.5));
+                await session.Page.Mouse.WheelAsync(0, direction switch
+                {
+                    BrowserScrollDirection.Down => ScrollStep,
+                    BrowserScrollDirection.Up => -ScrollStep,
+                    BrowserScrollDirection.Top => -ScrollToEnd,
+                    BrowserScrollDirection.Bottom => ScrollToEnd,
+                    _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null),
+                });
+                await SettleAsync(session.Page, cancellationToken);
+                return await ViewAsync(session, null, cancellationToken);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<BrowserPageView> WaitAsync(string chatId, TimeSpan duration, string? text, CancellationToken cancellationToken)
+    {
+        // Waiting happens outside the lock so a long wait doesn't hold up the user's clicks or other chats.
+        var page = await WithPageAsync(chatId, session => Task.FromResult(session.Page), cancellationToken);
+        try
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                await Task.Delay(duration, _time, cancellationToken);
+            }
+            else
+            {
+                await page
+                    .WaitForFunctionAsync("wanted => document.body !== null && document.body.innerText.includes(wanted)", new WaitForFunctionOptions { Timeout = (int)duration.TotalMilliseconds }, text)
+                    .WaitAsync(cancellationToken);
+            }
+        }
+        catch (Exception ex) when (ex is PuppeteerException or TimeoutException)
+        {
+            // The text did not show up in time, or the page went away; the view below shows what there is, or says the page is gone.
+        }
+
+        return await SnapshotAsync(chatId, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<byte[]> ScreenshotAsync(string chatId, bool fullPage, CancellationToken cancellationToken) =>
         WithPageAsync(
             chatId,
@@ -276,6 +328,10 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     /// <inheritdoc />
     public Task UserClickAsync(string chatId, double x, double y, CancellationToken cancellationToken) =>
         WithPageAsync(chatId, session => session.Page.Mouse.ClickAsync(ViewportX(x), ViewportY(y)), cancellationToken);
+
+    /// <inheritdoc />
+    public Task UserMoveAsync(string chatId, double x, double y, CancellationToken cancellationToken) =>
+        WithPageAsync(chatId, session => session.Page.Mouse.MoveAsync(ViewportX(x), ViewportY(y)), cancellationToken);
 
     /// <inheritdoc />
     public Task UserKeyAsync(string chatId, string key, CancellationToken cancellationToken)
@@ -499,7 +555,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
                     OnFrameInBackground(chatId, session, client, args.MessageData);
                 }
             };
-            await client.SendAsync("Page.startScreencast", new { format = "jpeg", quality = 60, maxWidth = ViewportWidth, maxHeight = ViewportHeight });
+            await client.SendAsync("Page.startScreencast", new { format = "jpeg", quality = ScreencastQuality, maxWidth = ViewportWidth, maxHeight = ViewportHeight });
         }
         catch (PuppeteerException ex)
         {
@@ -518,7 +574,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
             var ackId = data.GetProperty("sessionId").GetInt32();
             if (Uri.TryCreate(session.Page.Url, UriKind.Absolute, out var url) && url.Scheme != "about" && !session.IsClosed)
             {
-                var frame = new BrowserFrame(jpeg, url, await session.Page.GetTitleAsync());
+                var frame = new BrowserFrame(jpeg, url, await TitleAsync(session, url));
                 _frames[chatId] = frame;
                 FrameChanged?.Invoke(this, new BrowserFrameChangedEventArgs(chatId, frame));
             }
@@ -530,6 +586,19 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         {
             // The page closed or navigated while the frame was handled; the next frame replaces this one.
         }
+    }
+
+    private async Task<string> TitleAsync(BrowserSession session, Uri url)
+    {
+        var now = _time.GetUtcNow();
+        if (session.FreshTitle(url, now, TitleMaxAge) is { } fresh)
+        {
+            return fresh;
+        }
+
+        var title = await session.Page.GetTitleAsync();
+        session.RememberTitle(url, title, now);
+        return title;
     }
 
     private void PublishClosed(string chatId)

@@ -73,6 +73,27 @@ internal interface IBrowserEngine : IDisposable
     Task<BrowserPageView> TypeAsync(string chatId, string elementRef, string text, bool submit, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Scroll the page a chat has open, which also loads content that waits for it.
+    /// </summary>
+    /// <param name="chatId">The chat id.</param>
+    /// <param name="direction">Where to scroll.</param>
+    /// <param name="cancellationToken">A token that stops the call.</param>
+    /// <returns>What the page shows afterwards.</returns>
+    /// <exception cref="BrowserException">No page is open or it could not be scrolled.</exception>
+    Task<BrowserPageView> ScrollAsync(string chatId, BrowserScrollDirection direction, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Give the page a chat has open time to change, then read it.
+    /// </summary>
+    /// <param name="chatId">The chat id.</param>
+    /// <param name="duration">How long to wait, or the longest to wait for the text.</param>
+    /// <param name="text">Text to wait for, or null to wait the whole duration.</param>
+    /// <param name="cancellationToken">A token that stops the call.</param>
+    /// <returns>What the page shows afterwards, whether or not the text appeared.</returns>
+    /// <exception cref="BrowserException">No page is open or it could not be read.</exception>
+    Task<BrowserPageView> WaitAsync(string chatId, TimeSpan duration, string? text, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Take a picture of the page a chat has open.
     /// </summary>
     /// <param name="chatId">The chat id.</param>
@@ -102,6 +123,16 @@ internal interface IBrowserEngine : IDisposable
     /// <param name="cancellationToken">A token that stops the call.</param>
     /// <returns>A task that completes when the click was sent.</returns>
     Task UserClickAsync(string chatId, double x, double y, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Pass the mouse pointer of the user, moving over the picture of the page, on to the page so it can show hover effects.
+    /// </summary>
+    /// <param name="chatId">The chat id.</param>
+    /// <param name="x">How far across the page, from 0 to 1.</param>
+    /// <param name="y">How far down the page, from 0 to 1.</param>
+    /// <param name="cancellationToken">A token that stops the call.</param>
+    /// <returns>A task that completes when the pointer was moved.</returns>
+    Task UserMoveAsync(string chatId, double x, double y, CancellationToken cancellationToken);
 
     /// <summary>
     /// Pass a key press by the user on to the page.

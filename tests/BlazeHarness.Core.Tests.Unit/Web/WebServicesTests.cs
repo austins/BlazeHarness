@@ -27,7 +27,7 @@ public sealed class WebServicesTests : IDisposable
         var names = sut.ToolsFor("c1").Select(t => t.Name).ToList();
 
         // Assert
-        names.Should().Equal("web_search", "web_fetch", BrowserNavigateTool.ToolName, BrowserSnapshotTool.ToolName, BrowserClickTool.ToolName, BrowserTypeTool.ToolName, BrowserScreenshotTool.ToolName, BrowserDownloadTool.ToolName);
+        names.Should().Equal("web_search", "web_fetch", BrowserNavigateTool.ToolName, BrowserSnapshotTool.ToolName, BrowserClickTool.ToolName, BrowserTypeTool.ToolName, BrowserScrollTool.ToolName, BrowserWaitTool.ToolName, BrowserScreenshotTool.ToolName, BrowserDownloadTool.ToolName);
     }
 
     [Fact]

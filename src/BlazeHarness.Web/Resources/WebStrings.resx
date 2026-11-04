@@ -2109,8 +2109,12 @@
     <comment>Tooltip and accessible name of the button that hides the browser side panel. It reappears when the assistant opens another page.</comment>
   </data>
   <data name="BrowserPanelHint" xml:space="preserve">
-    <value>Click the page to use it; type and scroll while it has focus.</value>
+    <value>Click the page to use it; hover, type and scroll while it has focus.</value>
     <comment>Tooltip of the picture of the page in the browser side panel, which passes the user's clicks, keys and scrolling on to the page.</comment>
+  </data>
+  <data name="BrowserPanelSaveScreenshot" xml:space="preserve">
+    <value>Save full-page screenshot</value>
+    <comment>Tooltip and accessible name of the link in the browser side panel that saves a PNG picture of the whole page, including what is below the visible part.</comment>
   </data>
   <data name="BrowserPanelImageAlt" xml:space="preserve">
     <value>Page shown in the assistant's browser</value>

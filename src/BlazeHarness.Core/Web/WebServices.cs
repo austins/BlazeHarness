@@ -97,6 +97,18 @@ public sealed class WebServices : IDisposable
         _browser.UserClickAsync(chatId, x, y, cancellationToken);
 
     /// <summary>
+    /// Pass the pointer of the user, moving over the browser panel, on to the page the chat has open.
+    /// </summary>
+    /// <param name="chatId">The chat id.</param>
+    /// <param name="x">How far across the page, from 0 to 1.</param>
+    /// <param name="y">How far down the page, from 0 to 1.</param>
+    /// <param name="cancellationToken">A token that stops the call.</param>
+    /// <returns>A task that completes when the pointer was moved.</returns>
+    /// <exception cref="BrowserException">The chat has no page open.</exception>
+    public Task BrowserMoveAsync(string chatId, double x, double y, CancellationToken cancellationToken) =>
+        _browser.UserMoveAsync(chatId, x, y, cancellationToken);
+
+    /// <summary>
     /// Pass a key press by the user in the browser panel on to the page the chat has open.
     /// </summary>
     /// <param name="chatId">The chat id.</param>
@@ -119,6 +131,16 @@ public sealed class WebServices : IDisposable
     /// <exception cref="BrowserException">The chat has no page open.</exception>
     public Task BrowserScrollAsync(string chatId, double x, double y, double deltaY, CancellationToken cancellationToken) =>
         _browser.UserScrollAsync(chatId, x, y, deltaY, cancellationToken);
+
+    /// <summary>
+    /// Take a picture of the whole page the chat has open, not only what the browser panel shows, for the user to look at.
+    /// </summary>
+    /// <param name="chatId">The chat id.</param>
+    /// <param name="cancellationToken">A token that stops the call.</param>
+    /// <returns>The picture as PNG bytes.</returns>
+    /// <exception cref="BrowserException">The chat has no page open or it could not be captured.</exception>
+    public Task<byte[]> BrowserFullPageScreenshotAsync(string chatId, CancellationToken cancellationToken) =>
+        _browser.ScreenshotAsync(chatId, fullPage: true, cancellationToken);
 
     /// <summary>
     /// Drop the pages a chat fetched.
@@ -177,6 +199,8 @@ public sealed class WebServices : IDisposable
             tools.Add(new BrowserSnapshotTool(_browser, chatId));
             tools.Add(new BrowserClickTool(_browser, chatId));
             tools.Add(new BrowserTypeTool(_browser, chatId));
+            tools.Add(new BrowserScrollTool(_browser, chatId));
+            tools.Add(new BrowserWaitTool(_browser, chatId));
             tools.Add(new BrowserScreenshotTool(_browser, chatId));
             tools.Add(new BrowserDownloadTool(_browser, chatId));
         }

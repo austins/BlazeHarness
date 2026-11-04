@@ -1,19 +1,21 @@
 @using BlazeHarness.Core.Web
 @using BlazeHarness.Core.Web.Browser
+@using BlazeHarness.Web.Hosting
 @implements IAsyncDisposable
 @inject WebServices Web
 @inject IJSRuntime JS
 
-@if (_src is not null && _frame is { } frame && frame.Url.AbsoluteUri != _dismissedUrl)
+@if (_frame is { } frame && frame.Url.AbsoluteUri != _dismissedUrl)
 {
     <aside class="browser-panel" aria-label="@WebStrings.BrowserPanelLabel">
         <div class="browser-bar">
             <Icon Name="globe" />
             <span class="browser-url" title="@frame.Url">@frame.Url</span>
+            <a class="btn btn-icon" href="@BrowserEndpoints.ScreenshotAddressOf(_shownChatId ?? string.Empty)" download="@BrowserEndpoints.ScreenshotFileName" aria-label="@WebStrings.BrowserPanelSaveScreenshot" title="@WebStrings.BrowserPanelSaveScreenshot"><Icon Name="image" /></a>
             <button type="button" class="btn btn-icon" aria-label="@WebStrings.BrowserPanelClose" title="@WebStrings.BrowserPanelClose" @onclick="Dismiss"><Icon Name="close" /></button>
         </div>
         <div class="browser-view" tabindex="0" title="@WebStrings.BrowserPanelHint" @ref="_view">
-            <img src="@_src" draggable="false" alt="@(frame.Title.Length > 0 ? frame.Title : WebStrings.BrowserPanelImageAlt)" @ref="_image" />
+            <canvas role="img" aria-label="@(frame.Title.Length > 0 ? frame.Title : WebStrings.BrowserPanelImageAlt)" @ref="_image"></canvas>
         </div>
         @if (frame.Title.Length > 0)
         {
@@ -24,16 +26,15 @@
 
 @code {
     private BrowserFrame? _frame;
-    private string? _src;
     private string? _shownChatId;
     private string? _dismissedUrl;
     private ElementReference _view;
     private ElementReference _image;
-    private string? _boundView;
+    private string? _bound;
     private DotNetObjectReference<BrowserPanel>? _self;
     private bool _disposed;
 
-    private bool Visible => _src is not null && _frame is { } frame && frame.Url.AbsoluteUri != _dismissedUrl;
+    private bool Visible => _frame is { } frame && frame.Url.AbsoluteUri != _dismissedUrl;
 
     /// <summary>
     /// Gets or sets the id of the open chat, or null while a new chat has none yet.
@@ -42,12 +43,12 @@
     public string? ChatId { get; set; }
 
     /// <inheritdoc />
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         _disposed = true;
         Web.BrowserFrameChanged -= OnFrameChanged;
         _self?.Dispose();
-        return ValueTask.CompletedTask;
+        await StopStreamAsync();
     }
 
     /// <summary>
@@ -58,6 +59,15 @@
     /// <returns>A task that completes when the click was sent.</returns>
     [JSInvokable]
     public Task Click(double x, double y) => Forward(chatId => Web.BrowserClickAsync(chatId, x, y, CancellationToken.None));
+
+    /// <summary>
+    /// Passes the pointer moving over the picture of the page on to the page, so it shows what hovering does.
+    /// </summary>
+    /// <param name="x">How far across the page, from 0 to 1.</param>
+    /// <param name="y">How far down the page, from 0 to 1.</param>
+    /// <returns>A task that completes when the pointer was moved.</returns>
+    [JSInvokable]
+    public Task Hover(double x, double y) => Forward(chatId => Web.BrowserMoveAsync(chatId, x, y, CancellationToken.None));
 
     /// <summary>
     /// Passes a key press while the picture of the page has focus on to the page.
@@ -85,20 +95,26 @@
     {
         if (!Visible)
         {
-            _boundView = null;
+            if (_bound is not null)
+            {
+                _bound = null;
+                await StopStreamAsync();
+            }
+
             return;
         }
 
-        if (_disposed || _boundView == _view.Id)
+        var key = _view.Id + ":" + _shownChatId;
+        if (_disposed || _bound == key || _shownChatId is not { } chatId)
         {
             return;
         }
 
-        _boundView = _view.Id;
+        _bound = key;
         _self ??= DotNetObjectReference.Create(this);
         try
         {
-            await JS.InvokeVoidAsync("bhBrowser.bind", _view, _image, _self);
+            await JS.InvokeVoidAsync("bhBrowser.bind", _view, _image, _self, BrowserEndpoints.StreamAddressOf(chatId));
         }
         catch (JSDisconnectedException)
         {
@@ -116,13 +132,19 @@
 
         _shownChatId = ChatId;
         _dismissedUrl = null;
-        Show(ChatId is null ? null : Web.LatestBrowserFrame(ChatId));
+        _frame = ChatId is null ? null : Web.LatestBrowserFrame(ChatId);
     }
 
-    private void Show(BrowserFrame? frame)
+    private async ValueTask StopStreamAsync()
     {
-        _frame = frame;
-        _src = frame is null ? null : "data:image/jpeg;base64," + Convert.ToBase64String(frame.Jpeg.Span);
+        try
+        {
+            await JS.InvokeVoidAsync("bhBrowser.stop");
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 
     private async Task Forward(Func<string, Task> send)
@@ -158,11 +180,17 @@
                 return;
             }
 
+            // The pictures travel over their own connection, so the panel only draws again when the address or title changes.
+            if (_frame is { } shown && e.Frame is { } next && shown.Url == next.Url && shown.Title == next.Title)
+            {
+                return;
+            }
+
             // A closed page clears the choice; so does the agent moving to another address, which the user will want to see.
             if (e.Frame is null || e.Frame.Url.AbsoluteUri != _dismissedUrl)
             {
                 _dismissedUrl = null;
-                Show(e.Frame);
+                _frame = e.Frame;
             }
 
             StateHasChanged();
