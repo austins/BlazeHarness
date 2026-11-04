@@ -525,7 +525,7 @@
     <comment>Description under the Unrestricted item in the permission menu's Access section. "Your account" is the operating system user account running the app.</comment>
   </data>
   <data name="PermissionPickerReadOnlyDescription" xml:space="preserve">
-    <value>Read files without changing them or running commands</value>
+    <value>Read files and run commands in a sandbox that can't change files</value>
     <comment>Description under the Read only item in the permission menu's Access section.</comment>
   </data>
   <data name="PermissionPickerAccessHeading" xml:space="preserve">
@@ -1811,7 +1811,7 @@
   </data>
   <data name="PermissionsSettingsAccessReadOnly" xml:space="preserve">
     <value>Read only</value>
-    <comment>Option in the Access level drop-down on the Permissions page: the agent can read files but not change them or run commands. Should match PermissionPickerReadOnly.</comment>
+    <comment>Option in the Access level drop-down on the Permissions page: the agent can read files and run commands in a sandbox, but not change files. Should match PermissionPickerReadOnly.</comment>
   </data>
   <data name="PermissionsSettingsAccessWriteInFolder" xml:space="preserve">
     <value>Write in folder</value>

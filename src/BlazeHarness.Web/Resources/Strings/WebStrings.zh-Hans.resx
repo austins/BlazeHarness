@@ -389,7 +389,7 @@
     <value>在无沙箱的情况下访问你的账户可访问的任何内容</value>
   </data>
   <data name="PermissionPickerReadOnlyDescription" xml:space="preserve">
-    <value>仅读取文件，不更改文件或运行命令</value>
+    <value>读取文件，并在无法更改文件的沙盒中运行命令</value>
   </data>
   <data name="PermissionPickerAccessHeading" xml:space="preserve">
     <value>访问</value>

@@ -5,7 +5,7 @@ namespace BlazeHarness.Core.Permissions;
 /// </summary>
 public enum AccessLevel
 {
-    /// <summary>The model can read files and can't change anything or run commands.</summary>
+    /// <summary>The model can read files and run commands in a sandbox that can't change files.</summary>
     ReadOnly,
 
     /// <summary>The model can read the folder and write inside it. This is the default.</summary>

@@ -389,7 +389,7 @@
     <value>Доступ ко всему, что доступно вашей учётной записи, без песочницы</value>
   </data>
   <data name="PermissionPickerReadOnlyDescription" xml:space="preserve">
-    <value>Читать файлы без их изменения и запуска команд</value>
+    <value>Читать файлы и запускать команды в песочнице, которая не может изменять файлы</value>
   </data>
   <data name="PermissionPickerAccessHeading" xml:space="preserve">
     <value>Доступ</value>
