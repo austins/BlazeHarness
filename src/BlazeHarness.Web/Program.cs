@@ -16,6 +16,7 @@ using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Web;
 using BlazeHarness.Web.Components;
 using BlazeHarness.Web.Hosting;
+using BlazeHarness.Web.Resources;
 using BlazeHarness.Web.Services;
 using System.Globalization;
 
@@ -98,19 +99,21 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddHubOptions(options => options.MaximumReceiveMessageSize = MaxHubMessageBytes);
 builder.Services.AddLocalization();
+var uiLanguages = UiLanguages.Discover(AppContext.BaseDirectory);
+builder.Services.AddSingleton(uiLanguages);
 
 await using var app = builder.Build();
 
 app.UseMiddleware<LocalAccessMiddleware>();
 var formattingCultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
     .Select(culture => culture.Name)
-    .Append("en-US")
+    .Concat(uiLanguages.SupportedCultures)
     .Distinct(StringComparer.Ordinal)
     .ToArray();
 app.UseRequestLocalization(new RequestLocalizationOptions()
     .SetDefaultCulture("en-US")
     .AddSupportedCultures(formattingCultures)
-    .AddSupportedUICultures("en-US"));
+    .AddSupportedUICultures([.. uiLanguages.SupportedCultures]));
 
 if (!app.Environment.IsDevelopment())
 {

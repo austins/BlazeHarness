@@ -62,6 +62,7 @@ Not built yet, and not promised:
 * Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits. A subagent would run the same loop at the same or a lower access level, and its approval requests would go to the parent chat's approver, never be granted on their own.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
+* Deployment and publishing settings. The language list is found from the translated satellite assemblies (`<culture>/BlazeHarness.Web.resources.dll`) next to the app, so a published build must keep them; check single-file, trimming and self-contained options for this.
 
 ## Not goals
 

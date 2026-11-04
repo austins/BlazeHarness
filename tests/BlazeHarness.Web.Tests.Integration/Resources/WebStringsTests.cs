@@ -35,6 +35,10 @@ public sealed partial class WebStringsTests
             .Where(entry => !formatted.Contains(entry.Attribute("name")!.Value) && entry.Element("value")!.Value.Contains('{', StringComparison.Ordinal))
             .Select(entry => entry.Attribute("name")!.Value)
             .ToArray();
+        var quotedBraces = entries
+            .Where(entry => formatted.Contains(entry.Attribute("name")!.Value) && ApostropheBesideBrace().IsMatch(entry.Element("value")!.Value))
+            .Select(entry => entry.Attribute("name")!.Value)
+            .ToArray();
 
         // Assert
         unused.Should().BeEmpty("every English resource should be referenced by the web UI");
@@ -42,6 +46,7 @@ public sealed partial class WebStringsTests
         indexed.Should().BeEmpty("resource keys should name the text, not number it");
         boilerplate.Should().BeEmpty("comments should explain the text, not repeat it");
         plainWithPlaceholders.Should().BeEmpty("text with placeholders must be read with ResourceMessageFormatter, not a plain property");
+        quotedBraces.Should().BeEmpty("an apostrophe next to a brace quotes it in MessageFormat; use typographic quotes around a placeholder");
         foreach (var value in entries.Where(entry => formatted.Contains(entry.Attribute("name")!.Value)).Select(entry => entry.Element("value")!.Value))
         {
             Variables(value);
@@ -101,6 +106,9 @@ public sealed partial class WebStringsTests
 
     [GeneratedRegex(@"_\d|^[A-Z][a-z]+_")]
     private static partial Regex IndexedKey();
+
+    [GeneratedRegex("'[{}]|[{}]'")]
+    private static partial Regex ApostropheBesideBrace();
 
     private static Dictionary<string, string> Entries(string path) =>
         XDocument.Load(path).Root!.Elements("data")

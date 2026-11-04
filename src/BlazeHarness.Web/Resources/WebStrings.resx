@@ -1088,10 +1088,6 @@
     <value>Display language</value>
     <comment>Label for the UI language picker.</comment>
   </data>
-  <data name="GeneralSettingsEnglish" xml:space="preserve">
-    <value>English</value>
-    <comment>English option in the UI language picker.</comment>
-  </data>
   <data name="GeneralSettingsCompactionDescription" xml:space="preserve">
     <value>When a chat gets too long, the model normally summarizes the older messages. Extraction builds the summary from your requests, the files touched and the latest steps instead, without a model call: instant and free, but less thorough. The agent can still look up what was left out.</value>
     <comment>Explains the extractive compaction option.</comment>
@@ -1423,9 +1419,9 @@
   <data name="SidebarImportNotAnExport" xml:space="preserve"><value>The file is not a BlazeHarness chat export.</value><comment>Error shown when an imported file is not a chat export. BlazeHarness is the app name: do not translate it.</comment></data>
   <data name="SidebarImportNewerVersion" xml:space="preserve"><value>The file was exported by a newer version of BlazeHarness.</value><comment>Error shown when an imported chat export comes from a newer app version. BlazeHarness is the app name: do not translate it.</comment></data>
   <data name="SidebarImportNoMessages" xml:space="preserve"><value>The file has no messages.</value><comment>Error shown when an imported chat export contains no messages.</comment></data>
-  <data name="AttachmentUnsupported" xml:space="preserve"><value>'{name}' can't be attached. Only images (PNG, JPEG, GIF, WebP) and text files are supported.</value><comment>Error shown above the message box when a file can't be attached. {name} is the file name. PNG, JPEG, GIF and WebP are file formats: do not translate them.</comment></data>
-  <data name="AttachmentTooLarge" xml:space="preserve"><value>'{name}' is larger than {size} MB.</value><comment>Error shown above the message box when a file to attach is too large. {name} is the file name and {size} the limit in megabytes.</comment></data>
-  <data name="AttachmentEmpty" xml:space="preserve"><value>'{name}' is empty.</value><comment>Error shown above the message box when a file to attach is empty. {name} is the file name.</comment></data>
+  <data name="AttachmentUnsupported" xml:space="preserve"><value>“{name}” can't be attached. Only images (PNG, JPEG, GIF, WebP) and text files are supported.</value><comment>Error shown above the message box when a file can't be attached. {name} is the file name. PNG, JPEG, GIF and WebP are file formats: do not translate them.</comment></data>
+  <data name="AttachmentTooLarge" xml:space="preserve"><value>“{name}” is larger than {size} MB.</value><comment>Error shown above the message box when a file to attach is too large. {name} is the file name and {size} the limit in megabytes.</comment></data>
+  <data name="AttachmentEmpty" xml:space="preserve"><value>“{name}” is empty.</value><comment>Error shown above the message box when a file to attach is empty. {name} is the file name.</comment></data>
   <data name="SidebarImportFileTooLarge" xml:space="preserve"><value>That file is too large to be a chat export.</value><comment>Error shown when a chat export file exceeds the import limit.</comment></data>
   <data name="SidebarImportReadFailed" xml:space="preserve"><value>The file could not be read.</value><comment>Error shown when a chat export file cannot be read.</comment></data>
   <data name="SidebarOpenFolderFailed" xml:space="preserve"><value>That folder could not be opened.</value><comment>Error shown when opening a folder fails.</comment></data>
@@ -1460,7 +1456,7 @@
   <data name="ComposerQuestionAlreadyHandled" xml:space="preserve"><value>The question was answered or stopped before this arrived. Send it again.</value><comment>Hint shown when an answer can no longer be queued.</comment></data>
   <data name="ComposerReplyEnded" xml:space="preserve"><value>The reply ended before the message could be queued. Send it again.</value><comment>Hint shown when a reply ends before a message can be queued.</comment></data>
   <data name="ComposerMaxFiles" xml:space="preserve"><value>A message can carry at most {count} files.</value><comment>Hint shown when a user attaches more than the maximum number of files; count is the limit.</comment></data>
-  <data name="ComposerFileTooLarge" xml:space="preserve"><value>'{name}' is larger than {size}.</value><comment>Hint shown when an attached file exceeds the per-file size limit; name is the file name and size is the limit.</comment></data>
+  <data name="ComposerFileTooLarge" xml:space="preserve"><value>“{name}” is larger than {size}.</value><comment>Hint shown when an attached file exceeds the per-file size limit; name is the file name and size is the limit.</comment></data>
   <data name="ComposerAttachmentImage" xml:space="preserve"><value>Sent as an image</value><comment>Attachment hint for a file sent as an image.</comment></data>
   <data name="ComposerAttachmentInline" xml:space="preserve"><value>Added to the message</value><comment>Attachment hint for a file included directly in the message.</comment></data>
   <data name="ComposerAttachmentTooLong" xml:space="preserve"><value>Too long to add, the model reads it as needed</value><comment>Attachment hint for a file that is not included directly because it is too long.</comment></data>

@@ -1,0 +1,2419 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ConfirmDialogKeep" xml:space="preserve">
+    <value>保留</value>
+  </data>
+  <data name="SecretInputStoredPlaceholder" xml:space="preserve">
+    <value>已保存。输入可替换。</value>
+  </data>
+  <data name="SecretInputHide" xml:space="preserve">
+    <value>隐藏密钥</value>
+  </data>
+  <data name="SecretInputShow" xml:space="preserve">
+    <value>显示密钥</value>
+  </data>
+  <data name="OpenFolderDialogTitle" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="OpenFolderDialogHint" xml:space="preserve">
+    <value>选择此电脑上的一个项目文件夹。在其中开始的聊天会将其用作工作文件夹。</value>
+  </data>
+  <data name="OpenFolderDialogConfirm" xml:space="preserve">
+    <value>打开此文件夹</value>
+  </data>
+  <data name="OpenFolderDialogUp" xml:space="preserve">
+    <value>上一级</value>
+  </data>
+  <data name="OpenFolderDialogShowHiddenFolders" xml:space="preserve">
+    <value>显示隐藏文件夹</value>
+  </data>
+  <data name="OpenFolderDialogFoldersIn" xml:space="preserve">
+    <value>{path} 中的文件夹</value>
+  </data>
+  <data name="OpenFolderErrorEmpty" xml:space="preserve">
+    <value>请输入文件夹路径。</value>
+  </data>
+  <data name="OpenFolderErrorNotAbsolute" xml:space="preserve">
+    <value>请输入完整路径，例如 /home/me/my-app 或 C:\Projects\my-app。以 ~ 开头的路径表示你的主文件夹。</value>
+  </data>
+  <data name="OpenFolderErrorNotFound" xml:space="preserve">
+    <value>该文件夹不存在。</value>
+  </data>
+  <data name="OpenFolderErrorNotAFolder" xml:space="preserve">
+    <value>这是文件，不是文件夹。</value>
+  </data>
+  <data name="OpenFolderErrorAccessDenied" xml:space="preserve">
+    <value>BlazeHarness 无权读取该文件夹。</value>
+  </data>
+  <data name="OpenFolderErrorNotAllowed" xml:space="preserve">
+    <value>该文件夹范围过大，无法作为工作文件夹。请选择项目文件夹，而非根目录、主文件夹或 BlazeHarness 自身的数据文件夹。</value>
+  </data>
+  <data name="MoveChatErrorWriteFailed" xml:space="preserve">
+    <value>无法移动该聊天，因为无法写入其文件。</value>
+  </data>
+  <data name="SettingsGeneralTitle" xml:space="preserve">
+    <value>常规</value>
+  </data>
+  <data name="SettingsGeneralDescription" xml:space="preserve">
+    <value>压缩、待办列表、聊天外观和键盘快捷键。</value>
+  </data>
+  <data name="ChatStatsCachedPromptTokens" xml:space="preserve">
+    <value>{count, plural, other {有 {formattedCount} 个提示词 token 来自提供商缓存}}</value>
+  </data>
+  <data name="ChatStatsResponsesLabel" xml:space="preserve">
+    <value>回复</value>
+  </data>
+  <data name="ChatStatsResponsesTooltip" xml:space="preserve">
+    <value>模型给出的回复数，包含工具调用轮次</value>
+  </data>
+  <data name="ChatStatsStreamingLabel" xml:space="preserve">
+    <value>流式输出</value>
+  </data>
+  <data name="ChatStatsStreamingTooltip" xml:space="preserve">
+    <value>所有回复流式输出的总耗时</value>
+  </data>
+  <data name="ChatStatsFirstTokenLabel" xml:space="preserve">
+    <value>首 token</value>
+  </data>
+  <data name="ChatStatsFirstTokenTooltip" xml:space="preserve">
+    <value>收到首个输出前的平均等待时间</value>
+  </data>
+  <data name="ChatStatsPrefillLabel" xml:space="preserve">
+    <value>预填充</value>
+  </data>
+  <data name="ChatStatsPrefillTooltip" xml:space="preserve">
+    <value>首个输出前每秒处理的未缓存提示词 token 数</value>
+  </data>
+  <data name="ChatStatsDecodeLabel" xml:space="preserve">
+    <value>解码</value>
+  </data>
+  <data name="ChatStatsDecodeTooltip" xml:space="preserve">
+    <value>流式输出时每秒生成的 token 数</value>
+  </data>
+  <data name="ChatStatsOutLabel" xml:space="preserve">
+    <value>输出</value>
+  </data>
+  <data name="ChatStatsCachedLabel" xml:space="preserve">
+    <value>已缓存</value>
+  </data>
+  <data name="ChatStatsInLabel" xml:space="preserve">
+    <value>输入</value>
+  </data>
+  <data name="ChatStatsInTooltip" xml:space="preserve">
+    <value>此聊天所有回复发送的提示词 token 总数</value>
+  </data>
+  <data name="ChatStatsAriaLabel" xml:space="preserve">
+    <value>此聊天的用量</value>
+  </data>
+  <data name="ChatViewJumpToLatest" xml:space="preserve">
+    <value>跳至最新消息</value>
+  </data>
+  <data name="ChatViewEmptyHint" xml:space="preserve">
+    <value>在下方选择一个模型并发送消息。按 Enter 发送，按 Shift+Enter 换行。</value>
+  </data>
+  <data name="ChatViewEmptyHeading" xml:space="preserve">
+    <value>有什么可以帮你的？</value>
+  </data>
+  <data name="ChatViewFolderNotFound" xml:space="preserve">
+    <value>未找到文件夹</value>
+  </data>
+  <data name="ChatViewFindButton" xml:space="preserve">
+    <value>查找</value>
+  </data>
+  <data name="ChatViewFindButtonTooltip" xml:space="preserve">
+    <value>在此聊天中查找（Ctrl+F）</value>
+  </data>
+  <data name="ChatViewMoveButton" xml:space="preserve">
+    <value>移动</value>
+  </data>
+  <data name="ChatViewChatFilesLabel" xml:space="preserve">
+    <value>聊天文件</value>
+  </data>
+  <data name="ChatViewChatFilesTooltip" xml:space="preserve">
+    <value>此聊天创建的文件与聊天一起保存</value>
+  </data>
+  <data name="ChatViewInstructionsHeading" xml:space="preserve">
+    <value>项目指令</value>
+  </data>
+  <data name="ChatViewAgentsMdTrigger" xml:space="preserve">
+    <value>AGENTS.md</value>
+  </data>
+  <data name="ChatViewInstructionsTooltip" xml:space="preserve">
+    <value>提供给模型的项目指令</value>
+  </data>
+  <data name="ChatViewInstructionsLabel" xml:space="preserve">
+    <value>项目指令</value>
+  </data>
+  <data name="ChatViewConversationLabel" xml:space="preserve">
+    <value>对话</value>
+  </data>
+  <data name="ChatViewStartNewChat" xml:space="preserve">
+    <value>开始新聊天</value>
+  </data>
+  <data name="ChatViewMissingChat" xml:space="preserve">
+    <value>此聊天已不存在。</value>
+  </data>
+  <data name="ComposerModelSwitchCacheHint" xml:space="preserve">
+    <value>切换模型发送会重置提示词缓存，因此首次回复可能较慢。</value>
+  </data>
+  <data name="ComposerImagesUnsupportedHint" xml:space="preserve">
+    <value>所选模型无法查看图片，因此图片不会发送给模型。</value>
+  </data>
+  <data name="ComposerSendTooltip" xml:space="preserve">
+    <value>发送（Enter）</value>
+  </data>
+  <data name="ComposerSendLabel" xml:space="preserve">
+    <value>发送</value>
+  </data>
+  <data name="ComposerStopTooltip" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="ComposerStopLabel" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="ComposerRetryTooltip" xml:space="preserve">
+    <value>重试上一条回复</value>
+  </data>
+  <data name="ComposerRetryLabel" xml:space="preserve">
+    <value>重试</value>
+  </data>
+  <data name="ComposerThinkingHeading" xml:space="preserve">
+    <value>思考</value>
+  </data>
+  <data name="ComposerThinkingTooltip" xml:space="preserve">
+    <value>模型在回答前的思考程度</value>
+  </data>
+  <data name="ComposerThinkingMenuLabel" xml:space="preserve">
+    <value>思考</value>
+  </data>
+  <data name="ComposerModelMenuTooltip" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="ComposerModelMenuLabel" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="ComposerAttachFilesTooltip" xml:space="preserve">
+    <value>添加附件</value>
+  </data>
+  <data name="ComposerAttachFilesLabel" xml:space="preserve">
+    <value>添加附件</value>
+  </data>
+  <data name="ComposerMessageLabel" xml:space="preserve">
+    <value>消息</value>
+  </data>
+  <data name="ComposerInsertAsText" xml:space="preserve">
+    <value>作为文本插入</value>
+  </data>
+  <data name="ComposerPreviewFile" xml:space="preserve">
+    <value>预览</value>
+  </data>
+  <data name="ComposerAttachedFilesLabel" xml:space="preserve">
+    <value>已添加的附件</value>
+  </data>
+  <data name="ComposerQueuedBadge" xml:space="preserve">
+    <value>排队中</value>
+  </data>
+  <data name="ComposerQueuedMessagesLabel" xml:space="preserve">
+    <value>排队中的消息</value>
+  </data>
+  <data name="ComposerSkillsLabel" xml:space="preserve">
+    <value>技能</value>
+  </data>
+  <data name="ComposerCancelEdit" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="ComposerEditingHint" xml:space="preserve">
+    <value>正在编辑消息。发送后将替换该消息及其后的所有回复。</value>
+  </data>
+  <data name="ComposerOpenProviders" xml:space="preserve">
+    <value>打开提供商</value>
+  </data>
+  <data name="ComposerNoModelsHint" xml:space="preserve">
+    <value>向提供商添加模型以开始聊天。</value>
+  </data>
+  <data name="ContextIndicatorCompactDescription" xml:space="preserve">
+    <value>将较早的消息替换为摘要</value>
+  </data>
+  <data name="ContextIndicatorCompactNow" xml:space="preserve">
+    <value>立即压缩</value>
+  </data>
+  <data name="ContextIndicatorHeading" xml:space="preserve">
+    <value>上下文</value>
+  </data>
+  <data name="ContextIndicatorDialogLabel" xml:space="preserve">
+    <value>上下文</value>
+  </data>
+  <data name="ContextIndicatorTokensUnit" xml:space="preserve">
+    <value>token</value>
+  </data>
+  <data name="DiffViewLabel" xml:space="preserve">
+    <value>更改</value>
+  </data>
+  <data name="ExportMenuSecretsWarning" xml:space="preserve">
+    <value>该文件包含聊天中的所有内容，包括工具输出的内容（例如读取的文件内容）。分享前请检查其中是否包含机密信息。附件不包含在内。</value>
+  </data>
+  <data name="ExportMenuJsonHint" xml:space="preserve">
+    <value>以便日后重新导入</value>
+  </data>
+  <data name="ExportMenuJsonName" xml:space="preserve">
+    <value>JSON</value>
+  </data>
+  <data name="ExportMenuMarkdownHint" xml:space="preserve">
+    <value>用于阅读或分享</value>
+  </data>
+  <data name="ExportMenuMarkdownName" xml:space="preserve">
+    <value>Markdown</value>
+  </data>
+  <data name="ExportMenuHeading" xml:space="preserve">
+    <value>导出聊天</value>
+  </data>
+  <data name="ExportMenuButton" xml:space="preserve">
+    <value>导出</value>
+  </data>
+  <data name="ExportMenuTooltip" xml:space="preserve">
+    <value>将此聊天保存为文件</value>
+  </data>
+  <data name="ExportMenuLabel" xml:space="preserve">
+    <value>导出</value>
+  </data>
+  <data name="FindBarCloseTooltip" xml:space="preserve">
+    <value>关闭 (Esc)</value>
+  </data>
+  <data name="FindBarCloseLabel" xml:space="preserve">
+    <value>关闭查找</value>
+  </data>
+  <data name="FindBarNextTooltip" xml:space="preserve">
+    <value>下一个匹配项 (Enter)</value>
+  </data>
+  <data name="FindBarNextLabel" xml:space="preserve">
+    <value>下一个匹配项</value>
+  </data>
+  <data name="FindBarPreviousTooltip" xml:space="preserve">
+    <value>上一个匹配项 (Shift+Enter)</value>
+  </data>
+  <data name="FindBarPreviousLabel" xml:space="preserve">
+    <value>上一个匹配项</value>
+  </data>
+  <data name="FindBarInputLabel" xml:space="preserve">
+    <value>在此聊天中查找</value>
+  </data>
+  <data name="FindBarPlaceholder" xml:space="preserve">
+    <value>在此聊天中查找</value>
+  </data>
+  <data name="FindBarLabel" xml:space="preserve">
+    <value>在此聊天中查找</value>
+  </data>
+  <data name="McpPickerManage" xml:space="preserve">
+    <value>管理</value>
+  </data>
+  <data name="McpPickerScopeNote" xml:space="preserve">
+    <value>仅适用于此聊天，从下一条回复起生效。更改此项会重置模型的提示词缓存，因此该回复可能会更慢。</value>
+  </data>
+  <data name="McpPickerFailed" xml:space="preserve">
+    <value>失败</value>
+  </data>
+  <data name="McpPickerTrigger" xml:space="preserve">
+    <value>MCP</value>
+  </data>
+  <data name="McpPickerTitle" xml:space="preserve">
+    <value>此聊天可使用其工具的 MCP 服务器</value>
+  </data>
+  <data name="McpPickerLabel" xml:space="preserve">
+    <value>MCP 服务器</value>
+  </data>
+  <data name="MessageViewEditTooltip" xml:space="preserve">
+    <value>编辑并重新发送</value>
+  </data>
+  <data name="MessageViewEditLabel" xml:space="preserve">
+    <value>编辑并重新发送此消息</value>
+  </data>
+  <data name="MessageViewCopyTooltip" xml:space="preserve">
+    <value>复制消息</value>
+  </data>
+  <data name="MessageViewCopyLabel" xml:space="preserve">
+    <value>复制此消息</value>
+  </data>
+  <data name="MessageViewInterruptedHint" xml:space="preserve">
+    <value>此回复在应用停止时中断。请重试以重新生成。</value>
+  </data>
+  <data name="MessageViewStoppedHint" xml:space="preserve">
+    <value>已停止。</value>
+  </data>
+  <data name="MessageViewEmptyReplyHint" xml:space="preserve">
+    <value>模型结束了回复，未返回任何文本。</value>
+  </data>
+  <data name="MessageViewWaiting" xml:space="preserve">
+    <value>正在等待模型……</value>
+  </data>
+  <data name="MessageViewThinkingSummary" xml:space="preserve">
+    <value>思考</value>
+  </data>
+  <data name="MessageViewQueuedLabel" xml:space="preserve">
+    <value>在模型运行时发送</value>
+  </data>
+  <data name="PermissionPickerConfirmButton" xml:space="preserve">
+    <value>开启</value>
+  </data>
+  <data name="PermissionPickerCancelButton" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="PermissionPickerConfirmHint" xml:space="preserve">
+    <value>这仅适用于此聊天。受保护的文件夹（如 SSH 密钥）仍会被阻止。</value>
+  </data>
+  <data name="PermissionPickerNeverAskWarning" xml:space="preserve">
+    <value>从不询问：工具调用无需先询问你即可运行。模型从文件或网页中读取的文本可能会诱导其运行有害命令。</value>
+  </data>
+  <data name="PermissionPickerUnrestrictedWarning" xml:space="preserve">
+    <value>无限制：工具和命令可在无沙箱的情况下读取和更改你的用户账户可访问的任何内容。</value>
+  </data>
+  <data name="PermissionPickerConfirmTitle" xml:space="preserve">
+    <value>关闭安全保护？</value>
+  </data>
+  <data name="PermissionPickerNoSandboxNote" xml:space="preserve">
+    <value>无沙箱，因此命令已被阻止</value>
+  </data>
+  <data name="PermissionPickerSandboxedNote" xml:space="preserve">
+    <value>允许的命令将在沙箱中运行</value>
+  </data>
+  <data name="PermissionPickerUnrestrictedNote" xml:space="preserve">
+    <value>命令在无沙箱的情况下运行</value>
+  </data>
+  <data name="PermissionPickerNeverAskDescription" xml:space="preserve">
+    <value>运行允许的操作并阻止其余操作</value>
+  </data>
+  <data name="PermissionPickerAskForExceptionsDescription" xml:space="preserve">
+    <value>仅当操作超出访问级别时询问</value>
+  </data>
+  <data name="PermissionPickerAskFirstDescription" xml:space="preserve">
+    <value>在执行有风险的操作或文件夹外的操作前询问</value>
+  </data>
+  <data name="PermissionPickerApprovalsHeading" xml:space="preserve">
+    <value>批准</value>
+  </data>
+  <data name="PermissionPickerUnrestrictedDescription" xml:space="preserve">
+    <value>在无沙箱的情况下访问你的账户可访问的任何内容</value>
+  </data>
+  <data name="PermissionPickerReadOnlyDescription" xml:space="preserve">
+    <value>仅读取文件，不更改文件或运行命令</value>
+  </data>
+  <data name="PermissionPickerAccessHeading" xml:space="preserve">
+    <value>访问</value>
+  </data>
+  <data name="PermissionPickerLabel" xml:space="preserve">
+    <value>权限</value>
+  </data>
+  <data name="QuestionCardAnswerLabel" xml:space="preserve">
+    <value>你的回答：</value>
+  </data>
+  <data name="QuestionCardSendHint" xml:space="preserve">
+    <value>按 Ctrl+Enter 发送</value>
+  </data>
+  <data name="QuestionCardSkip" xml:space="preserve">
+    <value>跳过</value>
+  </data>
+  <data name="QuestionCardLeaveToModel" xml:space="preserve">
+    <value>由你决定</value>
+  </data>
+  <data name="QuestionCardSendAnswer" xml:space="preserve">
+    <value>发送回答</value>
+  </data>
+  <data name="QuestionCardAskedBy" xml:space="preserve">
+    <value>来自助手的提问</value>
+  </data>
+  <data name="QuestionCardLabel" xml:space="preserve">
+    <value>来自助手的问题</value>
+  </data>
+  <data name="SkillPickerManage" xml:space="preserve">
+    <value>管理</value>
+  </data>
+  <data name="SkillPickerScopeNote" xml:space="preserve">
+    <value>仅适用于此聊天，从下一条回复起生效。更改此项会重置模型的提示词缓存，因此该回复可能会更慢。</value>
+  </data>
+  <data name="SkillPickerTrigger" xml:space="preserve">
+    <value>技能</value>
+  </data>
+  <data name="SkillPickerTitle" xml:space="preserve">
+    <value>此聊天可加载的技能</value>
+  </data>
+  <data name="SkillPickerLabel" xml:space="preserve">
+    <value>技能</value>
+  </data>
+  <data name="TodoChecklistLabel" xml:space="preserve">
+    <value>待办列表</value>
+  </data>
+  <data name="TodoPanelLabel" xml:space="preserve">
+    <value>待办列表</value>
+  </data>
+  <data name="ToolCallViewOutputLabel" xml:space="preserve">
+    <value>输出</value>
+  </data>
+  <data name="ToolCallViewDeny" xml:space="preserve">
+    <value>拒绝</value>
+  </data>
+  <data name="ToolCallViewAllowForChat" xml:space="preserve">
+    <value>在此聊天中允许</value>
+  </data>
+  <data name="ToolCallViewAllowOnce" xml:space="preserve">
+    <value>允许</value>
+  </data>
+  <data name="MoveChatDialogCancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="MoveChatDialogNoFolder" xml:space="preserve">
+    <value>无文件夹</value>
+  </data>
+  <data name="MoveChatDialogDestinationsLabel" xml:space="preserve">
+    <value>目标位置</value>
+  </data>
+  <data name="MoveChatDialogHint" xml:space="preserve">
+    <value>选择此聊天所在的文件夹。聊天消息会保持原样，文件夹中的内容也不会改变。</value>
+  </data>
+  <data name="MoveChatDialogTitle" xml:space="preserve">
+    <value>将聊天移至</value>
+  </data>
+  <data name="OpenFolderDialogCancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="OpenFolderDialogNoSubfolders" xml:space="preserve">
+    <value>此文件夹内没有子文件夹。你仍然可以打开它。</value>
+  </data>
+  <data name="OpenFolderDialogPlacesLabel" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="OpenFolderDialogGo" xml:space="preserve">
+    <value>前往</value>
+  </data>
+  <data name="OpenFolderDialogPathPlaceholder" xml:space="preserve">
+    <value>输入或粘贴路径，例如 ~/code/my-app</value>
+  </data>
+  <data name="OpenFolderDialogPathLabel" xml:space="preserve">
+    <value>文件夹路径</value>
+  </data>
+  <data name="ChatListDeleteWarning" xml:space="preserve">
+    <value>此操作无法撤销。[strong]{title}[/strong] 及其保存的所有内容都将被删除。项目文件夹中的文件不会受到影响。</value>
+  </data>
+  <data name="ChatListDeleteConfirm" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="ChatListDeleteTitle" xml:space="preserve">
+    <value>删除此聊天？</value>
+  </data>
+  <data name="ChatListDeleteMenuItem" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="ChatListOpenDataMenuItem" xml:space="preserve">
+    <value>打开聊天数据</value>
+  </data>
+  <data name="ChatListMoveMenuItem" xml:space="preserve">
+    <value>移至文件夹</value>
+  </data>
+  <data name="ChatListRenameMenuItem" xml:space="preserve">
+    <value>重命名</value>
+  </data>
+  <data name="ChatListReplyingLabel" xml:space="preserve">
+    <value>正在回复</value>
+  </data>
+  <data name="ChatListReplyingTooltip" xml:space="preserve">
+    <value>正在回复</value>
+  </data>
+  <data name="ChatListNeedsYouBadge" xml:space="preserve">
+    <value>待你处理</value>
+  </data>
+  <data name="ChatListNeedsYouTooltip" xml:space="preserve">
+    <value>等待你的回答或批准</value>
+  </data>
+  <data name="ChatListRenameLabel" xml:space="preserve">
+    <value>聊天名称</value>
+  </data>
+  <data name="MainLayoutReload" xml:space="preserve">
+    <value>重新加载</value>
+  </data>
+  <data name="MainLayoutTitle" xml:space="preserve">
+    <value>BlazeHarness</value>
+  </data>
+  <data name="MainLayoutCloseSidebar" xml:space="preserve">
+    <value>关闭侧边栏</value>
+  </data>
+  <data name="MainLayoutSkipToChat" xml:space="preserve">
+    <value>跳至聊天</value>
+  </data>
+  <data name="SettingsDialogSectionsLabel" xml:space="preserve">
+    <value>设置分类</value>
+  </data>
+  <data name="SettingsDialogTitle" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="SidebarRemoveFolderWarning" xml:space="preserve">
+    <value>[strong]{name}[/strong] 将从此列表中移除。电脑上的文件夹不会受到影响，其中的聊天将保留并移至“聊天”。</value>
+  </data>
+  <data name="SidebarRemoveConfirm" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="SidebarRemoveFolderTitle" xml:space="preserve">
+    <value>移除此文件夹？</value>
+  </data>
+  <data name="SidebarRelocateConfirm" xml:space="preserve">
+    <value>使用此文件夹</value>
+  </data>
+  <data name="SidebarRelocateTitle" xml:space="preserve">
+    <value>查找文件夹</value>
+  </data>
+  <data name="SidebarRemoveFolderMenuItem" xml:space="preserve">
+    <value>移除文件夹</value>
+  </data>
+  <data name="SidebarOpenFolderMenuItem" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="SidebarFindFolderMenuItem" xml:space="preserve">
+    <value>查找文件夹</value>
+  </data>
+  <data name="SidebarNewChatMenuItem" xml:space="preserve">
+    <value>新建聊天</value>
+  </data>
+  <data name="SidebarSettings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="SidebarSettingsTooltip" xml:space="preserve">
+    <value>设置 (Ctrl+,)</value>
+  </data>
+  <data name="SidebarNoChatsInFolder" xml:space="preserve">
+    <value>暂无聊天。</value>
+  </data>
+  <data name="SidebarFolderMissing" xml:space="preserve">
+    <value>找不到此文件夹。它可能已被移动或删除。</value>
+  </data>
+  <data name="SidebarFindFolderTooltip" xml:space="preserve">
+    <value>查找此文件夹</value>
+  </data>
+  <data name="SidebarNewChatInFolderTooltip" xml:space="preserve">
+    <value>在此文件夹中新建聊天</value>
+  </data>
+  <data name="SidebarFolderNotFoundLabel" xml:space="preserve">
+    <value>找不到文件夹</value>
+  </data>
+  <data name="SidebarFolderNotFoundTooltip" xml:space="preserve">
+    <value>找不到文件夹</value>
+  </data>
+  <data name="SidebarNoFoldersHint" xml:space="preserve">
+    <value>打开项目文件夹以在其中开始聊天。</value>
+  </data>
+  <data name="SidebarOpenFolderLabel" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="SidebarOpenFolderTooltip" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="SidebarFoldersHeading" xml:space="preserve">
+    <value>文件夹</value>
+  </data>
+  <data name="SidebarNewGeneralChatLabel" xml:space="preserve">
+    <value>新建无文件夹聊天</value>
+  </data>
+  <data name="SidebarNewGeneralChatTooltip" xml:space="preserve">
+    <value>新建无文件夹聊天</value>
+  </data>
+  <data name="SidebarImportChatLabel" xml:space="preserve">
+    <value>从 JSON 文件导入聊天</value>
+  </data>
+  <data name="SidebarSortLabel" xml:space="preserve">
+    <value>排序聊天</value>
+  </data>
+  <data name="SidebarSortTooltip" xml:space="preserve">
+    <value>排序聊天</value>
+  </data>
+  <data name="SidebarSortUpdated" xml:space="preserve">
+    <value>最近更新</value>
+  </data>
+  <data name="SidebarSortName" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="SidebarImportChatTooltip" xml:space="preserve">
+    <value>从 JSON 文件导入聊天</value>
+  </data>
+  <data name="SidebarChatsHeading" xml:space="preserve">
+    <value>聊天</value>
+  </data>
+  <data name="SidebarSearchChatsTooltip" xml:space="preserve">
+    <value>搜索聊天名称 (Ctrl+K)</value>
+  </data>
+  <data name="SidebarSearchChatsLabel" xml:space="preserve">
+    <value>搜索聊天名称</value>
+  </data>
+  <data name="SidebarSearchChatsPlaceholder" xml:space="preserve">
+    <value>搜索聊天名称</value>
+  </data>
+  <data name="SidebarNewChat" xml:space="preserve">
+    <value>新建聊天</value>
+  </data>
+  <data name="SidebarNewChatTooltip" xml:space="preserve">
+    <value>新建聊天 (Ctrl+Shift+O)</value>
+  </data>
+  <data name="SidebarBrand" xml:space="preserve">
+    <value>BlazeHarness</value>
+  </data>
+  <data name="SidebarNavigationLabel" xml:space="preserve">
+    <value>主导航</value>
+  </data>
+  <data name="ErrorMessage" xml:space="preserve">
+    <value>处理你的请求时发生错误。请查看控制台了解详情。</value>
+  </data>
+  <data name="ErrorHeading" xml:space="preserve">
+    <value>出错了</value>
+  </data>
+  <data name="ErrorPageTitle" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="HomeSetUpProvider" xml:space="preserve">
+    <value>设置提供商</value>
+  </data>
+  <data name="HomeProviderHint" xml:space="preserve">
+    <value>连接兼容 OpenAI 的端点即可开始聊天。托管 API 或 llama.cpp 等本地服务器均可使用。</value>
+  </data>
+  <data name="HomeHeading" xml:space="preserve">
+    <value>欢迎使用 BlazeHarness</value>
+  </data>
+  <data name="HomePageTitle" xml:space="preserve">
+    <value>BlazeHarness</value>
+  </data>
+  <data name="NotFoundMessage" xml:space="preserve">
+    <value>你访问的页面不存在。</value>
+  </data>
+  <data name="NotFoundHeading" xml:space="preserve">
+    <value>未找到</value>
+  </data>
+  <data name="NotFoundPageTitle" xml:space="preserve">
+    <value>未找到</value>
+  </data>
+  <data name="DiagnosticsSettingsRecentLogLabel" xml:space="preserve">
+    <value>最近日志行</value>
+  </data>
+  <data name="DiagnosticsSettingsLogEmpty" xml:space="preserve">
+    <value>暂无日志记录。</value>
+  </data>
+  <data name="DiagnosticsSettingsRefreshButton" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="DiagnosticsSettingsRecentLogHeading" xml:space="preserve">
+    <value>最近日志</value>
+  </data>
+  <data name="DiagnosticsSettingsSkillsLabel" xml:space="preserve">
+    <value>技能</value>
+  </data>
+  <data name="DiagnosticsSettingsMcpServersLabel" xml:space="preserve">
+    <value>MCP 服务器</value>
+  </data>
+  <data name="DiagnosticsSettingsFoldersLabel" xml:space="preserve">
+    <value>文件夹</value>
+  </data>
+  <data name="DiagnosticsSettingsChatsLabel" xml:space="preserve">
+    <value>聊天</value>
+  </data>
+  <data name="DiagnosticsSettingsShellSandboxLabel" xml:space="preserve">
+    <value>Shell 沙箱</value>
+  </data>
+  <data name="DiagnosticsSettingsLogFolderLabel" xml:space="preserve">
+    <value>日志文件夹</value>
+  </data>
+  <data name="DiagnosticsSettingsDataFolderLabel" xml:space="preserve">
+    <value>数据文件夹</value>
+  </data>
+  <data name="DiagnosticsSettingsSystemLabel" xml:space="preserve">
+    <value>系统</value>
+  </data>
+  <data name="DiagnosticsSettingsRuntimeLabel" xml:space="preserve">
+    <value>运行时</value>
+  </data>
+  <data name="DiagnosticsSettingsVersionLabel" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="DiagnosticsSettingsCopyButton" xml:space="preserve">
+    <value>复制用于错误报告</value>
+  </data>
+  <data name="DiagnosticsSettingsAboutHeading" xml:space="preserve">
+    <value>关于此安装</value>
+  </data>
+  <data name="DiagnosticsSettingsDescription" xml:space="preserve">
+    <value>出现问题时可查看的信息，以及报告问题时应包含的内容。</value>
+  </data>
+  <data name="DiagnosticsSettingsTitle" xml:space="preserve">
+    <value>诊断</value>
+  </data>
+  <data name="GeneralSettingsShortcutNewLine" xml:space="preserve">
+    <value>在消息中换行</value>
+  </data>
+  <data name="GeneralSettingsShortcutSend" xml:space="preserve">
+    <value>发送消息</value>
+  </data>
+  <data name="GeneralSettingsShortcutSettings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="GeneralSettingsShortcutFindInChat" xml:space="preserve">
+    <value>在聊天中查找</value>
+  </data>
+  <data name="GeneralSettingsShortcutSearchChats" xml:space="preserve">
+    <value>搜索聊天名称</value>
+  </data>
+  <data name="GeneralSettingsShortcutNewChat" xml:space="preserve">
+    <value>新建聊天</value>
+  </data>
+  <data name="GeneralSettingsShortcutsHeading" xml:space="preserve">
+    <value>键盘快捷键</value>
+  </data>
+  <data name="GeneralSettingsReverseHint" xml:space="preserve">
+    <value>可以对字符使用 [code]Array.Reverse[/code]：</value>
+  </data>
+  <data name="GeneralSettingsPreviewQuestion" xml:space="preserve">
+    <value>如何在 C# 中反转字符串？</value>
+  </data>
+  <data name="GeneralSettingsPreviewLabel" xml:space="preserve">
+    <value>聊天文本预览</value>
+  </data>
+  <data name="GeneralSettingsChatTextSizeHint" xml:space="preserve">
+    <value>在界面大小的基础上调整消息和消息框。代码会随之使用略小的字号。</value>
+  </data>
+  <data name="GeneralSettingsChatTextSizeLabel" xml:space="preserve">
+    <value>聊天文本大小</value>
+  </data>
+  <data name="GeneralSettingsInterfaceSizeHint" xml:space="preserve">
+    <value>侧边栏、按钮、对话框和设置。</value>
+  </data>
+  <data name="GeneralSettingsInterfaceSizeLabel" xml:space="preserve">
+    <value>界面大小</value>
+  </data>
+  <data name="GeneralSettingsTextSizeHint" xml:space="preserve">
+    <value>保存在此浏览器中并立即生效。浏览器缩放仍会在此基础上叠加。</value>
+  </data>
+  <data name="GeneralSettingsTextSizeHeading" xml:space="preserve">
+    <value>文本大小</value>
+  </data>
+  <data name="GeneralSettingsFullWidthHint" xml:space="preserve">
+    <value>展开消息和消息框以填满可用空间。保存在此浏览器中并立即生效。</value>
+  </data>
+  <data name="GeneralSettingsFullWidthLabel" xml:space="preserve">
+    <value>聊天使用全宽</value>
+  </data>
+  <data name="GeneralSettingsChatWidthHeading" xml:space="preserve">
+    <value>聊天宽度</value>
+  </data>
+  <data name="GeneralSettingsCompactionLabel" xml:space="preserve">
+    <value>不使用模型进行压缩（提取）</value>
+  </data>
+  <data name="GeneralSettingsCompactionHeading" xml:space="preserve">
+    <value>压缩</value>
+  </data>
+  <data name="GeneralSettingsLanguage" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="GeneralSettingsDisplayLanguage" xml:space="preserve">
+    <value>显示语言</value>
+  </data>
+  <data name="GeneralSettingsCompactionDescription" xml:space="preserve">
+    <value>当聊天过长时，通常由模型总结较早的消息。提取模式则根据你的请求、涉及的文件和最新步骤生成摘要，无需调用模型：即时且免费，但不够详尽。智能体仍可查阅省略的内容。</value>
+  </data>
+  <data name="ChatViewTranscriptLabel" xml:space="preserve">
+    <value>消息</value>
+  </data>
+  <data name="GeneralSettingsTodosHeading" xml:space="preserve">
+    <value>待办列表</value>
+  </data>
+  <data name="GeneralSettingsTodosLabel" xml:space="preserve">
+    <value>允许智能体维护待办列表</value>
+  </data>
+  <data name="GeneralSettingsTodosDescription" xml:space="preserve">
+    <value>智能体可以记录较长任务的步骤并逐项勾选，忘记更新列表时还会收到提醒。如果某个模型对列表处理不佳，请关闭此项。从每个聊天的下一条消息起生效。</value>
+  </data>
+  <data name="GeneralSettingsSaveFailure" xml:space="preserve">
+    <value>无法写入设置文件，因此未能保存设置。</value>
+  </data>
+  <data name="UiLightboxLabel" xml:space="preserve">
+    <value>放大的图片</value>
+  </data>
+  <data name="UiClose" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="TokenFormatThousands" xml:space="preserve">
+    <value>{value}k</value>
+  </data>
+  <data name="TokenFormatRate" xml:space="preserve">
+    <value>{value} t/s</value>
+  </data>
+  <data name="TokenFormatMilliseconds" xml:space="preserve">
+    <value>{value} ms</value>
+  </data>
+  <data name="TokenFormatSeconds" xml:space="preserve">
+    <value>{value} 秒</value>
+  </data>
+  <data name="TokenFormatMinutes" xml:space="preserve">
+    <value>{minutes} 分 {seconds} 秒</value>
+  </data>
+  <data name="ValidationIdRequired" xml:space="preserve">
+    <value>需要填写标识符。</value>
+  </data>
+  <data name="ValidationNameRequired" xml:space="preserve">
+    <value>需要填写名称。</value>
+  </data>
+  <data name="ValidationBaseUrlInvalid" xml:space="preserve">
+    <value>基础 URL 必须是绝对 http 或 https 地址，例如 https://api.openai.com/v1。</value>
+  </data>
+  <data name="ValidationApiKeyRefInvalid" xml:space="preserve">
+    <value>请使用 {example} 格式，或留空以使用已保存的密钥。</value>
+  </data>
+  <data name="ValidationThinkingFieldRequired" xml:space="preserve">
+    <value>请填写承载思考级别的请求体字段名称。</value>
+  </data>
+  <data name="ValidationThinkingFieldInvalid" xml:space="preserve">
+    <value>请使用字母、数字、连字符和下划线，并用点号访问对象内部；不得包含空格或括号。</value>
+  </data>
+  <data name="ValidationModelIdRequired" xml:space="preserve">
+    <value>需要填写模型 ID。</value>
+  </data>
+  <data name="ValidationModelIdDuplicate" xml:space="preserve">
+    <value>模型“{id}”重复列出。</value>
+  </data>
+  <data name="ValidationContextWindowInvalid" xml:space="preserve">
+    <value>上下文窗口必须是正数的 token 数量。</value>
+  </data>
+  <data name="ValidationMaxOutputInvalid" xml:space="preserve">
+    <value>最大输出 token 数必须是正数。</value>
+  </data>
+  <data name="ValidationMaxOutputTooLarge" xml:space="preserve">
+    <value>最大输出 token 数必须小于上下文窗口。</value>
+  </data>
+  <data name="ValidationDefaultLevelInvalid" xml:space="preserve">
+    <value>请从模型支持的思考级别中选择默认级别。</value>
+  </data>
+  <data name="ValidationExtraFieldInvalid" xml:space="preserve">
+    <value>字段名称“{name}”无效。请使用字母、数字、连字符和下划线，并用点号访问对象内部；不得包含空格或括号。</value>
+  </data>
+  <data name="ValidationSamplingOutOfRange" xml:space="preserve">
+    <value>{key} 必须在 {min} 到 {max} 之间。</value>
+  </data>
+  <data name="ConnectionTestConnected" xml:space="preserve">
+    <value>已连接。服务器列出了 {count, plural, other {# 个模型}}。</value>
+  </data>
+  <data name="ConnectionTestConnectedNoModels" xml:space="preserve">
+    <value>已连接，但服务器未列出任何模型。请手动添加。</value>
+  </data>
+  <data name="ConnectionTestInvalidBaseUrl" xml:space="preserve">
+    <value>基础 URL 不是有效的 http 或 https 地址。</value>
+  </data>
+  <data name="ConnectionTestModelListTooLarge" xml:space="preserve">
+    <value>服务器返回的模型列表过大，不像 OpenAI 格式的响应。</value>
+  </data>
+  <data name="ConnectionTestTimeout" xml:space="preserve">
+    <value>服务器未在 {seconds} 秒内响应。请检查服务器是否正在运行且地址正确。</value>
+  </data>
+  <data name="ConnectionTestConnectionFailed" xml:space="preserve">
+    <value>无法连接：{detail}。请检查服务器是否正在运行且地址正确。</value>
+  </data>
+  <data name="ConnectionTestNotAModelList" xml:space="preserve">
+    <value>服务器已响应，但返回的不是 OpenAI 风格的模型列表。请检查基础 URL 是否指向 API（通常以 /v1 结尾）。</value>
+  </data>
+  <data name="ConnectionTestUnauthorized" xml:space="preserve">
+    <value>服务器拒绝了该 API 密钥。请检查密钥是否正确，并确认其有权限列出模型。</value>
+  </data>
+  <data name="ConnectionTestNotFound" xml:space="preserve">
+    <value>服务器在此地址下没有 /models 端点。请检查基础 URL（通常以 /v1 结尾），或手动添加模型。</value>
+  </data>
+  <data name="ConnectionTestRateLimited" xml:space="preserve">
+    <value>服务器正在限制请求速率。请稍后再试。</value>
+  </data>
+  <data name="ConnectionTestHttpError" xml:space="preserve">
+    <value>服务器返回了 HTTP {code} ({status})。</value>
+  </data>
+  <data name="UiCopy" xml:space="preserve">
+    <value>复制</value>
+  </data>
+  <data name="UiCopied" xml:space="preserve">
+    <value>已复制</value>
+  </data>
+  <data name="UiCopyFailed" xml:space="preserve">
+    <value>复制失败</value>
+  </data>
+  <data name="MessageViewCopied" xml:space="preserve">
+    <value>消息已复制。</value>
+  </data>
+  <data name="MessageViewCopyFailed" xml:space="preserve">
+    <value>无法复制消息。</value>
+  </data>
+  <data name="DiagnosticsSettingsReportCopied" xml:space="preserve">
+    <value>已复制。请将其粘贴到你的报告中。</value>
+  </data>
+  <data name="DiagnosticsSettingsCopyFailed" xml:space="preserve">
+    <value>无法复制。请选中文本并手动复制。</value>
+  </data>
+  <data name="DiagnosticsSettingsLogRetention" xml:space="preserve">
+    <value>日志仅记录标识符、计数和错误，绝不包含消息或文件的文本内容。日志文件保留 {days} 天。</value>
+  </data>
+  <data name="MainLayoutShowSidebar" xml:space="preserve">
+    <value>显示侧边栏</value>
+  </data>
+  <data name="MainLayoutHideSidebar" xml:space="preserve">
+    <value>隐藏侧边栏</value>
+  </data>
+  <data name="MainLayoutUnhandledError" xml:space="preserve">
+    <value>发生了未处理的错误。</value>
+  </data>
+  <data name="ChatViewTooLargeNotIncluded" xml:space="preserve">
+    <value>文件过大，未包含</value>
+  </data>
+  <data name="ChatViewTooLargeCutOff" xml:space="preserve">
+    <value>文件过大，已截断</value>
+  </data>
+  <data name="ChatViewEarlierMessages" xml:space="preserve">
+    <value>{count, plural, other {显示更早的消息 ({formattedCount})}}</value>
+  </data>
+  <data name="ToolCallAllowPrompt" xml:space="preserve">
+    <value>允许此次调用？</value>
+  </data>
+  <data name="ToolCallShowAllCharacters" xml:space="preserve">
+    <value>{count, plural, other {显示全部 {formattedCount} 个字符}}</value>
+  </data>
+  <data name="ToolCallHostPrompt" xml:space="preserve">
+    <value>允许此命令连接到 [code]{host}[/code] 吗？</value>
+  </data>
+  <data name="ToolCallViewAlwaysAllowHost" xml:space="preserve">
+    <value>始终允许此主机</value>
+  </data>
+  <data name="ChatViewHostRuleSaveFailure" xml:space="preserve">
+    <value>由于无法写入设置文件，未能保存允许该主机的规则。</value>
+  </data>
+  <data name="PermissionsTargetNetworkHost" xml:space="preserve">
+    <value>网络主机</value>
+  </data>
+  <data name="PermissionsSettingsTargetNetworkHost" xml:space="preserve">
+    <value>网络主机</value>
+  </data>
+  <data name="PermissionsSettingsNetworkHeading" xml:space="preserve">
+    <value>网络</value>
+  </data>
+  <data name="PermissionsSettingsNetworkLabel" xml:space="preserve">
+    <value>在命令连接到主机前询问</value>
+  </data>
+  <data name="PermissionsSettingsNetworkHint" xml:space="preserve">
+    <value>开启后，沙箱中的命令只能访问你允许的主机。首次连接某个主机时会向你询问，除非已有“网络主机”规则作出决定。在“从不询问”模式下，未被任何规则允许的主机将被拒绝。仅允许网页流量（HTTP 和 HTTPS）通过，因此 SSH、原始连接以及忽略代理设置的工具都会被拦截。位于你本地网络或本机上的主机始终会被拒绝。具有“无限制”访问级别的命令不在沙箱中运行，因此不受此过滤器限制。暂不支持 Windows。</value>
+  </data>
+  <data name="ToolCallMcpBadgeTitle" xml:space="preserve">
+    <value>来自 MCP 服务器 {server} 的工具。它在沙箱外运行。</value>
+  </data>
+  <data name="ToolCallQueued" xml:space="preserve">
+    <value>排队中</value>
+  </data>
+  <data name="ToolCallNeedsApproval" xml:space="preserve">
+    <value>需要批准</value>
+  </data>
+  <data name="ToolCallRunning" xml:space="preserve">
+    <value>运行中</value>
+  </data>
+  <data name="ToolCallDone" xml:space="preserve">
+    <value>已完成</value>
+  </data>
+  <data name="ToolCallFailed" xml:space="preserve">
+    <value>已失败</value>
+  </data>
+  <data name="ToolCallDenied" xml:space="preserve">
+    <value>已拒绝</value>
+  </data>
+  <data name="ToolCallStopped" xml:space="preserve">
+    <value>已停止</value>
+  </data>
+  <data name="ToolCallInterrupted" xml:space="preserve">
+    <value>已中断</value>
+  </data>
+  <data name="ParamInputDefault" xml:space="preserve">
+    <value>默认</value>
+  </data>
+  <data name="ParamInputReplaces" xml:space="preserve">
+    <value>替换 {value}。清空即可恢复使用该值。</value>
+  </data>
+  <data name="ParamInputClearForServer" xml:space="preserve">
+    <value>清空即可交由服务器决定。</value>
+  </data>
+  <data name="ParamInputUsesThinkingOff" xml:space="preserve">
+    <value>使用“关闭思考”时的值。输入内容即可替换。</value>
+  </data>
+  <data name="ParamInputNotSent" xml:space="preserve">
+    <value>未发送；使用服务器默认值。</value>
+  </data>
+  <data name="PermissionsRulesDescription" xml:space="preserve">
+    <value>拒绝规则始终优先。否则，由最后一条匹配的规则决定。允许规则会跳过询问，但绝不会让调用脱离沙箱或进入受保护的文件夹。使用 * 匹配任意文本，使用 ? 匹配单个字符。在路径中，* 仅限单个文件夹内，而 ** 可跨越多个文件夹。MCP 工具规则匹配写作 server/tool 的服务器名称和工具名称。拒绝文件路径的规则还会将这些文件从列表和搜索结果中隐藏。在沙箱中运行的 Shell 命令启动时，这些文件会被隔离，使其看起来为空或不可读：具体路径无论位于何处都会生效，带通配符的模式则在工作文件夹及你已批准的文件夹内生效。此机制尽力而为：Shell 仍可从 Git 历史记录中读取被拒绝的文件，之后新建的文件不受保护，在 macOS 上重命名被拒绝文件上层的文件夹可能会绕过限制，且具有“无限制”访问级别的命令不在沙箱中运行。如果某条规则匹配的文件过多，或者 ** 规则需要遍历非常大的文件夹，Shell 命令将不会运行；像 secrets/** 或 *.pem 这样的规则则依然快速。如果当前系统的沙箱无法隔离单个文件，Shell 命令同样不会运行。</value>
+  </data>
+  <data name="PermissionsRemoveProtectedFolder" xml:space="preserve">
+    <value>从受保护的文件夹中移除 {folder}</value>
+  </data>
+  <data name="PermissionsRemoveRule" xml:space="preserve">
+    <value>移除规则 {pattern}</value>
+  </data>
+  <data name="PermissionsSaveFailure" xml:space="preserve">
+    <value>由于无法写入设置文件，未能保存权限设置。</value>
+  </data>
+  <data name="PermissionsTargetShellCommand" xml:space="preserve">
+    <value>Shell 命令</value>
+  </data>
+  <data name="PermissionsTargetMcpTool" xml:space="preserve">
+    <value>MCP 工具</value>
+  </data>
+  <data name="PermissionsTargetWebHost" xml:space="preserve">
+    <value>网页主机</value>
+  </data>
+  <data name="PermissionsTargetFilePath" xml:space="preserve">
+    <value>文件路径</value>
+  </data>
+  <data name="PermissionsActionRefuse" xml:space="preserve">
+    <value>拒绝</value>
+  </data>
+  <data name="PermissionsActionAsk" xml:space="preserve">
+    <value>询问</value>
+  </data>
+  <data name="PermissionsActionAllow" xml:space="preserve">
+    <value>允许</value>
+  </data>
+  <data name="WebToolsWorking" xml:space="preserve">
+    <value>处理中</value>
+  </data>
+  <data name="WebToolsUp" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="WebToolsDown" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="WebToolsMoveProvider" xml:space="preserve">
+    <value>将 {name} {direction}</value>
+  </data>
+  <data name="McpSettingsHeader" xml:space="preserve">
+    <value>为智能体提供额外工具的服务器在 [code]{file}[/code] 中配置，每个聊天都可以单独开启或关闭它们。</value>
+  </data>
+  <data name="McpSettingsSecretWarning" xml:space="preserve">
+    <value>此服务器似乎在文件中直接写入了密钥：{names}。请改用指向环境变量的 [code]{reference}[/code] 引用，以免密钥留在文件中。</value>
+  </data>
+  <data name="McpSettingsConnecting" xml:space="preserve">
+    <value>正在连接…</value>
+  </data>
+  <data name="McpSettingsTestConnection" xml:space="preserve">
+    <value>测试连接</value>
+  </data>
+  <data name="McpSettingsTrustExplanation" xml:space="preserve">
+    <value>此标签由服务器提供，BlazeHarness 无法验证。除非聊天为只读，否则受信任的工具会跳过批准。其他所有操作都会先询问，除非聊天设为“从不询问”。</value>
+  </data>
+  <data name="McpSettingsConnected" xml:space="preserve">
+    <value>已连接</value>
+  </data>
+  <data name="McpSettingsFailed" xml:space="preserve">
+    <value>失败</value>
+  </data>
+  <data name="McpSettingsOff" xml:space="preserve">
+    <value>已关闭</value>
+  </data>
+  <data name="McpSettingsNotStarted" xml:space="preserve">
+    <value>未启动</value>
+  </data>
+  <data name="McpSettingsRunsCommand" xml:space="preserve">
+    <value>运行 {command}</value>
+  </data>
+  <data name="McpSettingsSaveFailure" xml:space="preserve">
+    <value>由于无法写入文件，未能保存 MCP 设置。</value>
+  </data>
+  <data name="McpSettingsToolCount" xml:space="preserve">
+    <value>{count, plural, other {{formattedCount} 个工具}}</value>
+  </data>
+  <data name="McpSettingsToolsSummary" xml:space="preserve">
+    <value>工具 ({offered}/{total})</value>
+  </data>
+  <data name="McpSettingsToolOfferedLabel" xml:space="preserve">
+    <value>向模型提供 {tool}</value>
+  </data>
+  <data name="McpSettingsToolPatternTooltip" xml:space="preserve">
+    <value>已被文件中的模式排除，未向模型提供。请编辑文件以进行更改。</value>
+  </data>
+  <data name="McpSettingsNoToolsOffered" xml:space="preserve">
+    <value>未向模型提供任何工具。</value>
+  </data>
+  <data name="McpSettingsAlwaysLoadedHint" xml:space="preserve">
+    <value>始终加载，开启时占用约 {tokens} 个提示词 token。</value>
+  </data>
+  <data name="McpSettingsSearchLoadedHint" xml:space="preserve">
+    <value>按需通过搜索查找，若始终加载则占用约 {tokens} 个提示词 token。</value>
+  </data>
+  <data name="McpSettingsChangeFailed" xml:space="preserve">
+    <value>无法更改 {name}。请先修复文件。</value>
+  </data>
+  <data name="McpSettingsSaved" xml:space="preserve">
+    <value>已保存 {name}。</value>
+  </data>
+  <data name="McpSettingsSavedDiscarded" xml:space="preserve">
+    <value>已保存 {name}。文件编辑器中未保存的更改已放弃。</value>
+  </data>
+  <data name="McpSettingsRemoveFailed" xml:space="preserve">
+    <value>无法移除 {name}。请先修复文件。</value>
+  </data>
+  <data name="McpSettingsRemoved" xml:space="preserve">
+    <value>已移除 {name}。</value>
+  </data>
+  <data name="McpSettingsSavedFile" xml:space="preserve">
+    <value>已保存。</value>
+  </data>
+  <data name="McpSettingsFileHasProblems" xml:space="preserve">
+    <value>文件存在问题，因此未保存。</value>
+  </data>
+  <data name="McpSettingsRemoveServerLabel" xml:space="preserve">
+    <value>移除 {name}</value>
+  </data>
+  <data name="McpServerFormOptional" xml:space="preserve">
+    <value>可选</value>
+  </data>
+  <data name="McpServerFormOnePerLine" xml:space="preserve">
+    <value>每行一个</value>
+  </data>
+  <data name="McpServerFormEnvironmentVariables" xml:space="preserve">
+    <value>环境变量</value>
+  </data>
+  <data name="McpServerFormAddVariable" xml:space="preserve">
+    <value>添加变量</value>
+  </data>
+  <data name="McpServerFormVariableName" xml:space="preserve">
+    <value>变量名称</value>
+  </data>
+  <data name="McpServerFormHeaders" xml:space="preserve">
+    <value>请求头</value>
+  </data>
+  <data name="McpServerFormAddHeader" xml:space="preserve">
+    <value>添加请求头</value>
+  </data>
+  <data name="McpServerFormHeaderName" xml:space="preserve">
+    <value>请求头名称</value>
+  </data>
+  <data name="McpServerFormAlwaysLoadHint" xml:space="preserve">
+    <value>默认关闭：模型会在需要时通过搜索查找此服务器的工具，以保持提示词简短。对于工具在大多数聊天中都会用到的小型服务器，可将其开启。</value>
+  </data>
+  <data name="McpServerFormSecretNote" xml:space="preserve">
+    <value>将值标记为机密可将其保存在 {store} 中，而不是写入文件。文件中会改为保存 [code]{reference}[/code] 引用。若环境中设置了同名变量，则会优先使用该变量。</value>
+  </data>
+  <data name="McpServerFormSecretNoteNotEncrypted" xml:space="preserve">
+    <value>将值标记为机密可将其保存在未加密的 {store} 中，而不是写入文件。文件中会改为保存 [code]{reference}[/code] 引用。若环境中设置了同名变量，则会优先使用该变量。</value>
+  </data>
+  <data name="McpServerFormAddServer" xml:space="preserve">
+    <value>添加服务器</value>
+  </data>
+  <data name="McpServerFormEditServer" xml:space="preserve">
+    <value>编辑 {name}</value>
+  </data>
+  <data name="McpServerFormName" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="McpServerFormSecretValue" xml:space="preserve">
+    <value>机密值</value>
+  </data>
+  <data name="McpServerFormValue" xml:space="preserve">
+    <value>值</value>
+  </data>
+  <data name="McpServerFormSecret" xml:space="preserve">
+    <value>机密</value>
+  </data>
+  <data name="McpServerFormRemoveEntry" xml:space="preserve">
+    <value>移除条目</value>
+  </data>
+  <data name="McpServerFormSaveFailure" xml:space="preserve">
+    <value>无法写入文件或密钥存储，因此未能保存服务器。</value>
+  </data>
+  <data name="GeneralSettingsSmall" xml:space="preserve">
+    <value>小</value>
+  </data>
+  <data name="GeneralSettingsDefault" xml:space="preserve">
+    <value>默认</value>
+  </data>
+  <data name="GeneralSettingsLarge" xml:space="preserve">
+    <value>大</value>
+  </data>
+  <data name="GeneralSettingsExtraLarge" xml:space="preserve">
+    <value>特大</value>
+  </data>
+  <data name="ModelTuningTitle" xml:space="preserve">
+    <value>调整 {model}</value>
+  </data>
+  <data name="ModelTuningSameAsProvider" xml:space="preserve">
+    <value>与提供商相同：</value>
+  </data>
+  <data name="ModelTuningThinkingOff" xml:space="preserve">
+    <value>关闭思考</value>
+  </data>
+  <data name="ModelTuningValue" xml:space="preserve">
+    <value>值</value>
+  </data>
+  <data name="ModelTuningEmptyUsesDefault" xml:space="preserve">
+    <value>留空单元格即交由服务器决定。</value>
+  </data>
+  <data name="ModelTuningCustomFields" xml:space="preserve">
+    <value>自定义字段</value>
+  </data>
+  <data name="ModelTuningCustomFieldsCount" xml:space="preserve">
+    <value>自定义字段 ({count})</value>
+  </data>
+  <data name="ModelTuningThinkingOnFieldsHint" xml:space="preserve">
+    <value>将添加到“关闭思考”字段中；同名字段会将其替换。</value>
+  </data>
+  <data name="ModelTuningSamplingThinkingOffLabel" xml:space="preserve">
+    <value>{label}，关闭思考</value>
+  </data>
+  <data name="ModelTuningSamplingThinkingOnLabel" xml:space="preserve">
+    <value>{label}，开启思考</value>
+  </data>
+  <data name="ThinkingSendLabelsCustomFieldShort" xml:space="preserve">
+    <value>自定义请求体字段</value>
+  </data>
+  <data name="ThinkingSendLabelsCustomFieldOption" xml:space="preserve">
+    <value>自定义请求体字段</value>
+  </data>
+  <data name="ThinkingSendLabelsReasoningEffortOption" xml:space="preserve">
+    <value>reasoning_effort (OpenAI, llama.cpp, vLLM)</value>
+  </data>
+  <data name="ThinkingSendLabelsReasoningObjectOption" xml:space="preserve">
+    <value>reasoning 对象 (OpenRouter)</value>
+  </data>
+  <data name="ModelTuningValueSentFor" xml:space="preserve">
+    <value>为 {level} 发送的值</value>
+  </data>
+  <data name="ProvidersSettingsHeaderBefore" xml:space="preserve">
+    <value>连接任何兼容 OpenAI 的端点。密钥保存于</value>
+  </data>
+  <data name="ProvidersSettingsSecureSuffix" xml:space="preserve">
+    <value>。</value>
+  </data>
+  <data name="ProvidersSettingsInsecureSuffix" xml:space="preserve">
+    <value>，该存储未加密。请安装系统密钥环以更安全地存储密钥。</value>
+  </data>
+  <data name="ProvidersSettingsNewProvider" xml:space="preserve">
+    <value>新建提供商</value>
+  </data>
+  <data name="ProvidersSettingsOptionalForLocal" xml:space="preserve">
+    <value>本地服务器可选</value>
+  </data>
+  <data name="ProvidersSettingsApiKeyHint" xml:space="preserve">
+    <value>本地服务器通常无需密钥。已存储的密钥不会再次显示；留空即可保留原密钥。</value>
+  </data>
+  <data name="ProvidersSettingsAddSelectedModels" xml:space="preserve">
+    <value>添加{count, plural, other {所选模型}} ({formattedCount})</value>
+  </data>
+  <data name="ProvidersSettingsNotSaved" xml:space="preserve">
+    <value>此提供商尚未保存。</value>
+  </data>
+  <data name="ProvidersSettingsUnsavedChanges" xml:space="preserve">
+    <value>你有未保存的更改。</value>
+  </data>
+  <data name="ProvidersSettingsDiscard" xml:space="preserve">
+    <value>放弃</value>
+  </data>
+  <data name="ProvidersSettingsSaveFailure" xml:space="preserve">
+    <value>无法写入设置文件或密钥存储，因此未能保存提供商设置。</value>
+  </data>
+  <data name="ProvidersSettingsModelCount" xml:space="preserve">
+    <value>{count, plural, other {{formattedCount} 个模型}}</value>
+  </data>
+  <data name="ProvidersSettingsTuneModel" xml:space="preserve">
+    <value>调整 {model}</value>
+  </data>
+  <data name="ProvidersSettingsRemoveModel" xml:space="preserve">
+    <value>移除模型 {model}</value>
+  </data>
+  <data name="ProvidersSettingsDefaultModelSet" xml:space="preserve">
+    <value>已将 {model} 设为默认模型。</value>
+  </data>
+  <data name="ProvidersSettingsProviderSaved" xml:space="preserve">
+    <value>提供商已保存。</value>
+  </data>
+  <data name="ProvidersSettingsStoredKeyRemoved" xml:space="preserve">
+    <value>已移除存储的密钥。</value>
+  </data>
+  <data name="ProvidersSettingsProviderRemoved" xml:space="preserve">
+    <value>已移除 {name}。</value>
+  </data>
+  <data name="ChatViewReplyStarted" xml:space="preserve">
+    <value>已开始回复</value>
+  </data>
+  <data name="ChatViewReplyFailed" xml:space="preserve">
+    <value>回复失败</value>
+  </data>
+  <data name="ChatViewReplyFinished" xml:space="preserve">
+    <value>回复完成</value>
+  </data>
+  <data name="ChatViewAttachmentLimit" xml:space="preserve">
+    <value>单条消息的文件总大小最多为 {size}。</value>
+  </data>
+  <data name="ChatViewNoLongerExists" xml:space="preserve">
+    <value>此聊天已不存在。</value>
+  </data>
+  <data name="ChatViewNotEnoughToSummarize" xml:space="preserve">
+    <value>没有足够的早期对话可供总结。</value>
+  </data>
+  <data name="ChatViewEnableExtractionHint" xml:space="preserve">
+    <value>你可以在“设置 &gt; 通用”下开启“不使用模型压缩（提取）”。</value>
+  </data>
+  <data name="ChatViewSummarizeFailed" xml:space="preserve">
+    <value>无法总结对话：{error}{hint}</value>
+  </data>
+  <data name="ChatViewPermissionSaveFailure" xml:space="preserve">
+    <value>无法保存权限，因为无法写入该聊天的文件。</value>
+  </data>
+  <data name="PermissionPickerFolderDescription" xml:space="preserve">
+    <value>读取和更改此文件夹中的文件</value>
+  </data>
+  <data name="PermissionPickerChatFolderDescription" xml:space="preserve">
+    <value>读取和更改此聊天的文件夹中的文件</value>
+  </data>
+  <data name="PermissionPickerRiskyTitle" xml:space="preserve">
+    <value>此聊天的部分安全保护已关闭</value>
+  </data>
+  <data name="PermissionPickerSandboxedTitle" xml:space="preserve">
+    <value>工具可访问的范围，以及何时向您询问。命令获允许后将在沙箱中运行。</value>
+  </data>
+  <data name="PermissionPickerNoSandboxTitle" xml:space="preserve">
+    <value>工具可访问的范围，以及何时向您询问。由于没有沙箱，命令已被阻止。</value>
+  </data>
+  <data name="PermissionPickerReadOnly" xml:space="preserve">
+    <value>只读</value>
+  </data>
+  <data name="PermissionPickerFolder" xml:space="preserve">
+    <value>文件夹</value>
+  </data>
+  <data name="PermissionPickerWriteInFolder" xml:space="preserve">
+    <value>在文件夹中写入</value>
+  </data>
+  <data name="PermissionPickerChatFolder" xml:space="preserve">
+    <value>聊天文件夹</value>
+  </data>
+  <data name="PermissionPickerWriteInChatFolder" xml:space="preserve">
+    <value>在聊天文件夹中写入</value>
+  </data>
+  <data name="PermissionPickerUnrestricted" xml:space="preserve">
+    <value>无限制</value>
+  </data>
+  <data name="PermissionPickerAskFirst" xml:space="preserve">
+    <value>先询问</value>
+  </data>
+  <data name="PermissionPickerAskForExceptions" xml:space="preserve">
+    <value>仅对例外询问</value>
+  </data>
+  <data name="PermissionPickerNeverAsk" xml:space="preserve">
+    <value>从不询问</value>
+  </data>
+  <data name="SettingsDialogGeneral" xml:space="preserve">
+    <value>常规</value>
+  </data>
+  <data name="SettingsDialogProviders" xml:space="preserve">
+    <value>提供商</value>
+  </data>
+  <data name="SettingsDialogPermissions" xml:space="preserve">
+    <value>权限</value>
+  </data>
+  <data name="SettingsDialogMcpServers" xml:space="preserve">
+    <value>MCP 服务器</value>
+  </data>
+  <data name="SettingsDialogSkills" xml:space="preserve">
+    <value>技能</value>
+  </data>
+  <data name="SettingsDialogWeb" xml:space="preserve">
+    <value>网络</value>
+  </data>
+  <data name="SettingsDialogDiagnostics" xml:space="preserve">
+    <value>诊断</value>
+  </data>
+  <data name="SidebarNoChatsMatch" xml:space="preserve">
+    <value>没有匹配的聊天。</value>
+  </data>
+  <data name="SidebarNoChatsYet" xml:space="preserve">
+    <value>暂无聊天。</value>
+  </data>
+  <data name="SidebarNewChatInFolder" xml:space="preserve">
+    <value>在 {folder} 中新建聊天</value>
+  </data>
+  <data name="SidebarFindFolder" xml:space="preserve">
+    <value>查找 {folder}</value>
+  </data>
+  <data name="SidebarFolderActions" xml:space="preserve">
+    <value>文件夹操作</value>
+  </data>
+  <data name="SidebarSwitchToLightTheme" xml:space="preserve">
+    <value>切换到浅色主题</value>
+  </data>
+  <data name="SidebarSwitchToDarkTheme" xml:space="preserve">
+    <value>切换到深色主题</value>
+  </data>
+  <data name="SidebarRelocateHint" xml:space="preserve">
+    <value>选择此文件夹现在的位置。其聊天也会随之移动。</value>
+  </data>
+  <data name="SidebarImportNotAnExport" xml:space="preserve">
+    <value>该文件不是 BlazeHarness 聊天导出文件。</value>
+  </data>
+  <data name="SidebarImportNewerVersion" xml:space="preserve">
+    <value>该文件由更新版本的 BlazeHarness 导出。</value>
+  </data>
+  <data name="SidebarImportNoMessages" xml:space="preserve">
+    <value>该文件没有消息。</value>
+  </data>
+  <data name="AttachmentUnsupported" xml:space="preserve">
+    <value>无法添加附件“{name}”。仅支持图片（PNG、JPEG、GIF、WebP）和文本文件。</value>
+  </data>
+  <data name="AttachmentTooLarge" xml:space="preserve">
+    <value>“{name}”大于 {size} MB。</value>
+  </data>
+  <data name="AttachmentEmpty" xml:space="preserve">
+    <value>“{name}”为空。</value>
+  </data>
+  <data name="SidebarImportFileTooLarge" xml:space="preserve">
+    <value>该文件太大，无法作为聊天导出文件。</value>
+  </data>
+  <data name="SidebarImportReadFailed" xml:space="preserve">
+    <value>无法读取该文件。</value>
+  </data>
+  <data name="SidebarOpenFolderFailed" xml:space="preserve">
+    <value>无法打开该文件夹。</value>
+  </data>
+  <data name="SidebarRelocateFolderFailed" xml:space="preserve">
+    <value>无法使用该文件夹。</value>
+  </data>
+  <data name="SidebarRelocateWriteFailed" xml:space="preserve">
+    <value>无法更新文件夹，因为无法写入文件。</value>
+  </data>
+  <data name="SidebarRemoveWriteFailed" xml:space="preserve">
+    <value>无法移除文件夹，因为无法写入文件。</value>
+  </data>
+  <data name="ChatListActions" xml:space="preserve">
+    <value>聊天操作</value>
+  </data>
+  <data name="ChatListNoFolderOnDisk" xml:space="preserve">
+    <value>此聊天在磁盘上尚无文件夹。</value>
+  </data>
+  <data name="ChatListOpenDataFailed" xml:space="preserve">
+    <value>无法打开聊天数据。</value>
+  </data>
+  <data name="ChatListUntitledChat" xml:space="preserve">
+    <value>未命名聊天</value>
+  </data>
+  <data name="ChatListRenameFailed" xml:space="preserve">
+    <value>无法重命名聊天，因为无法写入其文件。</value>
+  </data>
+  <data name="ChatListStillReplying" xml:space="preserve">
+    <value>此聊天仍在回复中。请先停止，再将其删除。</value>
+  </data>
+  <data name="ChatListDeleteFailed" xml:space="preserve">
+    <value>无法删除聊天，因为无法移除其文件。</value>
+  </data>
+  <data name="ComposerChooseModel" xml:space="preserve">
+    <value>选择模型</value>
+  </data>
+  <data name="ComposerLevelUnavailable" xml:space="preserve">
+    <value>此模型不支持 {previous}，因此将使用 {level}。</value>
+  </data>
+  <data name="ComposerAnswerQuestion" xml:space="preserve">
+    <value>回答上方的问题</value>
+  </data>
+  <data name="ComposerQueuePlaceholder" xml:space="preserve">
+    <value>添加一条消息，供模型在下一步查看</value>
+  </data>
+  <data name="ComposerPlaceholder" xml:space="preserve">
+    <value>给模型发消息</value>
+  </data>
+  <data name="ComposerSendAnswer" xml:space="preserve">
+    <value>发送回答</value>
+  </data>
+  <data name="ComposerQueueMessage" xml:space="preserve">
+    <value>引导回复</value>
+  </data>
+  <data name="ComposerSendAnswerEnter" xml:space="preserve">
+    <value>发送回答（Enter）</value>
+  </data>
+  <data name="ComposerQueueMessageEnter" xml:space="preserve">
+    <value>引导回复（Enter）</value>
+  </data>
+  <data name="ComposerRemoveFile" xml:space="preserve">
+    <value>移除 {name}</value>
+  </data>
+  <data name="ComposerSteerBadge" xml:space="preserve">
+    <value>引导</value>
+  </data>
+  <data name="ComposerQueueModeMenuLabel" xml:space="preserve">
+    <value>更多发送方式</value>
+  </data>
+  <data name="ComposerQueueModeTooltip" xml:space="preserve">
+    <value>改为将消息排队，待回复结束后发送（Alt+Enter）</value>
+  </data>
+  <data name="ComposerQueueModeAfterReply" xml:space="preserve">
+    <value>排队</value>
+  </data>
+  <data name="ComposerQueueModeAfterReplyDescription" xml:space="preserve">
+    <value>待回复结束后作为下一条消息发送（Alt+Enter）</value>
+  </data>
+  <data name="ComposerRemoveQueued" xml:space="preserve">
+    <value>移除排队的消息</value>
+  </data>
+  <data name="ComposerPreviewStart" xml:space="preserve">
+    <value>{name} 的开头</value>
+  </data>
+  <data name="ComposerFilesNotQueued" xml:space="preserve">
+    <value>回复进行中时无法添加文件。请移除文件以将消息排队，或待回复结束后再发送。</value>
+  </data>
+  <data name="ComposerQuestionAlreadyHandled" xml:space="preserve">
+    <value>在此回答送达前，该问题已获回答或已停止。请重新发送。</value>
+  </data>
+  <data name="ComposerReplyEnded" xml:space="preserve">
+    <value>在消息排队前回复已结束。请重新发送。</value>
+  </data>
+  <data name="ComposerMaxFiles" xml:space="preserve">
+    <value>一条消息最多可附带 {count} 个文件。</value>
+  </data>
+  <data name="ComposerFileTooLarge" xml:space="preserve">
+    <value>“{name}”大于 {size}。</value>
+  </data>
+  <data name="ComposerAttachmentImage" xml:space="preserve">
+    <value>作为图片发送</value>
+  </data>
+  <data name="ComposerAttachmentInline" xml:space="preserve">
+    <value>已添加到消息中</value>
+  </data>
+  <data name="ComposerAttachmentTooLong" xml:space="preserve">
+    <value>内容过长无法直接添加，模型会按需读取</value>
+  </data>
+  <data name="ContextIndicatorEstimatedSize" xml:space="preserve">
+    <value>下一次请求的预估大小</value>
+  </data>
+  <data name="ContextIndicatorServerCountedSize" xml:space="preserve">
+    <value>服务器统计的下次请求大小</value>
+  </data>
+  <data name="ContextIndicatorSummarizeAfter" xml:space="preserve">
+    <value>超过 {count, plural, other {{tokens} 个 token}} 后会摘要较早的消息</value>
+  </data>
+  <data name="ContextIndicatorCacheHits" xml:space="preserve">
+    <value>缓存命中：上次请求的 {rate}</value>
+  </data>
+  <data name="TodoChecklistDone" xml:space="preserve">
+    <value>已完成</value>
+  </data>
+  <data name="TodoChecklistInProgress" xml:space="preserve">
+    <value>进行中</value>
+  </data>
+  <data name="TodoChecklistNotStarted" xml:space="preserve">
+    <value>未开始</value>
+  </data>
+  <data name="DiffViewAdded" xml:space="preserve">
+    <value>已添加</value>
+  </data>
+  <data name="DiffViewRemoved" xml:space="preserve">
+    <value>已删除</value>
+  </data>
+  <data name="FindbarNoMatches" xml:space="preserve">
+    <value>无匹配项</value>
+  </data>
+  <data name="FindbarMatchCount" xml:space="preserve">
+    <value>第 {current} 项，共 {total} 项</value>
+  </data>
+  <data name="ChatStatsOutputTokens" xml:space="preserve">
+    <value>{count, plural, other {模型已生成 {formattedCount} 个 token}}</value>
+  </data>
+  <data name="ChatStatsOutputWithReasoning" xml:space="preserve">
+    <value>{count, plural, other {已生成 {formattedCount} 个 token，其中思考 {formattedReasoning} 个}}</value>
+  </data>
+  <data name="CompactionMarkerTrimmed" xml:space="preserve">
+    <value>已裁剪较早的工具输出以节省上下文（{before} → {after} {count, plural, other {个 token}}）</value>
+  </data>
+  <data name="CompactionMarkerSummarized" xml:space="preserve">
+    <value>已摘要较早的消息以节省空间（{before} → {after} {count, plural, other {个 token}}）</value>
+  </data>
+  <data name="MessageViewUsageIn" xml:space="preserve">
+    <value>输入 {tokens}</value>
+  </data>
+  <data name="MessageViewUsageCached" xml:space="preserve">
+    <value>缓存 {tokens}</value>
+  </data>
+  <data name="MessageViewUsageOut" xml:space="preserve">
+    <value>输出 {tokens}</value>
+  </data>
+  <data name="MessageViewUsagePrompt" xml:space="preserve">
+    <value>提示词：{promptCount, plural, other {{prompt} 个 token}}，{cachedCount, plural, other {{cached} 个来自缓存}}</value>
+  </data>
+  <data name="MessageViewUsageOutput" xml:space="preserve">
+    <value>输出：{count, plural, other {{output} 个 token}}</value>
+  </data>
+  <data name="MessageViewUsageReasoning" xml:space="preserve">
+    <value>思考：{count, plural, other {{reasoning} 个 token}}</value>
+  </data>
+  <data name="MessageViewUsageFirstOutput" xml:space="preserve">
+    <value>首次输出耗时 {duration}</value>
+  </data>
+  <data name="MessageViewUsagePrefillRate" xml:space="preserve">
+    <value>提示词处理速度：{rate}</value>
+  </data>
+  <data name="MessageViewUsageStreamed" xml:space="preserve">
+    <value>输出流式传输耗时 {duration}</value>
+  </data>
+  <data name="MessageViewUsageDecodeRate" xml:space="preserve">
+    <value>输出生成速度：{rate}</value>
+  </data>
+  <data name="ExtraFieldsRemoveLabel" xml:space="preserve">
+    <value>移除字段 {name}</value>
+  </data>
+  <data name="DiagnosticsSettingsUnknown" xml:space="preserve">
+    <value>未知</value>
+  </data>
+  <data name="DiagnosticsSettingsNotAvailable" xml:space="preserve">
+    <value>不可用</value>
+  </data>
+  <data name="DiagnosticsSettingsMcpSummary" xml:space="preserve">
+    <value>已连接 {connected} / {total, plural, other {{total} 个 MCP 服务器}}</value>
+  </data>
+  <data name="SkillsSettingsChatFolder" xml:space="preserve">
+    <value>聊天文件夹</value>
+  </data>
+  <data name="SkillsSettingsBlazeHarness" xml:space="preserve">
+    <value>BlazeHarness</value>
+  </data>
+  <data name="SkillsSettingsGlobal" xml:space="preserve">
+    <value>全局</value>
+  </data>
+  <data name="SkillsSettingsSaveFailure" xml:space="preserve">
+    <value>无法写入设置文件，因此未能保存技能设置。</value>
+  </data>
+  <data name="QuestionCardYourAnswer" xml:space="preserve">
+    <value>你的回答</value>
+  </data>
+  <data name="QuestionCardAddNoteOrAnswer" xml:space="preserve">
+    <value>添加备注，或填写你自己的回答</value>
+  </data>
+  <data name="QuestionCardNoteOrAnswer" xml:space="preserve">
+    <value>备注或你自己的回答</value>
+  </data>
+  <data name="QuestionCardNotAnswered" xml:space="preserve">
+    <value>未回答。</value>
+  </data>
+  <data name="QuestionCardAnswerNotSent" xml:space="preserve">
+    <value>此问题已回答或已停止，因此未发送回答。</value>
+  </data>
+  <data name="McpServerFormCancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="McpServerFormSave" xml:space="preserve">
+    <value>保存服务器</value>
+  </data>
+  <data name="McpServerFormProblemsHeading" xml:space="preserve">
+    <value>保存前请先修复以下问题：</value>
+  </data>
+  <data name="McpServerFormAlwaysLoad" xml:space="preserve">
+    <value>始终加载其所有工具</value>
+  </data>
+  <data name="McpServerFormAddressPlaceholder" xml:space="preserve">
+    <value>https://example.com/mcp</value>
+  </data>
+  <data name="McpServerFormAddress" xml:space="preserve">
+    <value>地址</value>
+  </data>
+  <data name="McpServerFormArguments" xml:space="preserve">
+    <value>参数</value>
+  </data>
+  <data name="McpServerFormWorkingFolder" xml:space="preserve">
+    <value>工作文件夹</value>
+  </data>
+  <data name="McpServerFormCommandPlaceholder" xml:space="preserve">
+    <value>npx</value>
+  </data>
+  <data name="McpServerFormCommand" xml:space="preserve">
+    <value>命令</value>
+  </data>
+  <data name="McpServerFormKindSse" xml:space="preserve">
+    <value>远程（SSE）</value>
+  </data>
+  <data name="McpServerFormKindHttp" xml:space="preserve">
+    <value>远程（HTTP）</value>
+  </data>
+  <data name="McpServerFormKindLocal" xml:space="preserve">
+    <value>本地程序</value>
+  </data>
+  <data name="McpServerFormKind" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="McpServerFormNameHint" xml:space="preserve">
+    <value>仅限字母、数字、- 和 _。它会作为该服务器工具名称的前缀。</value>
+  </data>
+  <data name="McpServerFormNamePlaceholder" xml:space="preserve">
+    <value>例如 github</value>
+  </data>
+  <data name="McpServerFormServerName" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="McpSettingsRemoveWarning" xml:space="preserve">
+    <value>这会将 [strong]{name}[/strong] 从文件中移除，并删除其保存的机密信息。</value>
+  </data>
+  <data name="McpSettingsRemoveConfirm" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="McpSettingsRemoveDialogTitle" xml:space="preserve">
+    <value>移除服务器？</value>
+  </data>
+  <data name="McpSettingsFormat" xml:space="preserve">
+    <value>格式化</value>
+  </data>
+  <data name="McpSettingsRevert" xml:space="preserve">
+    <value>还原</value>
+  </data>
+  <data name="McpSettingsSave" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="McpSettingsFileHint" xml:space="preserve">
+    <value>在 BlazeHarness 外部所做的更改也会显示在这里。为已打开的聊天开启或关闭服务器会更改其工具，从而重置该聊天的提示词缓存。</value>
+  </data>
+  <data name="McpSettingsFileLabel" xml:space="preserve">
+    <value>mcp.json</value>
+  </data>
+  <data name="McpSettingsAdvancedSummary" xml:space="preserve">
+    <value>高级：编辑 mcp.json</value>
+  </data>
+  <data name="McpSettingsOn" xml:space="preserve">
+    <value>开启</value>
+  </data>
+  <data name="McpSettingsNewChatsLabel" xml:space="preserve">
+    <value>在新聊天中开启</value>
+  </data>
+  <data name="McpSettingsNewChatsTooltip" xml:space="preserve">
+    <value>在新聊天中开启</value>
+  </data>
+  <data name="McpSettingsRemove" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="McpSettingsEdit" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="McpSettingsStop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="McpSettingsTrustReadOnly" xml:space="preserve">
+    <value>信任标记为只读的工具</value>
+  </data>
+  <data name="McpSettingsSecretBadge" xml:space="preserve">
+    <value>文件中含密钥</value>
+  </data>
+  <data name="McpSettingsNoServers" xml:space="preserve">
+    <value>尚无服务器。请使用上方的按钮添加。</value>
+  </data>
+  <data name="McpSettingsAddServer" xml:space="preserve">
+    <value>＋ 添加服务器</value>
+  </data>
+  <data name="McpSettingsServersHeading" xml:space="preserve">
+    <value>服务器</value>
+  </data>
+  <data name="McpSettingsInstallWarning" xml:space="preserve">
+    <value>添加服务器就像安装软件。本地服务器会以你的权限在此计算机的沙箱外运行程序，而远程服务器会接收模型发送给它的内容。请仅添加你信任的服务器。</value>
+  </data>
+  <data name="McpSettingsTitle" xml:space="preserve">
+    <value>MCP 服务器</value>
+  </data>
+  <data name="PermissionsSettingsAddRuleButton" xml:space="preserve">
+    <value>＋ 添加规则</value>
+  </data>
+  <data name="PermissionsSettingsRulePatternLabel" xml:space="preserve">
+    <value>规则模式</value>
+  </data>
+  <data name="PermissionsSettingsRuleAllow" xml:space="preserve">
+    <value>允许</value>
+  </data>
+  <data name="PermissionsSettingsRuleAsk" xml:space="preserve">
+    <value>询问</value>
+  </data>
+  <data name="PermissionsSettingsRuleRefuse" xml:space="preserve">
+    <value>拒绝</value>
+  </data>
+  <data name="PermissionsSettingsRuleActionLabel" xml:space="preserve">
+    <value>规则操作</value>
+  </data>
+  <data name="PermissionsSettingsTargetWebHost" xml:space="preserve">
+    <value>网页主机</value>
+  </data>
+  <data name="PermissionsSettingsTargetMcpTool" xml:space="preserve">
+    <value>MCP 工具</value>
+  </data>
+  <data name="PermissionsSettingsTargetFilePath" xml:space="preserve">
+    <value>文件路径</value>
+  </data>
+  <data name="PermissionsSettingsTargetShellCommand" xml:space="preserve">
+    <value>Shell 命令</value>
+  </data>
+  <data name="PermissionsSettingsRuleTargetLabel" xml:space="preserve">
+    <value>规则适用于</value>
+  </data>
+  <data name="PermissionsSettingsRemoveRuleButton" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="PermissionsSettingsNoRules" xml:space="preserve">
+    <value>暂无规则。</value>
+  </data>
+  <data name="PermissionsSettingsRulesHeading" xml:space="preserve">
+    <value>规则</value>
+  </data>
+  <data name="PermissionsSettingsProtectedFolderError" xml:space="preserve">
+    <value>请输入从根目录开始的文件夹完整路径。</value>
+  </data>
+  <data name="PermissionsSettingsResetProtectedButton" xml:space="preserve">
+    <value>重置为内置列表</value>
+  </data>
+  <data name="PermissionsSettingsAddProtectedButton" xml:space="preserve">
+    <value>＋ 添加文件夹</value>
+  </data>
+  <data name="PermissionsSettingsProtectedFolderLabel" xml:space="preserve">
+    <value>要保护的文件夹</value>
+  </data>
+  <data name="PermissionsSettingsRemoveProtectedButton" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="PermissionsSettingsNoProtectedFolders" xml:space="preserve">
+    <value>没有受保护的文件夹。</value>
+  </data>
+  <data name="PermissionsSettingsProtectedFoldersHint" xml:space="preserve">
+    <value>在任何聊天中（即使是“无限制”），任何工具都无法读写这些文件夹。BlazeHarness 自身的文件夹始终受保护，且不会在此列出。</value>
+  </data>
+  <data name="PermissionsSettingsProtectedFoldersHeading" xml:space="preserve">
+    <value>受保护的文件夹</value>
+  </data>
+  <data name="PermissionsSettingsAdvancedOptionsHint" xml:space="preserve">
+    <value>关闭此项以隐藏这两个选项。已使用其中任一选项的聊天会回退到更安全的设置。无论如何，受保护的文件夹（例如 SSH 密钥）始终会被阻止访问。</value>
+  </data>
+  <data name="PermissionsSettingsAdvancedOptionsLabel" xml:space="preserve">
+    <value>在聊天中显示“无限制”和“从不询问”</value>
+  </data>
+  <data name="PermissionsSettingsAdvancedOptionsHeading" xml:space="preserve">
+    <value>高级选项</value>
+  </data>
+  <data name="PermissionsSettingsApprovalsAskForExceptions" xml:space="preserve">
+    <value>例外时询问</value>
+  </data>
+  <data name="PermissionsSettingsApprovalsAskFirst" xml:space="preserve">
+    <value>先询问</value>
+  </data>
+  <data name="PermissionsSettingsApprovalsLabel" xml:space="preserve">
+    <value>批准</value>
+  </data>
+  <data name="PermissionsSettingsAccessHint" xml:space="preserve">
+    <value>未关联文件夹的聊天始终以只读模式开始。</value>
+  </data>
+  <data name="PermissionsSettingsAccessReadOnly" xml:space="preserve">
+    <value>只读</value>
+  </data>
+  <data name="PermissionsSettingsAccessWriteInFolder" xml:space="preserve">
+    <value>在文件夹中写入</value>
+  </data>
+  <data name="PermissionsSettingsAccessLabel" xml:space="preserve">
+    <value>访问级别</value>
+  </data>
+  <data name="PermissionsSettingsStartHeading" xml:space="preserve">
+    <value>新聊天的默认设置</value>
+  </data>
+  <data name="PermissionsSettingsDescription" xml:space="preserve">
+    <value>新聊天的初始设置。每个聊天仍可修改各自的设置，此处的更改会立即生效。</value>
+  </data>
+  <data name="PermissionsSettingsTitle" xml:space="preserve">
+    <value>权限</value>
+  </data>
+  <data name="ProvidersSettingsRemoveWarning" xml:space="preserve">
+    <value>这将移除 [strong]{name}[/strong] 及其存储的 API 密钥。曾使用该提供商的现有聊天需要改用其他提供商。</value>
+  </data>
+  <data name="ProvidersSettingsRemoveConfirmButton" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="ProvidersSettingsRemoveDialogTitle" xml:space="preserve">
+    <value>移除提供商？</value>
+  </data>
+  <data name="ProvidersSettingsSaveButton" xml:space="preserve">
+    <value>保存提供商</value>
+  </data>
+  <data name="ProvidersSettingsSaveBarLabel" xml:space="preserve">
+    <value>未保存的更改</value>
+  </data>
+  <data name="ProvidersSettingsRemoveProviderButton" xml:space="preserve">
+    <value>移除提供商</value>
+  </data>
+  <data name="ProvidersSettingsValidationHeading" xml:space="preserve">
+    <value>保存前请先修正以下问题：</value>
+  </data>
+  <data name="ProvidersSettingsRemoveHeaderLabel" xml:space="preserve">
+    <value>移除请求头</value>
+  </data>
+  <data name="ProvidersSettingsHeaderValuePlaceholder" xml:space="preserve">
+    <value>值</value>
+  </data>
+  <data name="ProvidersSettingsHeaderValueLabel" xml:space="preserve">
+    <value>请求头值</value>
+  </data>
+  <data name="ProvidersSettingsHeaderNamePlaceholder" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="ProvidersSettingsHeaderNameLabel" xml:space="preserve">
+    <value>请求头名称</value>
+  </data>
+  <data name="ProvidersSettingsAddHeaderButton" xml:space="preserve">
+    <value>＋ 添加请求头</value>
+  </data>
+  <data name="ProvidersSettingsExtraHeadersLabel" xml:space="preserve">
+    <value>额外请求头</value>
+  </data>
+  <data name="ProvidersSettingsLegacyMaxTokens" xml:space="preserve">
+    <value>发送 [code]max_tokens[/code]（兼容大多数服务器）而非 [code]max_completion_tokens[/code]</value>
+  </data>
+  <data name="ProvidersSettingsStreamUsage" xml:space="preserve">
+    <value>流式传输时请求 token 用量（若服务器拒绝 [code]stream_options[/code] 请关闭）</value>
+  </data>
+  <data name="ProvidersSettingsThinkingFieldPlaceholder" xml:space="preserve">
+    <value>chat_template_kwargs.enable_thinking</value>
+  </data>
+  <data name="ProvidersSettingsThinkingFieldLabel" xml:space="preserve">
+    <value>请求体字段</value>
+  </data>
+  <data name="ProvidersSettingsThinkingLevelHint" xml:space="preserve">
+    <value>适用于所有模型，除非你在调优模型时为其单独指定。</value>
+  </data>
+  <data name="ProvidersSettingsThinkingLevelLabel" xml:space="preserve">
+    <value>思考程度发送方式</value>
+  </data>
+  <data name="ProvidersSettingsCompatibilityHint" xml:space="preserve">
+    <value>仅当服务器拒绝请求或忽略思考设置时才修改这些选项。</value>
+  </data>
+  <data name="ProvidersSettingsCompatibilityHeading" xml:space="preserve">
+    <value>兼容性</value>
+  </data>
+  <data name="ProvidersSettingsRemoveModelButton" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="ProvidersSettingsMakeDefault" xml:space="preserve">
+    <value>设为默认</value>
+  </data>
+  <data name="ProvidersSettingsTuneModelButton" xml:space="preserve">
+    <value>调优思考与采样</value>
+  </data>
+  <data name="ProvidersSettingsDefaultModelBadge" xml:space="preserve">
+    <value>默认</value>
+  </data>
+  <data name="ProvidersSettingsImagesLabel" xml:space="preserve">
+    <value>图片</value>
+  </data>
+  <data name="ProvidersSettingsThinkingLabel" xml:space="preserve">
+    <value>思考</value>
+  </data>
+  <data name="ProvidersSettingsMaxOutputLabel" xml:space="preserve">
+    <value>最大输出</value>
+  </data>
+  <data name="ProvidersSettingsContextWindowLabel" xml:space="preserve">
+    <value>上下文窗口</value>
+  </data>
+  <data name="ProvidersSettingsModelNameLabel" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="ProvidersSettingsModelIdLabel" xml:space="preserve">
+    <value>模型 ID</value>
+  </data>
+  <data name="ProvidersSettingsModelLimitsHint" xml:space="preserve">
+    <value>服务器很少报告限制，请务必核对。上下文窗口用于触发压缩，且最大输出必须小于上下文窗口。</value>
+  </data>
+  <data name="ProvidersSettingsNoModelsMessage" xml:space="preserve">
+    <value>暂无模型。请使用上方的“检查连接并列出模型”，或手动添加。</value>
+  </data>
+  <data name="ProvidersSettingsAllModelsAddedMessage" xml:space="preserve">
+    <value>服务器列出的所有模型均已添加。</value>
+  </data>
+  <data name="ProvidersSettingsSelectAllButton" xml:space="preserve">
+    <value>全选</value>
+  </data>
+  <data name="ProvidersSettingsServerModelsLabel" xml:space="preserve">
+    <value>此服务器上的模型</value>
+  </data>
+  <data name="ProvidersSettingsAddModelButton" xml:space="preserve">
+    <value>＋ 添加模型</value>
+  </data>
+  <data name="ProvidersSettingsModelsHeading" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="ProvidersSettingsCheckConnectionButton" xml:space="preserve">
+    <value>检查连接并列出模型</value>
+  </data>
+  <data name="ProvidersSettingsEnvVarHint" xml:space="preserve">
+    <value>设置后，此变量将替代已存储的密钥。</value>
+  </data>
+  <data name="ProvidersSettingsEnvVarPlaceholder" xml:space="preserve">
+    <value>DEEPSEEK_API_KEY</value>
+  </data>
+  <data name="ProvidersSettingsEnvVarLabel" xml:space="preserve">
+    <value>环境变量名称</value>
+  </data>
+  <data name="ProvidersSettingsEnvVarSummary" xml:space="preserve">
+    <value>从环境变量读取</value>
+  </data>
+  <data name="ProvidersSettingsApiKeyLabel" xml:space="preserve">
+    <value>API 密钥</value>
+  </data>
+  <data name="ProvidersSettingsBaseUrlPlaceholder" xml:space="preserve">
+    <value>https://api.example.com/v1</value>
+  </data>
+  <data name="ProvidersSettingsBaseUrlLabel" xml:space="preserve">
+    <value>基础 URL</value>
+  </data>
+  <data name="ProvidersSettingsNamePlaceholder" xml:space="preserve">
+    <value>例如 DeepSeek</value>
+  </data>
+  <data name="ProvidersSettingsNameLabel" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="ProvidersSettingsAddProviderEditorButton" xml:space="preserve">
+    <value>添加提供商</value>
+  </data>
+  <data name="ProvidersSettingsSelectPrompt" xml:space="preserve">
+    <value>选择一个提供商进行编辑，或添加新的提供商。</value>
+  </data>
+  <data name="ProvidersSettingsEmptyStateDescription" xml:space="preserve">
+    <value>添加任意兼容 OpenAI 的端点，例如 OpenAI、llama.cpp、vLLM 或 Ollama。</value>
+  </data>
+  <data name="ProvidersSettingsEmptyStateHeading" xml:space="preserve">
+    <value>连接第一个提供商</value>
+  </data>
+  <data name="ProvidersSettingsAddProviderButton" xml:space="preserve">
+    <value>添加提供商</value>
+  </data>
+  <data name="ProvidersSettingsDefaultProviderBadge" xml:space="preserve">
+    <value>默认</value>
+  </data>
+  <data name="ProvidersSettingsListLabel" xml:space="preserve">
+    <value>已配置的提供商</value>
+  </data>
+  <data name="ProvidersSettingsPageTitle" xml:space="preserve">
+    <value>提供商</value>
+  </data>
+  <data name="SkillsSettingsLocationsHint" xml:space="preserve">
+    <value>这三处的技能都会被使用。如果两个技能同名，将使用列表中位置靠前的文件夹中的技能，另一个将被隐藏。BlazeHarness 文件夹和全局文件夹中的更改会自动显示在这里。聊天文件夹中的技能会在该聊天每次发送消息时读取。</value>
+  </data>
+  <data name="SkillsSettingsGlobalLocation" xml:space="preserve">
+    <value>全局技能，适用于这里的所有聊天以及读取此文件夹的其他 AI 智能体应用。</value>
+  </data>
+  <data name="SkillsSettingsBlazeHarnessLocation" xml:space="preserve">
+    <value>BlazeHarness 技能，适用于这里的所有聊天。</value>
+  </data>
+  <data name="SkillsSettingsFolderLocation" xml:space="preserve">
+    <value>文件夹技能，适用于该文件夹中的聊天。</value>
+  </data>
+  <data name="SkillsSettingsLocationsHeading" xml:space="preserve">
+    <value>技能读取位置</value>
+  </data>
+  <data name="SkillsSettingsProblemsHeading" xml:space="preserve">
+    <value>无法读取的技能</value>
+  </data>
+  <data name="SkillsSettingsHiddenIn" xml:space="preserve">
+    <value>位于</value>
+  </data>
+  <data name="SkillsSettingsHiddenHeading" xml:space="preserve">
+    <value>被同名技能隐藏</value>
+  </data>
+  <data name="SkillsSettingsOn" xml:space="preserve">
+    <value>启用</value>
+  </data>
+  <data name="SkillsSettingsNewChatsLabel" xml:space="preserve">
+    <value>在新聊天中启用</value>
+  </data>
+  <data name="SkillsSettingsNewChatsTooltip" xml:space="preserve">
+    <value>在新聊天中启用</value>
+  </data>
+  <data name="SkillsSettingsEmpty" xml:space="preserve">
+    <value>尚无技能。请将包含 [code]SKILL.md[/code] 的文件夹放入下方任一位置。</value>
+  </data>
+  <data name="SkillsSettingsInstalledHeading" xml:space="preserve">
+    <value>已安装的技能</value>
+  </data>
+  <data name="SkillsSettingsInstallWarning" xml:space="preserve">
+    <value>技能是模型遵循的文本说明，可能附带脚本。它绝不会赋予模型更多权限，运行任何内容前仍会先询问。请仅安装您信任的技能。</value>
+  </data>
+  <data name="SkillsSettingsIntro" xml:space="preserve">
+    <value>技能是一个包含 [code]SKILL.md[/code] 文件的文件夹，用于告知模型如何完成某类工作。模型会看到每个技能的名称和描述，并仅在需要时加载其余内容。每个聊天都可以单独开启或关闭技能。</value>
+  </data>
+  <data name="SkillsSettingsTitle" xml:space="preserve">
+    <value>技能</value>
+  </data>
+  <data name="WebToolsSettingsBrowserLabel" xml:space="preserve">
+    <value>浏览器（打开此计算机上的页面）</value>
+  </data>
+  <data name="WebToolsSettingsBrowserHint" xml:space="preserve">
+    <value>智能体可以在隐藏浏览器中打开此计算机（localhost）上的页面并运行其脚本，读取页面显示的内容及任何错误。它无法打开互联网或 BlazeHarness 本身；每个地址都会像网页获取一样先询问批准。这是一个远程控制的测试浏览器，而非完整浏览器：它没有标签页、扩展程序或开发者工具，智能体可以导航、点击、输入、滚动、等待和截图，但无法拖拽、上传文件或访问 iframe 内的页面。侧面板会显示页面的实时画面，您可以在其中点击、悬停、输入和滚动。浏览器只需下载一次，约 125 MB。</value>
+  </data>
+  <data name="WebToolsSettingsBrowserForwarded" xml:space="preserve">
+    <value>浏览器工具在每个聊天中均可使用。沙箱命令启动的服务器在以 background 方式运行命令时可以打开：其端口会转发到 localhost。未使用 background 启动的服务器无法从该命令外部访问。</value>
+  </data>
+  <data name="WebToolsSettingsBrowserNeedsForwarding" xml:space="preserve">
+    <value>在安装 socat 和 nsenter（util-linux）之前，无法从沙箱外部访问沙箱命令启动的服务器，因此在此之前，浏览器工具仅在具有“无限制”访问级别的聊天中提供。</value>
+  </data>
+  <data name="WebToolsSettingsBrowserNeedsUnrestricted" xml:space="preserve">
+    <value>在此计算机上，无法从沙箱外部访问沙箱命令启动的服务器，因此浏览器工具仅在具有“无限制”访问级别的聊天中提供。</value>
+  </data>
+  <data name="WebToolsSettingsBrowserInstalled" xml:space="preserve">
+    <value>浏览器已安装</value>
+  </data>
+  <data name="WebToolsSettingsBrowserMissing" xml:space="preserve">
+    <value>浏览器未安装</value>
+  </data>
+  <data name="WebToolsSettingsBrowserInstall" xml:space="preserve">
+    <value>安装浏览器</value>
+  </data>
+  <data name="BackgroundShellPanelLabel" xml:space="preserve">
+    <value>后台命令</value>
+  </data>
+  <data name="BackgroundShellPanelCount" xml:space="preserve">
+    <value>{count, plural, other {# 个命令正在运行}}</value>
+  </data>
+  <data name="BackgroundShellPanelStop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="BackgroundShellPanelStopCommand" xml:space="preserve">
+    <value>停止 {command}</value>
+  </data>
+  <data name="SidePanelLabel" xml:space="preserve">
+    <value>侧面板</value>
+  </data>
+  <data name="SidePanelTabsLabel" xml:space="preserve">
+    <value>面板视图</value>
+  </data>
+  <data name="SidePanelTabPreview" xml:space="preserve">
+    <value>预览</value>
+  </data>
+  <data name="SidePanelTabChanges" xml:space="preserve">
+    <value>更改</value>
+  </data>
+  <data name="SidePanelResize" xml:space="preserve">
+    <value>调整侧面板大小</value>
+  </data>
+  <data name="SidePanelToggleTooltip" xml:space="preserve">
+    <value>显示或隐藏侧面板（预览和更改）</value>
+  </data>
+  <data name="MainLayoutResizeSidebar" xml:space="preserve">
+    <value>调整侧边栏大小</value>
+  </data>
+  <data name="ChangesScopeLabel" xml:space="preserve">
+    <value>显示更改</value>
+  </data>
+  <data name="ChangesScopeAll" xml:space="preserve">
+    <value>全部更改 ({count})</value>
+  </data>
+  <data name="ChangesScopeStaged" xml:space="preserve">
+    <value>已暂存 ({count})</value>
+  </data>
+  <data name="ChangesScopeUnstaged" xml:space="preserve">
+    <value>未暂存 ({count})</value>
+  </data>
+  <data name="ChangesRefresh" xml:space="preserve">
+    <value>刷新更改</value>
+  </data>
+  <data name="ChangesFilesLabel" xml:space="preserve">
+    <value>已更改的文件</value>
+  </data>
+  <data name="ChangesDiffLabel" xml:space="preserve">
+    <value>所选文件中的更改</value>
+  </data>
+  <data name="ChangesEmpty" xml:space="preserve">
+    <value>此视图中没有更改。</value>
+  </data>
+  <data name="ChangesSelectFile" xml:space="preserve">
+    <value>选择一个文件以查看其更改。</value>
+  </data>
+  <data name="ChangesLoading" xml:space="preserve">
+    <value>正在加载…</value>
+  </data>
+  <data name="ChangesLoadFailed" xml:space="preserve">
+    <value>无法读取此文件的更改。</value>
+  </data>
+  <data name="ChangesBinary" xml:space="preserve">
+    <value>这是二进制文件，没有可显示的文本。</value>
+  </data>
+  <data name="ChangesNoLines" xml:space="preserve">
+    <value>此文件没有可显示的行。</value>
+  </data>
+  <data name="ChangesTruncated" xml:space="preserve">
+    <value>仅显示此文件的开头部分。</value>
+  </data>
+  <data name="ChangesKindAdded" xml:space="preserve">
+    <value>已添加</value>
+  </data>
+  <data name="ChangesKindModified" xml:space="preserve">
+    <value>已修改</value>
+  </data>
+  <data name="ChangesKindDeleted" xml:space="preserve">
+    <value>已删除</value>
+  </data>
+  <data name="ChangesKindTypeChanged" xml:space="preserve">
+    <value>类型已更改</value>
+  </data>
+  <data name="ChangesKindUntracked" xml:space="preserve">
+    <value>未跟踪</value>
+  </data>
+  <data name="ChangesKindConflicted" xml:space="preserve">
+    <value>存在冲突</value>
+  </data>
+  <data name="BrowserPanelHint" xml:space="preserve">
+    <value>点击页面即可使用；页面获得焦点时可悬停、输入和滚动。</value>
+  </data>
+  <data name="BrowserPanelSaveScreenshot" xml:space="preserve">
+    <value>保存整页截图</value>
+  </data>
+  <data name="BrowserPanelImageAlt" xml:space="preserve">
+    <value>助手浏览器中显示的页面</value>
+  </data>
+  <data name="WebToolsSettingsBrowserInstallingHint" xml:space="preserve">
+    <value>正在下载浏览器（约 125 MB）。这可能需要几分钟；期间你可以继续使用应用。</value>
+  </data>
+  <data name="WebToolsSettingsBrowserInstalling" xml:space="preserve">
+    <value>正在安装…</value>
+  </data>
+  <data name="WebToolsSettingsBrowserInstallFailed" xml:space="preserve">
+    <value>无法安装浏览器。请检查网络连接和应用日志。</value>
+  </data>
+  <data name="WebToolsSettingsModeSequential" xml:space="preserve">
+    <value>逐个尝试：按以下顺序依次尝试，在第一个返回结果的提供商处停止</value>
+  </data>
+  <data name="WebToolsSettingsModeParallel" xml:space="preserve">
+    <value>并行查询：同时向所有已启用的提供商查询并合并结果（更快更全面，但查询会发送给所有提供商）</value>
+  </data>
+  <data name="WebToolsSettingsModeLabel" xml:space="preserve">
+    <value>如何使用提供商</value>
+  </data>
+  <data name="WebToolsSettingsProvidersHint" xml:space="preserve">
+    <value>这些提供商均无需账号或密钥。每个都是免费的公共服务，随时可能更改或限制访问。</value>
+  </data>
+  <data name="WebToolsSettingsProvidersHeading" xml:space="preserve">
+    <value>搜索提供商</value>
+  </data>
+  <data name="WebToolsSettingsFetchHint" xml:space="preserve">
+    <value>网页抓取仅访问公共互联网，会拒绝此计算机或局域网上的地址，且不使用系统代理设置。抓取的页面会在内存中短暂保留，以便分段读取长页面。</value>
+  </data>
+  <data name="WebToolsSettingsFetchLabel" xml:space="preserve">
+    <value>网页抓取（网页、PDF、Office 文件和文本）</value>
+  </data>
+  <data name="WebToolsSettingsSearchLabel" xml:space="preserve">
+    <value>网页搜索</value>
+  </data>
+  <data name="WebToolsSettingsToolsHeading" xml:space="preserve">
+    <value>工具</value>
+  </data>
+  <data name="WebToolsSettingsDescription" xml:space="preserve">
+    <value>允许助手搜索网页、读取网页、PDF 文件和 Office 文档，并在本机的浏览器中打开页面。每次使用前都会先询问，除非聊天的访问级别为“无限制”或设为从不询问。页面文本仅作为数据处理，绝不作为指令。网页抓取不会运行 JavaScript，因此需要它的页面可能为空。</value>
+  </data>
+  <data name="WebToolsSettingsTitle" xml:space="preserve">
+    <value>网页</value>
+  </data>
+  <data name="ExtraFieldsAddButton" xml:space="preserve">
+    <value>＋ 添加字段</value>
+  </data>
+  <data name="ExtraFieldsRemoveButton" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="ExtraFieldsValueLabel" xml:space="preserve">
+    <value>JSON 格式的字段值</value>
+  </data>
+  <data name="ExtraFieldsNamePlaceholder" xml:space="preserve">
+    <value>mirostat</value>
+  </data>
+  <data name="ExtraFieldsNameLabel" xml:space="preserve">
+    <value>字段名称</value>
+  </data>
+  <data name="ModelTuningDoneButton" xml:space="preserve">
+    <value>完成</value>
+  </data>
+  <data name="ModelTuningPreviewThinkingOnHeading" xml:space="preserve">
+    <value>开启思考</value>
+  </data>
+  <data name="ModelTuningPreviewThinkingOffHeading" xml:space="preserve">
+    <value>关闭思考</value>
+  </data>
+  <data name="ModelTuningPreviewSummary" xml:space="preserve">
+    <value>发送内容预览</value>
+  </data>
+  <data name="ModelTuningCustomFieldsThinkingOnHeading" xml:space="preserve">
+    <value>开启思考</value>
+  </data>
+  <data name="ModelTuningCustomFieldsThinkingOffHeading" xml:space="preserve">
+    <value>关闭思考</value>
+  </data>
+  <data name="ModelTuningCustomFieldsHint" xml:space="preserve">
+    <value>用于服务器特定的请求字段。带点的名称（如 chat_template_kwargs.x）可设置嵌套字段。</value>
+  </data>
+  <data name="ModelTuningThinkingOnEmptyHint" xml:space="preserve">
+    <value>留空的“开启思考”单元格会使用“关闭思考”的值（↳）。</value>
+  </data>
+  <data name="ModelTuningThinkingOnColumn" xml:space="preserve">
+    <value>开启思考</value>
+  </data>
+  <data name="ModelTuningParameterColumn" xml:space="preserve">
+    <value>参数</value>
+  </data>
+  <data name="ModelTuningSamplingHeading" xml:space="preserve">
+    <value>采样</value>
+  </data>
+  <data name="ModelTuningProviderSettingHint" xml:space="preserve">
+    <value>提供商的设置位于其设置中的“兼容性”下，适用于所有未单独指定设置的模型。</value>
+  </data>
+  <data name="ModelTuningBodyFieldPathPlaceholder" xml:space="preserve">
+    <value>chat_template_kwargs.reasoning_effort</value>
+  </data>
+  <data name="ModelTuningBodyFieldPathLabel" xml:space="preserve">
+    <value>请求体字段路径</value>
+  </data>
+  <data name="ModelTuningSentAsLabel" xml:space="preserve">
+    <value>发送方式</value>
+  </data>
+  <data name="ModelTuningNoLevelsHint" xml:space="preserve">
+    <value>选择此模型支持的级别。如果无法控制，请勿选择。</value>
+  </data>
+  <data name="ModelTuningDefaultLevelLabel" xml:space="preserve">
+    <value>默认级别</value>
+  </data>
+  <data name="ModelTuningLevelValuesHint" xml:space="preserve">
+    <value>选择模型支持的级别，并检查服务器对每个级别期望的值。留空则不发送。</value>
+  </data>
+  <data name="ModelTuningSupportedLevelsLabel" xml:space="preserve">
+    <value>支持的思考级别</value>
+  </data>
+  <data name="ModelTuningMarkThinkingButton" xml:space="preserve">
+    <value>标记为思考模型</value>
+  </data>
+  <data name="ModelTuningNotThinkingModelHint" xml:space="preserve">
+    <value>此模型未标记为思考模型。</value>
+  </data>
+  <data name="ModelTuningThinkingHeading" xml:space="preserve">
+    <value>思考</value>
+  </data>
+  <data name="DialogClose" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="SecretInputRemoveStored" xml:space="preserve">
+    <value>移除已保存的密钥</value>
+  </data>
+  <data name="ReconnectModalRejoining" xml:space="preserve">
+    <value>正在重新连接服务器…</value>
+  </data>
+  <data name="ReconnectModalRepeatedAttempt" xml:space="preserve">
+    <value>重新连接失败…将在 [seconds] 秒后重试。</value>
+  </data>
+  <data name="ReconnectModalFailed" xml:space="preserve">
+    <value>重新连接失败。</value>
+  </data>
+  <data name="ReconnectModalRetryOrReload" xml:space="preserve">
+    <value>请重试或刷新页面。</value>
+  </data>
+  <data name="ReconnectModalRetry" xml:space="preserve">
+    <value>重试</value>
+  </data>
+  <data name="ReconnectModalPaused" xml:space="preserve">
+    <value>连接已被服务器暂停。</value>
+  </data>
+  <data name="ReconnectModalResumeFailed" xml:space="preserve">
+    <value>恢复连接失败。</value>
+  </data>
+  <data name="ReconnectModalResume" xml:space="preserve">
+    <value>恢复</value>
+  </data>
+  <data name="ToastHostDismiss" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="ToastHostLabel" xml:space="preserve">
+    <value>通知</value>
+  </data>
+</root>

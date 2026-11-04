@@ -1,0 +1,2419 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ConfirmDialogKeep" xml:space="preserve">
+    <value>Оставить</value>
+  </data>
+  <data name="SecretInputStoredPlaceholder" xml:space="preserve">
+    <value>Сохранено. Введите для замены.</value>
+  </data>
+  <data name="SecretInputHide" xml:space="preserve">
+    <value>Скрыть секрет</value>
+  </data>
+  <data name="SecretInputShow" xml:space="preserve">
+    <value>Показать секрет</value>
+  </data>
+  <data name="OpenFolderDialogTitle" xml:space="preserve">
+    <value>Открыть папку</value>
+  </data>
+  <data name="OpenFolderDialogHint" xml:space="preserve">
+    <value>Выберите папку проекта на этом компьютере. Чаты, начатые в ней, используют её как рабочую папку.</value>
+  </data>
+  <data name="OpenFolderDialogConfirm" xml:space="preserve">
+    <value>Открыть эту папку</value>
+  </data>
+  <data name="OpenFolderDialogUp" xml:space="preserve">
+    <value>Вверх</value>
+  </data>
+  <data name="OpenFolderDialogShowHiddenFolders" xml:space="preserve">
+    <value>Показывать скрытые папки</value>
+  </data>
+  <data name="OpenFolderDialogFoldersIn" xml:space="preserve">
+    <value>Папки в {path}</value>
+  </data>
+  <data name="OpenFolderErrorEmpty" xml:space="preserve">
+    <value>Введите путь к папке.</value>
+  </data>
+  <data name="OpenFolderErrorNotAbsolute" xml:space="preserve">
+    <value>Введите полный путь, например /home/me/my-app или C:\Projects\my-app. Путь, начинающийся с ~, означает вашу домашнюю папку.</value>
+  </data>
+  <data name="OpenFolderErrorNotFound" xml:space="preserve">
+    <value>Такой папки не существует.</value>
+  </data>
+  <data name="OpenFolderErrorNotAFolder" xml:space="preserve">
+    <value>Это файл, а не папка.</value>
+  </data>
+  <data name="OpenFolderErrorAccessDenied" xml:space="preserve">
+    <value>У BlazeHarness нет доступа к чтению этой папки.</value>
+  </data>
+  <data name="OpenFolderErrorNotAllowed" xml:space="preserve">
+    <value>Эта папка слишком обширна для работы. Выберите папку проекта, а не корень диска, домашнюю папку или папку данных BlazeHarness.</value>
+  </data>
+  <data name="MoveChatErrorWriteFailed" xml:space="preserve">
+    <value>Не удалось переместить чат, так как не удалось записать его файл.</value>
+  </data>
+  <data name="SettingsGeneralTitle" xml:space="preserve">
+    <value>Общие</value>
+  </data>
+  <data name="SettingsGeneralDescription" xml:space="preserve">
+    <value>Сжатие, список задач, оформление чата и сочетания клавиш.</value>
+  </data>
+  <data name="ChatStatsCachedPromptTokens" xml:space="preserve">
+    <value>{count, plural, one {{formattedCount} токен промпта получен из кэша провайдера} few {{formattedCount} токена промпта получено из кэша провайдера} many {{formattedCount} токенов промпта получено из кэша провайдера} other {{formattedCount} токена промпта получено из кэша провайдера}}</value>
+  </data>
+  <data name="ChatStatsResponsesLabel" xml:space="preserve">
+    <value>Ответы</value>
+  </data>
+  <data name="ChatStatsResponsesTooltip" xml:space="preserve">
+    <value>Ответы модели, включая шаги с вызовом инструментов</value>
+  </data>
+  <data name="ChatStatsStreamingLabel" xml:space="preserve">
+    <value>Потоковый вывод</value>
+  </data>
+  <data name="ChatStatsStreamingTooltip" xml:space="preserve">
+    <value>Время потокового вывода по всем ответам</value>
+  </data>
+  <data name="ChatStatsFirstTokenLabel" xml:space="preserve">
+    <value>Первый токен</value>
+  </data>
+  <data name="ChatStatsFirstTokenTooltip" xml:space="preserve">
+    <value>Среднее время ожидания до начала ответа</value>
+  </data>
+  <data name="ChatStatsPrefillLabel" xml:space="preserve">
+    <value>Префилл</value>
+  </data>
+  <data name="ChatStatsPrefillTooltip" xml:space="preserve">
+    <value>Токенов промпта вне кэша в секунду до начала ответа</value>
+  </data>
+  <data name="ChatStatsDecodeLabel" xml:space="preserve">
+    <value>Декодирование</value>
+  </data>
+  <data name="ChatStatsDecodeTooltip" xml:space="preserve">
+    <value>Сгенерировано токенов в секунду при потоковом выводе</value>
+  </data>
+  <data name="ChatStatsOutLabel" xml:space="preserve">
+    <value>Выход</value>
+  </data>
+  <data name="ChatStatsCachedLabel" xml:space="preserve">
+    <value>Из кэша</value>
+  </data>
+  <data name="ChatStatsInLabel" xml:space="preserve">
+    <value>Вход</value>
+  </data>
+  <data name="ChatStatsInTooltip" xml:space="preserve">
+    <value>Отправлено токенов промпта за все ответы в этом чате</value>
+  </data>
+  <data name="ChatStatsAriaLabel" xml:space="preserve">
+    <value>Статистика использования этого чата</value>
+  </data>
+  <data name="ChatViewJumpToLatest" xml:space="preserve">
+    <value>К последнему сообщению</value>
+  </data>
+  <data name="ChatViewEmptyHint" xml:space="preserve">
+    <value>Выберите модель ниже и отправьте сообщение. Нажмите Enter для отправки и Shift+Enter для новой строки.</value>
+  </data>
+  <data name="ChatViewEmptyHeading" xml:space="preserve">
+    <value>Чем я могу помочь?</value>
+  </data>
+  <data name="ChatViewFolderNotFound" xml:space="preserve">
+    <value>Папка не найдена</value>
+  </data>
+  <data name="ChatViewFindButton" xml:space="preserve">
+    <value>Найти</value>
+  </data>
+  <data name="ChatViewFindButtonTooltip" xml:space="preserve">
+    <value>Найти в этом чате (Ctrl+F)</value>
+  </data>
+  <data name="ChatViewMoveButton" xml:space="preserve">
+    <value>Переместить</value>
+  </data>
+  <data name="ChatViewChatFilesLabel" xml:space="preserve">
+    <value>Файлы чата</value>
+  </data>
+  <data name="ChatViewChatFilesTooltip" xml:space="preserve">
+    <value>Файлы, созданные в этом чате, хранятся вместе с ним</value>
+  </data>
+  <data name="ChatViewInstructionsHeading" xml:space="preserve">
+    <value>Инструкции проекта</value>
+  </data>
+  <data name="ChatViewAgentsMdTrigger" xml:space="preserve">
+    <value>AGENTS.md</value>
+  </data>
+  <data name="ChatViewInstructionsTooltip" xml:space="preserve">
+    <value>Инструкции проекта, переданные модели</value>
+  </data>
+  <data name="ChatViewInstructionsLabel" xml:space="preserve">
+    <value>Инструкции проекта</value>
+  </data>
+  <data name="ChatViewConversationLabel" xml:space="preserve">
+    <value>Переписка</value>
+  </data>
+  <data name="ChatViewStartNewChat" xml:space="preserve">
+    <value>Начать новый чат</value>
+  </data>
+  <data name="ChatViewMissingChat" xml:space="preserve">
+    <value>Этот чат больше не существует.</value>
+  </data>
+  <data name="ComposerModelSwitchCacheHint" xml:space="preserve">
+    <value>Отправка другой модели сбрасывает кэш промпта, поэтому первый ответ может быть медленнее.</value>
+  </data>
+  <data name="ComposerImagesUnsupportedHint" xml:space="preserve">
+    <value>Выбранная модель не поддерживает просмотр изображений, поэтому они не будут ей переданы.</value>
+  </data>
+  <data name="ComposerSendTooltip" xml:space="preserve">
+    <value>Отправить (Enter)</value>
+  </data>
+  <data name="ComposerSendLabel" xml:space="preserve">
+    <value>Отправить</value>
+  </data>
+  <data name="ComposerStopTooltip" xml:space="preserve">
+    <value>Остановить</value>
+  </data>
+  <data name="ComposerStopLabel" xml:space="preserve">
+    <value>Остановить</value>
+  </data>
+  <data name="ComposerRetryTooltip" xml:space="preserve">
+    <value>Повторить последний ответ</value>
+  </data>
+  <data name="ComposerRetryLabel" xml:space="preserve">
+    <value>Повторить</value>
+  </data>
+  <data name="ComposerThinkingHeading" xml:space="preserve">
+    <value>Размышление</value>
+  </data>
+  <data name="ComposerThinkingTooltip" xml:space="preserve">
+    <value>Глубина размышления модели перед ответом</value>
+  </data>
+  <data name="ComposerThinkingMenuLabel" xml:space="preserve">
+    <value>Размышление</value>
+  </data>
+  <data name="ComposerModelMenuTooltip" xml:space="preserve">
+    <value>Модель</value>
+  </data>
+  <data name="ComposerModelMenuLabel" xml:space="preserve">
+    <value>Модель</value>
+  </data>
+  <data name="ComposerAttachFilesTooltip" xml:space="preserve">
+    <value>Прикрепить файлы</value>
+  </data>
+  <data name="ComposerAttachFilesLabel" xml:space="preserve">
+    <value>Прикрепить файлы</value>
+  </data>
+  <data name="ComposerMessageLabel" xml:space="preserve">
+    <value>Сообщение</value>
+  </data>
+  <data name="ComposerInsertAsText" xml:space="preserve">
+    <value>Вставить как текст</value>
+  </data>
+  <data name="ComposerPreviewFile" xml:space="preserve">
+    <value>Предпросмотр</value>
+  </data>
+  <data name="ComposerAttachedFilesLabel" xml:space="preserve">
+    <value>Прикреплённые файлы</value>
+  </data>
+  <data name="ComposerQueuedBadge" xml:space="preserve">
+    <value>В очереди</value>
+  </data>
+  <data name="ComposerQueuedMessagesLabel" xml:space="preserve">
+    <value>Сообщения в очереди</value>
+  </data>
+  <data name="ComposerSkillsLabel" xml:space="preserve">
+    <value>Навыки</value>
+  </data>
+  <data name="ComposerCancelEdit" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="ComposerEditingHint" xml:space="preserve">
+    <value>Редактирование сообщения. Отправка заменит его и все последующие ответы.</value>
+  </data>
+  <data name="ComposerOpenProviders" xml:space="preserve">
+    <value>Открыть провайдеров</value>
+  </data>
+  <data name="ComposerNoModelsHint" xml:space="preserve">
+    <value>Добавьте модель к провайдеру, чтобы начать чат.</value>
+  </data>
+  <data name="ContextIndicatorCompactDescription" xml:space="preserve">
+    <value>Заменить старые сообщения сводкой</value>
+  </data>
+  <data name="ContextIndicatorCompactNow" xml:space="preserve">
+    <value>Сжать сейчас</value>
+  </data>
+  <data name="ContextIndicatorHeading" xml:space="preserve">
+    <value>Контекст</value>
+  </data>
+  <data name="ContextIndicatorDialogLabel" xml:space="preserve">
+    <value>Контекст</value>
+  </data>
+  <data name="ContextIndicatorTokensUnit" xml:space="preserve">
+    <value>токенов</value>
+  </data>
+  <data name="DiffViewLabel" xml:space="preserve">
+    <value>Изменения</value>
+  </data>
+  <data name="ExportMenuSecretsWarning" xml:space="preserve">
+    <value>Файл содержит всё из чата, включая вывод инструментов, например содержимое прочитанных ими файлов. Проверьте его на наличие секретов перед отправкой. Прикреплённые файлы не включаются.</value>
+  </data>
+  <data name="ExportMenuJsonHint" xml:space="preserve">
+    <value>Для повторного импорта позже</value>
+  </data>
+  <data name="ExportMenuJsonName" xml:space="preserve">
+    <value>JSON</value>
+  </data>
+  <data name="ExportMenuMarkdownHint" xml:space="preserve">
+    <value>Для чтения или отправки</value>
+  </data>
+  <data name="ExportMenuMarkdownName" xml:space="preserve">
+    <value>Markdown</value>
+  </data>
+  <data name="ExportMenuHeading" xml:space="preserve">
+    <value>Экспорт чата</value>
+  </data>
+  <data name="ExportMenuButton" xml:space="preserve">
+    <value>Экспорт</value>
+  </data>
+  <data name="ExportMenuTooltip" xml:space="preserve">
+    <value>Сохранить этот чат в файл</value>
+  </data>
+  <data name="ExportMenuLabel" xml:space="preserve">
+    <value>Экспорт</value>
+  </data>
+  <data name="FindBarCloseTooltip" xml:space="preserve">
+    <value>Закрыть (Esc)</value>
+  </data>
+  <data name="FindBarCloseLabel" xml:space="preserve">
+    <value>Закрыть поиск</value>
+  </data>
+  <data name="FindBarNextTooltip" xml:space="preserve">
+    <value>Следующее совпадение (Enter)</value>
+  </data>
+  <data name="FindBarNextLabel" xml:space="preserve">
+    <value>Следующее совпадение</value>
+  </data>
+  <data name="FindBarPreviousTooltip" xml:space="preserve">
+    <value>Предыдущее совпадение (Shift+Enter)</value>
+  </data>
+  <data name="FindBarPreviousLabel" xml:space="preserve">
+    <value>Предыдущее совпадение</value>
+  </data>
+  <data name="FindBarInputLabel" xml:space="preserve">
+    <value>Найти в этом чате</value>
+  </data>
+  <data name="FindBarPlaceholder" xml:space="preserve">
+    <value>Найти в этом чате</value>
+  </data>
+  <data name="FindBarLabel" xml:space="preserve">
+    <value>Найти в этом чате</value>
+  </data>
+  <data name="McpPickerManage" xml:space="preserve">
+    <value>Управлять</value>
+  </data>
+  <data name="McpPickerScopeNote" xml:space="preserve">
+    <value>Действует только для этого чата со следующего ответа. Изменение сбрасывает кэш промпта модели, поэтому ответ может занять больше времени.</value>
+  </data>
+  <data name="McpPickerFailed" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="McpPickerTrigger" xml:space="preserve">
+    <value>MCP</value>
+  </data>
+  <data name="McpPickerTitle" xml:space="preserve">
+    <value>MCP-серверы, инструменты которых доступны в этом чате</value>
+  </data>
+  <data name="McpPickerLabel" xml:space="preserve">
+    <value>MCP-серверы</value>
+  </data>
+  <data name="MessageViewEditTooltip" xml:space="preserve">
+    <value>Изменить и отправить заново</value>
+  </data>
+  <data name="MessageViewEditLabel" xml:space="preserve">
+    <value>Изменить и отправить это сообщение заново</value>
+  </data>
+  <data name="MessageViewCopyTooltip" xml:space="preserve">
+    <value>Копировать сообщение</value>
+  </data>
+  <data name="MessageViewCopyLabel" xml:space="preserve">
+    <value>Копировать это сообщение</value>
+  </data>
+  <data name="MessageViewInterruptedHint" xml:space="preserve">
+    <value>Этот ответ прервался при остановке приложения. Повторите попытку, чтобы сгенерировать его заново.</value>
+  </data>
+  <data name="MessageViewStoppedHint" xml:space="preserve">
+    <value>Остановлено.</value>
+  </data>
+  <data name="MessageViewEmptyReplyHint" xml:space="preserve">
+    <value>Модель завершила ответ без текста.</value>
+  </data>
+  <data name="MessageViewWaiting" xml:space="preserve">
+    <value>Ожидание модели…</value>
+  </data>
+  <data name="MessageViewThinkingSummary" xml:space="preserve">
+    <value>Размышление</value>
+  </data>
+  <data name="MessageViewQueuedLabel" xml:space="preserve">
+    <value>Отправлено во время работы модели</value>
+  </data>
+  <data name="PermissionPickerConfirmButton" xml:space="preserve">
+    <value>Включить</value>
+  </data>
+  <data name="PermissionPickerCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="PermissionPickerConfirmHint" xml:space="preserve">
+    <value>Это действует только для этого чата. Защищённые папки, такие как ваши SSH-ключи, остаются заблокированными.</value>
+  </data>
+  <data name="PermissionPickerNeverAskWarning" xml:space="preserve">
+    <value>Не спрашивать: вызовы инструментов выполняются без запроса подтверждения. Текст из файлов или веб-страниц может обманом заставить модель выполнить вредоносные команды.</value>
+  </data>
+  <data name="PermissionPickerUnrestrictedWarning" xml:space="preserve">
+    <value>Без ограничений: инструменты и команды могут читать и изменять всё, что доступно вашей учётной записи, без песочницы.</value>
+  </data>
+  <data name="PermissionPickerConfirmTitle" xml:space="preserve">
+    <value>Отключить защиту?</value>
+  </data>
+  <data name="PermissionPickerNoSandboxNote" xml:space="preserve">
+    <value>Песочница недоступна, поэтому команды заблокированы</value>
+  </data>
+  <data name="PermissionPickerSandboxedNote" xml:space="preserve">
+    <value>Разрешённые команды выполняются в песочнице</value>
+  </data>
+  <data name="PermissionPickerUnrestrictedNote" xml:space="preserve">
+    <value>Команды выполняются без песочницы</value>
+  </data>
+  <data name="PermissionPickerNeverAskDescription" xml:space="preserve">
+    <value>Выполнять разрешённые действия и блокировать остальные</value>
+  </data>
+  <data name="PermissionPickerAskForExceptionsDescription" xml:space="preserve">
+    <value>Спрашивать только если действие выходит за уровень доступа</value>
+  </data>
+  <data name="PermissionPickerAskFirstDescription" xml:space="preserve">
+    <value>Спрашивать перед рискованными действиями или действиями вне папки</value>
+  </data>
+  <data name="PermissionPickerApprovalsHeading" xml:space="preserve">
+    <value>Подтверждения</value>
+  </data>
+  <data name="PermissionPickerUnrestrictedDescription" xml:space="preserve">
+    <value>Доступ ко всему, что доступно вашей учётной записи, без песочницы</value>
+  </data>
+  <data name="PermissionPickerReadOnlyDescription" xml:space="preserve">
+    <value>Читать файлы без их изменения и запуска команд</value>
+  </data>
+  <data name="PermissionPickerAccessHeading" xml:space="preserve">
+    <value>Доступ</value>
+  </data>
+  <data name="PermissionPickerLabel" xml:space="preserve">
+    <value>Разрешения</value>
+  </data>
+  <data name="QuestionCardAnswerLabel" xml:space="preserve">
+    <value>Ваш ответ:</value>
+  </data>
+  <data name="QuestionCardSendHint" xml:space="preserve">
+    <value>Ctrl+Enter — отправить</value>
+  </data>
+  <data name="QuestionCardSkip" xml:space="preserve">
+    <value>Пропустить</value>
+  </data>
+  <data name="QuestionCardLeaveToModel" xml:space="preserve">
+    <value>Решите сами</value>
+  </data>
+  <data name="QuestionCardSendAnswer" xml:space="preserve">
+    <value>Отправить ответ</value>
+  </data>
+  <data name="QuestionCardAskedBy" xml:space="preserve">
+    <value>Вопрос от ассистента</value>
+  </data>
+  <data name="QuestionCardLabel" xml:space="preserve">
+    <value>Вопрос от ассистента</value>
+  </data>
+  <data name="SkillPickerManage" xml:space="preserve">
+    <value>Управлять</value>
+  </data>
+  <data name="SkillPickerScopeNote" xml:space="preserve">
+    <value>Действует только для этого чата со следующего ответа. Изменение сбрасывает кэш промпта модели, поэтому ответ может занять больше времени.</value>
+  </data>
+  <data name="SkillPickerTrigger" xml:space="preserve">
+    <value>Навыки</value>
+  </data>
+  <data name="SkillPickerTitle" xml:space="preserve">
+    <value>Навыки, которые может загружать этот чат</value>
+  </data>
+  <data name="SkillPickerLabel" xml:space="preserve">
+    <value>Навыки</value>
+  </data>
+  <data name="TodoChecklistLabel" xml:space="preserve">
+    <value>Список задач</value>
+  </data>
+  <data name="TodoPanelLabel" xml:space="preserve">
+    <value>Список задач</value>
+  </data>
+  <data name="ToolCallViewOutputLabel" xml:space="preserve">
+    <value>Вывод</value>
+  </data>
+  <data name="ToolCallViewDeny" xml:space="preserve">
+    <value>Запретить</value>
+  </data>
+  <data name="ToolCallViewAllowForChat" xml:space="preserve">
+    <value>Разрешить для этого чата</value>
+  </data>
+  <data name="ToolCallViewAllowOnce" xml:space="preserve">
+    <value>Разрешить</value>
+  </data>
+  <data name="MoveChatDialogCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="MoveChatDialogNoFolder" xml:space="preserve">
+    <value>Без папки</value>
+  </data>
+  <data name="MoveChatDialogDestinationsLabel" xml:space="preserve">
+    <value>Папки назначения</value>
+  </data>
+  <data name="MoveChatDialogHint" xml:space="preserve">
+    <value>Выберите, где работает этот чат. Его сообщения останутся прежними, а в папках ничего не изменится.</value>
+  </data>
+  <data name="MoveChatDialogTitle" xml:space="preserve">
+    <value>Переместить чат в</value>
+  </data>
+  <data name="OpenFolderDialogCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="OpenFolderDialogNoSubfolders" xml:space="preserve">
+    <value>Внутри этой папки нет других папок. Вы всё равно можете открыть её.</value>
+  </data>
+  <data name="OpenFolderDialogPlacesLabel" xml:space="preserve">
+    <value>Места</value>
+  </data>
+  <data name="OpenFolderDialogGo" xml:space="preserve">
+    <value>Перейти</value>
+  </data>
+  <data name="OpenFolderDialogPathPlaceholder" xml:space="preserve">
+    <value>Введите или вставьте путь, например ~/code/my-app</value>
+  </data>
+  <data name="OpenFolderDialogPathLabel" xml:space="preserve">
+    <value>Путь к папке</value>
+  </data>
+  <data name="ChatListDeleteWarning" xml:space="preserve">
+    <value>Это действие нельзя отменить. Чат [strong]{title}[/strong] и все сохранённые для него данные будут удалены. Файлы в папке проекта затронуты не будут.</value>
+  </data>
+  <data name="ChatListDeleteConfirm" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="ChatListDeleteTitle" xml:space="preserve">
+    <value>Удалить этот чат?</value>
+  </data>
+  <data name="ChatListDeleteMenuItem" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="ChatListOpenDataMenuItem" xml:space="preserve">
+    <value>Открыть данные чата</value>
+  </data>
+  <data name="ChatListMoveMenuItem" xml:space="preserve">
+    <value>Переместить в папку</value>
+  </data>
+  <data name="ChatListRenameMenuItem" xml:space="preserve">
+    <value>Переименовать</value>
+  </data>
+  <data name="ChatListReplyingLabel" xml:space="preserve">
+    <value>Отвечает</value>
+  </data>
+  <data name="ChatListReplyingTooltip" xml:space="preserve">
+    <value>Отвечает</value>
+  </data>
+  <data name="ChatListNeedsYouBadge" xml:space="preserve">
+    <value>Ждёт вас</value>
+  </data>
+  <data name="ChatListNeedsYouTooltip" xml:space="preserve">
+    <value>Ожидает вашего ответа или подтверждения</value>
+  </data>
+  <data name="ChatListRenameLabel" xml:space="preserve">
+    <value>Название чата</value>
+  </data>
+  <data name="MainLayoutReload" xml:space="preserve">
+    <value>Перезагрузить</value>
+  </data>
+  <data name="MainLayoutTitle" xml:space="preserve">
+    <value>BlazeHarness</value>
+  </data>
+  <data name="MainLayoutCloseSidebar" xml:space="preserve">
+    <value>Закрыть боковую панель</value>
+  </data>
+  <data name="MainLayoutSkipToChat" xml:space="preserve">
+    <value>Перейти к чату</value>
+  </data>
+  <data name="SettingsDialogSectionsLabel" xml:space="preserve">
+    <value>Разделы настроек</value>
+  </data>
+  <data name="SettingsDialogTitle" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="SidebarRemoveFolderWarning" xml:space="preserve">
+    <value>Папка [strong]{name}[/strong] будет убрана из этого списка. Сама папка на компьютере не изменится, а её чаты сохранятся и переместятся в раздел «Чаты».</value>
+  </data>
+  <data name="SidebarRemoveConfirm" xml:space="preserve">
+    <value>Убрать</value>
+  </data>
+  <data name="SidebarRemoveFolderTitle" xml:space="preserve">
+    <value>Убрать эту папку?</value>
+  </data>
+  <data name="SidebarRelocateConfirm" xml:space="preserve">
+    <value>Использовать эту папку</value>
+  </data>
+  <data name="SidebarRelocateTitle" xml:space="preserve">
+    <value>Найти папку</value>
+  </data>
+  <data name="SidebarRemoveFolderMenuItem" xml:space="preserve">
+    <value>Убрать папку</value>
+  </data>
+  <data name="SidebarOpenFolderMenuItem" xml:space="preserve">
+    <value>Открыть папку</value>
+  </data>
+  <data name="SidebarFindFolderMenuItem" xml:space="preserve">
+    <value>Найти папку</value>
+  </data>
+  <data name="SidebarNewChatMenuItem" xml:space="preserve">
+    <value>Новый чат</value>
+  </data>
+  <data name="SidebarSettings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="SidebarSettingsTooltip" xml:space="preserve">
+    <value>Настройки (Ctrl+,)</value>
+  </data>
+  <data name="SidebarNoChatsInFolder" xml:space="preserve">
+    <value>Пока нет чатов.</value>
+  </data>
+  <data name="SidebarFolderMissing" xml:space="preserve">
+    <value>Не удалось найти эту папку. Возможно, она была перемещена или удалена.</value>
+  </data>
+  <data name="SidebarFindFolderTooltip" xml:space="preserve">
+    <value>Найти эту папку</value>
+  </data>
+  <data name="SidebarNewChatInFolderTooltip" xml:space="preserve">
+    <value>Новый чат в этой папке</value>
+  </data>
+  <data name="SidebarFolderNotFoundLabel" xml:space="preserve">
+    <value>Папка не найдена</value>
+  </data>
+  <data name="SidebarFolderNotFoundTooltip" xml:space="preserve">
+    <value>Папка не найдена</value>
+  </data>
+  <data name="SidebarNoFoldersHint" xml:space="preserve">
+    <value>Откройте папку проекта, чтобы начинать в ней чаты.</value>
+  </data>
+  <data name="SidebarOpenFolderLabel" xml:space="preserve">
+    <value>Открыть папку</value>
+  </data>
+  <data name="SidebarOpenFolderTooltip" xml:space="preserve">
+    <value>Открыть папку</value>
+  </data>
+  <data name="SidebarFoldersHeading" xml:space="preserve">
+    <value>Папки</value>
+  </data>
+  <data name="SidebarNewGeneralChatLabel" xml:space="preserve">
+    <value>Новый чат без папки</value>
+  </data>
+  <data name="SidebarNewGeneralChatTooltip" xml:space="preserve">
+    <value>Новый чат без папки</value>
+  </data>
+  <data name="SidebarImportChatLabel" xml:space="preserve">
+    <value>Импортировать чат из файла JSON</value>
+  </data>
+  <data name="SidebarSortLabel" xml:space="preserve">
+    <value>Сортировать чаты</value>
+  </data>
+  <data name="SidebarSortTooltip" xml:space="preserve">
+    <value>Сортировать чаты</value>
+  </data>
+  <data name="SidebarSortUpdated" xml:space="preserve">
+    <value>Последнее обновление</value>
+  </data>
+  <data name="SidebarSortName" xml:space="preserve">
+    <value>Название</value>
+  </data>
+  <data name="SidebarImportChatTooltip" xml:space="preserve">
+    <value>Импортировать чат из файла JSON</value>
+  </data>
+  <data name="SidebarChatsHeading" xml:space="preserve">
+    <value>Чаты</value>
+  </data>
+  <data name="SidebarSearchChatsTooltip" xml:space="preserve">
+    <value>Поиск по названиям чатов (Ctrl+K)</value>
+  </data>
+  <data name="SidebarSearchChatsLabel" xml:space="preserve">
+    <value>Поиск по названиям чатов</value>
+  </data>
+  <data name="SidebarSearchChatsPlaceholder" xml:space="preserve">
+    <value>Поиск по названиям чатов</value>
+  </data>
+  <data name="SidebarNewChat" xml:space="preserve">
+    <value>Новый чат</value>
+  </data>
+  <data name="SidebarNewChatTooltip" xml:space="preserve">
+    <value>Новый чат (Ctrl+Shift+O)</value>
+  </data>
+  <data name="SidebarBrand" xml:space="preserve">
+    <value>BlazeHarness</value>
+  </data>
+  <data name="SidebarNavigationLabel" xml:space="preserve">
+    <value>Основная навигация</value>
+  </data>
+  <data name="ErrorMessage" xml:space="preserve">
+    <value>При обработке вашего запроса произошла ошибка. Подробности смотрите в консоли.</value>
+  </data>
+  <data name="ErrorHeading" xml:space="preserve">
+    <value>Что-то пошло не так</value>
+  </data>
+  <data name="ErrorPageTitle" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="HomeSetUpProvider" xml:space="preserve">
+    <value>Настроить провайдера</value>
+  </data>
+  <data name="HomeProviderHint" xml:space="preserve">
+    <value>Подключите OpenAI-совместимую конечную точку, чтобы начать общение в чате. Подойдёт как облачный API, так и локальный сервер, например llama.cpp.</value>
+  </data>
+  <data name="HomeHeading" xml:space="preserve">
+    <value>Добро пожаловать в BlazeHarness</value>
+  </data>
+  <data name="HomePageTitle" xml:space="preserve">
+    <value>BlazeHarness</value>
+  </data>
+  <data name="NotFoundMessage" xml:space="preserve">
+    <value>Страница, которую вы ищете, не существует.</value>
+  </data>
+  <data name="NotFoundHeading" xml:space="preserve">
+    <value>Не найдено</value>
+  </data>
+  <data name="NotFoundPageTitle" xml:space="preserve">
+    <value>Не найдено</value>
+  </data>
+  <data name="DiagnosticsSettingsRecentLogLabel" xml:space="preserve">
+    <value>Последние строки журнала</value>
+  </data>
+  <data name="DiagnosticsSettingsLogEmpty" xml:space="preserve">
+    <value>Записей в журнале пока нет.</value>
+  </data>
+  <data name="DiagnosticsSettingsRefreshButton" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="DiagnosticsSettingsRecentLogHeading" xml:space="preserve">
+    <value>Последние записи журнала</value>
+  </data>
+  <data name="DiagnosticsSettingsSkillsLabel" xml:space="preserve">
+    <value>Навыки</value>
+  </data>
+  <data name="DiagnosticsSettingsMcpServersLabel" xml:space="preserve">
+    <value>MCP-серверы</value>
+  </data>
+  <data name="DiagnosticsSettingsFoldersLabel" xml:space="preserve">
+    <value>Папки</value>
+  </data>
+  <data name="DiagnosticsSettingsChatsLabel" xml:space="preserve">
+    <value>Чаты</value>
+  </data>
+  <data name="DiagnosticsSettingsShellSandboxLabel" xml:space="preserve">
+    <value>Песочница оболочки</value>
+  </data>
+  <data name="DiagnosticsSettingsLogFolderLabel" xml:space="preserve">
+    <value>Папка журналов</value>
+  </data>
+  <data name="DiagnosticsSettingsDataFolderLabel" xml:space="preserve">
+    <value>Папка данных</value>
+  </data>
+  <data name="DiagnosticsSettingsSystemLabel" xml:space="preserve">
+    <value>Система</value>
+  </data>
+  <data name="DiagnosticsSettingsRuntimeLabel" xml:space="preserve">
+    <value>Среда выполнения</value>
+  </data>
+  <data name="DiagnosticsSettingsVersionLabel" xml:space="preserve">
+    <value>Версия</value>
+  </data>
+  <data name="DiagnosticsSettingsCopyButton" xml:space="preserve">
+    <value>Скопировать для отчёта об ошибке</value>
+  </data>
+  <data name="DiagnosticsSettingsAboutHeading" xml:space="preserve">
+    <value>Об этой установке</value>
+  </data>
+  <data name="DiagnosticsSettingsDescription" xml:space="preserve">
+    <value>Что проверить, если что-то не работает, и что приложить при сообщении о проблеме.</value>
+  </data>
+  <data name="DiagnosticsSettingsTitle" xml:space="preserve">
+    <value>Диагностика</value>
+  </data>
+  <data name="GeneralSettingsShortcutNewLine" xml:space="preserve">
+    <value>Новая строка в сообщении</value>
+  </data>
+  <data name="GeneralSettingsShortcutSend" xml:space="preserve">
+    <value>Отправить сообщение</value>
+  </data>
+  <data name="GeneralSettingsShortcutSettings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="GeneralSettingsShortcutFindInChat" xml:space="preserve">
+    <value>Найти в чате</value>
+  </data>
+  <data name="GeneralSettingsShortcutSearchChats" xml:space="preserve">
+    <value>Поиск по названиям чатов</value>
+  </data>
+  <data name="GeneralSettingsShortcutNewChat" xml:space="preserve">
+    <value>Новый чат</value>
+  </data>
+  <data name="GeneralSettingsShortcutsHeading" xml:space="preserve">
+    <value>Сочетания клавиш</value>
+  </data>
+  <data name="GeneralSettingsReverseHint" xml:space="preserve">
+    <value>Для символов можно использовать [code]Array.Reverse[/code]:</value>
+  </data>
+  <data name="GeneralSettingsPreviewQuestion" xml:space="preserve">
+    <value>Как развернуть строку в C#?</value>
+  </data>
+  <data name="GeneralSettingsPreviewLabel" xml:space="preserve">
+    <value>Предпросмотр текста чата</value>
+  </data>
+  <data name="GeneralSettingsChatTextSizeHint" xml:space="preserve">
+    <value>Сообщения и поле ввода поверх размера интерфейса. Код отображается чуть меньшим шрифтом.</value>
+  </data>
+  <data name="GeneralSettingsChatTextSizeLabel" xml:space="preserve">
+    <value>Размер текста в чате</value>
+  </data>
+  <data name="GeneralSettingsInterfaceSizeHint" xml:space="preserve">
+    <value>Боковая панель, кнопки, диалоги и настройки.</value>
+  </data>
+  <data name="GeneralSettingsInterfaceSizeLabel" xml:space="preserve">
+    <value>Размер интерфейса</value>
+  </data>
+  <data name="GeneralSettingsTextSizeHint" xml:space="preserve">
+    <value>Сохраняется в этом браузере и применяется сразу. Масштаб браузера продолжает работать поверх.</value>
+  </data>
+  <data name="GeneralSettingsTextSizeHeading" xml:space="preserve">
+    <value>Размер текста</value>
+  </data>
+  <data name="GeneralSettingsFullWidthHint" xml:space="preserve">
+    <value>Растягивать сообщения и поле ввода на всё доступное пространство. Сохраняется в этом браузере и применяется сразу.</value>
+  </data>
+  <data name="GeneralSettingsFullWidthLabel" xml:space="preserve">
+    <value>Использовать всю ширину для чатов</value>
+  </data>
+  <data name="GeneralSettingsChatWidthHeading" xml:space="preserve">
+    <value>Ширина чата</value>
+  </data>
+  <data name="GeneralSettingsCompactionLabel" xml:space="preserve">
+    <value>Сжимать без участия модели (извлечение)</value>
+  </data>
+  <data name="GeneralSettingsCompactionHeading" xml:space="preserve">
+    <value>Сжатие</value>
+  </data>
+  <data name="GeneralSettingsLanguage" xml:space="preserve">
+    <value>Язык</value>
+  </data>
+  <data name="GeneralSettingsDisplayLanguage" xml:space="preserve">
+    <value>Язык интерфейса</value>
+  </data>
+  <data name="GeneralSettingsCompactionDescription" xml:space="preserve">
+    <value>Когда чат становится слишком длинным, модель обычно составляет сводку старых сообщений. При извлечении сводка собирается из ваших запросов, затронутых файлов и последних шагов без вызова модели — мгновенно и бесплатно, но менее подробно. Агент всё равно сможет найти то, что не вошло в сводку.</value>
+  </data>
+  <data name="ChatViewTranscriptLabel" xml:space="preserve">
+    <value>Сообщения</value>
+  </data>
+  <data name="GeneralSettingsTodosHeading" xml:space="preserve">
+    <value>Список задач</value>
+  </data>
+  <data name="GeneralSettingsTodosLabel" xml:space="preserve">
+    <value>Разрешить агенту вести список задач</value>
+  </data>
+  <data name="GeneralSettingsTodosDescription" xml:space="preserve">
+    <value>Агент может записывать шаги большой задачи и отмечать их по мере выполнения, а также получает напоминания, если забывает обновлять список. Отключите эту опцию, если модель плохо справляется со списком. Применяется со следующего сообщения в каждом чате.</value>
+  </data>
+  <data name="GeneralSettingsSaveFailure" xml:space="preserve">
+    <value>Не удалось сохранить настройку: ошибка записи файла настроек.</value>
+  </data>
+  <data name="UiLightboxLabel" xml:space="preserve">
+    <value>Увеличенное изображение</value>
+  </data>
+  <data name="UiClose" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="TokenFormatThousands" xml:space="preserve">
+    <value>{value} тыс.</value>
+  </data>
+  <data name="TokenFormatRate" xml:space="preserve">
+    <value>{value} ток./с</value>
+  </data>
+  <data name="TokenFormatMilliseconds" xml:space="preserve">
+    <value>{value} мс</value>
+  </data>
+  <data name="TokenFormatSeconds" xml:space="preserve">
+    <value>{value} с</value>
+  </data>
+  <data name="TokenFormatMinutes" xml:space="preserve">
+    <value>{minutes} мин {seconds} с</value>
+  </data>
+  <data name="ValidationIdRequired" xml:space="preserve">
+    <value>Укажите идентификатор.</value>
+  </data>
+  <data name="ValidationNameRequired" xml:space="preserve">
+    <value>Укажите название.</value>
+  </data>
+  <data name="ValidationBaseUrlInvalid" xml:space="preserve">
+    <value>Базовый URL должен быть абсолютным адресом http или https, например https://api.openai.com/v1.</value>
+  </data>
+  <data name="ValidationApiKeyRefInvalid" xml:space="preserve">
+    <value>Используйте формат {example} или оставьте поле пустым, чтобы использовать сохранённый ключ.</value>
+  </data>
+  <data name="ValidationThinkingFieldRequired" xml:space="preserve">
+    <value>Укажите имя поля тела запроса, в котором передаётся уровень размышления.</value>
+  </data>
+  <data name="ValidationThinkingFieldInvalid" xml:space="preserve">
+    <value>Используйте буквы, цифры, дефисы и подчёркивания, а также точки для обращения к вложенным полям объекта; без пробелов и скобок.</value>
+  </data>
+  <data name="ValidationModelIdRequired" xml:space="preserve">
+    <value>Укажите идентификатор модели.</value>
+  </data>
+  <data name="ValidationModelIdDuplicate" xml:space="preserve">
+    <value>Модель «{id}» указана дважды.</value>
+  </data>
+  <data name="ValidationContextWindowInvalid" xml:space="preserve">
+    <value>Контекстное окно должно быть положительным числом токенов.</value>
+  </data>
+  <data name="ValidationMaxOutputInvalid" xml:space="preserve">
+    <value>Максимальное число выходных токенов должно быть положительным.</value>
+  </data>
+  <data name="ValidationMaxOutputTooLarge" xml:space="preserve">
+    <value>Максимальное число выходных токенов должно быть меньше контекстного окна.</value>
+  </data>
+  <data name="ValidationDefaultLevelInvalid" xml:space="preserve">
+    <value>Выберите уровень размышления по умолчанию из поддерживаемых моделью.</value>
+  </data>
+  <data name="ValidationExtraFieldInvalid" xml:space="preserve">
+    <value>Недопустимое имя поля «{name}». Используйте буквы, цифры, дефисы и подчёркивания, а также точки для обращения к вложенным полям объекта; без пробелов и скобок.</value>
+  </data>
+  <data name="ValidationSamplingOutOfRange" xml:space="preserve">
+    <value>Значение {key} должно быть в диапазоне от {min} до {max}.</value>
+  </data>
+  <data name="ConnectionTestConnected" xml:space="preserve">
+    <value>Подключено. Сервер вернул {count, plural, one {# модель} few {# модели} many {# моделей} other {# модели}}.</value>
+  </data>
+  <data name="ConnectionTestConnectedNoModels" xml:space="preserve">
+    <value>Подключено, но сервер не вернул список моделей. Добавьте их вручную.</value>
+  </data>
+  <data name="ConnectionTestInvalidBaseUrl" xml:space="preserve">
+    <value>Базовый URL не является допустимым адресом http или https.</value>
+  </data>
+  <data name="ConnectionTestModelListTooLarge" xml:space="preserve">
+    <value>Список моделей от сервера слишком велик для ответа в формате OpenAI.</value>
+  </data>
+  <data name="ConnectionTestTimeout" xml:space="preserve">
+    <value>Сервер не ответил за {seconds} с. Проверьте, что он запущен и адрес указан верно.</value>
+  </data>
+  <data name="ConnectionTestConnectionFailed" xml:space="preserve">
+    <value>Не удалось подключиться: {detail}. Проверьте, что сервер запущен и адрес указан верно.</value>
+  </data>
+  <data name="ConnectionTestNotAModelList" xml:space="preserve">
+    <value>Сервер ответил, но не списком моделей в формате OpenAI. Проверьте, что базовый URL указывает на API (обычно заканчивается на /v1).</value>
+  </data>
+  <data name="ConnectionTestUnauthorized" xml:space="preserve">
+    <value>Сервер отклонил API-ключ. Проверьте ключ и то, что он позволяет запрашивать список моделей.</value>
+  </data>
+  <data name="ConnectionTestNotFound" xml:space="preserve">
+    <value>По этому адресу у сервера нет конечной точки /models. Проверьте базовый URL (обычно заканчивается на /v1) или добавьте модели вручную.</value>
+  </data>
+  <data name="ConnectionTestRateLimited" xml:space="preserve">
+    <value>Сервер ограничивает частоту запросов. Попробуйте снова чуть позже.</value>
+  </data>
+  <data name="ConnectionTestHttpError" xml:space="preserve">
+    <value>Сервер ответил кодом HTTP {code} ({status}).</value>
+  </data>
+  <data name="UiCopy" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="UiCopied" xml:space="preserve">
+    <value>Скопировано</value>
+  </data>
+  <data name="UiCopyFailed" xml:space="preserve">
+    <value>Ошибка копирования</value>
+  </data>
+  <data name="MessageViewCopied" xml:space="preserve">
+    <value>Сообщение скопировано.</value>
+  </data>
+  <data name="MessageViewCopyFailed" xml:space="preserve">
+    <value>Не удалось скопировать сообщение.</value>
+  </data>
+  <data name="DiagnosticsSettingsReportCopied" xml:space="preserve">
+    <value>Скопировано. Вставьте в отчёт.</value>
+  </data>
+  <data name="DiagnosticsSettingsCopyFailed" xml:space="preserve">
+    <value>Не удалось скопировать. Выделите текст и скопируйте его вручную.</value>
+  </data>
+  <data name="DiagnosticsSettingsLogRetention" xml:space="preserve">
+    <value>Журналы содержат только идентификаторы, счётчики и ошибки, но не текст ваших сообщений или файлов. Файлы хранятся {days} дн.</value>
+  </data>
+  <data name="MainLayoutShowSidebar" xml:space="preserve">
+    <value>Показать боковую панель</value>
+  </data>
+  <data name="MainLayoutHideSidebar" xml:space="preserve">
+    <value>Скрыть боковую панель</value>
+  </data>
+  <data name="MainLayoutUnhandledError" xml:space="preserve">
+    <value>Произошла необработанная ошибка.</value>
+  </data>
+  <data name="ChatViewTooLargeNotIncluded" xml:space="preserve">
+    <value>Слишком большой, не включён</value>
+  </data>
+  <data name="ChatViewTooLargeCutOff" xml:space="preserve">
+    <value>Слишком большой, обрезан</value>
+  </data>
+  <data name="ChatViewEarlierMessages" xml:space="preserve">
+    <value>{count, plural, one {Показать раннее сообщение ({formattedCount})} few {Показать ранние сообщения ({formattedCount})} many {Показать ранние сообщения ({formattedCount})} other {Показать ранние сообщения ({formattedCount})}}</value>
+  </data>
+  <data name="ToolCallAllowPrompt" xml:space="preserve">
+    <value>Разрешить этот вызов?</value>
+  </data>
+  <data name="ToolCallShowAllCharacters" xml:space="preserve">
+    <value>{count, plural, one {Показать все {formattedCount} символ} few {Показать все {formattedCount} символа} many {Показать все {formattedCount} символов} other {Показать все {formattedCount} символа}}</value>
+  </data>
+  <data name="ToolCallHostPrompt" xml:space="preserve">
+    <value>Разрешить этой команде подключиться к [code]{host}[/code]?</value>
+  </data>
+  <data name="ToolCallViewAlwaysAllowHost" xml:space="preserve">
+    <value>Всегда разрешать этот хост</value>
+  </data>
+  <data name="ChatViewHostRuleSaveFailure" xml:space="preserve">
+    <value>Не удалось сохранить правило для хоста: ошибка записи файла настроек.</value>
+  </data>
+  <data name="PermissionsTargetNetworkHost" xml:space="preserve">
+    <value>Сетевой хост</value>
+  </data>
+  <data name="PermissionsSettingsTargetNetworkHost" xml:space="preserve">
+    <value>Сетевой хост</value>
+  </data>
+  <data name="PermissionsSettingsNetworkHeading" xml:space="preserve">
+    <value>Сеть</value>
+  </data>
+  <data name="PermissionsSettingsNetworkLabel" xml:space="preserve">
+    <value>Спрашивать перед подключением команды к хосту</value>
+  </data>
+  <data name="PermissionsSettingsNetworkHint" xml:space="preserve">
+    <value>Когда включено, команда в песочнице может обращаться только к разрешённым вами хостам. При первом подключении к хосту появится запрос, если только решение не определено правилом «Сетевой хост». В режиме «Не спрашивать» подключение к хосту, не разрешённому правилом, отклоняется. Пропускается только веб-трафик (HTTP и HTTPS), поэтому SSH, прямые соединения и инструменты, игнорирующие настройки прокси, блокируются. Хосты в вашей локальной сети или на вашем компьютере всегда блокируются. Команда с уровнем доступа «Без ограничений» выполняется вне песочницы, поэтому фильтр к ней не применяется. Пока недоступно в Windows.</value>
+  </data>
+  <data name="ToolCallMcpBadgeTitle" xml:space="preserve">
+    <value>Инструмент MCP-сервера {server}. Выполняется вне песочницы.</value>
+  </data>
+  <data name="ToolCallQueued" xml:space="preserve">
+    <value>В очереди</value>
+  </data>
+  <data name="ToolCallNeedsApproval" xml:space="preserve">
+    <value>Ждёт подтверждения</value>
+  </data>
+  <data name="ToolCallRunning" xml:space="preserve">
+    <value>Выполняется</value>
+  </data>
+  <data name="ToolCallDone" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="ToolCallFailed" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="ToolCallDenied" xml:space="preserve">
+    <value>Запрещено</value>
+  </data>
+  <data name="ToolCallStopped" xml:space="preserve">
+    <value>Остановлено</value>
+  </data>
+  <data name="ToolCallInterrupted" xml:space="preserve">
+    <value>Прервано</value>
+  </data>
+  <data name="ParamInputDefault" xml:space="preserve">
+    <value>по умолчанию</value>
+  </data>
+  <data name="ParamInputReplaces" xml:space="preserve">
+    <value>Заменяет {value}. Очистите, чтобы снова использовать его.</value>
+  </data>
+  <data name="ParamInputClearForServer" xml:space="preserve">
+    <value>Очистите, чтобы использовать значение сервера.</value>
+  </data>
+  <data name="ParamInputUsesThinkingOff" xml:space="preserve">
+    <value>Используется значение из «Без размышления». Введите значение, чтобы заменить его.</value>
+  </data>
+  <data name="ParamInputNotSent" xml:space="preserve">
+    <value>Не отправляется; используется значение сервера по умолчанию.</value>
+  </data>
+  <data name="PermissionsRulesDescription" xml:space="preserve">
+    <value>Запрещающее правило всегда имеет приоритет. В остальных случаях действует последнее совпавшее правило. Разрешающее правило пропускает запрос подтверждения, но никогда не выводит вызов за пределы песочницы и не даёт доступ к защищённой папке. Используйте * для любого текста и ? для одного символа. В пути * действует в пределах одной папки, а ** — включая вложенные папки. Правило для инструмента MCP сопоставляется со строкой вида server/tool (имя сервера и имя инструмента). Правило, запрещающее путь к файлу, также скрывает такие файлы из списков и поиска. Для команды оболочки в песочнице такие файлы изолируются при запуске команды и выглядят пустыми или недоступными для чтения: по точному пути — где бы файл ни находился, а по шаблону с подстановочными знаками — в рабочей папке и разрешённых вами папках. Эта защита не абсолютна: оболочка всё ещё может прочитать запрещённый файл из истории Git, файлы, созданные позже, не скрываются, в macOS переименование родительской папки может обойти ограничение, а команда с уровнем доступа «Без ограничений» выполняется вне песочницы. Команды оболочки не запускаются, если под правило подпадает слишком много файлов или правилу с ** требуется обойти слишком большую папку; правила вида secrets/** или *.pem работают быстро. Кроме того, команды не запускаются, если песочница этой системы не поддерживает изоляцию отдельных файлов.</value>
+  </data>
+  <data name="PermissionsRemoveProtectedFolder" xml:space="preserve">
+    <value>Убрать {folder} из защищённых папок</value>
+  </data>
+  <data name="PermissionsRemoveRule" xml:space="preserve">
+    <value>Удалить правило {pattern}</value>
+  </data>
+  <data name="PermissionsSaveFailure" xml:space="preserve">
+    <value>Не удалось сохранить настройки разрешений: ошибка записи файла настроек.</value>
+  </data>
+  <data name="PermissionsTargetShellCommand" xml:space="preserve">
+    <value>Команда оболочки</value>
+  </data>
+  <data name="PermissionsTargetMcpTool" xml:space="preserve">
+    <value>Инструмент MCP</value>
+  </data>
+  <data name="PermissionsTargetWebHost" xml:space="preserve">
+    <value>Веб-хост</value>
+  </data>
+  <data name="PermissionsTargetFilePath" xml:space="preserve">
+    <value>Путь к файлу</value>
+  </data>
+  <data name="PermissionsActionRefuse" xml:space="preserve">
+    <value>Запретить</value>
+  </data>
+  <data name="PermissionsActionAsk" xml:space="preserve">
+    <value>Спрашивать</value>
+  </data>
+  <data name="PermissionsActionAllow" xml:space="preserve">
+    <value>Разрешить</value>
+  </data>
+  <data name="WebToolsWorking" xml:space="preserve">
+    <value>Выполняется</value>
+  </data>
+  <data name="WebToolsUp" xml:space="preserve">
+    <value>вверх</value>
+  </data>
+  <data name="WebToolsDown" xml:space="preserve">
+    <value>вниз</value>
+  </data>
+  <data name="WebToolsMoveProvider" xml:space="preserve">
+    <value>Переместить {name} {direction}</value>
+  </data>
+  <data name="McpSettingsHeader" xml:space="preserve">
+    <value>Серверы, предоставляющие агенту дополнительные инструменты, настраиваются в [code]{file}[/code]; в каждом чате их можно включать и отключать отдельно.</value>
+  </data>
+  <data name="McpSettingsSecretWarning" xml:space="preserve">
+    <value>В файле для этого сервера обнаружены значения, похожие на секреты: {names}. Используйте ссылку [code]{reference}[/code] на переменную окружения, чтобы не хранить секрет в файле.</value>
+  </data>
+  <data name="McpSettingsConnecting" xml:space="preserve">
+    <value>Подключение…</value>
+  </data>
+  <data name="McpSettingsTestConnection" xml:space="preserve">
+    <value>Проверить подключение</value>
+  </data>
+  <data name="McpSettingsTrustExplanation" xml:space="preserve">
+    <value>Эту метку передаёт сам сервер; BlazeHarness не может её проверить. Доверенные инструменты выполняются без подтверждения, если чат не в режиме «Только чтение». Для всех остальных запрашивается подтверждение, если в чате не выбран режим «Не спрашивать».</value>
+  </data>
+  <data name="McpSettingsConnected" xml:space="preserve">
+    <value>Подключено</value>
+  </data>
+  <data name="McpSettingsFailed" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="McpSettingsOff" xml:space="preserve">
+    <value>Выкл.</value>
+  </data>
+  <data name="McpSettingsNotStarted" xml:space="preserve">
+    <value>Не запущен</value>
+  </data>
+  <data name="McpSettingsRunsCommand" xml:space="preserve">
+    <value>Запускает {command}</value>
+  </data>
+  <data name="McpSettingsSaveFailure" xml:space="preserve">
+    <value>Не удалось сохранить настройки MCP: ошибка записи файла.</value>
+  </data>
+  <data name="McpSettingsToolCount" xml:space="preserve">
+    <value>{count, plural, one {{formattedCount} инструмент} few {{formattedCount} инструмента} many {{formattedCount} инструментов} other {{formattedCount} инструмента}}</value>
+  </data>
+  <data name="McpSettingsToolsSummary" xml:space="preserve">
+    <value>Инструменты ({offered}/{total})</value>
+  </data>
+  <data name="McpSettingsToolOfferedLabel" xml:space="preserve">
+    <value>Предоставлять {tool} модели</value>
+  </data>
+  <data name="McpSettingsToolPatternTooltip" xml:space="preserve">
+    <value>Скрыт от модели шаблоном в файле. Измените файл, чтобы поменять это.</value>
+  </data>
+  <data name="McpSettingsNoToolsOffered" xml:space="preserve">
+    <value>ни один не предлагается модели.</value>
+  </data>
+  <data name="McpSettingsAlwaysLoadedHint" xml:space="preserve">
+    <value>Всегда загружены, около {tokens} токенов промпта, когда сервер включён.</value>
+  </data>
+  <data name="McpSettingsSearchLoadedHint" xml:space="preserve">
+    <value>Находятся поиском при необходимости, или около {tokens} токенов промпта, если загружать всегда.</value>
+  </data>
+  <data name="McpSettingsChangeFailed" xml:space="preserve">
+    <value>Не удалось изменить {name}. Сначала исправьте файл.</value>
+  </data>
+  <data name="McpSettingsSaved" xml:space="preserve">
+    <value>Сохранено: {name}.</value>
+  </data>
+  <data name="McpSettingsSavedDiscarded" xml:space="preserve">
+    <value>Сохранено: {name}. Несохранённые изменения в редакторе файла были отменены.</value>
+  </data>
+  <data name="McpSettingsRemoveFailed" xml:space="preserve">
+    <value>Не удалось удалить {name}. Сначала исправьте файл.</value>
+  </data>
+  <data name="McpSettingsRemoved" xml:space="preserve">
+    <value>Удалено: {name}.</value>
+  </data>
+  <data name="McpSettingsSavedFile" xml:space="preserve">
+    <value>Сохранено.</value>
+  </data>
+  <data name="McpSettingsFileHasProblems" xml:space="preserve">
+    <value>В файле есть ошибки, поэтому он не был сохранён.</value>
+  </data>
+  <data name="McpSettingsRemoveServerLabel" xml:space="preserve">
+    <value>Удалить {name}</value>
+  </data>
+  <data name="McpServerFormOptional" xml:space="preserve">
+    <value>необязательно</value>
+  </data>
+  <data name="McpServerFormOnePerLine" xml:space="preserve">
+    <value>по одному в строке</value>
+  </data>
+  <data name="McpServerFormEnvironmentVariables" xml:space="preserve">
+    <value>Переменные окружения</value>
+  </data>
+  <data name="McpServerFormAddVariable" xml:space="preserve">
+    <value>Добавить переменную</value>
+  </data>
+  <data name="McpServerFormVariableName" xml:space="preserve">
+    <value>Имя переменной</value>
+  </data>
+  <data name="McpServerFormHeaders" xml:space="preserve">
+    <value>Заголовки</value>
+  </data>
+  <data name="McpServerFormAddHeader" xml:space="preserve">
+    <value>Добавить заголовок</value>
+  </data>
+  <data name="McpServerFormHeaderName" xml:space="preserve">
+    <value>Имя заголовка</value>
+  </data>
+  <data name="McpServerFormAlwaysLoadHint" xml:space="preserve">
+    <value>По умолчанию выключено: модель находит инструменты этого сервера поиском, когда они нужны, чтобы не раздувать промпт. Включите для небольшого сервера, инструменты которого вы используете в большинстве чатов.</value>
+  </data>
+  <data name="McpServerFormSecretNote" xml:space="preserve">
+    <value>Отметьте значение как секретное, чтобы хранить его в {store}, а не в файле. В файле при этом сохранится ссылка [code]{reference}[/code]. Если в окружении задана переменная с таким именем, будет использована она.</value>
+  </data>
+  <data name="McpServerFormSecretNoteNotEncrypted" xml:space="preserve">
+    <value>Отметьте значение как секретное, чтобы хранить его в {store} (без шифрования), а не в файле. В файле при этом сохранится ссылка [code]{reference}[/code]. Если в окружении задана переменная с таким именем, будет использована она.</value>
+  </data>
+  <data name="McpServerFormAddServer" xml:space="preserve">
+    <value>Добавить сервер</value>
+  </data>
+  <data name="McpServerFormEditServer" xml:space="preserve">
+    <value>Изменить {name}</value>
+  </data>
+  <data name="McpServerFormName" xml:space="preserve">
+    <value>Имя</value>
+  </data>
+  <data name="McpServerFormSecretValue" xml:space="preserve">
+    <value>Секретное значение</value>
+  </data>
+  <data name="McpServerFormValue" xml:space="preserve">
+    <value>Значение</value>
+  </data>
+  <data name="McpServerFormSecret" xml:space="preserve">
+    <value>Секрет</value>
+  </data>
+  <data name="McpServerFormRemoveEntry" xml:space="preserve">
+    <value>Удалить запись</value>
+  </data>
+  <data name="McpServerFormSaveFailure" xml:space="preserve">
+    <value>Не удалось сохранить сервер, так как не удалось записать файл или хранилище секретов.</value>
+  </data>
+  <data name="GeneralSettingsSmall" xml:space="preserve">
+    <value>Мелкий</value>
+  </data>
+  <data name="GeneralSettingsDefault" xml:space="preserve">
+    <value>По умолчанию</value>
+  </data>
+  <data name="GeneralSettingsLarge" xml:space="preserve">
+    <value>Крупный</value>
+  </data>
+  <data name="GeneralSettingsExtraLarge" xml:space="preserve">
+    <value>Очень крупный</value>
+  </data>
+  <data name="ModelTuningTitle" xml:space="preserve">
+    <value>Настроить {model}</value>
+  </data>
+  <data name="ModelTuningSameAsProvider" xml:space="preserve">
+    <value>Как у провайдера:</value>
+  </data>
+  <data name="ModelTuningThinkingOff" xml:space="preserve">
+    <value>Размышление выкл.</value>
+  </data>
+  <data name="ModelTuningValue" xml:space="preserve">
+    <value>Значение</value>
+  </data>
+  <data name="ModelTuningEmptyUsesDefault" xml:space="preserve">
+    <value>Оставьте ячейку пустой, чтобы использовалось значение сервера.</value>
+  </data>
+  <data name="ModelTuningCustomFields" xml:space="preserve">
+    <value>Пользовательские поля</value>
+  </data>
+  <data name="ModelTuningCustomFieldsCount" xml:space="preserve">
+    <value>Пользовательские поля ({count})</value>
+  </data>
+  <data name="ModelTuningThinkingOnFieldsHint" xml:space="preserve">
+    <value>Добавляются к полям «Размышление выкл.»; поле с тем же именем заменяет его.</value>
+  </data>
+  <data name="ModelTuningSamplingThinkingOffLabel" xml:space="preserve">
+    <value>{label}, размышление выкл.</value>
+  </data>
+  <data name="ModelTuningSamplingThinkingOnLabel" xml:space="preserve">
+    <value>{label}, размышление вкл.</value>
+  </data>
+  <data name="ThinkingSendLabelsCustomFieldShort" xml:space="preserve">
+    <value>своё поле тела запроса</value>
+  </data>
+  <data name="ThinkingSendLabelsCustomFieldOption" xml:space="preserve">
+    <value>Своё поле тела запроса</value>
+  </data>
+  <data name="ThinkingSendLabelsReasoningEffortOption" xml:space="preserve">
+    <value>reasoning_effort (OpenAI, llama.cpp, vLLM)</value>
+  </data>
+  <data name="ThinkingSendLabelsReasoningObjectOption" xml:space="preserve">
+    <value>объект reasoning (OpenRouter)</value>
+  </data>
+  <data name="ModelTuningValueSentFor" xml:space="preserve">
+    <value>Значение, отправляемое для {level}</value>
+  </data>
+  <data name="ProvidersSettingsHeaderBefore" xml:space="preserve">
+    <value>Подключите любую OpenAI-совместимую конечную точку. Ключи хранятся в</value>
+  </data>
+  <data name="ProvidersSettingsSecureSuffix" xml:space="preserve">
+    <value>.</value>
+  </data>
+  <data name="ProvidersSettingsInsecureSuffix" xml:space="preserve">
+    <value>, которое не зашифровано. Установите системную связку ключей для более надёжного хранения ключей.</value>
+  </data>
+  <data name="ProvidersSettingsNewProvider" xml:space="preserve">
+    <value>Новый провайдер</value>
+  </data>
+  <data name="ProvidersSettingsOptionalForLocal" xml:space="preserve">
+    <value>Необязательно для локальных серверов</value>
+  </data>
+  <data name="ProvidersSettingsApiKeyHint" xml:space="preserve">
+    <value>Локальным серверам ключ обычно не нужен. Сохранённый ключ больше не показывается; оставьте поле пустым, чтобы сохранить его.</value>
+  </data>
+  <data name="ProvidersSettingsAddSelectedModels" xml:space="preserve">
+    <value>Добавить {count, plural, one {выбранную модель} few {выбранные модели} many {выбранных моделей} other {выбранные модели}} ({formattedCount})</value>
+  </data>
+  <data name="ProvidersSettingsNotSaved" xml:space="preserve">
+    <value>Этот провайдер ещё не сохранён.</value>
+  </data>
+  <data name="ProvidersSettingsUnsavedChanges" xml:space="preserve">
+    <value>У вас есть несохранённые изменения.</value>
+  </data>
+  <data name="ProvidersSettingsDiscard" xml:space="preserve">
+    <value>Сбросить</value>
+  </data>
+  <data name="ProvidersSettingsSaveFailure" xml:space="preserve">
+    <value>Не удалось сохранить настройки провайдера, так как не удалось записать файл настроек или хранилище ключей.</value>
+  </data>
+  <data name="ProvidersSettingsModelCount" xml:space="preserve">
+    <value>{count, plural, one {{formattedCount} модель} few {{formattedCount} модели} many {{formattedCount} моделей} other {{formattedCount} модели}}</value>
+  </data>
+  <data name="ProvidersSettingsTuneModel" xml:space="preserve">
+    <value>Настроить {model}</value>
+  </data>
+  <data name="ProvidersSettingsRemoveModel" xml:space="preserve">
+    <value>Удалить модель {model}</value>
+  </data>
+  <data name="ProvidersSettingsDefaultModelSet" xml:space="preserve">
+    <value>{model} теперь модель по умолчанию.</value>
+  </data>
+  <data name="ProvidersSettingsProviderSaved" xml:space="preserve">
+    <value>Провайдер сохранён.</value>
+  </data>
+  <data name="ProvidersSettingsStoredKeyRemoved" xml:space="preserve">
+    <value>Сохранённый ключ удалён.</value>
+  </data>
+  <data name="ProvidersSettingsProviderRemoved" xml:space="preserve">
+    <value>Удалено: {name}.</value>
+  </data>
+  <data name="ChatViewReplyStarted" xml:space="preserve">
+    <value>Ответ начат</value>
+  </data>
+  <data name="ChatViewReplyFailed" xml:space="preserve">
+    <value>Ошибка ответа</value>
+  </data>
+  <data name="ChatViewReplyFinished" xml:space="preserve">
+    <value>Ответ завершён</value>
+  </data>
+  <data name="ChatViewAttachmentLimit" xml:space="preserve">
+    <value>Общий размер файлов в сообщении не может превышать {size}.</value>
+  </data>
+  <data name="ChatViewNoLongerExists" xml:space="preserve">
+    <value>Этот чат больше не существует.</value>
+  </data>
+  <data name="ChatViewNotEnoughToSummarize" xml:space="preserve">
+    <value>Недостаточно предыдущих сообщений для сжатия.</value>
+  </data>
+  <data name="ChatViewEnableExtractionHint" xml:space="preserve">
+    <value>Вы можете включить «Сжимать без модели (извлечение)» в разделе «Настройки &gt; Общие».</value>
+  </data>
+  <data name="ChatViewSummarizeFailed" xml:space="preserve">
+    <value>Не удалось сжать диалог: {error}{hint}</value>
+  </data>
+  <data name="ChatViewPermissionSaveFailure" xml:space="preserve">
+    <value>Не удалось сохранить разрешения: не удалось записать файл чата.</value>
+  </data>
+  <data name="PermissionPickerFolderDescription" xml:space="preserve">
+    <value>Чтение и изменение файлов в этой папке</value>
+  </data>
+  <data name="PermissionPickerChatFolderDescription" xml:space="preserve">
+    <value>Чтение и изменение файлов в папке этого чата</value>
+  </data>
+  <data name="PermissionPickerRiskyTitle" xml:space="preserve">
+    <value>Некоторые ограничения отключены для этого чата</value>
+  </data>
+  <data name="PermissionPickerSandboxedTitle" xml:space="preserve">
+    <value>К чему есть доступ у инструментов и когда требуется подтверждение. Разрешённые команды выполняются в песочнице.</value>
+  </data>
+  <data name="PermissionPickerNoSandboxTitle" xml:space="preserve">
+    <value>К чему есть доступ у инструментов и когда требуется подтверждение. Песочница недоступна, поэтому команды заблокированы.</value>
+  </data>
+  <data name="PermissionPickerReadOnly" xml:space="preserve">
+    <value>Только чтение</value>
+  </data>
+  <data name="PermissionPickerFolder" xml:space="preserve">
+    <value>Папка</value>
+  </data>
+  <data name="PermissionPickerWriteInFolder" xml:space="preserve">
+    <value>Запись в папке</value>
+  </data>
+  <data name="PermissionPickerChatFolder" xml:space="preserve">
+    <value>Папка чата</value>
+  </data>
+  <data name="PermissionPickerWriteInChatFolder" xml:space="preserve">
+    <value>Запись в папке чата</value>
+  </data>
+  <data name="PermissionPickerUnrestricted" xml:space="preserve">
+    <value>Без ограничений</value>
+  </data>
+  <data name="PermissionPickerAskFirst" xml:space="preserve">
+    <value>Сначала спрашивать</value>
+  </data>
+  <data name="PermissionPickerAskForExceptions" xml:space="preserve">
+    <value>Спрашивать об исключениях</value>
+  </data>
+  <data name="PermissionPickerNeverAsk" xml:space="preserve">
+    <value>Не спрашивать</value>
+  </data>
+  <data name="SettingsDialogGeneral" xml:space="preserve">
+    <value>Общие</value>
+  </data>
+  <data name="SettingsDialogProviders" xml:space="preserve">
+    <value>Провайдеры</value>
+  </data>
+  <data name="SettingsDialogPermissions" xml:space="preserve">
+    <value>Разрешения</value>
+  </data>
+  <data name="SettingsDialogMcpServers" xml:space="preserve">
+    <value>MCP-серверы</value>
+  </data>
+  <data name="SettingsDialogSkills" xml:space="preserve">
+    <value>Навыки</value>
+  </data>
+  <data name="SettingsDialogWeb" xml:space="preserve">
+    <value>Веб</value>
+  </data>
+  <data name="SettingsDialogDiagnostics" xml:space="preserve">
+    <value>Диагностика</value>
+  </data>
+  <data name="SidebarNoChatsMatch" xml:space="preserve">
+    <value>Подходящих чатов нет.</value>
+  </data>
+  <data name="SidebarNoChatsYet" xml:space="preserve">
+    <value>Чатов пока нет.</value>
+  </data>
+  <data name="SidebarNewChatInFolder" xml:space="preserve">
+    <value>Новый чат в папке {folder}</value>
+  </data>
+  <data name="SidebarFindFolder" xml:space="preserve">
+    <value>Найти папку {folder}</value>
+  </data>
+  <data name="SidebarFolderActions" xml:space="preserve">
+    <value>Действия с папкой</value>
+  </data>
+  <data name="SidebarSwitchToLightTheme" xml:space="preserve">
+    <value>Переключить на светлую тему</value>
+  </data>
+  <data name="SidebarSwitchToDarkTheme" xml:space="preserve">
+    <value>Переключить на тёмную тему</value>
+  </data>
+  <data name="SidebarRelocateHint" xml:space="preserve">
+    <value>Выберите, где сейчас находится эта папка. Её чаты переместятся вместе с ней.</value>
+  </data>
+  <data name="SidebarImportNotAnExport" xml:space="preserve">
+    <value>Этот файл не является экспортом чата BlazeHarness.</value>
+  </data>
+  <data name="SidebarImportNewerVersion" xml:space="preserve">
+    <value>Файл был экспортирован более новой версией BlazeHarness.</value>
+  </data>
+  <data name="SidebarImportNoMessages" xml:space="preserve">
+    <value>В файле нет сообщений.</value>
+  </data>
+  <data name="AttachmentUnsupported" xml:space="preserve">
+    <value>Не удалось прикрепить «{name}». Поддерживаются только изображения (PNG, JPEG, GIF, WebP) и текстовые файлы.</value>
+  </data>
+  <data name="AttachmentTooLarge" xml:space="preserve">
+    <value>Размер «{name}» превышает {size} МБ.</value>
+  </data>
+  <data name="AttachmentEmpty" xml:space="preserve">
+    <value>Файл «{name}» пуст.</value>
+  </data>
+  <data name="SidebarImportFileTooLarge" xml:space="preserve">
+    <value>Этот файл слишком велик для экспорта чата.</value>
+  </data>
+  <data name="SidebarImportReadFailed" xml:space="preserve">
+    <value>Не удалось прочитать файл.</value>
+  </data>
+  <data name="SidebarOpenFolderFailed" xml:space="preserve">
+    <value>Не удалось открыть эту папку.</value>
+  </data>
+  <data name="SidebarRelocateFolderFailed" xml:space="preserve">
+    <value>Не удалось использовать эту папку.</value>
+  </data>
+  <data name="SidebarRelocateWriteFailed" xml:space="preserve">
+    <value>Не удалось обновить папку: не удалось записать файл.</value>
+  </data>
+  <data name="SidebarRemoveWriteFailed" xml:space="preserve">
+    <value>Не удалось убрать папку: не удалось записать файл.</value>
+  </data>
+  <data name="ChatListActions" xml:space="preserve">
+    <value>Действия с чатом</value>
+  </data>
+  <data name="ChatListNoFolderOnDisk" xml:space="preserve">
+    <value>У этого чата ещё нет папки на диске.</value>
+  </data>
+  <data name="ChatListOpenDataFailed" xml:space="preserve">
+    <value>Не удалось открыть данные чата.</value>
+  </data>
+  <data name="ChatListUntitledChat" xml:space="preserve">
+    <value>Чат без названия</value>
+  </data>
+  <data name="ChatListRenameFailed" xml:space="preserve">
+    <value>Не удалось переименовать чат: не удалось записать его файл.</value>
+  </data>
+  <data name="ChatListStillReplying" xml:space="preserve">
+    <value>В этом чате ещё идёт ответ. Сначала остановите его, а затем удалите.</value>
+  </data>
+  <data name="ChatListDeleteFailed" xml:space="preserve">
+    <value>Не удалось удалить чат: не удалось удалить его файлы.</value>
+  </data>
+  <data name="ComposerChooseModel" xml:space="preserve">
+    <value>Выберите модель</value>
+  </data>
+  <data name="ComposerLevelUnavailable" xml:space="preserve">
+    <value>Уровень {previous} недоступен для этой модели, поэтому будет использован {level}.</value>
+  </data>
+  <data name="ComposerAnswerQuestion" xml:space="preserve">
+    <value>Ответьте на вопрос выше</value>
+  </data>
+  <data name="ComposerQueuePlaceholder" xml:space="preserve">
+    <value>Добавьте сообщение, которое модель увидит на следующем шаге</value>
+  </data>
+  <data name="ComposerPlaceholder" xml:space="preserve">
+    <value>Напишите модели</value>
+  </data>
+  <data name="ComposerSendAnswer" xml:space="preserve">
+    <value>Отправить ответ</value>
+  </data>
+  <data name="ComposerQueueMessage" xml:space="preserve">
+    <value>Направить ответ</value>
+  </data>
+  <data name="ComposerSendAnswerEnter" xml:space="preserve">
+    <value>Отправить ответ (Enter)</value>
+  </data>
+  <data name="ComposerQueueMessageEnter" xml:space="preserve">
+    <value>Направить ответ (Enter)</value>
+  </data>
+  <data name="ComposerRemoveFile" xml:space="preserve">
+    <value>Убрать {name}</value>
+  </data>
+  <data name="ComposerSteerBadge" xml:space="preserve">
+    <value>Направить</value>
+  </data>
+  <data name="ComposerQueueModeMenuLabel" xml:space="preserve">
+    <value>Другие способы отправки</value>
+  </data>
+  <data name="ComposerQueueModeTooltip" xml:space="preserve">
+    <value>Поставить сообщение в очередь до окончания ответа (Alt+Enter)</value>
+  </data>
+  <data name="ComposerQueueModeAfterReply" xml:space="preserve">
+    <value>В очередь</value>
+  </data>
+  <data name="ComposerQueueModeAfterReplyDescription" xml:space="preserve">
+    <value>Отправить после окончания ответа следующим сообщением (Alt+Enter)</value>
+  </data>
+  <data name="ComposerRemoveQueued" xml:space="preserve">
+    <value>Убрать сообщение из очереди</value>
+  </data>
+  <data name="ComposerPreviewStart" xml:space="preserve">
+    <value>Начало файла {name}</value>
+  </data>
+  <data name="ComposerFilesNotQueued" xml:space="preserve">
+    <value>Нельзя добавлять файлы, пока идёт ответ. Уберите их, чтобы поставить сообщение в очередь, или отправьте его после окончания ответа.</value>
+  </data>
+  <data name="ComposerQuestionAlreadyHandled" xml:space="preserve">
+    <value>На вопрос уже ответили или ответ был остановлен до получения сообщения. Отправьте его снова.</value>
+  </data>
+  <data name="ComposerReplyEnded" xml:space="preserve">
+    <value>Ответ завершился до того, как сообщение удалось поставить в очередь. Отправьте его снова.</value>
+  </data>
+  <data name="ComposerMaxFiles" xml:space="preserve">
+    <value>К сообщению можно прикрепить не более {count} файлов.</value>
+  </data>
+  <data name="ComposerFileTooLarge" xml:space="preserve">
+    <value>Размер «{name}» превышает {size}.</value>
+  </data>
+  <data name="ComposerAttachmentImage" xml:space="preserve">
+    <value>Отправляется как изображение</value>
+  </data>
+  <data name="ComposerAttachmentInline" xml:space="preserve">
+    <value>Добавляется в сообщение</value>
+  </data>
+  <data name="ComposerAttachmentTooLong" xml:space="preserve">
+    <value>Слишком длинный для добавления, модель прочитает его при необходимости</value>
+  </data>
+  <data name="ContextIndicatorEstimatedSize" xml:space="preserve">
+    <value>Оценочный размер следующего запроса</value>
+  </data>
+  <data name="ContextIndicatorServerCountedSize" xml:space="preserve">
+    <value>Размер следующего запроса по подсчёту сервера</value>
+  </data>
+  <data name="ContextIndicatorSummarizeAfter" xml:space="preserve">
+    <value>Старые сообщения суммируются после {count, plural, one {{tokens} токена} few {{tokens} токенов} many {{tokens} токенов} other {{tokens} токена}}</value>
+  </data>
+  <data name="ContextIndicatorCacheHits" xml:space="preserve">
+    <value>Попадания в кэш: {rate} последнего запроса</value>
+  </data>
+  <data name="TodoChecklistDone" xml:space="preserve">
+    <value>Выполнено</value>
+  </data>
+  <data name="TodoChecklistInProgress" xml:space="preserve">
+    <value>В работе</value>
+  </data>
+  <data name="TodoChecklistNotStarted" xml:space="preserve">
+    <value>Не начато</value>
+  </data>
+  <data name="DiffViewAdded" xml:space="preserve">
+    <value>Добавлено</value>
+  </data>
+  <data name="DiffViewRemoved" xml:space="preserve">
+    <value>Удалено</value>
+  </data>
+  <data name="FindbarNoMatches" xml:space="preserve">
+    <value>Нет совпадений</value>
+  </data>
+  <data name="FindbarMatchCount" xml:space="preserve">
+    <value>{current} из {total}</value>
+  </data>
+  <data name="ChatStatsOutputTokens" xml:space="preserve">
+    <value>{count, plural, one {{formattedCount} токен сгенерирован моделью} few {{formattedCount} токена сгенерировано моделью} many {{formattedCount} токенов сгенерировано моделью} other {{formattedCount} токена сгенерировано моделью}}</value>
+  </data>
+  <data name="ChatStatsOutputWithReasoning" xml:space="preserve">
+    <value>{count, plural, one {Сгенерирован {formattedCount} токен, из них {formattedReasoning} — размышление} few {Сгенерировано {formattedCount} токена, из них {formattedReasoning} — размышление} many {Сгенерировано {formattedCount} токенов, из них {formattedReasoning} — размышление} other {Сгенерировано {formattedCount} токена, из них {formattedReasoning} — размышление}}</value>
+  </data>
+  <data name="CompactionMarkerTrimmed" xml:space="preserve">
+    <value>Старый вывод инструментов сокращён для экономии контекста ({before} → {after} {count, plural, one {токен} few {токена} many {токенов} other {токена}})</value>
+  </data>
+  <data name="CompactionMarkerSummarized" xml:space="preserve">
+    <value>Предыдущие сообщения суммированы для экономии места ({before} → {after} {count, plural, one {токен} few {токена} many {токенов} other {токена}})</value>
+  </data>
+  <data name="MessageViewUsageIn" xml:space="preserve">
+    <value>{tokens} вх.</value>
+  </data>
+  <data name="MessageViewUsageCached" xml:space="preserve">
+    <value>{tokens} в кэше</value>
+  </data>
+  <data name="MessageViewUsageOut" xml:space="preserve">
+    <value>{tokens} вых.</value>
+  </data>
+  <data name="MessageViewUsagePrompt" xml:space="preserve">
+    <value>Промпт: {promptCount, plural, one {{prompt} токен} few {{prompt} токена} many {{prompt} токенов} other {{prompt} токена}}, {cachedCount, plural, one {{cached} из кэша} few {{cached} из кэша} many {{cached} из кэша} other {{cached} из кэша}}</value>
+  </data>
+  <data name="MessageViewUsageOutput" xml:space="preserve">
+    <value>Вывод: {count, plural, one {{output} токен} few {{output} токена} many {{output} токенов} other {{output} токена}}</value>
+  </data>
+  <data name="MessageViewUsageReasoning" xml:space="preserve">
+    <value>Размышление: {count, plural, one {{reasoning} токен} few {{reasoning} токена} many {{reasoning} токенов} other {{reasoning} токена}}</value>
+  </data>
+  <data name="MessageViewUsageFirstOutput" xml:space="preserve">
+    <value>Первый вывод через {duration}</value>
+  </data>
+  <data name="MessageViewUsagePrefillRate" xml:space="preserve">
+    <value>Промпт обработан со скоростью {rate}</value>
+  </data>
+  <data name="MessageViewUsageStreamed" xml:space="preserve">
+    <value>Вывод получен за {duration}</value>
+  </data>
+  <data name="MessageViewUsageDecodeRate" xml:space="preserve">
+    <value>Вывод сгенерирован со скоростью {rate}</value>
+  </data>
+  <data name="ExtraFieldsRemoveLabel" xml:space="preserve">
+    <value>Удалить поле {name}</value>
+  </data>
+  <data name="DiagnosticsSettingsUnknown" xml:space="preserve">
+    <value>неизвестно</value>
+  </data>
+  <data name="DiagnosticsSettingsNotAvailable" xml:space="preserve">
+    <value>Недоступно</value>
+  </data>
+  <data name="DiagnosticsSettingsMcpSummary" xml:space="preserve">
+    <value>Подключено {connected} из {total, plural, one {{total} MCP-сервера} few {{total} MCP-серверов} many {{total} MCP-серверов} other {{total} MCP-сервера}}</value>
+  </data>
+  <data name="SkillsSettingsChatFolder" xml:space="preserve">
+    <value>Папка чата</value>
+  </data>
+  <data name="SkillsSettingsBlazeHarness" xml:space="preserve">
+    <value>BlazeHarness</value>
+  </data>
+  <data name="SkillsSettingsGlobal" xml:space="preserve">
+    <value>Глобальные</value>
+  </data>
+  <data name="SkillsSettingsSaveFailure" xml:space="preserve">
+    <value>Не удалось сохранить настройку навыка, так как не удалось записать файл настроек.</value>
+  </data>
+  <data name="QuestionCardYourAnswer" xml:space="preserve">
+    <value>Ваш ответ</value>
+  </data>
+  <data name="QuestionCardAddNoteOrAnswer" xml:space="preserve">
+    <value>Добавьте примечание или напишите свой ответ</value>
+  </data>
+  <data name="QuestionCardNoteOrAnswer" xml:space="preserve">
+    <value>Примечание или свой ответ</value>
+  </data>
+  <data name="QuestionCardNotAnswered" xml:space="preserve">
+    <value>Без ответа.</value>
+  </data>
+  <data name="QuestionCardAnswerNotSent" xml:space="preserve">
+    <value>На этот вопрос уже дан ответ или он был остановлен, поэтому ответ не отправлен.</value>
+  </data>
+  <data name="McpServerFormCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="McpServerFormSave" xml:space="preserve">
+    <value>Сохранить сервер</value>
+  </data>
+  <data name="McpServerFormProblemsHeading" xml:space="preserve">
+    <value>Исправьте перед сохранением:</value>
+  </data>
+  <data name="McpServerFormAlwaysLoad" xml:space="preserve">
+    <value>Всегда загружать все его инструменты</value>
+  </data>
+  <data name="McpServerFormAddressPlaceholder" xml:space="preserve">
+    <value>https://example.com/mcp</value>
+  </data>
+  <data name="McpServerFormAddress" xml:space="preserve">
+    <value>Адрес</value>
+  </data>
+  <data name="McpServerFormArguments" xml:space="preserve">
+    <value>Аргументы</value>
+  </data>
+  <data name="McpServerFormWorkingFolder" xml:space="preserve">
+    <value>Рабочая папка</value>
+  </data>
+  <data name="McpServerFormCommandPlaceholder" xml:space="preserve">
+    <value>npx</value>
+  </data>
+  <data name="McpServerFormCommand" xml:space="preserve">
+    <value>Команда</value>
+  </data>
+  <data name="McpServerFormKindSse" xml:space="preserve">
+    <value>Удалённый (SSE)</value>
+  </data>
+  <data name="McpServerFormKindHttp" xml:space="preserve">
+    <value>Удалённый (HTTP)</value>
+  </data>
+  <data name="McpServerFormKindLocal" xml:space="preserve">
+    <value>Локальная программа</value>
+  </data>
+  <data name="McpServerFormKind" xml:space="preserve">
+    <value>Тип</value>
+  </data>
+  <data name="McpServerFormNameHint" xml:space="preserve">
+    <value>Буквы, цифры, - и _. Добавляется как префикс к именам инструментов сервера.</value>
+  </data>
+  <data name="McpServerFormNamePlaceholder" xml:space="preserve">
+    <value>напр., github</value>
+  </data>
+  <data name="McpServerFormServerName" xml:space="preserve">
+    <value>Имя</value>
+  </data>
+  <data name="McpSettingsRemoveWarning" xml:space="preserve">
+    <value>Это удалит [strong]{name}[/strong] из файла и удалит его сохранённые секреты.</value>
+  </data>
+  <data name="McpSettingsRemoveConfirm" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="McpSettingsRemoveDialogTitle" xml:space="preserve">
+    <value>Удалить сервер?</value>
+  </data>
+  <data name="McpSettingsFormat" xml:space="preserve">
+    <value>Форматировать</value>
+  </data>
+  <data name="McpSettingsRevert" xml:space="preserve">
+    <value>Сбросить</value>
+  </data>
+  <data name="McpSettingsSave" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="McpSettingsFileHint" xml:space="preserve">
+    <value>Изменения, внесённые вне BlazeHarness, тоже отображаются здесь. Включение или отключение сервера для уже открытого чата меняет его инструменты и сбрасывает кэш промпта этого чата.</value>
+  </data>
+  <data name="McpSettingsFileLabel" xml:space="preserve">
+    <value>mcp.json</value>
+  </data>
+  <data name="McpSettingsAdvancedSummary" xml:space="preserve">
+    <value>Дополнительно: редактировать mcp.json</value>
+  </data>
+  <data name="McpSettingsOn" xml:space="preserve">
+    <value>Вкл.</value>
+  </data>
+  <data name="McpSettingsNewChatsLabel" xml:space="preserve">
+    <value>Включён для новых чатов</value>
+  </data>
+  <data name="McpSettingsNewChatsTooltip" xml:space="preserve">
+    <value>Включён для новых чатов</value>
+  </data>
+  <data name="McpSettingsRemove" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="McpSettingsEdit" xml:space="preserve">
+    <value>Изменить</value>
+  </data>
+  <data name="McpSettingsStop" xml:space="preserve">
+    <value>Остановить</value>
+  </data>
+  <data name="McpSettingsTrustReadOnly" xml:space="preserve">
+    <value>Доверять инструментам с пометкой «только чтение»</value>
+  </data>
+  <data name="McpSettingsSecretBadge" xml:space="preserve">
+    <value>Секрет в файле</value>
+  </data>
+  <data name="McpSettingsNoServers" xml:space="preserve">
+    <value>Серверов пока нет. Добавьте сервер кнопкой выше.</value>
+  </data>
+  <data name="McpSettingsAddServer" xml:space="preserve">
+    <value>＋ Добавить сервер</value>
+  </data>
+  <data name="McpSettingsServersHeading" xml:space="preserve">
+    <value>Серверы</value>
+  </data>
+  <data name="McpSettingsInstallWarning" xml:space="preserve">
+    <value>Добавление сервера подобно установке программы. Локальный сервер запускает программу на этом компьютере с вашими правами вне песочницы, а удалённый получает то, что отправляет ему модель. Добавляйте только те серверы, которым вы доверяете.</value>
+  </data>
+  <data name="McpSettingsTitle" xml:space="preserve">
+    <value>MCP-серверы</value>
+  </data>
+  <data name="PermissionsSettingsAddRuleButton" xml:space="preserve">
+    <value>＋ Добавить правило</value>
+  </data>
+  <data name="PermissionsSettingsRulePatternLabel" xml:space="preserve">
+    <value>Шаблон правила</value>
+  </data>
+  <data name="PermissionsSettingsRuleAllow" xml:space="preserve">
+    <value>Разрешить</value>
+  </data>
+  <data name="PermissionsSettingsRuleAsk" xml:space="preserve">
+    <value>Спрашивать</value>
+  </data>
+  <data name="PermissionsSettingsRuleRefuse" xml:space="preserve">
+    <value>Запретить</value>
+  </data>
+  <data name="PermissionsSettingsRuleActionLabel" xml:space="preserve">
+    <value>Действие правила</value>
+  </data>
+  <data name="PermissionsSettingsTargetWebHost" xml:space="preserve">
+    <value>Веб-хост</value>
+  </data>
+  <data name="PermissionsSettingsTargetMcpTool" xml:space="preserve">
+    <value>Инструмент MCP</value>
+  </data>
+  <data name="PermissionsSettingsTargetFilePath" xml:space="preserve">
+    <value>Путь к файлу</value>
+  </data>
+  <data name="PermissionsSettingsTargetShellCommand" xml:space="preserve">
+    <value>Команда оболочки</value>
+  </data>
+  <data name="PermissionsSettingsRuleTargetLabel" xml:space="preserve">
+    <value>Правило применяется к</value>
+  </data>
+  <data name="PermissionsSettingsRemoveRuleButton" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="PermissionsSettingsNoRules" xml:space="preserve">
+    <value>Правил пока нет.</value>
+  </data>
+  <data name="PermissionsSettingsRulesHeading" xml:space="preserve">
+    <value>Правила</value>
+  </data>
+  <data name="PermissionsSettingsProtectedFolderError" xml:space="preserve">
+    <value>Введите полный путь к папке, начиная от корня.</value>
+  </data>
+  <data name="PermissionsSettingsResetProtectedButton" xml:space="preserve">
+    <value>Вернуть встроенный список</value>
+  </data>
+  <data name="PermissionsSettingsAddProtectedButton" xml:space="preserve">
+    <value>＋ Добавить папку</value>
+  </data>
+  <data name="PermissionsSettingsProtectedFolderLabel" xml:space="preserve">
+    <value>Защищаемая папка</value>
+  </data>
+  <data name="PermissionsSettingsRemoveProtectedButton" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="PermissionsSettingsNoProtectedFolders" xml:space="preserve">
+    <value>Защищённых папок нет.</value>
+  </data>
+  <data name="PermissionsSettingsProtectedFoldersHint" xml:space="preserve">
+    <value>Ни один инструмент не может читать или изменять их ни в одном чате, даже в режиме «Без ограничений». Собственная папка BlazeHarness всегда защищена и здесь не указана.</value>
+  </data>
+  <data name="PermissionsSettingsProtectedFoldersHeading" xml:space="preserve">
+    <value>Защищённые папки</value>
+  </data>
+  <data name="PermissionsSettingsAdvancedOptionsHint" xml:space="preserve">
+    <value>Отключите, чтобы скрыть оба варианта. Чат, где один из них уже выбран, вернётся к более безопасной настройке. Защищённые папки, например ключи SSH, в любом случае остаются заблокированными.</value>
+  </data>
+  <data name="PermissionsSettingsAdvancedOptionsLabel" xml:space="preserve">
+    <value>Показывать в чатах варианты «Без ограничений» и «Не спрашивать»</value>
+  </data>
+  <data name="PermissionsSettingsAdvancedOptionsHeading" xml:space="preserve">
+    <value>Дополнительные параметры</value>
+  </data>
+  <data name="PermissionsSettingsApprovalsAskForExceptions" xml:space="preserve">
+    <value>Спрашивать для исключений</value>
+  </data>
+  <data name="PermissionsSettingsApprovalsAskFirst" xml:space="preserve">
+    <value>Спрашивать заранее</value>
+  </data>
+  <data name="PermissionsSettingsApprovalsLabel" xml:space="preserve">
+    <value>Подтверждения</value>
+  </data>
+  <data name="PermissionsSettingsAccessHint" xml:space="preserve">
+    <value>Чат без папки всегда начинается в режиме «Только чтение».</value>
+  </data>
+  <data name="PermissionsSettingsAccessReadOnly" xml:space="preserve">
+    <value>Только чтение</value>
+  </data>
+  <data name="PermissionsSettingsAccessWriteInFolder" xml:space="preserve">
+    <value>Запись в папке</value>
+  </data>
+  <data name="PermissionsSettingsAccessLabel" xml:space="preserve">
+    <value>Уровень доступа</value>
+  </data>
+  <data name="PermissionsSettingsStartHeading" xml:space="preserve">
+    <value>Новые чаты начинаются с</value>
+  </data>
+  <data name="PermissionsSettingsDescription" xml:space="preserve">
+    <value>Параметры по умолчанию для новых чатов. В каждом чате их можно изменить отдельно, а изменения здесь применяются сразу.</value>
+  </data>
+  <data name="PermissionsSettingsTitle" xml:space="preserve">
+    <value>Разрешения</value>
+  </data>
+  <data name="ProvidersSettingsRemoveWarning" xml:space="preserve">
+    <value>Будет удалён провайдер [strong]{name}[/strong] и его сохранённый API-ключ. Для существующих чатов, которые его использовали, потребуется выбрать другого провайдера.</value>
+  </data>
+  <data name="ProvidersSettingsRemoveConfirmButton" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="ProvidersSettingsRemoveDialogTitle" xml:space="preserve">
+    <value>Удалить провайдера?</value>
+  </data>
+  <data name="ProvidersSettingsSaveButton" xml:space="preserve">
+    <value>Сохранить провайдера</value>
+  </data>
+  <data name="ProvidersSettingsSaveBarLabel" xml:space="preserve">
+    <value>Несохранённые изменения</value>
+  </data>
+  <data name="ProvidersSettingsRemoveProviderButton" xml:space="preserve">
+    <value>Удалить провайдера</value>
+  </data>
+  <data name="ProvidersSettingsValidationHeading" xml:space="preserve">
+    <value>Исправьте перед сохранением:</value>
+  </data>
+  <data name="ProvidersSettingsRemoveHeaderLabel" xml:space="preserve">
+    <value>Удалить заголовок</value>
+  </data>
+  <data name="ProvidersSettingsHeaderValuePlaceholder" xml:space="preserve">
+    <value>Значение</value>
+  </data>
+  <data name="ProvidersSettingsHeaderValueLabel" xml:space="preserve">
+    <value>Значение заголовка</value>
+  </data>
+  <data name="ProvidersSettingsHeaderNamePlaceholder" xml:space="preserve">
+    <value>Имя</value>
+  </data>
+  <data name="ProvidersSettingsHeaderNameLabel" xml:space="preserve">
+    <value>Имя заголовка</value>
+  </data>
+  <data name="ProvidersSettingsAddHeaderButton" xml:space="preserve">
+    <value>＋ Добавить заголовок</value>
+  </data>
+  <data name="ProvidersSettingsExtraHeadersLabel" xml:space="preserve">
+    <value>Дополнительные заголовки</value>
+  </data>
+  <data name="ProvidersSettingsLegacyMaxTokens" xml:space="preserve">
+    <value>Отправлять [code]max_tokens[/code] (большинство совместимых серверов) вместо [code]max_completion_tokens[/code]</value>
+  </data>
+  <data name="ProvidersSettingsStreamUsage" xml:space="preserve">
+    <value>Запрашивать расход токенов при потоковой передаче (отключите, если сервер отклоняет [code]stream_options[/code])</value>
+  </data>
+  <data name="ProvidersSettingsThinkingFieldPlaceholder" xml:space="preserve">
+    <value>chat_template_kwargs.enable_thinking</value>
+  </data>
+  <data name="ProvidersSettingsThinkingFieldLabel" xml:space="preserve">
+    <value>Поле тела запроса</value>
+  </data>
+  <data name="ProvidersSettingsThinkingLevelHint" xml:space="preserve">
+    <value>Для всех моделей, если для отдельной модели не задан свой вариант в её настройках.</value>
+  </data>
+  <data name="ProvidersSettingsThinkingLevelLabel" xml:space="preserve">
+    <value>Передавать уровень размышления как</value>
+  </data>
+  <data name="ProvidersSettingsCompatibilityHint" xml:space="preserve">
+    <value>Меняйте эти параметры, только если сервер отклоняет запросы или игнорирует размышление.</value>
+  </data>
+  <data name="ProvidersSettingsCompatibilityHeading" xml:space="preserve">
+    <value>Совместимость</value>
+  </data>
+  <data name="ProvidersSettingsRemoveModelButton" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="ProvidersSettingsMakeDefault" xml:space="preserve">
+    <value>Сделать по умолчанию</value>
+  </data>
+  <data name="ProvidersSettingsTuneModelButton" xml:space="preserve">
+    <value>Настроить размышление и сэмплирование</value>
+  </data>
+  <data name="ProvidersSettingsDefaultModelBadge" xml:space="preserve">
+    <value>по умолчанию</value>
+  </data>
+  <data name="ProvidersSettingsImagesLabel" xml:space="preserve">
+    <value>Изображения</value>
+  </data>
+  <data name="ProvidersSettingsThinkingLabel" xml:space="preserve">
+    <value>Размышление</value>
+  </data>
+  <data name="ProvidersSettingsMaxOutputLabel" xml:space="preserve">
+    <value>Макс. вывод</value>
+  </data>
+  <data name="ProvidersSettingsContextWindowLabel" xml:space="preserve">
+    <value>Контекстное окно</value>
+  </data>
+  <data name="ProvidersSettingsModelNameLabel" xml:space="preserve">
+    <value>Название</value>
+  </data>
+  <data name="ProvidersSettingsModelIdLabel" xml:space="preserve">
+    <value>ID модели</value>
+  </data>
+  <data name="ProvidersSettingsModelLimitsHint" xml:space="preserve">
+    <value>Серверы редко сообщают лимиты, поэтому проверьте эти значения. От «Контекстного окна» зависит сжатие, а «Макс. вывод» должен быть меньше него.</value>
+  </data>
+  <data name="ProvidersSettingsNoModelsMessage" xml:space="preserve">
+    <value>Моделей пока нет. Нажмите «Проверить подключение и получить модели» выше или добавьте модель вручную.</value>
+  </data>
+  <data name="ProvidersSettingsAllModelsAddedMessage" xml:space="preserve">
+    <value>Все модели из списка сервера уже добавлены.</value>
+  </data>
+  <data name="ProvidersSettingsSelectAllButton" xml:space="preserve">
+    <value>Выбрать все</value>
+  </data>
+  <data name="ProvidersSettingsServerModelsLabel" xml:space="preserve">
+    <value>Модели на этом сервере</value>
+  </data>
+  <data name="ProvidersSettingsAddModelButton" xml:space="preserve">
+    <value>＋ Добавить модель</value>
+  </data>
+  <data name="ProvidersSettingsModelsHeading" xml:space="preserve">
+    <value>Модели</value>
+  </data>
+  <data name="ProvidersSettingsCheckConnectionButton" xml:space="preserve">
+    <value>Проверить подключение и получить модели</value>
+  </data>
+  <data name="ProvidersSettingsEnvVarHint" xml:space="preserve">
+    <value>Если задана, она заменяет сохранённый ключ.</value>
+  </data>
+  <data name="ProvidersSettingsEnvVarPlaceholder" xml:space="preserve">
+    <value>DEEPSEEK_API_KEY</value>
+  </data>
+  <data name="ProvidersSettingsEnvVarLabel" xml:space="preserve">
+    <value>Имя переменной окружения</value>
+  </data>
+  <data name="ProvidersSettingsEnvVarSummary" xml:space="preserve">
+    <value>Брать из переменной окружения</value>
+  </data>
+  <data name="ProvidersSettingsApiKeyLabel" xml:space="preserve">
+    <value>API-ключ</value>
+  </data>
+  <data name="ProvidersSettingsBaseUrlPlaceholder" xml:space="preserve">
+    <value>https://api.example.com/v1</value>
+  </data>
+  <data name="ProvidersSettingsBaseUrlLabel" xml:space="preserve">
+    <value>Базовый URL</value>
+  </data>
+  <data name="ProvidersSettingsNamePlaceholder" xml:space="preserve">
+    <value>напр., DeepSeek</value>
+  </data>
+  <data name="ProvidersSettingsNameLabel" xml:space="preserve">
+    <value>Название</value>
+  </data>
+  <data name="ProvidersSettingsAddProviderEditorButton" xml:space="preserve">
+    <value>Добавить провайдера</value>
+  </data>
+  <data name="ProvidersSettingsSelectPrompt" xml:space="preserve">
+    <value>Выберите провайдера для редактирования или добавьте нового.</value>
+  </data>
+  <data name="ProvidersSettingsEmptyStateDescription" xml:space="preserve">
+    <value>Добавьте любой OpenAI-совместимый адрес, например OpenAI, llama.cpp, vLLM или Ollama.</value>
+  </data>
+  <data name="ProvidersSettingsEmptyStateHeading" xml:space="preserve">
+    <value>Подключите первого провайдера</value>
+  </data>
+  <data name="ProvidersSettingsAddProviderButton" xml:space="preserve">
+    <value>Добавить провайдера</value>
+  </data>
+  <data name="ProvidersSettingsDefaultProviderBadge" xml:space="preserve">
+    <value>по умолчанию</value>
+  </data>
+  <data name="ProvidersSettingsListLabel" xml:space="preserve">
+    <value>Настроенные провайдеры</value>
+  </data>
+  <data name="ProvidersSettingsPageTitle" xml:space="preserve">
+    <value>Провайдеры</value>
+  </data>
+  <data name="SkillsSettingsLocationsHint" xml:space="preserve">
+    <value>Используются навыки из всех трёх мест. Если у двух одинаковое имя, используется навык из папки выше в этом списке, а другой скрывается. Изменения в папке BlazeHarness и глобальной папке появляются здесь автоматически. Навыки в папке чата считываются при каждой отправке сообщения в чате.</value>
+  </data>
+  <data name="SkillsSettingsGlobalLocation" xml:space="preserve">
+    <value>Глобальные навыки — для всех чатов здесь и в других приложениях ИИ-агентов, читающих эту папку.</value>
+  </data>
+  <data name="SkillsSettingsBlazeHarnessLocation" xml:space="preserve">
+    <value>Навыки BlazeHarness — для всех чатов здесь.</value>
+  </data>
+  <data name="SkillsSettingsFolderLocation" xml:space="preserve">
+    <value>Навыки папки — для чатов в этой папке.</value>
+  </data>
+  <data name="SkillsSettingsLocationsHeading" xml:space="preserve">
+    <value>Откуда считываются навыки</value>
+  </data>
+  <data name="SkillsSettingsProblemsHeading" xml:space="preserve">
+    <value>Навыки, которые не удалось прочитать</value>
+  </data>
+  <data name="SkillsSettingsHiddenIn" xml:space="preserve">
+    <value>в</value>
+  </data>
+  <data name="SkillsSettingsHiddenHeading" xml:space="preserve">
+    <value>Скрыты другим навыком с тем же именем</value>
+  </data>
+  <data name="SkillsSettingsOn" xml:space="preserve">
+    <value>Вкл.</value>
+  </data>
+  <data name="SkillsSettingsNewChatsLabel" xml:space="preserve">
+    <value>Включён для новых чатов</value>
+  </data>
+  <data name="SkillsSettingsNewChatsTooltip" xml:space="preserve">
+    <value>Включён для новых чатов</value>
+  </data>
+  <data name="SkillsSettingsEmpty" xml:space="preserve">
+    <value>Навыков пока нет. Поместите папку с файлом [code]SKILL.md[/code] в одно из мест ниже.</value>
+  </data>
+  <data name="SkillsSettingsInstalledHeading" xml:space="preserve">
+    <value>Установленные навыки</value>
+  </data>
+  <data name="SkillsSettingsInstallWarning" xml:space="preserve">
+    <value>Навык — это текст, которому следует модель, и он может содержать скрипты. Он никогда не даёт модели дополнительных разрешений, а перед любым запуском по-прежнему запрашивается подтверждение. Устанавливайте только те навыки, которым вы доверяете.</value>
+  </data>
+  <data name="SkillsSettingsIntro" xml:space="preserve">
+    <value>Навык — это папка с файлом [code]SKILL.md[/code], который объясняет модели, как выполнять определённый вид задач. Модель видит название и описание каждого навыка, а остальное загружает только при необходимости. В каждом чате навыки можно включать и выключать отдельно.</value>
+  </data>
+  <data name="SkillsSettingsTitle" xml:space="preserve">
+    <value>Навыки</value>
+  </data>
+  <data name="WebToolsSettingsBrowserLabel" xml:space="preserve">
+    <value>Браузер (открывать страницы на этом компьютере)</value>
+  </data>
+  <data name="WebToolsSettingsBrowserHint" xml:space="preserve">
+    <value>Агент может открывать страницы на этом компьютере (localhost) в скрытом браузере, который выполняет их скрипты, и читать то, что они показывают, а также любые ошибки. Он не может открывать интернет или сам BlazeHarness; для каждого адреса сначала запрашивается подтверждение, как при загрузке веб-страниц. Это управляемый тестовый браузер, а не полноценный: в нём нет вкладок, расширений и инструментов разработчика, и агент может переходить по адресам, нажимать, вводить текст, прокручивать, ждать и делать снимки экрана, но не перетаскивать элементы, загружать файлы или обращаться к страницам внутри iframe. На боковой панели отображается живое изображение страницы, по которому вы можете нажимать, наводить курсор, вводить текст и прокручивать. Браузер скачивается один раз (около 125 МБ).</value>
+  </data>
+  <data name="WebToolsSettingsBrowserForwarded" xml:space="preserve">
+    <value>Инструменты браузера доступны в каждом чате. Сервер, запущенный командой в песочнице, можно открыть, когда команда выполняется в фоновом режиме (background): его порты перенаправляются на localhost. Сервер, запущенный без background, недоступен снаружи своей команды.</value>
+  </data>
+  <data name="WebToolsSettingsBrowserNeedsForwarding" xml:space="preserve">
+    <value>Серверы, запускаемые командами в песочнице, недоступны снаружи песочницы, пока не установлены socat и nsenter (util-linux), поэтому до тех пор инструменты браузера доступны только в чатах с уровнем доступа «Без ограничений».</value>
+  </data>
+  <data name="WebToolsSettingsBrowserNeedsUnrestricted" xml:space="preserve">
+    <value>На этом компьютере серверы, запускаемые командами в песочнице, недоступны снаружи песочницы, поэтому инструменты браузера доступны только в чатах с уровнем доступа «Без ограничений».</value>
+  </data>
+  <data name="WebToolsSettingsBrowserInstalled" xml:space="preserve">
+    <value>Браузер установлен</value>
+  </data>
+  <data name="WebToolsSettingsBrowserMissing" xml:space="preserve">
+    <value>Браузер не установлен</value>
+  </data>
+  <data name="WebToolsSettingsBrowserInstall" xml:space="preserve">
+    <value>Установить браузер</value>
+  </data>
+  <data name="BackgroundShellPanelLabel" xml:space="preserve">
+    <value>Фоновые команды</value>
+  </data>
+  <data name="BackgroundShellPanelCount" xml:space="preserve">
+    <value>{count, plural, one {Выполняется # команда} few {Выполняются # команды} many {Выполняется # команд} other {Выполняется # команды}}</value>
+  </data>
+  <data name="BackgroundShellPanelStop" xml:space="preserve">
+    <value>Остановить</value>
+  </data>
+  <data name="BackgroundShellPanelStopCommand" xml:space="preserve">
+    <value>Остановить {command}</value>
+  </data>
+  <data name="SidePanelLabel" xml:space="preserve">
+    <value>Боковая панель</value>
+  </data>
+  <data name="SidePanelTabsLabel" xml:space="preserve">
+    <value>Вкладки панели</value>
+  </data>
+  <data name="SidePanelTabPreview" xml:space="preserve">
+    <value>Предпросмотр</value>
+  </data>
+  <data name="SidePanelTabChanges" xml:space="preserve">
+    <value>Изменения</value>
+  </data>
+  <data name="SidePanelResize" xml:space="preserve">
+    <value>Изменить размер боковой панели</value>
+  </data>
+  <data name="SidePanelToggleTooltip" xml:space="preserve">
+    <value>Показать или скрыть боковую панель (предпросмотр и изменения)</value>
+  </data>
+  <data name="MainLayoutResizeSidebar" xml:space="preserve">
+    <value>Изменить размер левой панели</value>
+  </data>
+  <data name="ChangesScopeLabel" xml:space="preserve">
+    <value>Показать изменения</value>
+  </data>
+  <data name="ChangesScopeAll" xml:space="preserve">
+    <value>Все изменения ({count})</value>
+  </data>
+  <data name="ChangesScopeStaged" xml:space="preserve">
+    <value>В индексе ({count})</value>
+  </data>
+  <data name="ChangesScopeUnstaged" xml:space="preserve">
+    <value>Вне индекса ({count})</value>
+  </data>
+  <data name="ChangesRefresh" xml:space="preserve">
+    <value>Обновить изменения</value>
+  </data>
+  <data name="ChangesFilesLabel" xml:space="preserve">
+    <value>Изменённые файлы</value>
+  </data>
+  <data name="ChangesDiffLabel" xml:space="preserve">
+    <value>Изменения в выбранном файле</value>
+  </data>
+  <data name="ChangesEmpty" xml:space="preserve">
+    <value>В этом списке нет изменений.</value>
+  </data>
+  <data name="ChangesSelectFile" xml:space="preserve">
+    <value>Выберите файл, чтобы посмотреть его изменения.</value>
+  </data>
+  <data name="ChangesLoading" xml:space="preserve">
+    <value>Загрузка…</value>
+  </data>
+  <data name="ChangesLoadFailed" xml:space="preserve">
+    <value>Не удалось прочитать изменения этого файла.</value>
+  </data>
+  <data name="ChangesBinary" xml:space="preserve">
+    <value>Это двоичный файл, поэтому текст для показа отсутствует.</value>
+  </data>
+  <data name="ChangesNoLines" xml:space="preserve">
+    <value>В этом файле нет строк для отображения.</value>
+  </data>
+  <data name="ChangesTruncated" xml:space="preserve">
+    <value>Показана только первая часть этого файла.</value>
+  </data>
+  <data name="ChangesKindAdded" xml:space="preserve">
+    <value>Добавлен</value>
+  </data>
+  <data name="ChangesKindModified" xml:space="preserve">
+    <value>Изменён</value>
+  </data>
+  <data name="ChangesKindDeleted" xml:space="preserve">
+    <value>Удалён</value>
+  </data>
+  <data name="ChangesKindTypeChanged" xml:space="preserve">
+    <value>Тип изменён</value>
+  </data>
+  <data name="ChangesKindUntracked" xml:space="preserve">
+    <value>Не отслеживается</value>
+  </data>
+  <data name="ChangesKindConflicted" xml:space="preserve">
+    <value>Конфликт</value>
+  </data>
+  <data name="BrowserPanelHint" xml:space="preserve">
+    <value>Нажмите на страницу, чтобы взаимодействовать с ней; наводите курсор, вводите текст и прокручивайте, пока она в фокусе.</value>
+  </data>
+  <data name="BrowserPanelSaveScreenshot" xml:space="preserve">
+    <value>Сохранить снимок всей страницы</value>
+  </data>
+  <data name="BrowserPanelImageAlt" xml:space="preserve">
+    <value>Страница, показанная в браузере ассистента</value>
+  </data>
+  <data name="WebToolsSettingsBrowserInstallingHint" xml:space="preserve">
+    <value>Скачивание браузера (около 125 МБ). Это может занять несколько минут; вы можете продолжать пользоваться приложением.</value>
+  </data>
+  <data name="WebToolsSettingsBrowserInstalling" xml:space="preserve">
+    <value>Установка…</value>
+  </data>
+  <data name="WebToolsSettingsBrowserInstallFailed" xml:space="preserve">
+    <value>Не удалось установить браузер. Проверьте подключение к интернету и журнал приложения.</value>
+  </data>
+  <data name="WebToolsSettingsModeSequential" xml:space="preserve">
+    <value>По очереди: в порядке ниже, останавливаясь на первом, который вернёт результаты</value>
+  </data>
+  <data name="WebToolsSettingsModeParallel" xml:space="preserve">
+    <value>Параллельно: опросить все включённые провайдеры и объединить результаты (быстрее и шире, но запрос отправляется во все)</value>
+  </data>
+  <data name="WebToolsSettingsModeLabel" xml:space="preserve">
+    <value>Способ использования провайдеров</value>
+  </data>
+  <data name="WebToolsSettingsProvidersHint" xml:space="preserve">
+    <value>Ни один из них не требует учётной записи или ключа. Каждый из них — бесплатный публичный сервис, который в любой момент может измениться или ограничить доступ.</value>
+  </data>
+  <data name="WebToolsSettingsProvidersHeading" xml:space="preserve">
+    <value>Поисковые провайдеры</value>
+  </data>
+  <data name="WebToolsSettingsFetchHint" xml:space="preserve">
+    <value>Загрузка обращается только к публичному интернету. Адреса на этом компьютере или в локальной сети отклоняются. Системные настройки прокси не используются. Загруженные страницы ненадолго сохраняются в памяти, чтобы длинную страницу можно было читать по частям.</value>
+  </data>
+  <data name="WebToolsSettingsFetchLabel" xml:space="preserve">
+    <value>Загрузка веб-страниц (страницы, PDF, файлы Office и текст)</value>
+  </data>
+  <data name="WebToolsSettingsSearchLabel" xml:space="preserve">
+    <value>Веб-поиск</value>
+  </data>
+  <data name="WebToolsSettingsToolsHeading" xml:space="preserve">
+    <value>Инструменты</value>
+  </data>
+  <data name="WebToolsSettingsDescription" xml:space="preserve">
+    <value>Позволяет агенту искать в интернете, читать страницы, файлы PDF и документы Office, а также открывать страницы на этом компьютере в браузере. Перед каждым использованием запрашивается подтверждение, если только в чате не выбран уровень доступа «Без ограничений» или запрос подтверждений не отключён. Текст страниц воспринимается как данные, а не как инструкции. Загрузка веб-страниц не выполняет JavaScript, поэтому страницы, которым он нужен, могут оказаться пустыми.</value>
+  </data>
+  <data name="WebToolsSettingsTitle" xml:space="preserve">
+    <value>Интернет</value>
+  </data>
+  <data name="ExtraFieldsAddButton" xml:space="preserve">
+    <value>＋ Добавить поле</value>
+  </data>
+  <data name="ExtraFieldsRemoveButton" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="ExtraFieldsValueLabel" xml:space="preserve">
+    <value>Значение поля в формате JSON</value>
+  </data>
+  <data name="ExtraFieldsNamePlaceholder" xml:space="preserve">
+    <value>mirostat</value>
+  </data>
+  <data name="ExtraFieldsNameLabel" xml:space="preserve">
+    <value>Имя поля</value>
+  </data>
+  <data name="ModelTuningDoneButton" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="ModelTuningPreviewThinkingOnHeading" xml:space="preserve">
+    <value>Размышление включено</value>
+  </data>
+  <data name="ModelTuningPreviewThinkingOffHeading" xml:space="preserve">
+    <value>Размышление выключено</value>
+  </data>
+  <data name="ModelTuningPreviewSummary" xml:space="preserve">
+    <value>Предпросмотр отправляемых параметров</value>
+  </data>
+  <data name="ModelTuningCustomFieldsThinkingOnHeading" xml:space="preserve">
+    <value>Размышление включено</value>
+  </data>
+  <data name="ModelTuningCustomFieldsThinkingOffHeading" xml:space="preserve">
+    <value>Размышление выключено</value>
+  </data>
+  <data name="ModelTuningCustomFieldsHint" xml:space="preserve">
+    <value>Для специфичных для сервера полей запроса. Имя с точкой, например chat_template_kwargs.x, задаёт вложенное поле.</value>
+  </data>
+  <data name="ModelTuningThinkingOnEmptyHint" xml:space="preserve">
+    <value>Пустая ячейка «Размышление включено» использует значение из «Размышление выключено» (↳).</value>
+  </data>
+  <data name="ModelTuningThinkingOnColumn" xml:space="preserve">
+    <value>Размышление включено</value>
+  </data>
+  <data name="ModelTuningParameterColumn" xml:space="preserve">
+    <value>Параметр</value>
+  </data>
+  <data name="ModelTuningSamplingHeading" xml:space="preserve">
+    <value>Сэмплирование</value>
+  </data>
+  <data name="ModelTuningProviderSettingHint" xml:space="preserve">
+    <value>Настройка провайдера находится в разделе «Совместимость» его настроек и применяется ко всем моделям, для которых не выбрана своя.</value>
+  </data>
+  <data name="ModelTuningBodyFieldPathPlaceholder" xml:space="preserve">
+    <value>chat_template_kwargs.reasoning_effort</value>
+  </data>
+  <data name="ModelTuningBodyFieldPathLabel" xml:space="preserve">
+    <value>Путь к полю в теле запроса</value>
+  </data>
+  <data name="ModelTuningSentAsLabel" xml:space="preserve">
+    <value>Передавать как</value>
+  </data>
+  <data name="ModelTuningNoLevelsHint" xml:space="preserve">
+    <value>Выберите уровни, которые поддерживает эта модель. Не выбирайте ни одного, если ими нельзя управлять.</value>
+  </data>
+  <data name="ModelTuningDefaultLevelLabel" xml:space="preserve">
+    <value>Уровень по умолчанию</value>
+  </data>
+  <data name="ModelTuningLevelValuesHint" xml:space="preserve">
+    <value>Выберите поддерживаемые моделью уровни и проверьте значение, которое сервер ожидает для каждого. Пустое поле ничего не отправляет.</value>
+  </data>
+  <data name="ModelTuningSupportedLevelsLabel" xml:space="preserve">
+    <value>Поддерживаемые уровни размышления</value>
+  </data>
+  <data name="ModelTuningMarkThinkingButton" xml:space="preserve">
+    <value>Отметить как размышляющую модель</value>
+  </data>
+  <data name="ModelTuningNotThinkingModelHint" xml:space="preserve">
+    <value>Эта модель не отмечена как размышляющая.</value>
+  </data>
+  <data name="ModelTuningThinkingHeading" xml:space="preserve">
+    <value>Размышление</value>
+  </data>
+  <data name="DialogClose" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="SecretInputRemoveStored" xml:space="preserve">
+    <value>Удалить сохранённый ключ</value>
+  </data>
+  <data name="ReconnectModalRejoining" xml:space="preserve">
+    <value>Переподключение к серверу...</value>
+  </data>
+  <data name="ReconnectModalRepeatedAttempt" xml:space="preserve">
+    <value>Не удалось переподключиться... повторная попытка через [seconds] с.</value>
+  </data>
+  <data name="ReconnectModalFailed" xml:space="preserve">
+    <value>Не удалось переподключиться.</value>
+  </data>
+  <data name="ReconnectModalRetryOrReload" xml:space="preserve">
+    <value>Повторите попытку или перезагрузите страницу.</value>
+  </data>
+  <data name="ReconnectModalRetry" xml:space="preserve">
+    <value>Повторить</value>
+  </data>
+  <data name="ReconnectModalPaused" xml:space="preserve">
+    <value>Соединение приостановлено сервером.</value>
+  </data>
+  <data name="ReconnectModalResumeFailed" xml:space="preserve">
+    <value>Не удалось возобновить соединение.</value>
+  </data>
+  <data name="ReconnectModalResume" xml:space="preserve">
+    <value>Возобновить</value>
+  </data>
+  <data name="ToastHostDismiss" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="ToastHostLabel" xml:space="preserve">
+    <value>Уведомления</value>
+  </data>
+</root>

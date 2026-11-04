@@ -1,8 +1,10 @@
+@using System.Globalization
 @using BlazeHarness.Core.Compaction
 @using BlazeHarness.Core.Config
 @inject IJSRuntime JS
 @inject JsonFileStore<AppConfig> Config
 @inject ToastService Toasts
+@inject UiLanguages Languages
 
 <div class="page">
     <PageHeader Title="@WebStrings.SettingsGeneralTitle">@WebStrings.SettingsGeneralDescription</PageHeader>
@@ -10,8 +12,11 @@
     <section class="card stack" aria-labelledby="language-heading">
         <h2 id="language-heading">@WebStrings.GeneralSettingsLanguage</h2>
         <label for="ui-language">@WebStrings.GeneralSettingsDisplayLanguage</label>
-        <select id="ui-language" class="select" value="en-US" @onchange="OnLanguageChangedAsync">
-            <option value="en-US">@WebStrings.GeneralSettingsEnglish</option>
+        <select id="ui-language" class="select" value="@Languages.Resolve(CultureInfo.CurrentUICulture)" @onchange="OnLanguageChangedAsync">
+            @foreach (var language in Languages.All)
+            {
+                <option value="@language.Culture">@language.DisplayName</option>
+            }
         </select>
     </section>
 
