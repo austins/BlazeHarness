@@ -1,6 +1,6 @@
 using BlazeHarness.Core.Providers;
 
-namespace BlazeHarness.Web.Resources;
+namespace BlazeHarness.Web.Resources.Mapping;
 
 internal static class ConnectionTestResultExtensions
 {

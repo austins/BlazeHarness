@@ -14,7 +14,7 @@ Don't hard-code text in Razor, C# or JavaScript. Add an entry to `WebStrings.res
 
 ### Translating
 
-The web UI text is in `src/BlazeHarness.Web/Resources/WebStrings.resx`. To add a language, copy the file and add the culture code before `.resx`, such as `WebStrings.fr.resx`. Keep the keys as they are and translate only the values. Delete entries you don't translate; missing entries fall back to English.
+The web UI text is in `src/BlazeHarness.Web/Resources/Strings/WebStrings.resx`. To add a language, copy the file and add the culture code before `.resx`, such as `WebStrings.fr.resx`. Keep the keys as they are and translate only the values. Delete entries you don't translate; missing entries fall back to English.
 
 When you add, reword or remove an English entry, make the same change in every existing `WebStrings.<culture>.resx`, so the translations stay in step.
 

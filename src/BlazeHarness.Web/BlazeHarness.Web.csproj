@@ -20,7 +20,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <EmbeddedResource Update="Resources\WebStrings.resx">
+        <!-- The files sit in Resources/Strings, but the resource base name stays that of the WebStrings type. -->
+        <EmbeddedResource Update="Resources\Strings\*.resx">
+            <LogicalName>$(RootNamespace).Resources.%(Filename).resources</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Resources\Strings\WebStrings.resx">
             <StronglyTypedClassName>WebStrings</StronglyTypedClassName>
             <StronglyTypedLanguage>C#</StronglyTypedLanguage>
             <StronglyTypedNamespace>BlazeHarness.Web.Resources</StronglyTypedNamespace>

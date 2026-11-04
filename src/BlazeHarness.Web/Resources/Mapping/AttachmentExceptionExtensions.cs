@@ -1,7 +1,7 @@
 using BlazeHarness.Core.Attachments;
 using System.Globalization;
 
-namespace BlazeHarness.Web.Resources;
+namespace BlazeHarness.Web.Resources.Mapping;
 
 internal static class AttachmentExceptionExtensions
 {

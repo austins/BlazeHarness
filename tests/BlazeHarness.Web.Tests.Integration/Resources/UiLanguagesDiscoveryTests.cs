@@ -27,7 +27,7 @@ public sealed class UiLanguagesDiscoveryTests
     {
         // Arrange
         var translated = Directory
-            .EnumerateFiles(Path.Combine(WebProject(), "Resources"), "WebStrings.*.resx")
+            .EnumerateFiles(Path.Combine(WebProject(), "Resources", "Strings"), "WebStrings.*.resx")
             .Select(file => Path.GetFileNameWithoutExtension(file)["WebStrings.".Length..]);
 
         // Act

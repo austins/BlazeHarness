@@ -13,7 +13,7 @@ public sealed partial class WebStringsTests
     {
         // Arrange
         var project = WebProjectDirectory();
-        var document = XDocument.Load(Path.Combine(project, "Resources", "WebStrings.resx"));
+        var document = XDocument.Load(Path.Combine(project, "Resources", "Strings", "WebStrings.resx"));
         var entries = document.Root!.Elements("data").ToArray();
         var keys = entries.Select(entry => entry.Attribute("name")!.Value).ToHashSet(StringComparer.Ordinal);
         var sources = SourceFiles(project);
@@ -58,7 +58,7 @@ public sealed partial class WebStringsTests
     {
         // Arrange
         var project = WebProjectDirectory();
-        var resources = Path.Combine(project, "Resources");
+        var resources = Path.Combine(project, "Resources", "Strings");
         var english = Entries(Path.Combine(resources, "WebStrings.resx"));
 
         // Act
