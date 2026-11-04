@@ -40,6 +40,7 @@ The app stores everything under `~/.blazeharness` (`%USERPROFILE%\.blazeharness`
 | `providers.json` | Providers and models |
 | `config.json` | Defaults and permissions |
 | `chats/<id>/` | One folder per chat |
+| `logs/` | One log file per day, capped at 5 MB; files older than 7 days are deleted |
 
 API keys are kept in your OS secret store (Windows Credential Manager, macOS Keychain or Linux Secret Service). If none is available, they fall back to an owner-only file. They are never written to `config.json`, `providers.json`, chat files or logs.
 
