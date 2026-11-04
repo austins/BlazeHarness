@@ -104,14 +104,11 @@ internal static class AtomicFile
                 options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
             }
 
-            var stream = new FileStream(temp, options);
+            var stream = ownerOnly && OperatingSystem.IsWindows()
+                ? CreateOwnerOnlyWindows(temp)
+                : new FileStream(temp, options);
             await using (stream)
             {
-                if (ownerOnly && OperatingSystem.IsWindows())
-                {
-                    RestrictToOwnerWindows(stream);
-                }
-
                 await stream.WriteAsync(Utf8WithoutBom.GetBytes(content), cancellationToken);
 
                 // Without this a power cut after the rename can leave an empty file.
@@ -130,12 +127,12 @@ internal static class AtomicFile
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private static void RestrictToOwnerWindows(FileStream stream)
+    private static FileStream CreateOwnerOnlyWindows(string path)
     {
         var security = new FileSecurity();
         security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
-        var user = WindowsIdentity.GetCurrent().User!;
-        security.AddAccessRule(new FileSystemAccessRule(user, FileSystemRights.FullControl, AccessControlType.Allow));
-        stream.SetAccessControl(security);
+        using var identity = WindowsIdentity.GetCurrent();
+        security.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.FullControl, AccessControlType.Allow));
+        return new FileInfo(path).Create(FileMode.CreateNew, FileSystemRights.Write, FileShare.None, 4096, FileOptions.Asynchronous, security);
     }
 }

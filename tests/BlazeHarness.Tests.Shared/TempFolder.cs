@@ -34,6 +34,20 @@ public sealed class TempFolder : IDisposable
     {
         if (Directory.Exists(Root))
         {
+            if (OperatingSystem.IsWindows())
+            {
+                var options = new EnumerationOptions
+                {
+                    RecurseSubdirectories = true,
+                    AttributesToSkip = FileAttributes.ReparsePoint,
+                    IgnoreInaccessible = false,
+                };
+                foreach (var file in Directory.EnumerateFiles(Root, "*", options))
+                {
+                    File.SetAttributes(file, File.GetAttributes(file) & ~FileAttributes.ReadOnly);
+                }
+            }
+
             Directory.Delete(Root, recursive: true);
         }
     }

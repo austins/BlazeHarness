@@ -6,6 +6,9 @@ using BlazeHarness.Core.Tools.Shell;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Time.Testing;
 using System.Collections.Concurrent;
+using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
 
 namespace BlazeHarness.Core.Tests.Integration.Sandbox.Network;
 
@@ -17,6 +20,8 @@ public sealed class MxcShellSandboxNetworkTests : IDisposable
     private readonly FakeTimeProvider _time = new();
 
     public static bool IsAvailableOnPosix => SandboxSupport.IsAvailableOnPosix;
+
+    public static bool IsAvailableOnLinux => OperatingSystem.IsLinux() && SandboxSupport.IsAvailable;
 
     public void Dispose() => _root.Dispose();
 
@@ -49,13 +54,61 @@ public sealed class MxcShellSandboxNetworkTests : IDisposable
     }
 
     [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
-    public async Task Run_WithGate_StillReachesAServerOnItsOwnLoopback()
+    public async Task Run_WithGate_RefusesADirectConnectionToHostLoopback()
     {
+        // Arrange
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var gate = new RefusingGate();
+
         // Act
-        var result = await RunAsync("mkdir -p w && echo hi > w/index.html && (cd w && python3 -m http.server 18766 --bind 127.0.0.1 >/dev/null 2>&1 &) ; sleep 1.5; echo GOT:$(curl -s -m 5 http://127.0.0.1:18766/index.html); pkill -f 'http.server 18766' ; true", new RefusingGate());
+        var result = await RunAsync(string.Create(CultureInfo.InvariantCulture, $"curl -s --noproxy '*' -m 2 http://127.0.0.1:{port}/ ; echo rc=$?"), gate);
 
         // Assert
-        result.Output.Should().Contain("GOT:hi");
+        result.Output.Should().MatchRegex("rc=(28|7)");
+        listener.Pending().Should().BeFalse();
+        gate.Hosts.Should().BeEmpty();
+    }
+
+    [Fact(Skip = "Needs Linux with the sandbox's private network namespace.", SkipUnless = nameof(IsAvailableOnLinux))]
+    public async Task Run_WithGate_StillReachesAServerOnItsOwnLoopback()
+    {
+        // Arrange
+        _root.Write("index.html", "hi");
+        _root.Write("server.py", """
+            from http.server import HTTPServer, SimpleHTTPRequestHandler
+            from pathlib import Path
+
+            server = HTTPServer(("127.0.0.1", 0), SimpleHTTPRequestHandler)
+            Path("port").write_text(str(server.server_port))
+            server.serve_forever()
+            """);
+        var gate = new RefusingGate();
+
+        const string Command = """
+            python3 server.py >server.log 2>&1 &
+            server=$!
+            trap 'kill "$server" 2>/dev/null; wait "$server" 2>/dev/null' EXIT
+            attempts=0
+            while [ ! -s port ]; do
+                if ! kill -0 "$server" 2>/dev/null || [ "$attempts" -ge 100 ]; then
+                    cat server.log >&2
+                    exit 1
+                fi
+                attempts=$((attempts + 1))
+                sleep 0.1
+            done
+            curl -fsS --max-time 5 "http://127.0.0.1:$(cat port)/index.html"
+            """;
+
+        // Act
+        var result = await RunAsync(Command, gate);
+
+        // Assert
+        result.IsError.Should().BeFalse(result.Output);
+        result.Output.Should().Be("hi\n[exit code 0]");
+        gate.Hosts.Should().BeEmpty();
     }
 
     private async Task<BlazeHarness.Core.Tools.ToolResult> RunAsync(string command, INetworkGate gate)

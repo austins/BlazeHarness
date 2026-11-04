@@ -83,7 +83,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 * An optional network host filter for sandboxed commands (Settings > Permissions > Network, off by default).
   * When it is on, a sandboxed command's HTTP and HTTPS traffic goes through a local proxy and everything else is blocked.
   * The first time a command reaches a host you have no rule for, the chat asks: allow once, for this chat, or always (a Network host rule). Deny rules win, allow rules skip the question, and with Never ask an unlisted host is refused.
-  * Hosts that resolve to private or loopback addresses are always refused, and servers the sandbox runs on its own localhost still work.
+  * Hosts that resolve to private or loopback addresses are always refused. On Linux, servers the sandbox runs on its isolated localhost still work. macOS shares the host network, so the filter also blocks connections to servers started by the sandbox.
   * It does not apply at the Unrestricted access level, where commands run outside the sandbox.
   * Tested on Linux only. On Windows, sandboxed commands don't run while it is on.
 

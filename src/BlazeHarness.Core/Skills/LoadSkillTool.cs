@@ -128,7 +128,7 @@ internal sealed class LoadSkillTool : ITool
 
     private static ToolResult LoadFile(SkillInfo skill, string path, int offset, int limit, CancellationToken cancellationToken)
     {
-        if (!RootedPath.TryResolve(skill.Directory, path, out var full, out var error))
+        if (!RootedPath.TryResolve(RootedPath.CanonicalRoot(skill.Directory), path, out var full, out var error))
         {
             return ToolResult.Error(error);
         }

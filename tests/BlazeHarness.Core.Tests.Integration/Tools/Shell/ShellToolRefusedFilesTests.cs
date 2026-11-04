@@ -38,7 +38,7 @@ public sealed class ShellToolRefusedFilesTests : IDisposable
     public async Task ExecuteAsync_SandboxedWithARefusingRule_StartsTheCommandWithTheRefusedFiles()
     {
         // Arrange
-        var env = _root.Write("api/.env", "x");
+        var env = _root.Write(Path.Combine("api", ".env"), "x");
         _root.Write("readme.txt", "x");
 
         // Act

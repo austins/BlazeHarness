@@ -301,7 +301,7 @@ public sealed class BackgroundShellTests : IDisposable
         result.IsError.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Skip = "These tests use POSIX shell syntax.", SkipWhen = nameof(IsWindows))]
     public async Task ExecuteAsync_JobsWaitOutOfRange_Throws()
     {
         // Arrange

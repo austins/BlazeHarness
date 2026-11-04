@@ -24,7 +24,7 @@ public sealed class FileLoggerProviderTests : IDisposable
         Write(logger, LogLevel.Warning, "Could not read config.json.");
 
         // Assert
-        var text = await File.ReadAllTextAsync(Path.Combine(Logs, "blazeharness-20260310.log"), TestContext.Current.CancellationToken);
+        var text = await ReadLogAsync("blazeharness-20260310.log");
         text.Should().Be("2026-03-10T08:30:15.123Z WRN Some.Category Could not read config.json.\n");
     }
 
@@ -39,7 +39,7 @@ public sealed class FileLoggerProviderTests : IDisposable
         Write(logger, LogLevel.Error, "Failed", new InvalidOperationException("secret prompt text"));
 
         // Assert
-        var text = await File.ReadAllTextAsync(Path.Combine(Logs, "blazeharness-20260310.log"), TestContext.Current.CancellationToken);
+        var text = await ReadLogAsync("blazeharness-20260310.log");
         text.Should().StartWith("2026-03-10T08:30:15.123Z ERR C Failed\nSystem.InvalidOperationException\n").And.NotContain("secret prompt text");
     }
 
@@ -54,7 +54,7 @@ public sealed class FileLoggerProviderTests : IDisposable
         Write(logger, LogLevel.Information, "one\r\ntwo");
 
         // Assert
-        var text = await File.ReadAllTextAsync(Path.Combine(Logs, "blazeharness-20260310.log"), TestContext.Current.CancellationToken);
+        var text = await ReadLogAsync("blazeharness-20260310.log");
         text.Should().EndWith("INF C one two\n");
     }
 
@@ -73,7 +73,7 @@ public sealed class FileLoggerProviderTests : IDisposable
         // Assert
         Directory.GetFiles(Logs).Select(Path.GetFileName).Order(StringComparer.Ordinal)
             .Should().Equal("blazeharness-20260310.log", "blazeharness-20260311.log");
-        (await File.ReadAllTextAsync(Path.Combine(Logs, "blazeharness-20260311.log"), TestContext.Current.CancellationToken)).Should().Contain("tomorrow").And.NotContain("today");
+        (await ReadLogAsync("blazeharness-20260311.log")).Should().Contain("tomorrow").And.NotContain("today");
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public sealed class FileLoggerProviderTests : IDisposable
         Write(sut.CreateLogger("C"), LogLevel.Error, "Failed", failure);
 
         // Assert
-        var text = await File.ReadAllTextAsync(Path.Combine(Logs, "blazeharness-20260310.log"), TestContext.Current.CancellationToken);
+        var text = await ReadLogAsync("blazeharness-20260310.log");
         text.Should().Contain("System.Net.Http.HttpRequestException (HTTP 429)").And.NotContain("echoed body");
     }
 
@@ -142,7 +142,7 @@ public sealed class FileLoggerProviderTests : IDisposable
         Write(logger, LogLevel.Error, "dropped two");
 
         // Assert
-        var text = await File.ReadAllTextAsync(Path.Combine(Logs, "blazeharness-20260310.log"), TestContext.Current.CancellationToken);
+        var text = await ReadLogAsync("blazeharness-20260310.log");
         text.Should().NotContain("dropped one").And.NotContain("dropped two");
         text.Split('\n', StringSplitOptions.RemoveEmptyEntries).Count(line => line.Contains("Log file is full", StringComparison.Ordinal)).Should().Be(1);
     }
@@ -160,6 +160,13 @@ public sealed class FileLoggerProviderTests : IDisposable
 
         // Assert
         act.Should().NotThrow();
+    }
+
+    private async Task<string> ReadLogAsync(string name)
+    {
+        await using var stream = new FileStream(Path.Combine(Logs, name), FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096, useAsync: true);
+        using var reader = new StreamReader(stream);
+        return await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
     }
 
     private static void Write(ILogger logger, LogLevel level, string message, Exception? exception = null)

@@ -15,11 +15,11 @@ public sealed class SidebarTests(BrowserFixture browser) : TestBase(browser)
 
         // Act
         await Page.Mouse.DownAsync(new MouseDownOptions { Button = MouseButton.Right });
-        await Expect(menu).ToContainTextAsync("New chat");
         await Page.Mouse.UpAsync(new MouseUpOptions { Button = MouseButton.Right });
 
         // Assert
         await Expect(menu).ToBeVisibleAsync();
+        await Expect(menu).ToContainTextAsync("New chat");
         await Page.GetByPlaceholder("Message the model").ClickAsync();
         await Expect(menu).Not.ToBeVisibleAsync();
     }

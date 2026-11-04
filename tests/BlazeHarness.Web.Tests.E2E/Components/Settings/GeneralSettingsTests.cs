@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace BlazeHarness.Web.Tests.E2E.Components.Settings;
 
 public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(browser)
@@ -16,7 +18,9 @@ public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(brow
         // Assert
         await Expect(language).ToHaveValueAsync("en-US");
         await Expect(Page.Locator("html")).ToHaveAttributeAsync("lang", "en-US");
-        await Expect(language.Locator("option")).ToHaveTextAsync(["English", "Русский", "中文（简体）"]);
+        var cultures = await language.Locator("option").EvaluateAllAsync<string[]>("options => options.map(option => option.value)");
+        cultures.Should().Equal("en-US", "ru", "zh-Hans");
+        await Expect(language.Locator("option")).ToHaveTextAsync(["English", "Русский", CultureInfo.GetCultureInfo("zh-Hans").NativeName]);
     }
 
     [Fact]

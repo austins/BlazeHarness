@@ -14,6 +14,8 @@ public sealed class ShellInfoTests : IDisposable
 
     public void Dispose() => _temp.Dispose();
 
+    public static bool IsWindows => OperatingSystem.IsWindows();
+
     [Fact]
     public void Detect_WindowsWithPwshAndPowerShell_PrefersPwsh()
     {
@@ -64,7 +66,7 @@ public sealed class ShellInfoTests : IDisposable
         shell.Should().Be(new ShellInfo("zsh", zsh, IsPowerShell: false));
     }
 
-    [Fact]
+    [Fact(Skip = "Needs a POSIX fallback shell.", SkipWhen = nameof(IsWindows))]
     public void Detect_PosixWithAnUnsupportedShellVariable_FallsBackToABourneShell()
     {
         // Arrange

@@ -30,7 +30,8 @@ public sealed class ToolContextTests : IDisposable
     {
         // Arrange
         var rules = new[] { new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Deny, "private.txt") };
-        var context = new ToolContext(_temp.Root).WithRefused(new RefusedPaths(rules, _temp.Root));
+        var context = new ToolContext(_temp.Root);
+        context = context.WithRefused(new RefusedPaths(rules, context.Root));
 
         // Act
         var allowed = context.TryResolve("private.txt", out _, out var error);

@@ -39,7 +39,7 @@ public sealed class LoadSkillToolTests : IDisposable
         result.IsError.Should().BeFalse();
         result.Output.Should().Contain("Skill: report").And.Contain($"Folder: {_folder}")
             .And.Contain("- logo.png").And.Contain("- templates/weekly.md")
-            .And.Contain("Step one.\nStep two.".ReplaceLineEndings())
+            .And.Contain("Step one.\nStep two.")
             .And.NotContain("description:").And.NotContain("SKILL.md");
     }
 
@@ -65,6 +65,22 @@ public sealed class LoadSkillToolTests : IDisposable
 
         // Assert
         result.Output.Should().StartWith("line2\nline3");
+    }
+
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    public async Task ExecuteAsync_SkillFolderThroughALink_ReadsABundledFile()
+    {
+        // Arrange
+        var alias = Path.Combine(_folders.Root, "alias");
+        Directory.CreateSymbolicLink(alias, Path.Combine(_folders.Root, "skills"));
+        var sut = new LoadSkillTool(new SkillSet([new SkillInfo("report", "Write reports.", Path.Combine(alias, "report"), SkillSource.App)]));
+
+        // Act
+        var result = await RunAsync(sut, new { name = "report", path = "templates/weekly.md" });
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Output.Should().StartWith("line1\nline2\nline3");
     }
 
     [Theory]

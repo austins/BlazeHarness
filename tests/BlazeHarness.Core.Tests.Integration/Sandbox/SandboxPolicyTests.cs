@@ -24,6 +24,8 @@ public sealed class SandboxPolicyTests : IDisposable
 
     public void Dispose() => _temp.Dispose();
 
+    public static bool IsWindows => OperatingSystem.IsWindows();
+
     [Fact]
     public void Create_Writable_GivesTheWorkingFolderAndScratchWriteAccess()
     {
@@ -60,13 +62,13 @@ public sealed class SandboxPolicyTests : IDisposable
     public void Create_RelativeFolderOnThePath_IsNotMounted()
     {
         // Arrange
-        var relative = Path.GetRelativePath(Environment.CurrentDirectory, _toolBin);
+        const string Relative = ".";
 
         // Act
-        var policy = Create(ShellMode.Writable, host: new Dictionary<string, string> { ["PATH"] = relative });
+        var policy = Create(ShellMode.Writable, host: new Dictionary<string, string> { ["PATH"] = Relative });
 
         // Assert
-        policy.ReadOnly.Should().NotContain(Canonical(_toolBin));
+        policy.ReadOnly.Should().NotContain(Canonical(Environment.CurrentDirectory));
     }
 
     [Fact]
@@ -194,6 +196,27 @@ public sealed class SandboxPolicyTests : IDisposable
 
         // Assert
         policy.Denied.Should().ContainSingle().Which.Should().Be(Canonical(inside));
+    }
+
+    [Theory(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Create_DeniedFileThroughALink_IsDenied(bool refused)
+    {
+        // Arrange
+        var file = Path.Combine(_work, ".env");
+        File.WriteAllText(file, "x");
+        var alias = Path.Combine(_temp.Root, "alias");
+        Directory.CreateSymbolicLink(alias, _work);
+        var aliasedFile = Path.Combine(alias, ".env");
+
+        // Act
+        var policy = refused
+            ? Create(ShellMode.Writable, refused: [aliasedFile])
+            : Create(ShellMode.Writable, protectedFolders: [aliasedFile]);
+
+        // Assert
+        policy.Denied.Should().ContainSingle().Which.Should().Be(Canonical(file));
     }
 
     [Fact]

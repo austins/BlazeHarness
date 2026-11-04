@@ -16,7 +16,7 @@ namespace BlazeHarness.Core.Chats.Export;
 /// </summary>
 internal static class ChatMarkdown
 {
-    private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, NewLine = "\n", Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static string Write(ChatInfo info, IReadOnlyList<ChatEvent> events)
     {

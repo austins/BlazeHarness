@@ -190,13 +190,23 @@ public sealed class PathEscapeTests : IDisposable
             RedirectStandardOutput = true,
         })!;
         process.WaitForExit();
+        process.ExitCode.Should().Be(0);
 
-        // Act
-        var folder = _root.Context.TryResolve("junction", out _, out _);
-        var file = _root.Context.TryResolve("junction/secret.txt", out _, out _);
+        try
+        {
+            // Act
+            var folder = _root.Context.TryResolve("junction", out _, out _);
+            var file = _root.Context.TryResolve("junction/secret.txt", out _, out _);
 
-        // Assert
-        folder.Should().BeFalse();
-        file.Should().BeFalse();
+            // Assert
+            folder.Should().BeFalse();
+            file.Should().BeFalse();
+        }
+        finally
+        {
+            Directory.Delete(junction);
+        }
+
+        File.ReadAllText(_secretFile).Should().Be(Secret);
     }
 }

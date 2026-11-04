@@ -1,6 +1,8 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Tests.Shared;
 using System.Runtime.Versioning;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 
 namespace BlazeHarness.Core.Tests.Integration.Config;
@@ -106,14 +108,48 @@ public sealed class AtomicFileTests : IDisposable
         (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).Should().Be("secret");
     }
 
-    [Fact]
-    public async Task WriteAllTextAsync_Cancelled_LeavesTheOldContentAndNoTempFile()
+    [Theory(Skip = "Windows ACLs only.", SkipUnless = nameof(IsWindows))]
+    [InlineData(false)]
+    [InlineData(true)]
+    [SupportedOSPlatform("windows")]
+    public async Task WriteAllOwnerOnlyTextAsync_OnWindows_OnlyGrantsTheCurrentUserAccess(bool replace)
+    {
+        // Arrange
+        var path = _temp.Combine("key.txt");
+        if (replace)
+        {
+            await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
+        }
+
+        // Act
+        await AtomicFile.WriteAllOwnerOnlyTextAsync(path, "secret", TestContext.Current.CancellationToken);
+
+        // Assert
+        using var identity = WindowsIdentity.GetCurrent();
+        var security = new FileInfo(path).GetAccessControl(AccessControlSections.Access);
+        security.AreAccessRulesProtected.Should().BeTrue();
+        var rule = security.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier))
+            .Cast<FileSystemAccessRule>().Should().ContainSingle().Which;
+        rule.IdentityReference.Should().Be(identity.User);
+        rule.AccessControlType.Should().Be(AccessControlType.Allow);
+        rule.FileSystemRights.Should().Be(FileSystemRights.FullControl);
+        (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).Should().Be("secret");
+        Directory.GetFiles(_temp.Root).Select(Path.GetFileName).Should().Equal("key.txt");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WriteAllTextAsync_Cancelled_LeavesTheOldContentAndNoTempFile(bool ownerOnly)
     {
         // Arrange
         var path = _temp.Combine("doc.txt");
         await File.WriteAllTextAsync(path, "old", TestContext.Current.CancellationToken);
+
         // Act
-        var act = () => AtomicFile.WriteAllTextAsync(path, "new", new CancellationToken(canceled: true));
+        var act = () => ownerOnly
+            ? AtomicFile.WriteAllOwnerOnlyTextAsync(path, "new", new CancellationToken(canceled: true))
+            : AtomicFile.WriteAllTextAsync(path, "new", new CancellationToken(canceled: true));
 
         // Assert
         await act.Should().ThrowAsync<OperationCanceledException>();

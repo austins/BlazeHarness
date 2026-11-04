@@ -251,7 +251,7 @@ public sealed class MxcShellSandbox : IShellSandbox
         {
             Containment = ContainmentFor(platform),
             Filesystem = filesystem,
-            WorkingDirectory = launch.WorkingDirectory,
+            WorkingDirectory = RootedPath.CanonicalRoot(launch.WorkingDirectory),
             Environment = new Dictionary<string, string>(policy.Environment, StringComparer.Ordinal),
             Network = proxyPort is { } port ? FilteredNetwork(port) : new NetworkPolicy { Egress = new NetworkEgressPolicy { Default = NetworkAction.Allow } },
             TimeoutMs = (uint)Math.Clamp(launch.Timeout.TotalMilliseconds + 5_000, 1, uint.MaxValue),
@@ -274,7 +274,8 @@ public sealed class MxcShellSandbox : IShellSandbox
     private static string ProxyUrl(int port) => string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}");
 
     // The backend drops NO_PROXY from the environment it is given, so the command sets it itself. A server the command
-    // starts on its own loopback is not on the internet, so talking to it needs no proxy.
+    // starts on its own loopback on Linux is not on the internet, so talking to it needs no proxy.
+    // macOS shares the host network, so its backend blocks those connections along with host-local services.
     private static string NoProxyPrefix(ShellInfo shell)
     {
         const string Hosts = "localhost,127.0.0.1,::1";

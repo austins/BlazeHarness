@@ -194,6 +194,45 @@ public sealed class SkillScannerTests : IDisposable
     }
 
     [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    public void Scan_LinkTargetThroughAProjectAlias_IsKept()
+    {
+        // Arrange
+        _folders.Add("project/shared", "reused", "Shared inside the project.");
+        var project = Path.Combine(_folders.Root, "project");
+        var alias = Path.Combine(_folders.Root, "alias");
+        Directory.CreateSymbolicLink(alias, project);
+        var skills = Path.Combine(project, ".agents", "skills");
+        Directory.CreateDirectory(skills);
+        Directory.CreateSymbolicLink(Path.Combine(skills, "reused"), Path.Combine(alias, "shared", "reused"));
+
+        // Act
+        var scan = SkillScanner.Scan(skills, SkillSource.Project, project);
+
+        // Assert
+        scan.Skills.Should().ContainSingle().Which.Name.Should().Be("reused");
+        scan.Problems.Should().BeEmpty();
+    }
+
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    public void Scan_LinkTargetThroughAnEscapingProjectAlias_IsSkipped()
+    {
+        // Arrange
+        _folders.Add("elsewhere", "sneaky", "Outside the project.");
+        var project = Path.Combine(_folders.Root, "project");
+        var skills = Path.Combine(project, ".agents", "skills");
+        Directory.CreateDirectory(skills);
+        Directory.CreateSymbolicLink(Path.Combine(project, "escape"), Path.Combine(_folders.Root, "elsewhere"));
+        Directory.CreateSymbolicLink(Path.Combine(skills, "sneaky"), Path.Combine(project, "escape", "sneaky"));
+
+        // Act
+        var scan = SkillScanner.Scan(skills, SkillSource.Project, project);
+
+        // Assert
+        scan.Skills.Should().BeEmpty();
+        scan.Problems.Should().ContainSingle().Which.Should().Be("sneaky: skipped because it links outside the project folder.");
+    }
+
+    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
     public void Scan_LinkWithoutABoundary_IsFollowed()
     {
         // Arrange

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Core.Tools.Shell;
 using BlazeHarness.Tests.Shared;
 using System.Diagnostics;
@@ -40,7 +41,7 @@ public sealed class DirectShellProcessTests : IDisposable
         var exit = await process.WaitAsync(ct).Bounded();
 
         // Assert
-        Path.GetFullPath(stdout.Trim()).Should().Be(Path.GetFullPath(_temp.Root));
+        Path.GetFullPath(stdout.Trim()).Should().Be(RootedPath.CanonicalRoot(_temp.Root));
         stderr.Trim().Should().Be("oops");
         exit.Should().Be(3);
     }

@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Diff;
 using BlazeHarness.Core.Git;
+using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Git;
@@ -111,7 +112,7 @@ public sealed class GitChangesReaderTests : IDisposable
         var result = await _sut.GetStatusAsync(sub, GitChangeScope.All, TestContext.Current.CancellationToken).Bounded();
 
         // Assert
-        result!.Root.Should().Be(Path.GetFullPath(_folder.Root));
+        result!.Root.Should().Be(RootedPath.CanonicalRoot(_folder.Root));
         result.Files.Should().ContainSingle().Which.Path.Should().Be("src/deep/x.cs");
     }
 

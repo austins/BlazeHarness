@@ -20,6 +20,7 @@ public sealed class ChatListTests(BrowserFixture browser) : TestBase(browser)
         await Page.Mouse.DownAsync(new MouseDownOptions { Button = MouseButton.Right });
         if (holdUntilRendered)
         {
+            await chat.DispatchEventAsync("contextmenu", new { button = 2, buttons = 2 });
             await Expect(menu).ToContainTextAsync("Rename");
         }
 

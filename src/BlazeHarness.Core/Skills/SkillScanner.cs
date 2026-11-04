@@ -169,7 +169,7 @@ internal static partial class SkillScanner
             }
 
             var target = info.ResolveLinkTarget(returnFinalTarget: true)?.FullName;
-            return target is null || !RootedPath.IsInside(RootedPath.CanonicalRoot(boundary), target);
+            return target is null || !RootedPath.IsInside(RootedPath.CanonicalRoot(boundary), RootedPath.CanonicalRoot(target));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

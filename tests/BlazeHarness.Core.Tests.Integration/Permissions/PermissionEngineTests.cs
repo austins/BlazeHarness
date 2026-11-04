@@ -716,7 +716,7 @@ public sealed class PermissionEngineTests : IDisposable
     public void Evaluate_AllowRuleOnAFileOutsideTheFolder_SkipsTheQuestionToRead()
     {
         // Arrange
-        _sut.Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Allow, _temp.Root.Replace('\\', '/') + "/**")];
+        _sut.Rules = () => [new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Allow, RootedPath.CanonicalRoot(_temp.Root).Replace('\\', '/') + "/**")];
 
         // Act
         var decision = Evaluate(new ReadFileTool(), new { path = Path.Combine(_temp.Root, "note.txt") });

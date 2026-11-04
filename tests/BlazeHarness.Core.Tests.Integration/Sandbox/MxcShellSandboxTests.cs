@@ -2,6 +2,7 @@ using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Tests.Integration.Tools;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Core.Tools.Shell;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Time.Testing;
@@ -43,6 +44,28 @@ public sealed class MxcShellSandboxTests : IDisposable
     }
 
     [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
+    public async Task StartAsync_WorkingFolderThroughALink_UsesTheRealPath()
+    {
+        // Arrange
+        var alias = Path.Combine(_outsideFolder.Root, "work");
+        Directory.CreateSymbolicLink(alias, _root.Root);
+        var shell = ShellInfo.DetectCurrent()!;
+        var launch = new ShellLaunch(shell, "pwd", alias, ShellMode.Writable, _scratchFolder.Root, TimeSpan.FromSeconds(10));
+        var sandbox = new MxcShellSandbox(() => SensitivePaths.None);
+        var ct = TestContext.Current.CancellationToken;
+
+        // Act
+        using var process = await sandbox.StartAsync(launch, ct);
+        using var reader = new StreamReader(process.Output);
+        var output = await reader.ReadToEndAsync(ct).Bounded();
+        var exit = await process.WaitAsync(ct).Bounded();
+
+        // Assert
+        output.Trim().Should().Be(_root.Root);
+        exit.Should().Be(0);
+    }
+
+    [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
     public async Task Run_ReadOnly_CanReadButNotChangeTheWorkingFolder()
     {
         // Arrange
@@ -52,7 +75,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         var result = await RunAsync("cat keep.txt; echo changed > keep.txt; echo new > new.txt", ShellMode.ReadOnly);
 
         // Assert
-        result.Output.Should().Contain("original").And.Contain("Read-only file system");
+        result.Output.Should().Contain("original");
         result.IsError.Should().BeTrue();
         _root.Read("keep.txt").Should().Be("original");
         File.Exists(Path.Combine(_root.Root, "new.txt")).Should().BeFalse();
@@ -72,14 +95,18 @@ public sealed class MxcShellSandboxTests : IDisposable
     [Fact(Skip = SkipReason, SkipUnless = nameof(IsAvailableOnPosix))]
     public async Task Run_ApprovedReadFolder_CanBeReadButNotChanged()
     {
+        // Arrange
+        var file = Path.Combine(RootedPath.CanonicalRoot(_outsideFolder.Root), "secret.txt");
+
         // Act
         var result = await RunAsync(
-            $"cat '{Path.Combine(_outsideFolder.Root, "secret.txt")}'; echo changed > '{Path.Combine(_outsideFolder.Root, "secret.txt")}'",
+            $"cat '{file}'; echo changed > '{file}'",
             ShellMode.Writable,
             readFolders: [_outsideFolder.Root]);
 
         // Assert
-        result.Output.Should().Contain("top-secret").And.Contain("Read-only file system");
+        result.Output.Should().Contain("top-secret");
+        result.IsError.Should().BeTrue();
         (await File.ReadAllTextAsync(Path.Combine(_outsideFolder.Root, "secret.txt"), TestContext.Current.CancellationToken)).Should().Be("top-secret");
     }
 
@@ -124,7 +151,8 @@ public sealed class MxcShellSandboxTests : IDisposable
         var result = await RunAsync("cat .keys/token.txt; echo x > .keys/other.txt", ShellMode.Writable, new MxcShellSandbox(() => sensitive));
 
         // Assert
-        result.Output.Should().Contain("No such file").And.NotContain("key-material");
+        result.Output.Should().NotContain("key-material");
+        _root.Read(".keys/token.txt").Should().Be("key-material");
         File.Exists(Path.Combine(_root.Root, ".keys", "other.txt")).Should().BeFalse();
     }
 
@@ -185,7 +213,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         var result = await RunAsync("echo $HOME; echo data > $HOME/file.txt", ShellMode.Writable);
 
         // Assert
-        result.Output.Should().StartWith(Path.Combine(Path.GetFullPath(_scratchFolder.Root), "home"));
+        result.Output.Should().StartWith(Path.Combine(RootedPath.CanonicalRoot(_scratchFolder.Root), "home"));
         File.Exists(Path.Combine(_scratchFolder.Root, "home", "file.txt")).Should().BeTrue();
     }
 
