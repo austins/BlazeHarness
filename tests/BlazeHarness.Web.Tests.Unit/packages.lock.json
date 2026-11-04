@@ -265,11 +265,11 @@
       },
       "Microsoft.Extensions.Options": {
         "type": "Transitive",
-        "resolved": "10.0.14",
-        "contentHash": "EeN/33S418m9oWEaZY4N5T+BNxtOqNTIFoFbIgBKwylh4OJPKIWFAzbIhpTdNbwUs26MhkmbLCAbdY+YCJ1dIQ==",
+        "resolved": "10.0.13",
+        "contentHash": "tmMJgdrE4uhf1JcNs9CV9moAHW+hmDuvgMiPpnQxarKaUxqI2eN33sYK5S4l9Uw+rG9PJvlm4qPxMhvolTDTaQ==",
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Primitives": "10.0.14"
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.13",
+          "Microsoft.Extensions.Primitives": "10.0.13"
         }
       },
       "Microsoft.Extensions.Options.ConfigurationExtensions": {
@@ -532,7 +532,6 @@
           "Microsoft.Extensions.AI.OpenAI": "[10.11.0, )",
           "Microsoft.Extensions.Configuration.Abstractions": "[10.0.14, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.14, )",
-          "Microsoft.Extensions.Options": "[10.0.14, )",
           "Microsoft.Extensions.Resilience": "[10.11.0, )",
           "Microsoft.Mxc.Sdk": "[1.0.1, )",
           "ModelContextProtocol.Core": "[2.3.1, )",
