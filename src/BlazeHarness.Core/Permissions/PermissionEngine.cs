@@ -115,6 +115,11 @@ public sealed class PermissionEngine
     public Func<string, bool> TrustedMcpServer { get; set; } = static _ => false;
 
     /// <summary>
+    /// Gets or sets whether a sandboxed shell command may only reach the hosts that <see cref="EvaluateNetworkHost"/> allows, which is asked on every call so a change applies at once.
+    /// </summary>
+    public Func<bool> NetworkFilter { get; set; } = static () => false;
+
+    /// <summary>
     /// Gets or sets whether shell commands can run inside an OS sandbox that enforces the access level.
     /// </summary>
     public SandboxStatus Sandbox { get; set; } = SandboxStatus.Unavailable("No sandbox is set up.");
@@ -175,6 +180,52 @@ public sealed class PermissionEngine
         ArgumentException.ThrowIfNullOrEmpty(grantKey);
         _grants[grantKey] = 0;
     }
+
+    /// <summary>
+    /// Decide whether a sandboxed shell command may connect to a host.
+    /// </summary>
+    /// <remarks>
+    /// A rule decides first: a deny rule refuses, an allow rule lets the command through, and an ask rule asks every time. Without a rule, a host the
+    /// user allowed for the chat passes, and any other host asks, unless the chat is <see cref="ApprovalMode.NeverAsk"/>, which has nobody to ask and refuses.
+    /// </remarks>
+    /// <param name="host">The host name the command connects to.</param>
+    /// <returns>The decision. For <see cref="PermissionVerdict.Ask"/> its <see cref="PermissionDecision.GrantKey"/> remembers an approval for the chat.</returns>
+    public PermissionDecision EvaluateNetworkHost(string host)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(host);
+        var rule = RuleMatcher.ForNetworkHost(Rules(), host);
+        if (rule is { Action: PermissionVerdict.Deny })
+        {
+            return new PermissionDecision(PermissionVerdict.Deny, $"A rule you set refuses connecting to {host} ({rule.Pattern}).");
+        }
+
+        if (rule is { Action: PermissionVerdict.Allow })
+        {
+            return PermissionDecision.Allow;
+        }
+
+        var reason = $"The command wants to connect to {host}.";
+        if (rule is not null)
+        {
+            return Settings.Approvals == ApprovalMode.NeverAsk
+                ? new PermissionDecision(PermissionVerdict.Deny, $"A rule you set asks before connecting to {host} ({rule.Pattern}), and this chat never asks.")
+                : new PermissionDecision(PermissionVerdict.Ask, $"A rule you set asks before connecting to {host} ({rule.Pattern}).");
+        }
+
+        var key = NetworkGrantKey(host);
+        if (_grants.ContainsKey(key))
+        {
+            return PermissionDecision.Allow;
+        }
+
+        return Settings.Approvals == ApprovalMode.NeverAsk
+            ? new PermissionDecision(PermissionVerdict.Deny, $"{host} is not on the list of hosts commands may connect to, and this chat never asks. The user can allow it with a host rule in Settings.")
+            : new PermissionDecision(PermissionVerdict.Ask, reason, key);
+    }
+
+#pragma warning disable CA1308 // Host names are compared in lower case and the key is never shown.
+    private static string NetworkGrantKey(string host) => "net:" + host.ToLowerInvariant();
+#pragma warning restore CA1308
 
     private static PermissionDecision ApplyRule(PermissionRule rule, PermissionDecision decision)
     {

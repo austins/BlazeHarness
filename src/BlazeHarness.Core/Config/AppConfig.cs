@@ -43,6 +43,11 @@ public sealed record AppConfig
     public ApprovalMode DefaultApprovals { get; init; } = ApprovalMode.AskFirst;
 
     /// <summary>
+    /// Gets a value indicating whether a sandboxed shell command may only connect to hosts the user allowed.
+    /// </summary>
+    public bool ShellNetworkFilter { get; init; }
+
+    /// <summary>
     /// Gets the rules the user wrote to allow, ask about or refuse tool calls.
     /// </summary>
     public IReadOnlyList<PermissionRule> PermissionRules { get; init; } = [];

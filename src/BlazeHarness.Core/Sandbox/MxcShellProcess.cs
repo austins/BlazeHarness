@@ -9,9 +9,12 @@ internal sealed class MxcShellProcess : IShellProcess
 {
     private readonly MxcProcess _process;
 
-    internal MxcShellProcess(MxcProcess process)
+    private readonly IDisposable? _owned;
+
+    internal MxcShellProcess(MxcProcess process, IDisposable? owned = null)
     {
         _process = process;
+        _owned = owned;
     }
 
     public Stream Output => _process.StandardOutput ?? Stream.Null;
@@ -42,6 +45,10 @@ internal sealed class MxcShellProcess : IShellProcess
     }
 
 #pragma warning disable IDISP007 // This object owns the process it is given.
-    public void Dispose() => _process.Dispose();
+    public void Dispose()
+    {
+        _process.Dispose();
+        _owned?.Dispose();
+    }
 #pragma warning restore IDISP007
 }

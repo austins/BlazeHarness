@@ -133,7 +133,7 @@ else
                             previousLabel = entry.Label;
                         }
 
-                        <MessageView @key="entry.Id" Entry="entry" ChatId="@_openId" ShowLabel="showLabel" CanEdit="!(_chat?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" OnAnswer="Answer" />
+                        <MessageView @key="entry.Id" Entry="entry" ChatId="@_openId" ShowLabel="showLabel" CanEdit="!(_chat?.IsRunning ?? true)" Editing="_editing?.Id == entry.Id" OnEdit="StartEdit" OnDecide="Decide" OnDecideHost="DecideHostAsync" OnAnswer="Answer" />
                     }
                 </div>
             </div>
@@ -626,6 +626,17 @@ else
     private void Decide((string CallId, ApprovalChoice Choice) answer)
     {
         _chat?.Approve(answer.CallId, answer.Choice);
+    }
+
+    private async Task DecideHostAsync(HostAnswer answer)
+    {
+        // The rule is saved first, so an answer that outlives a failed save is not mistaken for a saved rule.
+        if (answer.Always)
+        {
+            await Toasts.TrySaveAsync(() => PermissionDefaults.AddRuleAsync(new PermissionRule(RuleTarget.NetworkHost, PermissionVerdict.Allow, answer.Host)), WebStrings.ChatViewHostRuleSaveFailure);
+        }
+
+        _chat?.ApproveHost(answer.CallId, answer.Host, answer.Choice);
     }
 
     private bool Answer((string CallId, UserAnswer Answer) reply)

@@ -25,12 +25,21 @@
     </section>
 
     <section class="card stack" aria-labelledby="bypass-heading">
-        <h2 id="bypass-heading">@WebStrings.PermissionsSettingsRiskyOptionsHeading</h2>
+        <h2 id="bypass-heading">@WebStrings.PermissionsSettingsAdvancedOptionsHeading</h2>
         <label class="check">
             <input type="checkbox" checked="@_allowBypass" @onchange="OnBypassChangedAsync" />
-            <span>@WebStrings.PermissionsSettingsRiskyOptionsLabel</span>
+            <span>@WebStrings.PermissionsSettingsAdvancedOptionsLabel</span>
         </label>
-        <p class="hint">@WebStrings.PermissionsSettingsRiskyOptionsHint</p>
+        <p class="hint">@WebStrings.PermissionsSettingsAdvancedOptionsHint</p>
+    </section>
+
+    <section class="card stack" aria-labelledby="network-heading">
+        <h2 id="network-heading">@WebStrings.PermissionsSettingsNetworkHeading</h2>
+        <label class="check">
+            <input type="checkbox" checked="@_networkFilter" @onchange="OnNetworkFilterChangedAsync" />
+            <span>@WebStrings.PermissionsSettingsNetworkLabel</span>
+        </label>
+        <p class="hint">@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.PermissionsSettingsNetworkHint))</p>
     </section>
 
     <section class="card stack" aria-labelledby="protected-heading">
@@ -84,6 +93,7 @@
                 <option value="@RuleTarget.FilePath">@WebStrings.PermissionsSettingsTargetFilePath</option>
                 <option value="@RuleTarget.McpTool">@WebStrings.PermissionsSettingsTargetMcpTool</option>
                 <option value="@RuleTarget.WebHost">@WebStrings.PermissionsSettingsTargetWebHost</option>
+                <option value="@RuleTarget.NetworkHost">@WebStrings.PermissionsSettingsTargetNetworkHost</option>
             </select>
             <select class="select" aria-label="@WebStrings.PermissionsSettingsRuleActionLabel" @bind="_newAction">
                 <option value="@PermissionVerdict.Deny">@WebStrings.PermissionsSettingsRuleRefuse</option>
@@ -100,6 +110,7 @@
     private AccessLevel _access;
     private ApprovalMode _approvals;
     private bool _allowBypass;
+    private bool _networkFilter;
     private List<PermissionRule> _rules = [];
     private List<string> _protected = [];
     private string _newProtected = string.Empty;
@@ -122,6 +133,7 @@
         _access = current.Access;
         _approvals = current.Approvals;
         _allowBypass = Defaults.AllowBypass;
+        _networkFilter = Defaults.NetworkFilter;
         _rules = [.. Defaults.Rules];
         _protected = [.. Defaults.ProtectedFolders];
     }
@@ -148,6 +160,7 @@
             RuleTarget.ShellCommand => WebStrings.PermissionsTargetShellCommand,
             RuleTarget.McpTool => WebStrings.PermissionsTargetMcpTool,
             RuleTarget.WebHost => WebStrings.PermissionsTargetWebHost,
+            RuleTarget.NetworkHost => WebStrings.PermissionsTargetNetworkHost,
             _ => WebStrings.PermissionsTargetFilePath,
         };
     }
@@ -159,6 +172,7 @@
             RuleTarget.ShellCommand => "git push*",
             RuleTarget.McpTool => "server/tool*",
             RuleTarget.WebHost => "*.example.com",
+            RuleTarget.NetworkHost => "*.npmjs.org",
             _ => "**/.env",
         };
     }
@@ -247,6 +261,12 @@
     {
         _allowBypass = e.Value is true;
         return SaveAsync();
+    }
+
+    private Task OnNetworkFilterChangedAsync(ChangeEventArgs e)
+    {
+        _networkFilter = e.Value is true;
+        return PersistAsync(() => Defaults.SetNetworkFilterAsync(_networkFilter));
     }
 
     private Task SaveAsync() => PersistAsync(() => Defaults.SaveAsync(new PermissionSettings(_access, _approvals), _allowBypass));

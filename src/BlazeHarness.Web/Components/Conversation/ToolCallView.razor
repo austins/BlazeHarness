@@ -73,6 +73,21 @@
         </div>
     }
 
+    @foreach (var pending in Call.PendingHosts)
+    {
+        <div class="tool-approval" role="alert">
+            <span>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.ToolCallHostPrompt), new Dictionary<string, object?> { ["host"] = pending.Host })</span>
+            <button type="button" class="btn btn-primary btn-sm" @onclick="() => OnDecideHost.InvokeAsync(new HostAnswer(Call.CallId, pending.Host, ApprovalChoice.AllowOnce))"><Icon Name="check" /> @WebStrings.ToolCallViewAllowOnce</button>
+            @if (pending.CanRemember)
+            {
+                <button type="button" class="btn btn-sm" @onclick="() => OnDecideHost.InvokeAsync(new HostAnswer(Call.CallId, pending.Host, ApprovalChoice.AllowForChat))"><Icon Name="check" /> @WebStrings.ToolCallViewAllowForChat</button>
+                <button type="button" class="btn btn-sm" @onclick="() => OnDecideHost.InvokeAsync(new HostAnswer(Call.CallId, pending.Host, ApprovalChoice.AllowOnce, Always: true))"><Icon Name="check" /> @WebStrings.ToolCallViewAlwaysAllowHost</button>
+            }
+
+            <button type="button" class="btn btn-sm" @onclick="() => OnDecideHost.InvokeAsync(new HostAnswer(Call.CallId, pending.Host, ApprovalChoice.Deny))"><Icon Name="ban" /> @WebStrings.ToolCallViewDeny</button>
+        </div>
+    }
+
     @if (_imageAddress is { } address)
     {
         <a class="tool-image" href="@address" target="_blank" rel="noopener"><img class="msg-image" src="@address" alt="@Call.Summary" loading="lazy" /></a>
@@ -159,6 +174,12 @@
     /// </summary>
     [Parameter]
     public EventCallback<(string CallId, ApprovalChoice Choice)> OnDecide { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user answering the question about a host a running command wants to connect to.
+    /// </summary>
+    [Parameter]
+    public EventCallback<HostAnswer> OnDecideHost { get; set; }
 
     /// <summary>
     /// Gets or sets the function for the user answering an <c>ask_user</c> question, with the call id and the answer, which returns whether the answer was taken.

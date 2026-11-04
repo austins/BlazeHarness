@@ -49,6 +49,11 @@ public sealed class PermissionDefaults
     public bool AllowBypass => !_config.Current.DisableBypassModes;
 
     /// <summary>
+    /// Gets a value indicating whether a sandboxed shell command may only connect to hosts the user allowed.
+    /// </summary>
+    public bool NetworkFilter => _config.Current.ShellNetworkFilter;
+
+    /// <summary>
     /// Gets the rules the user wrote, in the order they apply.
     /// </summary>
     public IReadOnlyList<PermissionRule> Rules => _config.Current.PermissionRules;
@@ -123,6 +128,29 @@ public sealed class PermissionDefaults
             .Select(rule => rule with { Pattern = rule.Pattern.Trim() })
             .ToList();
         return _config.UpdateAsync(config => config with { PermissionRules = kept }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Turn the network filter for sandboxed shell commands on or off.
+    /// </summary>
+    /// <param name="enabled">True to ask about each host a command connects to.</param>
+    /// <param name="cancellationToken">A token to cancel the write.</param>
+    /// <returns>A task that completes once the choice is saved.</returns>
+    public Task SetNetworkFilterAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return _config.UpdateAsync(config => config with { ShellNetworkFilter = enabled }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Add a rule to the end of the saved rules unless an identical one exists.
+    /// </summary>
+    /// <param name="rule">The rule to add.</param>
+    /// <param name="cancellationToken">A token to cancel the write.</param>
+    /// <returns>A task that completes once the rule is saved.</returns>
+    public Task AddRuleAsync(PermissionRule rule, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+        return _config.UpdateAsync(config => config.PermissionRules.Contains(rule) ? config : config with { PermissionRules = [.. config.PermissionRules, rule] }, cancellationToken);
     }
 
     /// <summary>

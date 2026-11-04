@@ -111,10 +111,26 @@ internal static class RuleMatcher
     /// <returns>The deciding rule, or null when none applies.</returns>
     public static PermissionRule? ForWeb(IReadOnlyList<PermissionRule> rules, string target)
     {
+        return ForHost(rules, RuleTarget.WebHost, target);
+    }
+
+    /// <summary>
+    /// Find the rule that decides whether a sandboxed shell command may connect to a host.
+    /// </summary>
+    /// <param name="rules">The rules to search.</param>
+    /// <param name="host">The host name the command connects to.</param>
+    /// <returns>The deciding rule, or null when none applies.</returns>
+    public static PermissionRule? ForNetworkHost(IReadOnlyList<PermissionRule> rules, string host)
+    {
+        return ForHost(rules, RuleTarget.NetworkHost, host);
+    }
+
+    private static PermissionRule? ForHost(IReadOnlyList<PermissionRule> rules, RuleTarget kind, string target)
+    {
         // Host names are not case-sensitive, so both sides are compared in upper case.
         var text = target.ToUpperInvariant();
         PermissionRule? decided = null;
-        foreach (var rule in rules.Where(r => r.Target == RuleTarget.WebHost && r.Pattern.Length > 0 && Matches(r, Compile(r.Pattern.ToUpperInvariant(), pathStyle: false), text)))
+        foreach (var rule in rules.Where(r => r.Target == kind && r.Pattern.Length > 0 && Matches(r, Compile(r.Pattern.ToUpperInvariant(), pathStyle: false), text)))
         {
             decided = Stronger(decided, rule);
         }

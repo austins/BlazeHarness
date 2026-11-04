@@ -16,6 +16,7 @@ namespace BlazeHarness.Core.Permissions;
 /// For a path the pattern is matched against the path relative to the working folder, and against the full path, where <c>*</c> stays inside one folder,
 /// <c>**</c> crosses folders and <c>?</c> is one character. Use <c>/</c> as the separator on every system.
 /// For an MCP tool the pattern is matched against <c>server/tool</c>, where <c>*</c> stands for any text and <c>?</c> for one character.
+/// A host pattern, for a web fetch or for a sandboxed command's connection, is matched against the host name the same way, ignoring case.
 /// </para>
 /// </remarks>
 /// <param name="Target">What the pattern is matched against.</param>

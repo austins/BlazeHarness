@@ -1233,6 +1233,38 @@
     <value>{count, plural, one {Show all {formattedCount} character} other {Show all {formattedCount} characters}}</value>
     <comment>Button label for expanding tool output. count selects singular or plural; formattedCount is the displayed number.</comment>
   </data>
+  <data name="ToolCallHostPrompt" xml:space="preserve">
+    <value>Allow this command to connect to [code]{host}[/code]?</value>
+    <comment>Question on a running shell command that wants to reach a host while the network filter is on. [code] and [/code] mark inline code and must stay; {host} is the host name or address, do not translate it.</comment>
+  </data>
+  <data name="ToolCallViewAlwaysAllowHost" xml:space="preserve">
+    <value>Always allow this host</value>
+    <comment>Button on the question about a host a shell command wants to connect to: allows it now and adds a rule that allows it from now on.</comment>
+  </data>
+  <data name="ChatViewHostRuleSaveFailure" xml:space="preserve">
+    <value>The rule that allows the host could not be saved because the settings file could not be written.</value>
+    <comment>Toast shown when the "Always allow this host" button could not save its rule. The command still gets this answer.</comment>
+  </data>
+  <data name="PermissionsTargetNetworkHost" xml:space="preserve">
+    <value>Network host</value>
+    <comment>Permission rule target type: the host a sandboxed shell command connects to.</comment>
+  </data>
+  <data name="PermissionsSettingsTargetNetworkHost" xml:space="preserve">
+    <value>Network host</value>
+    <comment>Option in the target drop-down of a new rule on the Permissions page: the rule matches the host a sandboxed shell command connects to.</comment>
+  </data>
+  <data name="PermissionsSettingsNetworkHeading" xml:space="preserve">
+    <value>Network</value>
+    <comment>Heading of the card on the Permissions page that controls which hosts a sandboxed shell command may connect to.</comment>
+  </data>
+  <data name="PermissionsSettingsNetworkLabel" xml:space="preserve">
+    <value>Ask before a command connects to a host</value>
+    <comment>Label of a checkbox on the Permissions page. The "command" is a shell command that runs in the sandbox.</comment>
+  </data>
+  <data name="PermissionsSettingsNetworkHint" xml:space="preserve">
+    <value>When on, a command in the sandbox can only reach hosts you allow. You are asked the first time it connects to one, unless a Network host rule decides. With Never ask, a host that no rule allows is refused. Only web traffic (HTTP and HTTPS) gets through, so SSH, raw connections and tools that ignore proxy settings are blocked. Hosts on your own network or computer are always refused. A command with Unrestricted access is not sandboxed, so the filter does not apply to it. Not available on Windows yet.</value>
+    <comment>Hint under the checkbox in the Network card on the Permissions page. "Network host" is the name of a rule target (see PermissionsSettingsTargetNetworkHost), "Never ask" and "Unrestricted" are the names of an approval mode and an access level (see PermissionPickerNeverAsk and PermissionPickerUnrestricted) and should match their translations. HTTP, HTTPS and SSH are protocol names, do not translate them.</comment>
+  </data>
   <data name="ToolCallMcpBadgeTitle" xml:space="preserve">
     <value>A tool from the MCP server {server}. It runs outside the sandbox.</value>
     <comment>Tooltip explaining that a tool comes from an MCP server; server is the server name.</comment>
@@ -1708,16 +1740,16 @@
     <value>Protected folders</value>
     <comment>Heading of the card on the Permissions page that lists the folders no tool may read or write.</comment>
   </data>
-  <data name="PermissionsSettingsRiskyOptionsHint" xml:space="preserve">
-    <value>Turn this off to hide both options. A chat that already has one of them then behaves as if it did not. Protected folders such as your SSH keys stay blocked either way.</value>
-    <comment>Hint under the checkbox in the Risky options card on the Permissions page. "Both options" are Unrestricted and Never ask, the names of an access level and an approval mode (see PermissionPickerUnrestricted and PermissionPickerNeverAsk). SSH is a protocol name, do not translate it.</comment>
+  <data name="PermissionsSettingsAdvancedOptionsHint" xml:space="preserve">
+    <value>Turn this off to hide both options. A chat that already uses one goes back to the safer setting. Protected folders such as your SSH keys stay blocked either way.</value>
+    <comment>Hint under the checkbox in the Advanced options card on the Permissions page. "Both options" are Unrestricted and Never ask, the names of an access level and an approval mode (see PermissionPickerUnrestricted and PermissionPickerNeverAsk). SSH is a protocol name, do not translate it.</comment>
   </data>
-  <data name="PermissionsSettingsRiskyOptionsLabel" xml:space="preserve">
-    <value>Let a chat turn on Unrestricted or Never ask</value>
+  <data name="PermissionsSettingsAdvancedOptionsLabel" xml:space="preserve">
+    <value>Show Unrestricted and Never ask in chats</value>
     <comment>Label of a checkbox on the Permissions page. "Unrestricted" and "Never ask" are the names of an access level and an approval mode (see PermissionPickerUnrestricted and PermissionPickerNeverAsk) and should match their translations.</comment>
   </data>
-  <data name="PermissionsSettingsRiskyOptionsHeading" xml:space="preserve">
-    <value>Risky options</value>
+  <data name="PermissionsSettingsAdvancedOptionsHeading" xml:space="preserve">
+    <value>Advanced options</value>
     <comment>Heading of the card on the Permissions page with the checkbox that allows or hides the Unrestricted and Never ask options.</comment>
   </data>
   <data name="PermissionsSettingsApprovalsAskForExceptions" xml:space="preserve">

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Sandbox.Network;
 using BlazeHarness.Core.Sandbox.Ports;
 using BlazeHarness.Core.Tools.Files;
 using System.Globalization;
@@ -132,7 +133,7 @@ internal sealed class ShellTool : ITool
             refused = found;
         }
 
-        var launch = new ShellLaunch(_shell, command, context.Root, context.Shell, _scratchDirectory, TimeSpan.FromSeconds(seconds), context.ShellReadFolders, refused);
+        var launch = new ShellLaunch(_shell, command, context.Root, context.Shell, _scratchDirectory, TimeSpan.FromSeconds(seconds), context.ShellReadFolders, refused, context.Shell == ShellMode.Unconfined ? null : context.Network);
         var ports = _background.Ports?.Prepare(launch, publishes: background);
         IShellProcess process;
         try
@@ -187,7 +188,7 @@ internal sealed class ShellTool : ITool
             }
 
             await FinishReadingAsync(readers, _time);
-            var text = string.Create(CultureInfo.InvariantCulture, $"{output}[exit code {exitCode}]");
+            var text = string.Create(CultureInfo.InvariantCulture, $"{output}{RefusalNote(launch.Network)}[exit code {exitCode}]");
             return exitCode == 0 ? ToolResult.Ok(text) : ToolResult.Error(text);
         }
     }
@@ -214,6 +215,13 @@ internal sealed class ShellTool : ITool
         return string.Join(", ", ports.Select(port => port.OnHost
             ? port.Port.ToString(CultureInfo.InvariantCulture)
             : string.Create(CultureInfo.InvariantCulture, $"{port.Port} (only for other commands: another program uses it on this computer)")));
+    }
+
+    private static string RefusalNote(INetworkGate? gate)
+    {
+        return gate is { Refusals: { Count: > 0 } refusals }
+            ? $"[Blocked by the network filter: {string.Join(' ', refusals)}]\n"
+            : string.Empty;
     }
 
     private static string NetworkNote(bool sandboxed, BackgroundShell job, SandboxMember? ports)

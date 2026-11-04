@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Sandbox.Network;
 using BlazeHarness.Core.Tools.Files;
 
 namespace BlazeHarness.Core.Tools;
@@ -18,7 +19,7 @@ public sealed class ToolContext
         Root = RootedPath.CanonicalRoot(folder);
     }
 
-    private ToolContext(string root, bool allowsOutside, ShellMode shell, IReadOnlyList<string> shellReadFolders, SensitivePaths sensitive, RefusedPaths refused)
+    private ToolContext(string root, bool allowsOutside, ShellMode shell, IReadOnlyList<string> shellReadFolders, SensitivePaths sensitive, RefusedPaths refused, INetworkGate? network)
     {
         Root = root;
         AllowsOutside = allowsOutside;
@@ -26,6 +27,7 @@ public sealed class ToolContext
         ShellReadFolders = shellReadFolders;
         Sensitive = sensitive;
         Refused = refused;
+        Network = network;
     }
 
     /// <summary>
@@ -65,20 +67,25 @@ public sealed class ToolContext
     public RefusedPaths Refused { get; } = RefusedPaths.None;
 
     /// <summary>
+    /// Gets the gate that decides which hosts a sandboxed shell command may connect to, or null when the network is not filtered.
+    /// </summary>
+    public INetworkGate? Network { get; }
+
+    /// <summary>
     /// Get a copy of this context that accepts paths outside the working folder.
     /// </summary>
     /// <remarks>
     /// Only for a call that has already passed the permission check.
     /// </remarks>
     /// <returns>A context with the same root that accepts any path.</returns>
-    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true, Shell, ShellReadFolders, Sensitive, Refused);
+    public ToolContext WithOutsideAllowed() => new(Root, allowsOutside: true, Shell, ShellReadFolders, Sensitive, Refused, Network);
 
     /// <summary>
     /// Get a copy of this context with a different shell mode.
     /// </summary>
     /// <param name="shell">How far a shell command may reach.</param>
     /// <returns>A context with the same root and path rules.</returns>
-    public ToolContext WithShell(ShellMode shell) => new(Root, AllowsOutside, shell, ShellReadFolders, Sensitive, Refused);
+    public ToolContext WithShell(ShellMode shell) => new(Root, AllowsOutside, shell, ShellReadFolders, Sensitive, Refused, Network);
 
     /// <summary>
     /// Get a copy of this context with the folders a shell command may also read.
@@ -88,7 +95,7 @@ public sealed class ToolContext
     public ToolContext WithShellReadFolders(IReadOnlyList<string> folders)
     {
         ArgumentNullException.ThrowIfNull(folders);
-        return new(Root, AllowsOutside, Shell, folders, Sensitive, Refused);
+        return new(Root, AllowsOutside, Shell, folders, Sensitive, Refused, Network);
     }
 
     /// <summary>
@@ -99,7 +106,7 @@ public sealed class ToolContext
     public ToolContext WithSensitive(SensitivePaths sensitive)
     {
         ArgumentNullException.ThrowIfNull(sensitive);
-        return new(Root, AllowsOutside, Shell, ShellReadFolders, sensitive, Refused);
+        return new(Root, AllowsOutside, Shell, ShellReadFolders, sensitive, Refused, Network);
     }
 
     /// <summary>
@@ -110,7 +117,18 @@ public sealed class ToolContext
     public ToolContext WithRefused(RefusedPaths refused)
     {
         ArgumentNullException.ThrowIfNull(refused);
-        return new(Root, AllowsOutside, Shell, ShellReadFolders, Sensitive, refused);
+        return new(Root, AllowsOutside, Shell, ShellReadFolders, Sensitive, refused, Network);
+    }
+
+    /// <summary>
+    /// Get a copy of this context with the gate that filters a sandboxed shell command's network.
+    /// </summary>
+    /// <param name="network">The gate.</param>
+    /// <returns>A context with the same root and path rules.</returns>
+    public ToolContext WithNetwork(INetworkGate network)
+    {
+        ArgumentNullException.ThrowIfNull(network);
+        return new(Root, AllowsOutside, Shell, ShellReadFolders, Sensitive, Refused, network);
     }
 
     /// <summary>

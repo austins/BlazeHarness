@@ -1,8 +1,10 @@
 using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Sandbox.Network;
 using BlazeHarness.Core.Sandbox.Ports;
 using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Core.Tools.Shell;
 using Microsoft.Mxc.Sdk.V1;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace BlazeHarness.Core.Sandbox;
@@ -12,8 +14,9 @@ namespace BlazeHarness.Core.Sandbox;
 /// </summary>
 /// <remarks>
 /// The policy is set explicitly on every command and doesn't depend on MXC defaults (see <see cref="SandboxPolicy"/>).
-/// The network is not restricted, but each command has its own on Linux; <see cref="SandboxPorts"/> forwards the ports of
-/// background commands. Whether the backend works is found out once, by running a trivial command.
+/// The network is open unless a command's launch carries a <see cref="INetworkGate"/>: then every connection goes through an
+/// <see cref="EgressProxy"/> that asks the gate, and the sandbox blocks any other route out. Each command has its own network on Linux;
+/// <see cref="SandboxPorts"/> forwards the ports of background commands. Whether the backend works is found out once, by running a trivial command.
 /// </remarks>
 public sealed class MxcShellSandbox : IShellSandbox
 {
@@ -23,15 +26,18 @@ public sealed class MxcShellSandbox : IShellSandbox
     private readonly Func<IReadOnlyDictionary<string, string>> _hostEnvironment;
     private readonly Lazy<SandboxStatus> _status;
     private readonly Lazy<string?> _fileDenyProblem;
+    private readonly TimeProvider _time;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MxcShellSandbox"/> class.
     /// </summary>
     /// <param name="sensitive">Gets the folders that stay out of reach even when they are inside the working folder, read at each launch so a change applies at once.</param>
     /// <param name="hostEnvironment">Gets the environment variables the command's own environment is built from; defaults to the process environment.</param>
-    public MxcShellSandbox(Func<SensitivePaths> sensitive, Func<IReadOnlyDictionary<string, string>>? hostEnvironment = null)
+    /// <param name="time">Times the network filter's proxy; defaults to the system clock.</param>
+    public MxcShellSandbox(Func<SensitivePaths> sensitive, Func<IReadOnlyDictionary<string, string>>? hostEnvironment = null, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(sensitive);
+        _time = time ?? TimeProvider.System;
         _sensitive = sensitive;
         _hostEnvironment = hostEnvironment ?? HostEnvironment;
         _status = new Lazy<SandboxStatus>(Probe, LazyThreadSafetyMode.ExecutionAndPublication);
@@ -142,7 +148,7 @@ public sealed class MxcShellSandbox : IShellSandbox
 
     private static SandboxStatus Available()
     {
-        var detail = $"Commands run in a {BackendName()} sandbox that can only change the working folder. The network is not restricted.";
+        var detail = $"Commands run in a {BackendName()} sandbox that can only change the working folder. The network is open unless the host filter is turned on in Settings.";
         if (ForwardingTools.Find() is not null)
         {
             return new SandboxStatus(true, BackendName(), detail + " A server a background command starts is forwarded to localhost, where the browser tools and later commands reach it.", ForwardsPorts: true);
@@ -225,11 +231,16 @@ public sealed class MxcShellSandbox : IShellSandbox
         }
     }
 
-    private (ContainerRequest Request, SandboxPolicy Policy) BuildRequest(ShellLaunch launch)
+    private (ContainerRequest Request, SandboxPolicy Policy) BuildRequest(ShellLaunch launch, int? proxyPort = null)
     {
         var platform = SandboxPolicy.CurrentPlatform();
         Directory.CreateDirectory(Path.Combine(launch.ScratchDirectory, "home"));
         Directory.CreateDirectory(Path.Combine(launch.ScratchDirectory, "tmp"));
+        if (proxyPort is not null)
+        {
+            launch = launch with { Command = NoProxyPrefix(launch.Shell) + launch.Command };
+        }
+
         var policy = SandboxPolicy.Create(launch, platform, _hostEnvironment(), _sensitive().Folders);
 
         var filesystem = new FilesystemPolicy();
@@ -242,28 +253,64 @@ public sealed class MxcShellSandbox : IShellSandbox
             Filesystem = filesystem,
             WorkingDirectory = launch.WorkingDirectory,
             Environment = new Dictionary<string, string>(policy.Environment, StringComparer.Ordinal),
-            Network = new NetworkPolicy { Egress = new NetworkEgressPolicy { Default = NetworkAction.Allow } },
+            Network = proxyPort is { } port ? FilteredNetwork(port) : new NetworkPolicy { Egress = new NetworkEgressPolicy { Default = NetworkAction.Allow } },
             TimeoutMs = (uint)Math.Clamp(launch.Timeout.TotalMilliseconds + 5_000, 1, uint.MaxValue),
         };
         return (request, policy);
     }
 
+    private static NetworkPolicy FilteredNetwork(int port)
+    {
+        // The only way out is the proxy on this computer's loopback; the backend blocks every other route, including the loopback itself.
+        return new NetworkPolicy
+        {
+            Egress = new NetworkEgressPolicy { Default = NetworkAction.Deny },
+            Ingress = new NetworkIngressPolicy { Default = NetworkAction.Deny, HostLoopback = NetworkAction.Deny },
+            RuntimeConfig = new NetworkRuntimeConfig { NetworkProxy = ProxyUrl(port) },
+        };
+    }
+
+    // The backend also sets the proxy variables (HTTP_PROXY, HTTPS_PROXY, ALL_PROXY and their lower-case forms) from this URL.
+    private static string ProxyUrl(int port) => string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}");
+
+    // The backend drops NO_PROXY from the environment it is given, so the command sets it itself. A server the command
+    // starts on its own loopback is not on the internet, so talking to it needs no proxy.
+    private static string NoProxyPrefix(ShellInfo shell)
+    {
+        const string Hosts = "localhost,127.0.0.1,::1";
+        return shell.IsPowerShell
+            ? $"$env:NO_PROXY='{Hosts}'; $env:no_proxy='{Hosts}'\n"
+            : $"export NO_PROXY='{Hosts}' no_proxy='{Hosts}'\n";
+    }
+
     private async Task<IShellProcess> SpawnAsync(ShellLaunch launch, CancellationToken cancellationToken)
     {
-        var (request, policy) = BuildRequest(launch);
-        if (policy.Denied.Any(File.Exists) && (_fileDenyProblem.IsValueCreated ? _fileDenyProblem.Value : await Task.Run(() => _fileDenyProblem.Value, cancellationToken)) is { } problem)
+        if (launch.Network is not null && OperatingSystem.IsWindows())
         {
-            throw new IOException(problem);
+            throw new IOException("This command was not run: the network filter isn't supported by the Windows sandbox yet. The user can turn it off in Settings.");
         }
 
+        var proxy = launch.Network is { } gate ? new EgressProxy(gate, _time) : null;
         try
         {
-            return new MxcShellProcess(await MxcContainer.SpawnAsync(request, cancellationToken: cancellationToken));
+            var (request, policy) = BuildRequest(launch, proxy?.Port);
+            if (policy.Denied.Any(File.Exists) && (_fileDenyProblem.IsValueCreated ? _fileDenyProblem.Value : await Task.Run(() => _fileDenyProblem.Value, cancellationToken)) is { } problem)
+            {
+                throw new IOException(problem);
+            }
+
+            return new MxcShellProcess(await MxcContainer.SpawnAsync(request, cancellationToken: cancellationToken), proxy);
         }
         catch (MxcException ex)
         {
-            var hint = policy.Denied.Count > 0 ? " It may not be able to keep files out of reach on this system, which a rule of the user's or a protected path needs." : string.Empty;
+            proxy?.Dispose();
+            var hint = proxy is null ? string.Empty : " The network filter needs slirp4netns, iptables and nsenter on Linux; the user can turn it off in Settings.";
             throw new IOException($"The sandbox could not start the command ({ex.Code}): {ex.Message}{hint}", ex);
+        }
+        catch
+        {
+            proxy?.Dispose();
+            throw;
         }
     }
 }

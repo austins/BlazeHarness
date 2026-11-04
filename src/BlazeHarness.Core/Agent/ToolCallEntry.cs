@@ -78,6 +78,11 @@ public sealed class ToolCallEntry
     public bool CanRemember { get; set; }
 
     /// <summary>
+    /// Gets or sets the hosts a running command waits to connect to until the user answers. It is not saved.
+    /// </summary>
+    public IReadOnlyList<PendingHost> PendingHosts { get; set; } = [];
+
+    /// <summary>
     /// Gets the question of an <c>ask_user</c> call, read from its arguments, or null for any other call or when the arguments are not a valid question.
     /// </summary>
     public UserQuestion? Question => Name == UserQuestion.ToolName ? AskUserTool.TryParse(ArgumentsJson) : null;

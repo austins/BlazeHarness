@@ -19,7 +19,7 @@ public sealed partial class Chat
     /// Gets a value indicating whether the chat waits for the user, either to answer a question or to allow a tool call.
     /// </summary>
     public bool NeedsUser => Entries.Count > 0
-        && Entries[^1].ToolCalls.Any(call => call.Status is ToolCallStatus.AwaitingAnswer or ToolCallStatus.AwaitingApproval);
+        && Entries[^1].ToolCalls.Any(call => call.Status is ToolCallStatus.AwaitingAnswer or ToolCallStatus.AwaitingApproval || call.PendingHosts.Count > 0);
 
     /// <summary>
     /// Answer a question that waits for the user.

@@ -18,4 +18,9 @@ public enum RuleTarget
     /// The host a web fetch reads from (<c>example.com</c>), or <c>web_search</c> for a web search.
     /// </summary>
     WebHost,
+
+    /// <summary>
+    /// The host a sandboxed shell command connects to (<c>registry.npmjs.org</c>), while the shell network filter is on.
+    /// </summary>
+    NetworkHost,
 }

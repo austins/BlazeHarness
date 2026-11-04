@@ -4,6 +4,8 @@ using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Sandbox;
+using BlazeHarness.Core.Sandbox.Network;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 using System.Globalization;
@@ -594,7 +596,7 @@ internal static class ChatRunner
                 yield return new ToolCallRunning(p.Call.CallId);
                 try
                 {
-                    results[index] = await RunAsync(tools, p, ContextFor(tools, decision, permissions), cancellationToken);
+                    results[index] = await RunAsync(tools, p, ContextFor(tools, decision, permissions, p.Tool.RunsCommands ? new HostQuestions(approver as IHostApprover, p.Call.CallId) : null), cancellationToken);
                     statuses[index] = results[index]!.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -693,7 +695,7 @@ internal static class ChatRunner
         return new ToolCallFinished(call.Call.CallId, call.Call.Name, result.Output, status, result.Image);
     }
 
-    private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision, PermissionEngine permissions)
+    private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision, PermissionEngine permissions, HostQuestions? hosts = null)
     {
         var context = (decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context).WithSensitive(permissions.Sensitive()).WithRefused(permissions.Refused(tools.Context.Root));
         if (decision.ShellReadFolders is { Count: > 0 } folders)
@@ -701,8 +703,15 @@ internal static class ChatRunner
             context = context.WithShellReadFolders(folders);
         }
 
-        return decision.Shell == context.Shell ? context : context.WithShell(decision.Shell);
+        context = decision.Shell == context.Shell ? context : context.WithShell(decision.Shell);
+
+        // A command that runs unconfined is not inside the sandbox that enforces the filter.
+        return hosts is not null && permissions.NetworkFilter() && context.Shell != ShellMode.Unconfined
+            ? context.WithNetwork(new NetworkHostGate(permissions, hosts.Approver, hosts.CallId))
+            : context;
     }
+
+    private sealed record HostQuestions(IHostApprover? Approver, string CallId);
 
     private static async Task<ToolResult> RunAsync(ToolSet tools, PlannedCall call, ToolContext context, CancellationToken cancellationToken)
     {

@@ -69,7 +69,7 @@
 
     @foreach (var call in Entry.ToolCalls)
     {
-        <ToolCallView @key="call.CallId" Call="call" ChatId="@ChatId" OnDecide="OnDecide" OnAnswer="OnAnswer" />
+        <ToolCallView @key="call.CallId" Call="call" ChatId="@ChatId" OnDecide="OnDecide" OnDecideHost="OnDecideHost" OnAnswer="OnAnswer" />
     }
 
     @if (Entry.Status == EntryStatus.Cancelled)
@@ -235,6 +235,12 @@
     /// </summary>
     [Parameter]
     public EventCallback<(string CallId, ApprovalChoice Choice)> OnDecide { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user answering the question about a host a running command wants to connect to.
+    /// </summary>
+    [Parameter]
+    public EventCallback<HostAnswer> OnDecideHost { get; set; }
 
     /// <summary>
     /// Gets or sets the function for the user answering a question the model asked, with the call id and the answer, which returns whether the answer was taken.

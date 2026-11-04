@@ -806,6 +806,7 @@ public sealed partial class ChatService : IDisposable
         {
             chat.Permissions.BypassAllowed = () => defaults.AllowBypass;
             chat.Permissions.Rules = () => defaults.Rules;
+            chat.Permissions.NetworkFilter = () => defaults.NetworkFilter;
         }
 
         var web = _web;
