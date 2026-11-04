@@ -71,7 +71,7 @@ internal sealed class LibsecretStore(string serviceName = "blazeharness") : ISec
     {
         var result = await ProcessRunner.RunAsync(
             Tool,
-            ["store", "--label=BlazeHarness " + key, "service", serviceName, "account", key],
+            ["store", $"--label={AppConstants.AppName} {key}", "service", serviceName, "account", key],
             value,
             cancellationToken);
         if (result.ExitCode != 0)

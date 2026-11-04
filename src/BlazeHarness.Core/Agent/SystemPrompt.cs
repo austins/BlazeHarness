@@ -22,7 +22,7 @@ internal static class SystemPrompt
     public static string Build(string operatingSystem, string? shell, string workingDirectory)
     {
         var prompt = new StringBuilder();
-        prompt.AppendLine("You are a capable assistant for chat and software work, running inside the BlazeHarness app.");
+        prompt.AppendLine(CultureInfo.InvariantCulture, $"You are a capable assistant for chat and software work, running inside the {AppConstants.AppName} app.");
         prompt.AppendLine();
         prompt.AppendLine("Environment:");
         prompt.AppendLine(CultureInfo.InvariantCulture, $"- OS: {operatingSystem}");

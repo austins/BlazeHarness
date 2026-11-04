@@ -1,4 +1,4 @@
-# BlazeHarness
+# Blaze Harness
 
 A local web app for chatting and coding with any OpenAI-compatible LLM. It runs on Windows, macOS and Linux. The model can read, edit and search files and run shell commands, and you approve what it may do.
 
@@ -167,7 +167,7 @@ Not built yet, and not promised:
 
 ## Why not Microsoft Agent Framework?
 
-BlazeHarness builds on `Microsoft.Extensions.AI` (`IChatClient`, `AIFunction`) and keeps its own agent loop rather than using Microsoft Agent Framework (AF).
+Blaze Harness builds on `Microsoft.Extensions.AI` (`IChatClient`, `AIFunction`) and keeps its own agent loop rather than using Microsoft Agent Framework (AF).
 
 * The loop, approvals, access levels and chat persistence are the security-critical parts, and they depend on exact behavior: every tool call gets a result in the saved chat, approvals are checked per call, and the request prefix stays stable and append-only. AF's `ToolApprovalAgent`, context providers and history handling don't guarantee these.
 * The pieces we would need from AF are not settled. Its shell tool is preview, its MCP package is alpha, and it has no `AGENTS.md` support.

@@ -4,11 +4,11 @@ using System.Net;
 namespace BlazeHarness.Core.Web.Browser;
 
 /// <summary>
-/// Decides which addresses the built-in browser may load: pages on this computer, except BlazeHarness itself.
+/// Decides which addresses the built-in browser may load: pages on this computer, except Blaze Harness itself.
 /// </summary>
 /// <remarks>
 /// This is the reverse of <see cref="WebAddressPolicy"/>, which keeps the fetch tool on the public internet. The browser runs scripts,
-/// so it is limited to the services a developer starts locally. BlazeHarness is refused because a page it showed could be same-origin
+/// so it is limited to the services a developer starts locally. Blaze Harness is refused because a page it showed could be same-origin
 /// with the app and click its approval buttons.
 /// </remarks>
 internal static class BrowserAddressPolicy
@@ -17,7 +17,7 @@ internal static class BrowserAddressPolicy
     /// Check an address.
     /// </summary>
     /// <param name="uri">The address of a page or of something a page loads.</param>
-    /// <param name="appPort">The port BlazeHarness listens on, or null when it is not known.</param>
+    /// <param name="appPort">The port Blaze Harness listens on, or null when it is not known.</param>
     /// <returns>Null when the browser may load it, otherwise what to tell the model.</returns>
     public static string? Refusal(Uri uri, int? appPort)
     {
@@ -32,7 +32,7 @@ internal static class BrowserAddressPolicy
             return "The browser only opens pages on this computer (localhost, 127.0.0.1 or [::1]). Use web_fetch for the internet.";
         }
 
-        return appPort == uri.Port ? "That port is BlazeHarness itself, which the browser may not open." : null;
+        return appPort == uri.Port ? $"That port is {AppConstants.AppName} itself, which the browser may not open." : null;
     }
 
     /// <summary>

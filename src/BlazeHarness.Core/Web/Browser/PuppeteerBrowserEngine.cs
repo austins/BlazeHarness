@@ -61,7 +61,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     /// <summary>
     /// Initializes a new instance of the <see cref="PuppeteerBrowserEngine"/> class.
     /// </summary>
-    /// <param name="appPort">The port BlazeHarness listens on, which pages may not open, or null when it is not known.</param>
+    /// <param name="appPort">The port Blaze Harness listens on, which pages may not open, or null when it is not known.</param>
     /// <param name="browserDirectory">The folder the browser is downloaded to.</param>
     /// <param name="logger">The logger.</param>
     /// <param name="time">The clock.</param>
@@ -642,7 +642,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         var origin = BrowserAddressPolicy.OriginOf(uri);
         if (BrowserAddressPolicy.Refusal(uri, _appPort) is not null)
         {
-            return $"Blocked a request to {origin}: the browser only loads localhost pages, and not BlazeHarness itself.";
+            return $"Blocked a request to {origin}: the browser only loads localhost pages, and not {AppConstants.AppName} itself.";
         }
 
         return request.IsNavigationRequest && request.Frame?.ParentFrame is null && !session.IsApproved(origin)

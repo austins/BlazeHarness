@@ -727,7 +727,7 @@ public sealed class ChatServiceTests : IDisposable
         chat.Entries[1].ToolCalls.Single().Output.Should().Contain("secret plans");
         client.Options[0]!.Tools.Should().Contain(t => t.Name == "write_file");
         client.Requests[0][0].Role.Should().Be(ChatRole.System);
-        client.Requests[0][0].Text.Should().Contain("BlazeHarness");
+        client.Requests[0][0].Text.Should().Contain(AppConstants.AppName);
     }
 
     [Fact]

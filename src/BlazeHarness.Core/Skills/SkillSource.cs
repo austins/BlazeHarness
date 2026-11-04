@@ -11,7 +11,7 @@ public enum SkillSource
     Project,
 
     /// <summary>
-    /// The <c>skills</c> folder in BlazeHarness's own folder.
+    /// The <c>skills</c> folder in Blaze Harness's own folder.
     /// </summary>
     App,
 

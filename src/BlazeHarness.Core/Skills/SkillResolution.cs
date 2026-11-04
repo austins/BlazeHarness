@@ -12,7 +12,7 @@ public sealed record SkillResolution(IReadOnlyList<SkillInfo> Skills, IReadOnlyL
     /// Settle duplicate names across folders.
     /// </summary>
     /// <remarks>
-    /// The chat's own folder wins over BlazeHarness's folder, which wins over <c>~/.agents/skills</c>. Within one folder
+    /// The chat's own folder wins over Blaze Harness's folder, which wins over <c>~/.agents/skills</c>. Within one folder
     /// the first folder in name order wins.
     /// </remarks>
     /// <param name="scans">The scans of every folder, in any order.</param>

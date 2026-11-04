@@ -47,10 +47,10 @@
     <value>这是文件，不是文件夹。</value>
   </data>
   <data name="OpenFolderErrorAccessDenied" xml:space="preserve">
-    <value>BlazeHarness 无权读取该文件夹。</value>
+    <value>Blaze Harness 无权读取该文件夹。</value>
   </data>
   <data name="OpenFolderErrorNotAllowed" xml:space="preserve">
-    <value>该文件夹范围过大，无法作为工作文件夹。请选择项目文件夹，而非根目录、主文件夹或 BlazeHarness 自身的数据文件夹。</value>
+    <value>该文件夹范围过大，无法作为工作文件夹。请选择项目文件夹，而非根目录、主文件夹或 Blaze Harness 自身的数据文件夹。</value>
   </data>
   <data name="MoveChatErrorWriteFailed" xml:space="preserve">
     <value>无法移动该聊天，因为无法写入其文件。</value>
@@ -656,7 +656,7 @@
     <value>连接兼容 OpenAI 的端点即可开始聊天。托管 API 或 llama.cpp 等本地服务器均可使用。</value>
   </data>
   <data name="HomeHeading" xml:space="preserve">
-    <value>欢迎使用 BlazeHarness</value>
+    <value>欢迎使用 Blaze Harness</value>
   </data>
   <data name="NotFoundMessage" xml:space="preserve">
     <value>你访问的页面不存在。</value>
@@ -1076,7 +1076,7 @@
     <value>测试连接</value>
   </data>
   <data name="McpSettingsTrustExplanation" xml:space="preserve">
-    <value>此标签由服务器提供，BlazeHarness 无法验证。除非聊天为只读，否则受信任的工具会跳过批准。其他所有操作都会先询问，除非聊天设为“从不询问”。</value>
+    <value>此标签由服务器提供，Blaze Harness 无法验证。除非聊天为只读，否则受信任的工具会跳过批准。其他所有操作都会先询问，除非聊天设为“从不询问”。</value>
   </data>
   <data name="McpSettingsConnected" xml:space="preserve">
     <value>已连接</value>
@@ -1472,10 +1472,10 @@
     <value>选择此文件夹现在的位置。其聊天也会随之移动。</value>
   </data>
   <data name="SidebarImportNotAnExport" xml:space="preserve">
-    <value>该文件不是 BlazeHarness 聊天导出文件。</value>
+    <value>该文件不是 Blaze Harness 聊天导出文件。</value>
   </data>
   <data name="SidebarImportNewerVersion" xml:space="preserve">
-    <value>该文件由更新版本的 BlazeHarness 导出。</value>
+    <value>该文件由更新版本的 Blaze Harness 导出。</value>
   </data>
   <data name="SidebarImportNoMessages" xml:space="preserve">
     <value>该文件没有消息。</value>
@@ -1778,7 +1778,7 @@
     <value>保存</value>
   </data>
   <data name="McpSettingsFileHint" xml:space="preserve">
-    <value>在 BlazeHarness 外部所做的更改也会显示在这里。为已打开的聊天开启或关闭服务器会更改其工具，从而重置该聊天的提示词缓存。</value>
+    <value>在 Blaze Harness 外部所做的更改也会显示在这里。为已打开的聊天开启或关闭服务器会更改其工具，从而重置该聊天的提示词缓存。</value>
   </data>
   <data name="McpSettingsAdvancedSummary" xml:space="preserve">
     <value>高级：编辑 mcp.json</value>
@@ -1883,7 +1883,7 @@
     <value>没有受保护的文件夹。</value>
   </data>
   <data name="PermissionsSettingsProtectedFoldersHint" xml:space="preserve">
-    <value>在任何聊天中（即使是“无限制”），任何工具都无法读写这些文件夹。BlazeHarness 自身的文件夹始终受保护，且不会在此列出。</value>
+    <value>在任何聊天中（即使是“无限制”），任何工具都无法读写这些文件夹。Blaze Harness 自身的文件夹始终受保护，且不会在此列出。</value>
   </data>
   <data name="PermissionsSettingsProtectedFoldersHeading" xml:space="preserve">
     <value>受保护的文件夹</value>
@@ -2090,13 +2090,13 @@
     <value>提供商</value>
   </data>
   <data name="SkillsSettingsLocationsHint" xml:space="preserve">
-    <value>这三处的技能都会被使用。如果两个技能同名，将使用列表中位置靠前的文件夹中的技能，另一个将被隐藏。BlazeHarness 文件夹和全局文件夹中的更改会自动显示在这里。聊天文件夹中的技能会在该聊天每次发送消息时读取。</value>
+    <value>这三处的技能都会被使用。如果两个技能同名，将使用列表中位置靠前的文件夹中的技能，另一个将被隐藏。Blaze Harness 文件夹和全局文件夹中的更改会自动显示在这里。聊天文件夹中的技能会在该聊天每次发送消息时读取。</value>
   </data>
   <data name="SkillsSettingsGlobalLocation" xml:space="preserve">
     <value>全局技能，适用于这里的所有聊天以及读取此文件夹的其他 AI 智能体应用。</value>
   </data>
   <data name="SkillsSettingsBlazeHarnessLocation" xml:space="preserve">
-    <value>BlazeHarness 技能，适用于这里的所有聊天。</value>
+    <value>Blaze Harness 技能，适用于这里的所有聊天。</value>
   </data>
   <data name="SkillsSettingsFolderLocation" xml:space="preserve">
     <value>文件夹技能，适用于该文件夹中的聊天。</value>
@@ -2141,7 +2141,7 @@
     <value>浏览器（打开此计算机上的页面）</value>
   </data>
   <data name="WebToolsSettingsBrowserHint" xml:space="preserve">
-    <value>智能体可以在隐藏浏览器中打开此计算机（localhost）上的页面并运行其脚本，读取页面显示的内容以及任何错误。它无法打开互联网上的网站或 BlazeHarness 本身，且每个地址都会像网页获取一样先询问批准。这是一个远程控制的测试浏览器，而非完整浏览器：它没有标签页、扩展程序或开发者工具。智能体可以导航、点击、输入、滚动、等待和截图，但无法拖拽、上传文件或访问 iframe 内的页面。侧面板会显示页面的实时画面，您可以在其中点击、悬停、输入和滚动。浏览器只需下载一次，约 125 MB。</value>
+    <value>智能体可以在隐藏浏览器中打开此计算机（localhost）上的页面并运行其脚本，读取页面显示的内容以及任何错误。它无法打开互联网上的网站或 Blaze Harness 本身，且每个地址都会像网页获取一样先询问批准。这是一个远程控制的测试浏览器，而非完整浏览器：它没有标签页、扩展程序或开发者工具。智能体可以导航、点击、输入、滚动、等待和截图，但无法拖拽、上传文件或访问 iframe 内的页面。侧面板会显示页面的实时画面，您可以在其中点击、悬停、输入和滚动。浏览器只需下载一次，约 125 MB。</value>
   </data>
   <data name="WebToolsSettingsBrowserForwarded" xml:space="preserve">
     <value>浏览器工具在每个聊天中均可使用。沙箱命令启动的服务器只有在命令以 background 方式运行时才能打开，该方式会将端口转发到 localhost。在前台启动的服务器无法从该命令外部访问。</value>

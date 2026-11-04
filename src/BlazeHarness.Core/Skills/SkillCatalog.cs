@@ -33,7 +33,7 @@ public sealed partial class SkillCatalog : IDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="SkillCatalog"/> class.
     /// </summary>
-    /// <param name="paths">Where BlazeHarness keeps its files.</param>
+    /// <param name="paths">Where Blaze Harness keeps its files.</param>
     /// <param name="config">The app settings, which hold the list of turned-off skills.</param>
     /// <param name="logger">The logger.</param>
     /// <param name="time">The clock, used to expire the scans of chat folders.</param>

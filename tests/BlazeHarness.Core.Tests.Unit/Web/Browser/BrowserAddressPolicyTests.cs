@@ -60,7 +60,7 @@ public sealed class BrowserAddressPolicyTests
         var result = BrowserAddressPolicy.Refusal(new Uri(address), 5380);
 
         // Assert
-        result.Should().Contain("BlazeHarness");
+        result.Should().Contain(AppConstants.AppName);
     }
 
     [Fact]

@@ -31,7 +31,7 @@ public sealed class WebServices : IDisposable
     /// <param name="loggers">Creates the logger.</param>
     /// <param name="time">The clock.</param>
     /// <param name="browserDirectory">The folder the browser the browser tools use is downloaded to.</param>
-    /// <param name="appPort">The port BlazeHarness listens on, which the browser tools refuse to open, or null when it is not known.</param>
+    /// <param name="appPort">The port Blaze Harness listens on, which the browser tools refuse to open, or null when it is not known.</param>
     public WebServices(Func<WebSettings> settings, HttpClient searchClient, ILoggerFactory loggers, TimeProvider time, string browserDirectory, int? appPort = null)
         : this(settings, searchClient, loggers, time, appPort, CreateBrowser(loggers, time, browserDirectory, appPort))
     {

@@ -69,11 +69,11 @@
     <comment>Error shown when the entered path points to a file.</comment>
   </data>
   <data name="OpenFolderErrorAccessDenied" xml:space="preserve">
-    <value>BlazeHarness isn't allowed to read that folder.</value>
+    <value>Blaze Harness isn't allowed to read that folder.</value>
     <comment>Error shown when access to the selected folder is denied.</comment>
   </data>
   <data name="OpenFolderErrorNotAllowed" xml:space="preserve">
-    <value>That folder is too broad to work in. Pick a project folder, not the root, your home folder or BlazeHarness's own data folder.</value>
+    <value>That folder is too broad to work in. Pick a project folder, not the root, your home folder or Blaze Harness's own data folder.</value>
     <comment>Error shown when the selected folder is too broad to safely use as a project folder.</comment>
   </data>
   <data name="MoveChatErrorWriteFailed" xml:space="preserve">
@@ -881,8 +881,8 @@
     <comment>Paragraph on the welcome page shown when no provider is configured. "OpenAI" and "llama.cpp" are product names: do not translate.</comment>
   </data>
   <data name="HomeHeading" xml:space="preserve">
-    <value>Welcome to BlazeHarness</value>
-    <comment>Main heading of the welcome page. BlazeHarness is the product name: do not translate it.</comment>
+    <value>Welcome to Blaze Harness</value>
+    <comment>Main heading of the welcome page. Blaze Harness is the product name: do not translate it.</comment>
   </data>
   <data name="NotFoundMessage" xml:space="preserve">
     <value>The page you are looking for does not exist.</value>
@@ -950,7 +950,7 @@
   </data>
   <data name="DiagnosticsSettingsVersionLabel" xml:space="preserve">
     <value>Version</value>
-    <comment>Label in the About this install list on the Diagnostics page; its value is the BlazeHarness version number.</comment>
+    <comment>Label in the About this install list on the Diagnostics page; its value is the Blaze Harness version number.</comment>
   </data>
   <data name="DiagnosticsSettingsCopyButton" xml:space="preserve">
     <value>Copy for a bug report</value>
@@ -1272,7 +1272,7 @@
   <data name="McpSettingsSecretWarning" xml:space="preserve"><value>This server has what looks like a secret written into the file: {names}. Use a [code]{reference}[/code] reference to an environment variable instead, so the secret stays out of the file.</value><comment>Warning about literal secrets in an MCP config file. {names} is the list of detected environment variable names. {reference} is the literal text ${NAME}, shown as code; do not translate it. Keep the [code] tags.</comment></data>
   <data name="McpSettingsConnecting" xml:space="preserve"><value>Connecting…</value><comment>Button label while testing an MCP server connection.</comment></data>
   <data name="McpSettingsTestConnection" xml:space="preserve"><value>Test connection</value><comment>Button label for testing an MCP server connection.</comment></data>
-  <data name="McpSettingsTrustExplanation" xml:space="preserve"><value>The server supplies this label; BlazeHarness can't verify it. Trusted tools skip approval unless the chat is read only. Everything else asks first, unless a chat is set to Never ask.</value><comment>Explains the effect and limits of trusting MCP server tools.</comment></data>
+  <data name="McpSettingsTrustExplanation" xml:space="preserve"><value>The server supplies this label; Blaze Harness can't verify it. Trusted tools skip approval unless the chat is read only. Everything else asks first, unless a chat is set to Never ask.</value><comment>Explains the effect and limits of trusting MCP server tools.</comment></data>
   <data name="McpSettingsConnected" xml:space="preserve"><value>Connected</value><comment>MCP server connection state.</comment></data>
   <data name="McpSettingsFailed" xml:space="preserve"><value>Failed</value><comment>MCP server connection state.</comment></data>
   <data name="McpSettingsOff" xml:space="preserve"><value>Off</value><comment>MCP server disabled state.</comment></data>
@@ -1452,8 +1452,8 @@
   <data name="SidebarSwitchToLightTheme" xml:space="preserve"><value>Switch to light theme</value><comment>Accessible label for switching to the light theme.</comment></data>
   <data name="SidebarSwitchToDarkTheme" xml:space="preserve"><value>Switch to dark theme</value><comment>Accessible label for switching to the dark theme.</comment></data>
   <data name="SidebarRelocateHint" xml:space="preserve"><value>Choose where this folder is now. Its chats move with it.</value><comment>Hint shown when locating a moved folder.</comment></data>
-  <data name="SidebarImportNotAnExport" xml:space="preserve"><value>The file is not a BlazeHarness chat export.</value><comment>Error shown when an imported file is not a chat export. BlazeHarness is the app name: do not translate it.</comment></data>
-  <data name="SidebarImportNewerVersion" xml:space="preserve"><value>The file was exported by a newer version of BlazeHarness.</value><comment>Error shown when an imported chat export comes from a newer app version. BlazeHarness is the app name: do not translate it.</comment></data>
+  <data name="SidebarImportNotAnExport" xml:space="preserve"><value>The file is not a Blaze Harness chat export.</value><comment>Error shown when an imported file is not a chat export. Blaze Harness is the app name: do not translate it.</comment></data>
+  <data name="SidebarImportNewerVersion" xml:space="preserve"><value>The file was exported by a newer version of Blaze Harness.</value><comment>Error shown when an imported chat export comes from a newer app version. Blaze Harness is the app name: do not translate it.</comment></data>
   <data name="SidebarImportNoMessages" xml:space="preserve"><value>The file has no messages.</value><comment>Error shown when an imported chat export contains no messages.</comment></data>
   <data name="AttachmentUnsupported" xml:space="preserve"><value>"{name}" can't be attached. Only images (PNG, JPEG, GIF, WebP) and text files are supported.</value><comment>Error shown above the message box when a file can't be attached. {name} is the file name. PNG, JPEG, GIF and WebP are file formats: do not translate them.</comment></data>
   <data name="AttachmentTooLarge" xml:space="preserve"><value>"{name}" is larger than {size} MB.</value><comment>Error shown above the message box when a file to attach is too large. {name} is the file name and {size} the limit in megabytes.</comment></data>
@@ -1618,8 +1618,8 @@
     <comment>Button in the advanced mcp.json editor that saves the edited file text.</comment>
   </data>
   <data name="McpSettingsFileHint" xml:space="preserve">
-    <value>Changes made outside BlazeHarness show up here too. Turning a server on or off for a chat that is already open changes its tools, which resets that chat's prompt cache.</value>
-    <comment>Hint under the advanced mcp.json editor: edits made to the file by other programs are picked up, and changing a server for an open chat resets that chat's prompt cache (the model provider's cache of the conversation prefix). Keep "BlazeHarness" untranslated.</comment>
+    <value>Changes made outside Blaze Harness show up here too. Turning a server on or off for a chat that is already open changes its tools, which resets that chat's prompt cache.</value>
+    <comment>Hint under the advanced mcp.json editor: edits made to the file by other programs are picked up, and changing a server for an open chat resets that chat's prompt cache (the model provider's cache of the conversation prefix). Keep "Blaze Harness" untranslated.</comment>
   </data>
   <data name="McpSettingsAdvancedSummary" xml:space="preserve">
     <value>Advanced: edit mcp.json</value>
@@ -1758,8 +1758,8 @@
     <comment>Message on the Permissions page shown in place of the Protected folders list when the list is empty.</comment>
   </data>
   <data name="PermissionsSettingsProtectedFoldersHint" xml:space="preserve">
-    <value>No tool can read or write these, in any chat, even Unrestricted. BlazeHarness's own folder is always protected and is not listed.</value>
-    <comment>Hint under the Protected folders heading on the Permissions page. "Unrestricted" is the name of an access level (see PermissionPickerUnrestricted) and should match its translation. BlazeHarness is the product name, do not translate it.</comment>
+    <value>No tool can read or write these, in any chat, even Unrestricted. Blaze Harness's own folder is always protected and is not listed.</value>
+    <comment>Hint under the Protected folders heading on the Permissions page. "Unrestricted" is the name of an access level (see PermissionPickerUnrestricted) and should match its translation. Blaze Harness is the product name, do not translate it.</comment>
   </data>
   <data name="PermissionsSettingsProtectedFoldersHeading" xml:space="preserve">
     <value>Protected folders</value>
@@ -2034,16 +2034,16 @@
     <comment>Title of the settings page where the user manages model providers.</comment>
   </data>
   <data name="SkillsSettingsLocationsHint" xml:space="preserve">
-    <value>Skills from all three are used. If two have the same name, the one from the folder higher in this list is used and the other is hidden. Changes to the BlazeHarness and global folders show up here automatically. Skills in a chat's folder are read each time the chat sends a message.</value>
-    <comment>Hint under the list of skill locations. "All three" means the chat folder, BlazeHarness folder and global folder listed above it. Keep "BlazeHarness" untranslated.</comment>
+    <value>Skills from all three are used. If two have the same name, the one from the folder higher in this list is used and the other is hidden. Changes to the Blaze Harness and global folders show up here automatically. Skills in a chat's folder are read each time the chat sends a message.</value>
+    <comment>Hint under the list of skill locations. "All three" means the chat folder, Blaze Harness folder and global folder listed above it. Keep "Blaze Harness" untranslated.</comment>
   </data>
   <data name="SkillsSettingsGlobalLocation" xml:space="preserve">
     <value>Global skills, for every chat here and in other AI agent apps that read this folder.</value>
     <comment>Description next to the global skills folder path in the "Where skills are read from" list. The folder is shared with other AI agent apps.</comment>
   </data>
   <data name="SkillsSettingsBlazeHarnessLocation" xml:space="preserve">
-    <value>BlazeHarness skills, for every chat here.</value>
-    <comment>Description next to the BlazeHarness skills folder path in the "Where skills are read from" list. Keep "BlazeHarness" untranslated.</comment>
+    <value>Blaze Harness skills, for every chat here.</value>
+    <comment>Description next to the Blaze Harness skills folder path in the "Where skills are read from" list. Keep "Blaze Harness" untranslated.</comment>
   </data>
   <data name="SkillsSettingsFolderLocation" xml:space="preserve">
     <value>Folder skills, for chats in that folder.</value>
@@ -2102,7 +2102,7 @@
     <comment>Label of a checkbox on the Web page that turns the browser tools on or off. They let the agent open a page of a web app running on this computer in a headless browser, read it and check its own UI changes.</comment>
   </data>
   <data name="WebToolsSettingsBrowserHint" xml:space="preserve">
-    <value>The agent can open pages on this computer (localhost) in a hidden browser that runs their scripts, and read what they show along with any errors. It can't open sites on the internet or BlazeHarness itself, and each address asks first, like web fetch. This is a remote-controlled test browser, not a full one: it has no tabs, extensions or developer tools. The agent can navigate, click, type, scroll, wait and take screenshots, but it can't drag, upload files or reach pages inside iframes. The side panel shows a live picture of the page that you can click, hover, type and scroll in. The browser is downloaded once, about 125 MB.</value>
+    <value>The agent can open pages on this computer (localhost) in a hidden browser that runs their scripts, and read what they show along with any errors. It can't open sites on the internet or Blaze Harness itself, and each address asks first, like web fetch. This is a remote-controlled test browser, not a full one: it has no tabs, extensions or developer tools. The agent can navigate, click, type, scroll, wait and take screenshots, but it can't drag, upload files or reach pages inside iframes. The side panel shows a live picture of the page that you can click, hover, type and scroll in. The browser is downloaded once, about 125 MB.</value>
     <comment>Hint under the Browser checkbox on the Web page. It explains that the tool opens only addresses on this computer (localhost), runs the page's scripts in a hidden (headless) browser, cannot open internet addresses or the app itself, asks for approval per address, is a remote-controlled test browser with limited features (no tabs, extensions or developer tools; no dragging, file uploads or iframe pages), shows a live picture in the side panel, and needs a one-time download of about 125 MB.</comment>
   </data>
   <data name="WebToolsSettingsBrowserForwarded" xml:space="preserve">

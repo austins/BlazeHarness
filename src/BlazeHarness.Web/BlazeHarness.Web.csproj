@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
     <PropertyGroup>
+        <AssemblyTitle>Blaze Harness</AssemblyTitle>
+        <Product>Blaze Harness</Product>
+        <Copyright>Austin S.</Copyright>
         <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
         <NeutralLanguage>en-US</NeutralLanguage>
     </PropertyGroup>

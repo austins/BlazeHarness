@@ -5,7 +5,7 @@ namespace BlazeHarness.Core.Chats.Export;
 /// </summary>
 public enum ChatImportError
 {
-    /// <summary>The file is not a BlazeHarness chat export.</summary>
+    /// <summary>The file is not a Blaze Harness chat export.</summary>
     NotAnExport,
 
     /// <summary>The file was exported by a newer version of the app.</summary>

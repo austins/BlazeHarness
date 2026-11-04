@@ -67,7 +67,7 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
         var act = async () => await sut.NavigateAsync(Chat, Url("/"), TestContext.Current.CancellationToken);
 
         // Assert
-        await act.Should().ThrowAsync<BrowserException>().WithMessage("*BlazeHarness*");
+        await act.Should().ThrowAsync<BrowserException>().WithMessage($"*{AppConstants.AppName}*");
     }
 
     [Fact]

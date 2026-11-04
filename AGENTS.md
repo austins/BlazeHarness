@@ -44,7 +44,7 @@
 
 ## Localization
 
-App-owned web UI text lives in typed resources (`WebStrings`), and Razor, C# and JavaScript hold no literals for it. Text that reads the same in every language (file names, format names, sample values) is not UI text: write it inline, and take the product name from `AppConstants.AppName`. Before adding or changing text, read the "Web UI text" section of [CONTRIBUTING.md](CONTRIBUTING.md) for key naming, translator comments and markup tags.
+App-owned web UI text lives in typed resources (`WebStrings`), and Razor, C# and JavaScript hold no literals for it. Text that reads the same in every language (file names, format names, sample values) is not UI text: write it inline, and take the product name from `AppConstants.AppName` ("Blaze Harness"), or `AppConstants.AppId` where a name can't hold a space (user agents). Before adding or changing text, read the "Web UI text" section of [CONTRIBUTING.md](CONTRIBUTING.md) for key naming, translator comments and markup tags.
 
 - Put a whole sentence in one entry. For inline markup, write `[code]…[/code]` and `[strong]…[/strong]` in the pattern and read it with `ResourceMessageFormatter.Web.FormatMarkup`. Pass a pattern's literal braces (like `${NAME}`) as arguments.
 - Read text with placeholders or plurals through `ResourceMessageFormatter.Web.Format(nameof(WebStrings.Key), …)`.

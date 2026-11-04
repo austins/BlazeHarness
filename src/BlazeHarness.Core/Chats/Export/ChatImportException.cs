@@ -39,9 +39,9 @@ public sealed class ChatImportException : FormatException
     public ChatImportException(ChatImportError error)
         : base(error switch
         {
-            ChatImportError.NewerVersion => "The file was exported by a newer version of BlazeHarness.",
+            ChatImportError.NewerVersion => $"The file was exported by a newer version of {AppConstants.AppName}.",
             ChatImportError.NoMessages => "The file has no messages.",
-            _ => "The file is not a BlazeHarness chat export.",
+            _ => $"The file is not a {AppConstants.AppName} chat export.",
         })
     {
         Error = error;
