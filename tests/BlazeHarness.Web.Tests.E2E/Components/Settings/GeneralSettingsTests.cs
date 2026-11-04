@@ -3,7 +3,7 @@ namespace BlazeHarness.Web.Tests.E2E.Components.Settings;
 public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(browser)
 {
     [Fact]
-    public async Task LanguagePicker_OnlyEnglishIsSupported_ShowsEnglish()
+    public async Task LanguagePicker_Default_ListsEnglishFirstThenTranslatedLanguages()
     {
         // Arrange
         await LaunchAsync();
@@ -16,16 +16,27 @@ public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(brow
         // Assert
         await Expect(language).ToHaveValueAsync("en-US");
         await Expect(Page.Locator("html")).ToHaveAttributeAsync("lang", "en-US");
-        (await language.Locator("option").AllTextContentsAsync()).Should().ContainSingle().Which.Should().Be("English");
+        await Expect(language.Locator("option")).ToHaveTextAsync(["English", "Русский", "中文（简体）"]);
+    }
+
+    [Fact]
+    public async Task LanguagePicker_TranslatedLanguageSelected_StoresTheCultureAndTranslatesTheUi()
+    {
+        // Arrange
+        await LaunchAsync();
+        await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Settings" }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "General" }).ClickAsync();
 
         // Act
-        await language.SelectOptionAsync("en-US");
+        await Page.GetByLabel("Display language").SelectOptionAsync("ru");
 
         // Assert
+        await Expect(Page.Locator("html")).ToHaveAttributeAsync("lang", "ru");
+        await Expect(Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Настройки" })).ToBeVisibleAsync();
         var cultureCookie = (await Page.Context.CookiesAsync())
             .SingleOrDefault(cookie => cookie.Name == ".AspNetCore.Culture");
         cultureCookie.Should().NotBeNull();
-        Uri.UnescapeDataString(cultureCookie.Value).Should().Be("c=en-US|uic=en-US");
+        Uri.UnescapeDataString(cultureCookie.Value).Should().Be("c=ru|uic=ru");
     }
 
     [Fact]
