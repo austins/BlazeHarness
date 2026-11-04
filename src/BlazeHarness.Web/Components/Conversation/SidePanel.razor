@@ -15,7 +15,7 @@
             <div class="side-tabs" role="group" aria-label="@WebStrings.SidePanelTabsLabel">
                 @if (State.HasBrowser)
                 {
-                    <button type="button" class="btn btn-ghost btn-sm" aria-pressed="@(tab == SidePanelTab.Browser ? "true" : "false")" @onclick="() => State.Open(SidePanelTab.Browser)"><Icon Name="globe" /> @WebStrings.SidePanelTabBrowser</button>
+                    <button type="button" class="btn btn-ghost btn-sm" aria-pressed="@(tab == SidePanelTab.Browser ? "true" : "false")" @onclick="() => State.Open(SidePanelTab.Browser)"><Icon Name="globe" /> @WebStrings.SidePanelTabPreview</button>
                 }
 
                 @if (State.HasChanges)

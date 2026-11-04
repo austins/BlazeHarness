@@ -2102,15 +2102,15 @@
   </data>
   <data name="SidePanelLabel" xml:space="preserve">
     <value>Side panel</value>
-    <comment>Accessible name of the panel next to the chat that holds the browser page and the changed files.</comment>
+    <comment>Accessible name of the panel next to the chat that holds the page preview and the changed files.</comment>
   </data>
   <data name="SidePanelTabsLabel" xml:space="preserve">
     <value>Panel views</value>
-    <comment>Accessible name of the group of buttons at the top of the side panel that switch between the browser and the changed files.</comment>
+    <comment>Accessible name of the group of buttons at the top of the side panel that switch between the page preview and the changed files.</comment>
   </data>
-  <data name="SidePanelTabBrowser" xml:space="preserve">
-    <value>Browser</value>
-    <comment>Button in the side panel that shows the page the assistant has open in its browser. Appears next to the globe icon.</comment>
+  <data name="SidePanelTabPreview" xml:space="preserve">
+    <value>Preview</value>
+    <comment>Button in the side panel that shows a live view of the page the assistant has open in its browser. Appears next to the globe icon.</comment>
   </data>
   <data name="SidePanelTabChanges" xml:space="preserve">
     <value>Changes</value>
@@ -2121,7 +2121,7 @@
     <comment>Accessible name of the draggable divider between the chat and the side panel. Arrow keys move it.</comment>
   </data>
   <data name="SidePanelToggleTooltip" xml:space="preserve">
-    <value>Show or hide the side panel (browser and changes)</value>
+    <value>Show or hide the side panel (preview and changes)</value>
     <comment>Tooltip and accessible name of the icon-only button at the right end of the top bar that shows or hides the side panel. The button also shows the number of changed files as a badge.</comment>
   </data>
   <data name="MainLayoutResizeSidebar" xml:space="preserve">
