@@ -1,5 +1,6 @@
 // Small helpers for UI primitives that need the DOM.
 const openers = [];
+const settingsAfterCultureChangeKey = "bh-settings-after-culture-change";
 let rightButtonDown = false;
 let pendingContextMenu = null;
 
@@ -31,7 +32,13 @@ window.bhUi = {
     },
     setCulture: (culture) => {
         document.cookie = `.AspNetCore.Culture=${encodeURIComponent(`c=${culture}|uic=${culture}`)}; path=/; max-age=31536000; samesite=lax`;
+        sessionStorage.setItem(settingsAfterCultureChangeKey, "true");
         window.location.reload();
+    },
+    restoreSettingsAfterCultureChange: () => {
+        const reopen = sessionStorage.getItem(settingsAfterCultureChangeKey) === "true";
+        sessionStorage.removeItem(settingsAfterCultureChangeKey);
+        return reopen;
     },
     skipToChat: () => {
         const target = document.querySelector(".composer-input") ?? document.querySelector("main");

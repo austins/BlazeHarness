@@ -23,8 +23,11 @@ public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(brow
         await Expect(language.Locator("option")).ToHaveTextAsync(["English", "Русский", CultureInfo.GetCultureInfo("zh-Hans").NativeName]);
     }
 
-    [Fact]
-    public async Task LanguagePicker_TranslatedLanguageSelected_StoresTheCultureAndTranslatesTheUi()
+    [Theory]
+    [InlineData("ru", "Настройки", "Язык интерфейса")]
+    [InlineData("zh-Hans", "设置", "显示语言")]
+    public async Task LanguagePicker_LanguageChanged_StoresTheCultureAndKeepsSettingsOpen(
+        string culture, string settingsTitle, string languageLabel)
     {
         // Arrange
         await LaunchAsync();
@@ -32,15 +35,25 @@ public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(brow
         await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "General" }).ClickAsync();
 
         // Act
-        await Page.GetByLabel("Display language").SelectOptionAsync("ru");
+        await Page.GetByLabel("Display language").SelectOptionAsync(culture);
 
         // Assert
-        await Expect(Page.Locator("html")).ToHaveAttributeAsync("lang", "ru");
-        await Expect(Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Настройки" })).ToBeVisibleAsync();
+        await Expect(Page.Locator("html")).ToHaveAttributeAsync("lang", culture);
+        await Expect(Page.GetByRole(AriaRole.Dialog, new PageGetByRoleOptions { Name = settingsTitle })).ToBeVisibleAsync();
+        await Expect(Page.GetByLabel(languageLabel)).ToHaveValueAsync(culture);
         var cultureCookie = (await Page.Context.CookiesAsync())
             .SingleOrDefault(cookie => cookie.Name == ".AspNetCore.Culture");
         cultureCookie.Should().NotBeNull();
-        Uri.UnescapeDataString(cultureCookie.Value).Should().Be("c=ru|uic=ru");
+        Uri.UnescapeDataString(cultureCookie.Value).Should().Be($"c={culture}|uic={culture}");
+
+        await Page.GetByLabel(languageLabel).SelectOptionAsync("en-US");
+        await Expect(Page.Locator("html")).ToHaveAttributeAsync("lang", "en-US");
+        await Expect(Page.GetByRole(AriaRole.Dialog, new PageGetByRoleOptions { Name = "Settings" })).ToBeVisibleAsync();
+        await Expect(Page.GetByLabel("Display language")).ToHaveValueAsync("en-US");
+
+        await Page.ReloadAsync();
+        await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
+        await Expect(Page.GetByRole(AriaRole.Dialog)).Not.ToBeVisibleAsync();
     }
 
     [Fact]

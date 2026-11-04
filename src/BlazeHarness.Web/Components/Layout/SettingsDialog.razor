@@ -1,4 +1,5 @@
 @implements IDisposable
+@inject IJSRuntime JS
 @inject SettingsDialogState State
 
 <Dialog Title="@WebStrings.SettingsDialogTitle" Open="State.Section is not null" Class="dialog-settings" OnClose="State.Close">
@@ -74,6 +75,14 @@
     protected override void OnInitialized()
     {
         State.Changed += OnChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && await JS.InvokeAsync<bool>("bhUi.restoreSettingsAfterCultureChange"))
+        {
+            State.Open();
+        }
     }
 
     public void Dispose()
