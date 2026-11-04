@@ -107,6 +107,7 @@
     private async Task CopyAsync()
     {
         await LoadAsync();
+        // The copied report is intentionally not localized: it is pasted into bug reports, which are read in English.
         var report = $"""
             Version: {Version}
             Runtime: {RuntimeInformation.FrameworkDescription}

@@ -95,13 +95,13 @@
                             <tr>
                                 <th scope="row" title="@range.Hint">@range.Label</th>
                                 <td>
-                                    <ParamInput Range="range" Label="@(both ? $"{range.Label}, thinking off" : range.Label)"
+                                    <ParamInput Range="range" Label="@(both ? SamplingLabel(nameof(WebStrings.ModelTuningSamplingThinkingOffLabel), range.Label) : range.Label)"
                                                 Value="Model.Sampling.Get(key)" ValueChanged="v => Model.Sampling.Set(key, v)" />
                                 </td>
                                 @if (both)
                                 {
                                     <td>
-                                        <ParamInput Range="range" Label="@($"{range.Label}, thinking on")"
+                                        <ParamInput Range="range" Label="@SamplingLabel(nameof(WebStrings.ModelTuningSamplingThinkingOnLabel), range.Label)"
                                                     Value="Model.ThinkingSampling.Get(key)" ValueChanged="v => Model.ThinkingSampling.Set(key, v)"
                                                     Inherited="Model.Sampling.Get(key)" />
                                     </td>
@@ -180,6 +180,9 @@
             nameof(WebStrings.ModelTuningCustomFieldsCount),
             new Dictionary<string, object?> { ["count"] = ExtraCount })
         : WebStrings.ModelTuningCustomFields;
+
+    private static string SamplingLabel(string key, string label) =>
+        ResourceMessageFormatter.Web.Format(key, new Dictionary<string, object?> { ["label"] = label });
 
     private static string ValueSentLabel(string level) =>
         ResourceMessageFormatter.Web.Format(

@@ -1,8 +1,18 @@
+
+
+
+
 # Contributing
 
 Changes should follow the repository guidance in [AGENTS.md](AGENTS.md). Run `dotnet build` for code changes and the smallest relevant test command.
 
-## Translating the web UI
+## Web UI text
+
+### Adding text
+
+Don't hard-code text in Razor, C# or JavaScript. Add an entry to `WebStrings.resx` and read it with `nameof(WebStrings.Key)`. Name keys `<Component><Purpose>`, such as `ChatListDeleteWarning`, and never by number. Give each new English entry a comment that says where the text appears, what each placeholder is, and what not to translate. Remove an entry when its last use is removed. Keep user, model and tool content, approval reasons, exception text and protocol identifiers in their original language.
+
+### Translating
 
 The web UI text is in `src/BlazeHarness.Web/Resources/WebStrings.resx`. To add a language, copy the file and add the culture code before `.resx`, such as `WebStrings.fr.resx`. Keep the keys as they are and translate only the values. Delete entries you don't translate; missing entries fall back to English.
 

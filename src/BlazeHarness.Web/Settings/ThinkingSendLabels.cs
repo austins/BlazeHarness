@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Providers;
+using BlazeHarness.Web.Resources;
 
 namespace BlazeHarness.Web.Settings;
 
@@ -16,7 +17,7 @@ internal static class ThinkingSendLabels
     {
         ThinkingSendMode.ReasoningEffort => "reasoning_effort",
         ThinkingSendMode.ReasoningObject => "reasoning object",
-        _ => "custom body field",
+        _ => WebStrings.ThinkingSendLabelsCustomFieldShort,
     };
 
     /// <summary>
@@ -26,8 +27,8 @@ internal static class ThinkingSendLabels
     /// <returns>The name for a select option.</returns>
     public static string Option(ThinkingSendMode mode) => mode switch
     {
-        ThinkingSendMode.ReasoningEffort => "reasoning_effort (OpenAI, llama.cpp, vLLM)",
-        ThinkingSendMode.ReasoningObject => "reasoning object (OpenRouter)",
-        _ => "Custom body field",
+        ThinkingSendMode.ReasoningEffort => WebStrings.ThinkingSendLabelsReasoningEffortOption,
+        ThinkingSendMode.ReasoningObject => WebStrings.ThinkingSendLabelsReasoningObjectOption,
+        _ => WebStrings.ThinkingSendLabelsCustomFieldOption,
     };
 }
