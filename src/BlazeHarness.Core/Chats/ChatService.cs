@@ -6,6 +6,7 @@ using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
+using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Sandbox.Ports;
 using BlazeHarness.Core.Skills;
@@ -49,6 +50,8 @@ public sealed partial class ChatService : IDisposable
     private readonly Func<CompactionMode>? _compactionMode;
     private readonly Func<bool>? _todosEnabled;
     private readonly Func<string?>? _customInstructions;
+    private readonly ProviderService? _providers;
+    private readonly FolderRegistry? _folders;
     private readonly ILogger _log;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
@@ -72,6 +75,8 @@ public sealed partial class ChatService : IDisposable
     /// <param name="web">Provides the web search and fetch tools; without it chats have no web tools.</param>
     /// <param name="todosEnabled">Tells whether chats get the <c>update_todos</c> tool, read before each reply; without it they always do.</param>
     /// <param name="customInstructions">Gives the user's custom instructions, read each time the system prompt is built; without it chats have none.</param>
+    /// <param name="providers">Tells which model a chat that gets a message from another chat answers with; without it chats have no <c>send_to_chat</c> tool.</param>
+    /// <param name="folders">Lists the folders a new chat may be created in by <c>send_to_chat</c>; without it only the sending chat's own folder or none can be used.</param>
     public ChatService(
         ChatStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
@@ -85,7 +90,9 @@ public sealed partial class ChatService : IDisposable
         Func<CompactionMode>? compactionMode = null,
         WebServices? web = null,
         Func<bool>? todosEnabled = null,
-        Func<string?>? customInstructions = null)
+        Func<string?>? customInstructions = null,
+        ProviderService? providers = null,
+        FolderRegistry? folders = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
@@ -104,6 +111,8 @@ public sealed partial class ChatService : IDisposable
         _compactionMode = compactionMode;
         _todosEnabled = todosEnabled;
         _customInstructions = customInstructions;
+        _providers = providers;
+        _folders = folders;
         _log = loggers.CreateLogger<ChatService>();
     }
 
@@ -687,7 +696,7 @@ public sealed partial class ChatService : IDisposable
             }
 
             var shell = ShellInfo.DetectCurrent();
-            var tools = BuiltInTools.Create(root, _time, shell, chat.Attachments, _sandbox, _store.ShellDirectory(id), ChatSearchFor(id, chat, folderPath), chat.BackgroundShells, todos);
+            var tools = BuiltInTools.Create(root, _time, shell, chat.Attachments, _sandbox, _store.ShellDirectory(id), ChatSearchFor(id, chat, folderPath), chat.BackgroundShells, todos, SendToChatFor(id, chat));
             chat.UseTools(tools, SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
@@ -699,7 +708,7 @@ public sealed partial class ChatService : IDisposable
 
     private void UseAttachmentsOnly(string id, Chat chat, string? folderPath)
     {
-        chat.UseTools(chat.Attachments is { } files ? BuiltInTools.ForAttachments(files, _time, ChatSearchFor(id, chat, folderPath)) : null, null);
+        chat.UseTools(chat.Attachments is { } files ? BuiltInTools.ForAttachments(files, _time, ChatSearchFor(id, chat, folderPath), SendToChatFor(id, chat)) : null, null);
     }
 
     private SearchChatTool ChatSearchFor(string id, Chat chat, string? folderPath)
@@ -742,7 +751,8 @@ public sealed partial class ChatService : IDisposable
             {
                 try
                 {
-                    if (await _titles.GenerateAsync(target, first.Text.Length > 0 ? first.Text : string.Join(", ", first.Attachments.Select(a => a.File.Name)), reply.Text, _shutdown.Token) is { } title)
+                    var firstText = first.Source is null ? first.Text : ChatSource.Unwrap(first.Text);
+                    if (await _titles.GenerateAsync(target, firstText.Length > 0 ? firstText : string.Join(", ", first.Attachments.Select(a => a.File.Name)), reply.Text, _shutdown.Token) is { } title)
                     {
                         await _store.UpdateAsync(
                             id,

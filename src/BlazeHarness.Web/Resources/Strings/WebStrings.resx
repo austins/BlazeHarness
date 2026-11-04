@@ -464,6 +464,10 @@
     <value>Sent while the model was working</value>
     <comment>Label above a user message that was queued while a reply was running and reached the model at its next step.</comment>
   </data>
+  <data name="MessageViewFromChatLabel" xml:space="preserve">
+    <value>Sent from the chat “{title}”</value>
+    <comment>Label above a user message that an agent in another chat sent. {title} is that chat's title; do not translate it.</comment>
+  </data>
   <data name="PermissionPickerConfirmButton" xml:space="preserve">
     <value>Turn on</value>
     <comment>Button in the confirmation dialog of the permission menu that enables the risky option (Unrestricted or Never ask) the user picked. Imperative verb phrase.</comment>
@@ -667,6 +671,18 @@
   <data name="ChatListOpenDataMenuItem" xml:space="preserve">
     <value>Open chat data</value>
     <comment>Chat context menu item that opens the folder holding the chat's files in the operating system's file manager.</comment>
+  </data>
+  <data name="ChatListCopyReferenceMenuItem" xml:space="preserve">
+    <value>Copy chat reference</value>
+    <comment>Chat context menu item that copies a short reference to the chat, which can be pasted into a message so the model can send to this chat.</comment>
+  </data>
+  <data name="ChatListReferenceCopied" xml:space="preserve">
+    <value>Chat reference copied. Paste it into a message to point the model at this chat.</value>
+    <comment>Toast shown after the chat context menu copied a chat reference to the clipboard.</comment>
+  </data>
+  <data name="ChatListCopyReferenceFailed" xml:space="preserve">
+    <value>Couldn't copy the chat reference to the clipboard.</value>
+    <comment>Toast shown when the chat context menu could not copy a chat reference.</comment>
   </data>
   <data name="ChatListMoveMenuItem" xml:space="preserve">
     <value>Move to folder</value>

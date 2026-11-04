@@ -207,12 +207,13 @@ public sealed class PermissionEngine
         var arguments = document.RootElement;
 
         // Resolving a path follows its links, so a path tool's paths are resolved once for both the access check and the rules.
-        var paths = tool is IMcpTool or IWebTool || tool.RunsCommands ? null : ResolvePaths(tool, arguments, context);
+        var paths = tool is IMcpTool or IWebTool or ISendToChatTool || tool.RunsCommands ? null : ResolvePaths(tool, arguments, context);
         resolvedPaths = paths;
         var decision = tool switch
         {
             IMcpTool mcp => EvaluateMcp(mcp, settings),
             IWebTool web => EvaluateWeb(web, arguments, settings),
+            ISendToChatTool send => EvaluateSendToChat(send, arguments, settings),
             { RunsCommands: true } => EvaluateCommand(arguments, settings),
             _ => EvaluatePaths(tool, paths!, settings, context),
         };
@@ -293,6 +294,10 @@ public sealed class PermissionEngine
         {
             rule = web.Describe(arguments) is { } request ? RuleMatcher.ForWeb(rules, request.Target) : null;
         }
+        else if (tool is ISendToChatTool)
+        {
+            rule = null;
+        }
         else if (tool.RunsCommands)
         {
             rule = RuleMatcher.ForCommand(rules, Text(arguments, "command") ?? string.Empty);
@@ -314,6 +319,26 @@ public sealed class PermissionEngine
         }
 
         return new PermissionDecision(PermissionVerdict.Ask, request.Reason, request.GrantKey);
+    }
+
+    private static PermissionDecision EvaluateSendToChat(ISendToChatTool tool, JsonElement arguments, PermissionSettings settings)
+    {
+        var resolution = tool.Plan(arguments);
+        if (resolution.Plan is not { } plan)
+        {
+            return new PermissionDecision(PermissionVerdict.Deny, resolution.Error ?? "That chat can't be used.");
+        }
+
+        // Another folder's chat has its own files and access, and a Read only chat shouldn't start work anywhere, so these ask every time,
+        // even in a chat that never asks: the user is right there, as for a forbidden command.
+        if (!plan.SameScope || settings.Access == AccessLevel.ReadOnly)
+        {
+            return new PermissionDecision(PermissionVerdict.Ask, plan.Reason, Sticky: true);
+        }
+
+        return settings.Approvals == ApprovalMode.AskFirst
+            ? new PermissionDecision(PermissionVerdict.Ask, plan.Reason, plan.Creates ? null : "chat:" + plan.ChatId)
+            : PermissionDecision.Allow;
     }
 
     private PermissionDecision EvaluateMcp(IMcpTool tool, PermissionSettings settings)

@@ -44,6 +44,8 @@
                 @onclick="() => _moving = target"><Icon Name="arrow-right" />@WebStrings.ChatListMoveMenuItem</button>
         <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
                 @onclick="() => OpenChatData(target)"><Icon Name="folder" />@WebStrings.ChatListOpenDataMenuItem</button>
+        <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                @onclick="() => CopyReferenceAsync(target)"><Icon Name="copy" />@WebStrings.ChatListCopyReferenceMenuItem</button>
         <div class="menu-sep" role="separator"></div>
         <button type="button" class="menu-item menu-item-danger" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
                 @onclick="() => _deleting = target"><Icon Name="trash" />@WebStrings.ChatListDeleteMenuItem</button>
@@ -119,6 +121,12 @@
         {
             Toasts.Show(WebStrings.ChatListOpenDataFailed, ToastKind.Error);
         }
+    }
+
+    private async Task CopyReferenceAsync(ChatInfo chat)
+    {
+        var copied = await JS.InvokeAsync<bool>("bhChat.copyText", ChatReference.Format(chat.Id));
+        Toasts.Show(copied ? WebStrings.ChatListReferenceCopied : WebStrings.ChatListCopyReferenceFailed, copied ? ToastKind.Success : ToastKind.Error);
     }
 
     internal static string DisplayTitle(ChatInfo chat)

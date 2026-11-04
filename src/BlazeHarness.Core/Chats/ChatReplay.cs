@@ -47,7 +47,7 @@ internal static class ChatReplay
             switch (e)
             {
                 case UserMessageEvent user:
-                    Add(new ChatEntry(ChatRole.User, user.Text, user.EntryId) { Status = EntryStatus.Done, At = user.At, Attachments = user.Attachments ?? [], Origin = user.Origin });
+                    Add(new ChatEntry(ChatRole.User, user.Text, user.EntryId) { Status = EntryStatus.Done, At = user.At, Attachments = user.Attachments ?? [], Origin = user.Origin, Source = user.Source });
                     break;
                 case AssistantStartEvent start:
                     Add(new ChatEntry(ChatRole.Assistant, id: start.EntryId) { Status = EntryStatus.Interrupted, Label = start.Label, At = start.At });

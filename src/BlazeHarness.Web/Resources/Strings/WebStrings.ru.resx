@@ -343,6 +343,9 @@
   <data name="MessageViewQueuedLabel" xml:space="preserve">
     <value>Отправлено во время работы модели</value>
   </data>
+  <data name="MessageViewFromChatLabel" xml:space="preserve">
+    <value>Отправлено из чата «{title}»</value>
+  </data>
   <data name="PermissionPickerConfirmButton" xml:space="preserve">
     <value>Включить</value>
   </data>
@@ -495,6 +498,15 @@
   </data>
   <data name="ChatListOpenDataMenuItem" xml:space="preserve">
     <value>Открыть данные чата</value>
+  </data>
+  <data name="ChatListCopyReferenceMenuItem" xml:space="preserve">
+    <value>Копировать ссылку на чат</value>
+  </data>
+  <data name="ChatListReferenceCopied" xml:space="preserve">
+    <value>Ссылка на чат скопирована. Вставьте её в сообщение, чтобы указать модели на этот чат.</value>
+  </data>
+  <data name="ChatListCopyReferenceFailed" xml:space="preserve">
+    <value>Не удалось скопировать ссылку на чат в буфер обмена.</value>
   </data>
   <data name="ChatListMoveMenuItem" xml:space="preserve">
     <value>Переместить в папку</value>

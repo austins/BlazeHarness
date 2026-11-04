@@ -54,9 +54,11 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     private readonly List<ChatEntry> _entries = [];
     private readonly List<ChatMessage> _history = [];
     private readonly List<QueuedMessage> _queued = [];
+    private readonly List<(string Text, ChatSource Source)> _incoming = [];
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ApprovalChoice>> _approvals = new(StringComparer.Ordinal);
     private readonly TodoCache _todoCache = new();
     private IReadOnlyList<ChatEntry> _snapshot = [];
+    private ChatSource? _takenSource;
     private ProjectContext? _project;
     private SkillSet? _skills;
     private ToolSetup _setup = new(null, null);
@@ -630,13 +632,23 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
             }
 
             var taken = _queued.FindAll(m => replyEnded || m.Mode == QueueMode.Steer);
-            if (taken.Count == 0)
+            if (taken.Count > 0)
             {
-                return null;
+                _queued.RemoveAll(taken.Contains);
+                _takenSource = null;
+                return string.Join("\n\n", taken.Select(m => m.Text));
             }
 
-            _queued.RemoveAll(taken.Contains);
-            return string.Join("\n\n", taken.Select(m => m.Text));
+            // A message from another chat is never merged with the user's, and each one is its own entry.
+            if (replyEnded && _incoming.Count > 0)
+            {
+                var (text, source) = _incoming[0];
+                _incoming.RemoveAt(0);
+                _takenSource = source;
+                return text;
+            }
+
+            return null;
         }
     }
 
@@ -671,6 +683,66 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     }
 
     /// <summary>
+    /// Start a turn with a message an agent in another chat sent.
+    /// </summary>
+    /// <param name="text">The message text, already built with <see cref="ChatSource.Format"/>.</param>
+    /// <param name="source">The chat it came from.</param>
+    /// <param name="target">The provider, model and level to use for the reply.</param>
+    /// <returns>Whether a turn started, and the task that completes when the reply has ended. When no turn started, the task is already complete.</returns>
+    internal (bool Started, Task Reply) StartFromChat(string text, ChatSource source, ChatTarget target)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(target);
+        var started = false;
+        var sentAt = _time.GetUtcNow();
+        var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt, Origin = UserMessageOrigin.FromChat, Source = source };
+
+        // TurnAsync runs up to its first await before it returns, so the flag is final here.
+        var reply = TurnAsync(
+            target,
+            () =>
+            {
+                user.HistoryIndex = _history.Count;
+                _entries.Add(user);
+                _history.Add(new ChatMessage(ChatRole.User, text));
+                started = true;
+                return true;
+            },
+            () => [new UserMessageEvent(sentAt, user.Id, text, null, UserMessageOrigin.FromChat, source)]);
+        return (started, reply);
+    }
+
+    /// <summary>
+    /// Queue a message an agent in another chat sent for the reply that is running.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="Queue"/>, it never answers a question the chat is waiting on, so an agent can't answer for the user.
+    /// It is added after the reply, like <see cref="QueueMode.AfterReply"/>, as its own message and never merged with the user's.
+    /// When the reply is stopped or fails instead, it is added to the chat without a reply, so the user can retry; it is never handed back as the user's text.
+    /// </remarks>
+    /// <param name="text">The message text, already built with <see cref="ChatSource.Format"/>.</param>
+    /// <param name="source">The chat it came from.</param>
+    /// <returns>False when no reply is running or the chat is closed.</returns>
+    internal bool QueueFromChat(string text, ChatSource source)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        ArgumentNullException.ThrowIfNull(source);
+        lock (_gate)
+        {
+            if (!_replying || _closed)
+            {
+                return false;
+            }
+
+            _incoming.Add((text, source));
+        }
+
+        RaiseChanged();
+        return true;
+    }
+
+    /// <summary>
     /// Close the chat to new replies unless one is running; the check and the close happen together.
     /// </summary>
     /// <returns>False when a reply is running and the chat was left open.</returns>
@@ -700,6 +772,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
 
             // What an earlier reply left queued was shown to the user to take back; it must not leak into this one.
             _queued.Clear();
+            _takenSource = null;
             _stop = run.Cancel;
             _replying = true;
             Publish();
@@ -709,10 +782,18 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         try
         {
             var completed = await Task.Run(() => ReplyAsync(target, leading(), run.Token), CancellationToken.None);
-            while (TakeFollowUp(completed && !run.IsCancellationRequested) is { } next)
+            while (TakeFollowUp(completed && !run.IsCancellationRequested) is var (events, reply))
             {
                 RaiseChanged();
-                completed = await Task.Run(() => ReplyAsync(target, next, run.Token), CancellationToken.None);
+                if (reply)
+                {
+                    completed = await Task.Run(() => ReplyAsync(target, events, run.Token), CancellationToken.None);
+                }
+                else
+                {
+                    await SaveAsync(events);
+                    completed = false;
+                }
             }
         }
         finally
@@ -723,26 +804,46 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     }
 
     // A message that was queued too late for the running reply starts the next one, but only after a normal finish.
-    // Taking it and ending the turn happen under one lock, so a message is either taken here or refused by Queue.
-    private IReadOnlyList<ChatEvent>? TakeFollowUp(bool finishedNormally)
+    // After a stop or failure, a message from another chat is added to the chat without a reply, so it is neither lost nor handed back as the user's text.
+    // Taking it and ending the turn happen under one lock, so a message is either taken here or refused by Queue and QueueFromChat.
+    private (IReadOnlyList<ChatEvent> Events, bool Reply)? TakeFollowUp(bool finishedNormally)
     {
         lock (_gate)
         {
-            if (!finishedNormally || _closed || _queued.Count == 0)
+            if (_closed)
             {
                 EndTurn();
                 return null;
             }
 
-            var text = string.Join("\n\n", _queued.Select(m => m.Text));
-            _queued.Clear();
-            var sentAt = _time.GetUtcNow();
-            var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt, Origin = UserMessageOrigin.Steer, HistoryIndex = _history.Count };
-            _entries.Add(user);
-            _history.Add(new ChatMessage(ChatRole.User, text));
-            Publish();
-            return [new UserMessageEvent(sentAt, user.Id, text, null, UserMessageOrigin.Steer)];
+            if (finishedNormally && _queued.Count > 0)
+            {
+                var text = string.Join("\n\n", _queued.Select(m => m.Text));
+                _queued.Clear();
+                return ([AddFollowUp(text, null)], true);
+            }
+
+            if (_incoming.Count == 0)
+            {
+                EndTurn();
+                return null;
+            }
+
+            var taken = finishedNormally ? _incoming.Take(1).ToList() : [.. _incoming];
+            _incoming.RemoveRange(0, taken.Count);
+            return ([.. taken.Select(m => AddFollowUp(m.Text, m.Source))], finishedNormally);
         }
+    }
+
+    private UserMessageEvent AddFollowUp(string text, ChatSource? source)
+    {
+        var origin = source is null ? UserMessageOrigin.Steer : UserMessageOrigin.FromChat;
+        var sentAt = _time.GetUtcNow();
+        var user = new ChatEntry(ChatRole.User, text) { Status = EntryStatus.Done, At = sentAt, Origin = origin, Source = source, HistoryIndex = _history.Count };
+        _entries.Add(user);
+        _history.Add(new ChatMessage(ChatRole.User, text));
+        Publish();
+        return new UserMessageEvent(sentAt, user.Id, text, null, origin, source);
     }
 
     private void EndTurn()

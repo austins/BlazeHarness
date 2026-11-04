@@ -15,6 +15,11 @@ public enum UserMessageOrigin
     Steer,
 
     /// <summary>
+    /// An agent in another chat sent it, which started a turn or queued it until the running reply ended.
+    /// </summary>
+    FromChat,
+
+    /// <summary>
     /// Added for a reason a newer version of the app knows and this one does not. It is never saved by this version.
     /// </summary>
     Unknown,

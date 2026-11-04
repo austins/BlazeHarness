@@ -343,6 +343,9 @@
   <data name="MessageViewQueuedLabel" xml:space="preserve">
     <value>在模型运行时发送</value>
   </data>
+  <data name="MessageViewFromChatLabel" xml:space="preserve">
+    <value>发自聊天“{title}”</value>
+  </data>
   <data name="PermissionPickerConfirmButton" xml:space="preserve">
     <value>开启</value>
   </data>
@@ -495,6 +498,15 @@
   </data>
   <data name="ChatListOpenDataMenuItem" xml:space="preserve">
     <value>打开聊天数据</value>
+  </data>
+  <data name="ChatListCopyReferenceMenuItem" xml:space="preserve">
+    <value>复制聊天引用</value>
+  </data>
+  <data name="ChatListReferenceCopied" xml:space="preserve">
+    <value>已复制聊天引用。将其粘贴到消息中，即可让模型指向此聊天。</value>
+  </data>
+  <data name="ChatListCopyReferenceFailed" xml:space="preserve">
+    <value>无法将聊天引用复制到剪贴板。</value>
   </data>
   <data name="ChatListMoveMenuItem" xml:space="preserve">
     <value>移至文件夹</value>

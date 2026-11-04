@@ -21,6 +21,11 @@
         <div class="msg-label">@WebStrings.MessageViewQueuedLabel</div>
     }
 
+    @if (Entry.Origin == UserMessageOrigin.FromChat && Entry.Source is { } source)
+    {
+        <div class="msg-label">@ResourceMessageFormatter.Web.Format(nameof(WebStrings.MessageViewFromChatLabel), new Dictionary<string, object?> { ["title"] = source.Title })</div>
+    }
+
     @if (Entry.Reasoning.Length > 0)
     {
         <details class="msg-thinking" open="@(Entry.Status == EntryStatus.Streaming && Entry.Text.Length == 0)">

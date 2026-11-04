@@ -286,7 +286,15 @@ public sealed partial class Chat
         }
 
         var sentAt = _time.GetUtcNow();
-        var user = new ChatEntry(ChatRole.User, injected.Text) { Status = EntryStatus.Done, At = sentAt, Origin = UserMessageOrigin.Steer };
+        ChatSource? source;
+        lock (_gate)
+        {
+            source = _takenSource;
+            _takenSource = null;
+        }
+
+        var origin = source is null ? UserMessageOrigin.Steer : UserMessageOrigin.FromChat;
+        var user = new ChatEntry(ChatRole.User, injected.Text) { Status = EntryStatus.Done, At = sentAt, Origin = origin, Source = source };
         lock (_gate)
         {
             user.HistoryIndex = _history.Count + reply.Working.Count - reply.Before - 1;
@@ -294,7 +302,7 @@ public sealed partial class Chat
             Publish();
         }
 
-        await SaveAsync([new UserMessageEvent(sentAt, user.Id, injected.Text, null, UserMessageOrigin.Steer)]);
+        await SaveAsync([new UserMessageEvent(sentAt, user.Id, injected.Text, null, origin, source)]);
     }
 
     private Task CloseAsync(Reply reply)

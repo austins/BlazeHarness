@@ -89,7 +89,9 @@ builder.Services.AddSingleton(sp => new ChatService(
     () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.Compaction,
     sp.GetRequiredService<WebServices>(),
     () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.TodosEnabled,
-    () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.CustomInstructions));
+    () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.CustomInstructions,
+    sp.GetRequiredService<ProviderService>(),
+    sp.GetRequiredService<FolderRegistry>()));
 builder.Services.AddSingleton(sp => new FolderRegistry(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient(WebSearchClientName, client => client.Timeout = TimeSpan.FromSeconds(30))

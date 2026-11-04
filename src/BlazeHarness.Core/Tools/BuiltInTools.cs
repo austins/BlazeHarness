@@ -22,6 +22,7 @@ internal static class BuiltInTools
     /// <param name="chatSearch">The <c>search_chat</c> tool, or null to leave it out.</param>
     /// <param name="background">Keeps the commands started in the background. Required when <paramref name="shell"/> is set.</param>
     /// <param name="todos">False to leave out the <c>update_todos</c> tool.</param>
+    /// <param name="sendToChat">The <c>send_to_chat</c> tool, or null to leave it out.</param>
     /// <returns>The tool set.</returns>
     public static ToolSet Create(
         string folder,
@@ -32,7 +33,8 @@ internal static class BuiltInTools
         string? scratchDirectory = null,
         ITool? chatSearch = null,
         BackgroundShells? background = null,
-        bool todos = true)
+        bool todos = true,
+        ITool? sendToChat = null)
     {
         List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool()];
         if (todos)
@@ -44,6 +46,11 @@ internal static class BuiltInTools
         if (chatSearch is not null)
         {
             tools.Add(chatSearch);
+        }
+
+        if (sendToChat is not null)
+        {
+            tools.Add(sendToChat);
         }
 
         if (shell is not null)
@@ -69,8 +76,9 @@ internal static class BuiltInTools
     /// <param name="attachments">The chat's attached files.</param>
     /// <param name="time">Times the tool's timeout.</param>
     /// <param name="chatSearch">The <c>search_chat</c> tool, or null to leave it out.</param>
+    /// <param name="sendToChat">The <c>send_to_chat</c> tool, or null to leave it out.</param>
     /// <returns>The tool set.</returns>
-    public static ToolSet ForAttachments(ChatAttachments attachments, TimeProvider time, ITool? chatSearch = null)
+    public static ToolSet ForAttachments(ChatAttachments attachments, TimeProvider time, ITool? chatSearch = null, ITool? sendToChat = null)
     {
         ArgumentNullException.ThrowIfNull(attachments);
         Directory.CreateDirectory(attachments.Directory);
@@ -78,6 +86,11 @@ internal static class BuiltInTools
         if (chatSearch is not null)
         {
             tools.Add(chatSearch);
+        }
+
+        if (sendToChat is not null)
+        {
+            tools.Add(sendToChat);
         }
 
         return new ToolSet(tools, new ToolContext(attachments.Directory), time);

@@ -99,6 +99,11 @@ public sealed class ChatEntry
     public UserMessageOrigin? Origin { get; set; }
 
     /// <summary>
+    /// Gets or sets the chat a message with the <see cref="UserMessageOrigin.FromChat"/> origin came from, or null for any other message.
+    /// </summary>
+    public ChatSource? Source { get; set; }
+
+    /// <summary>
     /// Gets or sets the state of the message.
     /// </summary>
     public EntryStatus Status { get; set; }
