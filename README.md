@@ -38,7 +38,7 @@ The app stores everything under `~/.blazeharness` (`%USERPROFILE%\.blazeharness`
 | Path | Contents |
 |---|---|
 | `providers.json` | Providers and models |
-| `config.json` | Defaults and permissions |
+| `config.json` | Settings and permissions |
 | `chats/<id>/` | One folder per chat |
 | `logs/` | One log file per day, capped at 5 MB; files older than 7 days are deleted |
 
