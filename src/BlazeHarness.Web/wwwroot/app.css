@@ -45,13 +45,14 @@
 
     --ease: cubic-bezier(0.2, 0, 0, 1);
     --duration: 0.15s;
+    --duration-slow: 0.28s;
 }
 
 html[data-theme="light"] { color-scheme: light; }
 html[data-theme="dark"] { color-scheme: dark; }
 
 @media (prefers-reduced-motion: reduce) {
-    :root { --duration: 0s; }
+    :root { --duration: 0s; --duration-slow: 0s; }
 }
 
 /* Base ------------------------------------------------------------------ */
@@ -162,6 +163,7 @@ kbd {
 .sidebar-heading-actions .menu { position-area: block-end span-inline-start; }
 .chat-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
 .chat-link {
+    transition: background var(--duration) var(--ease), color var(--duration) var(--ease);
     display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm); color: var(--fg); text-decoration: none; font-size: var(--text-sm);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -233,7 +235,7 @@ kbd {
     min-width: 1rem; padding-inline: 0.25rem; border-radius: 999px;
     background: var(--accent); color: var(--accent-fg, #fff); font-size: 0.65rem; line-height: 1rem; text-align: center;
 }
-.page { container: page / inline-size; max-width: 64rem; margin-inline: auto; padding: var(--space-5) var(--space-4); display: flex; flex-direction: column; gap: var(--space-5); }
+.page { animation: fade var(--duration-slow) var(--ease); container: page / inline-size; max-width: 64rem; margin-inline: auto; padding: var(--space-5) var(--space-4); display: flex; flex-direction: column; gap: var(--space-5); }
 .page-header { display: flex; flex-direction: column; gap: var(--space-1); }
 
 /* Keep in sync with the (max-width: 48rem) query in ui.js. */
@@ -261,8 +263,9 @@ kbd {
     background: var(--bg-raised); color: var(--fg);
     font: inherit; font-size: var(--text-sm); font-weight: 500; line-height: 1.2;
     cursor: pointer; text-decoration: none;
-    transition: background var(--duration) var(--ease), border-color var(--duration) var(--ease), opacity var(--duration) var(--ease);
+    transition: background var(--duration) var(--ease), border-color var(--duration) var(--ease), opacity var(--duration) var(--ease), transform var(--duration) var(--ease), filter var(--duration) var(--ease);
 }
+.btn:active:not(:disabled) { transform: scale(0.97); }
 .btn:hover:not(:disabled) { background: var(--bg-hover); }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
@@ -364,6 +367,13 @@ dialog.dialog[open] { display: flex; flex-direction: column; animation: pop var(
 .dialog-body { padding: var(--space-4); overflow: auto; display: flex; flex-direction: column; gap: var(--space-3); }
 .dialog-footer { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-block-start: 1px solid var(--border); }
 @keyframes pop { from { opacity: 0; transform: translateY(0.5rem) scale(0.98); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(0.5rem); } }
+@keyframes slide-in { from { opacity: 0; transform: translateX(1.5rem); } }
+@keyframes slide-in-rtl { from { opacity: 0; transform: translateX(-1.5rem); } }
+@keyframes pulse { 50% { box-shadow: 0 0 0 0.3rem var(--accent-soft); } }
+@keyframes blink { 50% { opacity: 0; } }
+dialog.dialog[open]::backdrop { animation: fade var(--duration-slow) var(--ease); }
 
 /* Settings dialog: a section list beside the content. */
 dialog.dialog.dialog-settings { width: min(68rem, calc(100vw - 2rem)); height: min(46rem, calc(100dvh - 2rem)); }
@@ -589,10 +599,12 @@ details[open] > summary .skill-blurb { display: none; }
 /* Chat */
 .chat-layout { display: flex; height: 100%; min-height: 0; }
 .chat-layout > .chat { flex: 1 1 0; min-width: 0; }
-.side-panel { position: relative; flex: 0 0 var(--panel-width, min(45%, 40rem)); max-width: calc(100% - 20rem); min-width: 0; display: flex; flex-direction: column; border-inline-start: 1px solid var(--border); background: var(--bg-subtle); }
+.side-panel { animation: slide-in var(--duration-slow) var(--ease); position: relative; flex: 0 0 var(--panel-width, min(45%, 40rem)); max-width: calc(100% - 20rem); min-width: 0; display: flex; flex-direction: column; border-inline-start: 1px solid var(--border); background: var(--bg-subtle); }
 .side-panel-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-1) var(--space-2); border-block-end: 1px solid var(--border); }
 .side-tabs { display: flex; gap: var(--space-1); min-width: 0; }
 .side-tabs .btn[aria-pressed="true"] { background: var(--bg-hover); color: var(--fg); font-weight: 600; }
+.side-panel:dir(rtl) { animation-name: slide-in-rtl; }
+.side-panel-body > * { animation: fade var(--duration) var(--ease); }
 .side-panel-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .chat-context [aria-pressed="true"] { background: var(--bg-hover); }
 
@@ -639,7 +651,7 @@ details[open] > summary .skill-blurb { display: none; }
 .changes-removed { color: var(--danger); }
 .changes-diff { flex: 1; min-height: 0; overflow: auto; background: var(--bg); }
 .changes-diff:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: -2px; }
-.gdiff { min-width: max-content; font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5; }
+.gdiff { animation: fade var(--duration) var(--ease); min-width: max-content; font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5; }
 .gdiff-hunk { padding: 0 var(--space-2); background: var(--bg-subtle); color: var(--fg-muted); border-block: 1px solid var(--border); }
 .gdiff-line { display: flex; }
 .gdiff-line[data-kind="added"] { background: var(--success-soft); }
@@ -679,11 +691,12 @@ html[data-chat-full-width] .chat { --chat-width: 100%; }
 .msg[data-role="user"] > .msg-meta { justify-content: flex-end; }
 .msg-time:empty { display: none; }
 .msg-action { order: 1; }
-.msg-action { opacity: 0; padding: var(--space-1); }
+.msg-action { opacity: 0; padding: var(--space-1); transition: opacity var(--duration) var(--ease), background var(--duration) var(--ease); }
 .msg:hover .msg-action, .msg:focus-within .msg-action, .msg[data-editing] .msg-action { opacity: 1; }
 .msg[data-editing] { outline: 2px solid var(--accent); }
 @media (hover: none) { .msg-action { opacity: 1; } }
 .composer-editing { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm); color: var(--fg-muted); }
+.chat-thread > .msg { animation: rise var(--duration-slow) var(--ease); }
 .msg-wait { color: var(--fg-muted); font-size: var(--text-sm); }
 .msg[data-status="streaming"] > .msg-body:last-of-type:not(.md)::after, .msg[data-status="streaming"] > .md:last-of-type > :last-child::after { content: "▍"; color: var(--fg-muted); }
 .msg-thinking { color: var(--fg-muted); font-size: var(--text-sm); border-inline-start: 2px solid var(--border); padding-inline-start: var(--space-3); }
@@ -694,9 +707,10 @@ html[data-chat-full-width] .chat { --chat-width: 100%; }
 .compaction-body { margin-block-start: var(--space-2); white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .tool { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-subtle); font-size: var(--text-sm); min-width: 0; }
+.tool { transition: border-color var(--duration) var(--ease); }
 .tool[data-status="awaitingapproval"] { border-color: var(--accent); }
 .tool[data-status="failed"], .tool[data-status="denied"] { border-color: var(--danger); }
-.tool-head { display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-2) var(--space-3); background: transparent; border: 0; color: inherit; font: inherit; text-align: start; cursor: pointer; border-radius: var(--radius); }
+.tool-head { transition: background var(--duration) var(--ease); display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-2) var(--space-3); background: transparent; border: 0; color: inherit; font: inherit; text-align: start; cursor: pointer; border-radius: var(--radius); }
 .tool-head:hover { background: var(--bg-hover); }
 .tool-name { font-weight: 600; flex: none; }
 .tool-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-muted); }
@@ -706,7 +720,7 @@ html[data-chat-full-width] .chat { --chat-width: 100%; }
 .tool[data-status="awaitingapproval"] .tool-status { color: var(--accent); font-weight: 600; }
 .tool-approval { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-block-start: 1px solid var(--border); }
 .tool-approval > span { flex: 1; font-weight: 600; }
-.tool-body { padding: var(--space-2) var(--space-3) var(--space-3); border-block-start: 1px solid var(--border); display: flex; flex-direction: column; gap: var(--space-2); }
+.tool-body { animation: rise var(--duration-slow) var(--ease); padding: var(--space-2) var(--space-3) var(--space-3); border-block-start: 1px solid var(--border); display: flex; flex-direction: column; gap: var(--space-2); }
 .tool-arg { display: flex; flex-direction: column; gap: var(--space-1); align-items: flex-start; }
 .tool-arg-name { font-size: var(--text-xs); color: var(--fg-muted); text-transform: none; font-family: var(--font-mono); }
 .diff { width: 100%; max-height: 20rem; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: var(--text-xs); }
@@ -746,13 +760,13 @@ legend.question-text + * { clear: both; }
 .todo-head { display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-1) var(--space-3); background: none; border: 0; color: var(--fg); font: inherit; text-align: start; cursor: pointer; }
 .todo-count { flex: none; font-weight: 600; }
 .todo-current { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-muted); }
-.todo-body { max-height: 12rem; overflow: auto; padding: var(--space-1) var(--space-3) var(--space-2); border-block-start: 1px solid var(--border); }
+.todo-body { animation: rise var(--duration-slow) var(--ease); max-height: 12rem; overflow: auto; padding: var(--space-1) var(--space-3) var(--space-2); border-block-start: 1px solid var(--border); }
 .jobs-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .jobs-item { display: flex; align-items: center; gap: var(--space-2); }
 .jobs-command { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono, monospace); font-size: var(--text-xs); }
 .todo-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-sm); }
 .todo-item { display: flex; align-items: flex-start; gap: var(--space-2); }
-.todo-mark { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 1rem; height: 1rem; margin-block-start: 0.15em; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--bg); }
+.todo-mark { transition: background var(--duration) var(--ease), border-color var(--duration) var(--ease); flex: none; display: inline-flex; align-items: center; justify-content: center; width: 1rem; height: 1rem; margin-block-start: 0.15em; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--bg); }
 .todo-mark .icon { width: 0.75rem; height: 0.75rem; }
 .todo-text { min-width: 0; overflow-wrap: anywhere; }
 .todo-item[data-status="completed"] .todo-mark { background: var(--success); border-color: var(--success); }
@@ -879,3 +893,9 @@ a.chip:hover { background: var(--bg-hover); }
 .size-option:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
 .size-preview { border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3); overflow-x: auto; }
 .size-preview .chat-thread { padding: 0; }
+
+/* Looping motion only when the user hasn't asked for less. */
+@media (prefers-reduced-motion: no-preference) {
+    .msg[data-status="streaming"] > .msg-body:last-of-type:not(.md)::after, .msg[data-status="streaming"] > .md:last-of-type > :last-child::after { animation: blink 1s steps(1) infinite; }
+    .tool[data-status="awaitingapproval"] { animation: pulse 1.4s var(--ease) 3; }
+}

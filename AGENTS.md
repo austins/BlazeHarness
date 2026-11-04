@@ -42,6 +42,7 @@
 - Use C# 14 extension blocks (`extension(Type receiver)`) for extension members instead of `this`-parameter extension methods.
 - The UI must be responsive: usable on a phone (about 390px) and on desktop, with no horizontal page overflow (wide content like tables or code scrolls inside its own box). Use the existing `@media (width < 40rem)` breakpoint and `rem` units.
 - The UI must be accessible: use native controls, give icon-only buttons an `aria-label`, keep the `:focus-visible` outline, make every action reachable and operable by keyboard, respect `prefers-reduced-motion`, and keep text readable in both themes.
+- Give UI changes motion where it helps (entrances, state changes, hover and press feedback) in plain CSS, and always guard it for `prefers-reduced-motion`: express durations through `--duration`/`--duration-slow` (both `0s` under reduce) and wrap looping animations in `@media (prefers-reduced-motion: no-preference)`. Animate only `opacity` and `transform` where you can, and never animate a property `layout.js` sets while dragging (`--sidebar-width`, `--panel-width`).
 - Keep solution-owned namespaces (`BlazeHarness.*`) file-local: use ordinary `using` directives, not global usings or project-level `<Using Include="..."/>`. Global usings are fine for framework and external package namespaces.
 
 ## Tests
