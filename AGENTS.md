@@ -12,7 +12,7 @@
 - `BlazeHarness.Core` has no UI dependency. The agent loop emits an `IAsyncEnumerable<AgentEvent>`; the UI only consumes it.
 - The agent loop, approvals and persistence stay in `BlazeHarness.Core` on `Microsoft.Extensions.AI`. The README explains why not Microsoft Agent Framework and when to revisit.
 - `BlazeHarness.Web` is Blazor Server with hand-written CSS and no npm. Singleton services own chats and runs; components hold no chat state.
-- All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher). A file it can't serve (`McpConfigFile` keeps raw text) follows the same reload rules: an unreadable or invalid file keeps the last good value and retries.
+- All paths go through `AppPaths`. Config and other JSON files go through `JsonFileStore<T>` (atomic write, lock, watcher). A file it can't serve (`McpConfigFile` keeps raw text) follows the same reload rules: an unreadable or invalid file keeps the last good value (startup uses defaults); IO failures retry, and invalid JSON waits for the next file change.
 - API keys live in `ISecretStore` (OS keychain, owner-only file fallback), and nowhere else: `config.json`, `providers.json`, chat files and logs stay key-free.
 - Every request, including `/_blazor`, passes `LocalAccessMiddleware` (Host limited to `localhost` or an IP on the listening port, same-origin Origin, CSP with `script-src 'self'`, nosniff, frame denial).
   - Pages load scripts from files, and every endpoint and middleware sits behind it.
@@ -27,7 +27,7 @@
 - Make types `internal` unless another project uses them. `BlazeHarness.Core` exposes internals only to its two test projects (`InternalsVisibleTo`).
 - Persistence is plain files under `AppPaths` (no database, no migrations). Prefer Microsoft packages (`Microsoft.Extensions.*`, `System.Text.Json`, `System.Threading.Channels`); add another package only when no real alternative exists.
 - Read the time through the `TimeProvider` registered in `Program.cs`, injected as a required constructor parameter: `GetUtcNow()` where you'd write `DateTime.Now`/`UtcNow`, and its timers and delays. Tests pass a `FakeTimeProvider`. Add a `?? TimeProvider.System` fallback only for a caller that has no provider to pass.
-- Every public type and member needs XML docs (CS1591 is an error in `src/`): `<summary>`, plus `<remarks>`, `<param>`, `<returns>` and `<exception>` where they add something. Use `<inheritdoc />` on interface implementations and `<param>` on the type for positional records. Properties start with "Gets" or "Gets or sets"; method summaries use the imperative.
+- Write XML docs on every public type and member in `src/`; the build doesn't check this (CS1591 is suppressed), so add them yourself: `<summary>`, plus `<remarks>`, `<param>`, `<returns>` and `<exception>` where they add something. Use `<inheritdoc />` on interface implementations and `<param>` on the type for positional records. Properties start with "Gets" or "Gets or sets"; method summaries use the imperative.
 - End every `#pragma warning disable` with a comment saying why.
 - Await without `.ConfigureAwait(false)` unless a case really needs it. Blazor components run on the circuit's `SynchronizationContext` and must resume on it, and the host has no other context to avoid. Marshal events raised on other threads with `InvokeAsync`.
 - Text that two components must agree on (result prefixes, prompt tags, markers) is one constant both reference, so the compiler keeps them in step.
@@ -73,7 +73,7 @@ Use whichever browser tool the chat has (Playwright MCP, an agent browser, or no
 3. For layout or responsive changes, check about 390px (phone) and 1280px (desktop) when practical. Small cosmetic changes can skip this; say when browser checks were skipped.
 4. Stop the app with `kill <PID>` from `ss -ltnp | grep 5380`. Delete screenshots, the temp home and any browser output folder.
 
-To seed a chat without a model server, write `providers.json`, `chats/<32-hex>/chat.json` and `messages.jsonl` under the home. Copy the event shapes from `tests/BlazeHarness.Core.Tests.Unit/Chats/SampleChat.cs` and `src/BlazeHarness.Core/Chats/*Event.cs` (enums are strings). If the transcript stays empty, the app's console log names the bad field in a `JsonException`.
+To seed a chat without a model server, write `providers.json`, `chats/<32-hex>/chat.json` and `messages.jsonl` under the home. Copy the event shapes from `tests/BlazeHarness.Core.Tests.Unit/Chats/SampleChat.cs` and `src/BlazeHarness.Core/Chats/Events/*Event.cs` (enums are strings). If the transcript stays empty, the app's console log names the bad field in a `JsonException`.
 
 ## Tests
 

@@ -80,7 +80,7 @@ public sealed class ConversationContext
     }
 
     /// <summary>
-    /// Gets a value indicating whether a summary ends with the agent's todo list; false when the model can't update the list.
+    /// Gets a value indicating whether a summary ends with the agent's to-do list; false when the model can't update the list.
     /// </summary>
     public bool KeepsTodos { get; init; } = true;
 

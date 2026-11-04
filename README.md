@@ -29,7 +29,7 @@ The app listens on `127.0.0.1:5380`, prints its URL, and opens your browser.
 
 There is no sign-in. With the default, only programs on this machine can reach the app. With `0.0.0.0`, anyone who can reach the port can use it, and it can run commands and edit files, so only do that on a trusted network and limit access with a firewall.
 
-The connection is plain HTTP. The URL must use an IP address, `localhost`, or this machine's host name (also with a `.lan`, `.local`, `.localdomain`, `.home`, `.internal` or `.home.arpa` suffix). Other names are refused to block DNS rebinding.
+The connection is plain HTTP. By default the URL must use `localhost` or `127.0.0.1`. With `0.0.0.0`, any IP address and this machine's host name are also accepted (the host name may carry a `.lan`, `.local`, `.localdomain`, `.home`, `.internal` or `.home.arpa` suffix). Other names are refused to block DNS rebinding.
 
 ### Data and secrets
 
