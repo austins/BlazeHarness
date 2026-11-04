@@ -24,7 +24,7 @@ internal sealed class SafeWebClient : IDisposable
 
     private const int MaxRedirects = 5;
     private const int MaxErrorBodyBytes = 64 * 1024;
-    private const string UserAgent = "Mozilla/5.0 (compatible; BlazeHarness/1.0; +https://github.com/austins/BlazeHarness)";
+    private const string UserAgent = $"Mozilla/5.0 (compatible; {AppConstants.AppName}/1.0)";
 
     private readonly HttpClient _client;
 

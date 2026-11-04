@@ -62,7 +62,7 @@
                         </select>
                         @if (Model.OverrideSend && Model.SendMode == ThinkingSendMode.BodyField)
                         {
-                            <input class="input mono" aria-label="@WebStrings.ModelTuningBodyFieldPathLabel" placeholder="@WebStrings.ModelTuningBodyFieldPathPlaceholder" @bind="Model.SendField" @bind:event="oninput" />
+                            <input class="input mono" aria-label="@WebStrings.ModelTuningBodyFieldPathLabel" placeholder="chat_template_kwargs.reasoning_effort" @bind="Model.SendField" @bind:event="oninput" />
                         }
                     </div>
                     @if (!Model.OverrideSend)

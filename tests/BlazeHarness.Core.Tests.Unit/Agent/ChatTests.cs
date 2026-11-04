@@ -159,6 +159,46 @@ public sealed class ChatTests
     }
 
     [Fact]
+    public async Task SendAsync_WithCustomInstructions_SendsThemAfterTheBasePromptAndBeforeTheProject()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        using var sut = CreateChat(client);
+        sut.UseTools(null, "Base prompt.");
+        sut.CustomInstructionsSource = () => "Reply briefly.";
+        sut.Project = new ProjectContext("/work/app", [new ProjectFile("/work/app/AGENTS.md", "Use tabs.", false)]);
+
+        // Act
+        await sut.SendAsync("hi", Fast);
+
+        // Assert
+        var system = client.Requests[0][0].Text;
+        system.Should().Contain("Reply briefly.");
+        system.IndexOf("Base prompt.", StringComparison.Ordinal).Should().BeLessThan(system.IndexOf("Reply briefly.", StringComparison.Ordinal));
+        system.IndexOf("Reply briefly.", StringComparison.Ordinal).Should().BeLessThan(system.IndexOf("Use tabs.", StringComparison.Ordinal));
+        sut.History.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant);
+    }
+
+    [Fact]
+    public async Task SendAsync_CustomInstructionsChangeBetweenReplies_TheNextReplyUsesTheNewText()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("one")]).Enqueue([ScriptedChatClient.Text("two")]);
+        using var sut = CreateChat(client);
+        string? instructions = "First.";
+        sut.CustomInstructionsSource = () => instructions;
+        await sut.SendAsync("a", Fast);
+
+        // Act
+        instructions = null;
+        await sut.SendAsync("b", Fast);
+
+        // Assert
+        client.Requests[0][0].Text.Should().Contain("First.");
+        client.Requests[1].Select(m => m.Role).Should().NotContain(ChatRole.System);
+    }
+
+    [Fact]
     public async Task SendAsync_WithoutProjectContext_SendsNoSystemMessage()
     {
         // Arrange

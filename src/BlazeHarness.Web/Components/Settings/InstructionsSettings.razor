@@ -1,0 +1,114 @@
+@using System.Globalization
+@using BlazeHarness.Core.Compaction
+@using BlazeHarness.Core.Config
+@implements IDisposable
+@inject JsonFileStore<AppConfig> Config
+@inject ToastService Toasts
+
+<div class="page">
+    <PageHeader Title="@WebStrings.InstructionsSettingsTitle">@WebStrings.InstructionsSettingsDescription</PageHeader>
+
+    <section class="card stack" aria-labelledby="instructions-heading">
+        <div class="row row-spread">
+            <h2 id="instructions-heading">@WebStrings.InstructionsSettingsHeading</h2>
+            @if (Dirty)
+            {
+                <span class="badge badge-warning" role="status">@WebStrings.InstructionsSettingsUnsaved</span>
+            }
+        </div>
+        <textarea id="custom-instructions" class="input instructions-input" rows="12" spellcheck="true"
+                  aria-labelledby="instructions-heading" aria-describedby="instructions-hint instructions-count"
+                  placeholder="@WebStrings.InstructionsSettingsPlaceholder"
+                  @bind="_text" @bind:event="oninput"></textarea>
+        <div class="row row-spread">
+            <p id="instructions-hint" class="hint">@WebStrings.InstructionsSettingsHint</p>
+            <p id="instructions-count" class="hint instructions-count">@CountText</p>
+        </div>
+        <div class="row">
+            <button type="button" class="btn btn-primary" disabled="@(!Dirty || _saving)" @onclick="SaveAsync">@WebStrings.InstructionsSettingsSave</button>
+            <button type="button" class="btn" disabled="@(!Dirty)" @onclick="Revert">@WebStrings.InstructionsSettingsRevert</button>
+        </div>
+    </section>
+
+    <details class="card stack">
+        <summary class="label">@WebStrings.InstructionsSettingsOrderSummary</summary>
+        <p class="hint">@WebStrings.InstructionsSettingsOrderHint</p>
+        <ol class="order-list">
+            <li>@WebStrings.InstructionsSettingsOrderBuiltIn</li>
+            <li class="order-yours">@WebStrings.InstructionsSettingsOrderYours</li>
+            <li>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.InstructionsSettingsOrderAgents))</li>
+            <li>@WebStrings.InstructionsSettingsOrderSkills</li>
+        </ol>
+    </details>
+</div>
+
+@code {
+    private string _text = string.Empty;
+    private string _loaded = string.Empty;
+    private bool _saving;
+
+    private bool Dirty => !string.Equals(_text, _loaded, StringComparison.Ordinal);
+
+    private string CountText
+    {
+        get
+        {
+            var characters = _text.Length;
+            return ResourceMessageFormatter.Web.Format(
+                nameof(WebStrings.InstructionsSettingsCount),
+                new Dictionary<string, object?>
+                {
+                    ["characters"] = characters,
+                    ["formattedCharacters"] = characters.ToString("N0", CultureInfo.CurrentCulture),
+                    ["tokens"] = TokenEstimate.OfCharacters(characters),
+                    ["formattedTokens"] = TokenEstimate.OfCharacters(characters).ToString("N0", CultureInfo.CurrentCulture),
+                });
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        _loaded = _text = Config.Current.CustomInstructions ?? string.Empty;
+        Config.ExternalChange += OnExternalChange;
+    }
+
+    public void Dispose()
+    {
+        Config.ExternalChange -= OnExternalChange;
+    }
+
+    private void OnExternalChange(object? sender, ValueEventArgs<AppConfig> e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (!Dirty)
+            {
+                _loaded = _text = e.Value.CustomInstructions ?? string.Empty;
+                StateHasChanged();
+            }
+        });
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try
+        {
+            var value = string.IsNullOrWhiteSpace(_text) ? null : _text;
+            if (await Toasts.TrySaveAsync(() => Config.UpdateAsync(config => config with { CustomInstructions = value }), WebStrings.GeneralSettingsSaveFailure))
+            {
+                _loaded = _text = value ?? string.Empty;
+                Toasts.Show(WebStrings.InstructionsSettingsSaved, ToastKind.Success);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Revert()
+    {
+        _text = _loaded;
+    }
+}

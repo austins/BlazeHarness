@@ -11,8 +11,9 @@ Follow the repository guidance in [AGENTS.md](AGENTS.md). It applies to people a
 
 ### Adding text
 
-Don't hard-code text in Razor, C# or JavaScript. Add an entry to `WebStrings.resx` and read it with `nameof(WebStrings.Key)`.
+Don't hard-code text a translator would change in Razor, C# or JavaScript. Add an entry to `WebStrings.resx` and read it with `nameof(WebStrings.Key)`.
 
+* Write text that reads the same in every language inline instead: file names, format and protocol names, and sample values in placeholders. Use `AppConstants.AppName` for the product name.
 * Name keys `<Component><Purpose>`, such as `ChatListDeleteWarning`, and never by number.
 * Give each new English entry a comment that says where the text appears, what each placeholder is, and what not to translate.
 * Remove an entry when its last use is removed.

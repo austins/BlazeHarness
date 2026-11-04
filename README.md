@@ -112,6 +112,7 @@ Without the sandbox, leftover background processes are stopped when the command 
   * List tool name patterns in `"excludeTools"` to keep a server's tools from the model entirely. The tool list in Settings > MCP has a checkbox per tool that edits this list (a tool kept out by a pattern can only be changed in the file).
   * The tool lists are remembered in `cache/mcp-tools.json`, which is safe to delete.
 * Skills, loaded on demand from `SKILL.md` folders in `~/.blazeharness/skills`, `~/.agents/skills`, and a folder's own `.agents/skills`.
+* Custom instructions (Settings > Instructions): your own text, stored in `config.json` and added to every chat's system prompt after the built-in prompt. It does not replace the built-in prompt. A folder's `AGENTS.md` comes after it and takes priority if the two conflict. There is no length limit, but the text is sent with every message, so keep it short. Edits apply from the next message in each chat.
 
 ### Web access
 
@@ -156,7 +157,6 @@ Not built yet, and not promised:
 * Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits. A subagent would run the same loop at the same or a lower access level, and its approval requests would go to the parent chat's approver, never be granted on their own. A subagent starts without the parent's history, so it would need the to-do list passed in or a `get_todos` tool; a chat today needs neither, because the list is in its own history and in compaction summaries.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
-* Custom system prompt or instructions, appended to the built-in system prompt rather than replacing it.
 * Deployment and publishing settings. The language list is found from the translated satellite assemblies (`<culture>/BlazeHarness.Web.resources.dll`) next to the app, so a published build must keep them; check single-file, trimming and self-contained options for this.
 
 ## Not goals

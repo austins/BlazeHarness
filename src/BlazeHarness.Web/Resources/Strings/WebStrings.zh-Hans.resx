@@ -139,9 +139,6 @@
   <data name="ChatViewInstructionsHeading" xml:space="preserve">
     <value>项目指令</value>
   </data>
-  <data name="ChatViewAgentsMdTrigger" xml:space="preserve">
-    <value>AGENTS.md</value>
-  </data>
   <data name="ChatViewInstructionsTooltip" xml:space="preserve">
     <value>提供给模型的项目指令</value>
   </data>
@@ -259,14 +256,8 @@
   <data name="ExportMenuJsonHint" xml:space="preserve">
     <value>以便日后重新导入</value>
   </data>
-  <data name="ExportMenuJsonName" xml:space="preserve">
-    <value>JSON</value>
-  </data>
   <data name="ExportMenuMarkdownHint" xml:space="preserve">
     <value>用于阅读或分享</value>
-  </data>
-  <data name="ExportMenuMarkdownName" xml:space="preserve">
-    <value>Markdown</value>
   </data>
   <data name="ExportMenuHeading" xml:space="preserve">
     <value>导出聊天</value>
@@ -315,9 +306,6 @@
   </data>
   <data name="McpPickerFailed" xml:space="preserve">
     <value>失败</value>
-  </data>
-  <data name="McpPickerTrigger" xml:space="preserve">
-    <value>MCP</value>
   </data>
   <data name="McpPickerTitle" xml:space="preserve">
     <value>此聊天可使用其工具的 MCP 服务器</value>
@@ -532,9 +520,6 @@
   <data name="MainLayoutReload" xml:space="preserve">
     <value>重新加载</value>
   </data>
-  <data name="MainLayoutTitle" xml:space="preserve">
-    <value>BlazeHarness</value>
-  </data>
   <data name="MainLayoutCloseSidebar" xml:space="preserve">
     <value>关闭侧边栏</value>
   </data>
@@ -652,9 +637,6 @@
   <data name="SidebarNewChatTooltip" xml:space="preserve">
     <value>新建聊天 (Ctrl+Shift+O)</value>
   </data>
-  <data name="SidebarBrand" xml:space="preserve">
-    <value>BlazeHarness</value>
-  </data>
   <data name="SidebarNavigationLabel" xml:space="preserve">
     <value>主导航</value>
   </data>
@@ -675,9 +657,6 @@
   </data>
   <data name="HomeHeading" xml:space="preserve">
     <value>欢迎使用 BlazeHarness</value>
-  </data>
-  <data name="HomePageTitle" xml:space="preserve">
-    <value>BlazeHarness</value>
   </data>
   <data name="NotFoundMessage" xml:space="preserve">
     <value>你访问的页面不存在。</value>
@@ -1267,9 +1246,6 @@
   <data name="ThinkingSendLabelsCustomFieldOption" xml:space="preserve">
     <value>自定义请求体字段</value>
   </data>
-  <data name="ThinkingSendLabelsReasoningEffortOption" xml:space="preserve">
-    <value>reasoning_effort (OpenAI, llama.cpp, vLLM)</value>
-  </data>
   <data name="ThinkingSendLabelsReasoningObjectOption" xml:space="preserve">
     <value>reasoning 对象 (OpenRouter)</value>
   </data>
@@ -1407,6 +1383,57 @@
   </data>
   <data name="SettingsDialogPermissions" xml:space="preserve">
     <value>权限</value>
+  </data>
+  <data name="InstructionsSettingsTitle" xml:space="preserve">
+    <value>自定义指令</value>
+  </data>
+  <data name="InstructionsSettingsDescription" xml:space="preserve">
+    <value>模型在每个聊天中遵循的指令。它们会添加到内置系统提示词中，而不会替换它。</value>
+  </data>
+  <data name="InstructionsSettingsHeading" xml:space="preserve">
+    <value>你的指令</value>
+  </data>
+  <data name="InstructionsSettingsUnsaved" xml:space="preserve">
+    <value>未保存的更改</value>
+  </data>
+  <data name="InstructionsSettingsPlaceholder" xml:space="preserve">
+    <value>例如：回答要简短。优先使用 TypeScript 而不是 JavaScript。删除任何内容前先询问。</value>
+  </data>
+  <data name="InstructionsSettingsHint" xml:space="preserve">
+    <value>请保持简短。这段文字会随每条消息一起发送，过长会占用上下文并消耗 token。更改从每个聊天的下一条消息起生效。</value>
+  </data>
+  <data name="InstructionsSettingsCount" xml:space="preserve">
+    <value>{characters, plural, other {{formattedCharacters} 个字符}} · 约 {tokens, plural, other {{formattedTokens} 个 token}}</value>
+  </data>
+  <data name="InstructionsSettingsSave" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="InstructionsSettingsRevert" xml:space="preserve">
+    <value>还原</value>
+  </data>
+  <data name="InstructionsSettingsSaved" xml:space="preserve">
+    <value>指令已保存。</value>
+  </data>
+  <data name="InstructionsSettingsOrderSummary" xml:space="preserve">
+    <value>提示词的组成方式</value>
+  </data>
+  <data name="InstructionsSettingsOrderHint" xml:space="preserve">
+    <value>各部分按此顺序发送。它们都不会扩大访问级别，也不会跳过批准。</value>
+  </data>
+  <data name="InstructionsSettingsOrderBuiltIn" xml:space="preserve">
+    <value>内置系统提示词：智能体如何使用工具，以及操作被阻止时该怎么做。</value>
+  </data>
+  <data name="InstructionsSettingsOrderYours" xml:space="preserve">
+    <value>你的指令（本页）。</value>
+  </data>
+  <data name="InstructionsSettingsOrderAgents" xml:space="preserve">
+    <value>聊天所在文件夹的 [code]AGENTS.md[/code] 文件。如果两者冲突，它们优先于你的指令。</value>
+  </data>
+  <data name="InstructionsSettingsOrderSkills" xml:space="preserve">
+    <value>可用技能列表。</value>
+  </data>
+  <data name="SettingsDialogInstructions" xml:space="preserve">
+    <value>指令</value>
   </data>
   <data name="SettingsDialogMcpServers" xml:space="preserve">
     <value>MCP 服务器</value>
@@ -1666,9 +1693,6 @@
   <data name="SkillsSettingsChatFolder" xml:space="preserve">
     <value>聊天文件夹</value>
   </data>
-  <data name="SkillsSettingsBlazeHarness" xml:space="preserve">
-    <value>BlazeHarness</value>
-  </data>
   <data name="SkillsSettingsGlobal" xml:space="preserve">
     <value>全局</value>
   </data>
@@ -1702,9 +1726,6 @@
   <data name="McpServerFormAlwaysLoad" xml:space="preserve">
     <value>始终加载其所有工具</value>
   </data>
-  <data name="McpServerFormAddressPlaceholder" xml:space="preserve">
-    <value>https://example.com/mcp</value>
-  </data>
   <data name="McpServerFormAddress" xml:space="preserve">
     <value>地址</value>
   </data>
@@ -1713,9 +1734,6 @@
   </data>
   <data name="McpServerFormWorkingFolder" xml:space="preserve">
     <value>工作文件夹</value>
-  </data>
-  <data name="McpServerFormCommandPlaceholder" xml:space="preserve">
-    <value>npx</value>
   </data>
   <data name="McpServerFormCommand" xml:space="preserve">
     <value>命令</value>
@@ -1761,9 +1779,6 @@
   </data>
   <data name="McpSettingsFileHint" xml:space="preserve">
     <value>在 BlazeHarness 外部所做的更改也会显示在这里。为已打开的聊天开启或关闭服务器会更改其工具，从而重置该聊天的提示词缓存。</value>
-  </data>
-  <data name="McpSettingsFileLabel" xml:space="preserve">
-    <value>mcp.json</value>
   </data>
   <data name="McpSettingsAdvancedSummary" xml:space="preserve">
     <value>高级：编辑 mcp.json</value>
@@ -1960,9 +1975,6 @@
   <data name="ProvidersSettingsStreamUsage" xml:space="preserve">
     <value>流式传输时请求 token 用量（若服务器拒绝 [code]stream_options[/code] 请关闭）</value>
   </data>
-  <data name="ProvidersSettingsThinkingFieldPlaceholder" xml:space="preserve">
-    <value>chat_template_kwargs.enable_thinking</value>
-  </data>
   <data name="ProvidersSettingsThinkingFieldLabel" xml:space="preserve">
     <value>请求体字段</value>
   </data>
@@ -2035,9 +2047,6 @@
   <data name="ProvidersSettingsEnvVarHint" xml:space="preserve">
     <value>设置后，此变量将替代已存储的密钥。</value>
   </data>
-  <data name="ProvidersSettingsEnvVarPlaceholder" xml:space="preserve">
-    <value>PROVIDER_API_KEY</value>
-  </data>
   <data name="ProvidersSettingsEnvVarLabel" xml:space="preserve">
     <value>环境变量名称</value>
   </data>
@@ -2046,9 +2055,6 @@
   </data>
   <data name="ProvidersSettingsApiKeyLabel" xml:space="preserve">
     <value>API 密钥</value>
-  </data>
-  <data name="ProvidersSettingsBaseUrlPlaceholder" xml:space="preserve">
-    <value>https://api.example.com/v1</value>
   </data>
   <data name="ProvidersSettingsBaseUrlLabel" xml:space="preserve">
     <value>基础 URL</value>
@@ -2308,9 +2314,6 @@
   <data name="ExtraFieldsValueLabel" xml:space="preserve">
     <value>JSON 格式的字段值</value>
   </data>
-  <data name="ExtraFieldsNamePlaceholder" xml:space="preserve">
-    <value>mirostat</value>
-  </data>
   <data name="ExtraFieldsNameLabel" xml:space="preserve">
     <value>字段名称</value>
   </data>
@@ -2349,9 +2352,6 @@
   </data>
   <data name="ModelTuningProviderSettingHint" xml:space="preserve">
     <value>提供商的设置位于提供商设置中的“兼容性”下。它适用于所有未单独指定设置的模型。</value>
-  </data>
-  <data name="ModelTuningBodyFieldPathPlaceholder" xml:space="preserve">
-    <value>chat_template_kwargs.reasoning_effort</value>
   </data>
   <data name="ModelTuningBodyFieldPathLabel" xml:space="preserve">
     <value>请求体字段路径</value>

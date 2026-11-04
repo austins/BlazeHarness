@@ -27,7 +27,7 @@
         <div class="form-grid">
             <div class="field">
                 <label for="mcp-command">@WebStrings.McpServerFormCommand</label>
-                <input id="mcp-command" class="input mono" @bind="Draft.Command" @bind:event="oninput" placeholder="@WebStrings.McpServerFormCommandPlaceholder" spellcheck="false" />
+                <input id="mcp-command" class="input mono" @bind="Draft.Command" @bind:event="oninput" placeholder="npx" spellcheck="false" />
             </div>
             <div class="field">
                 <label for="mcp-cwd">@WebStrings.McpServerFormWorkingFolder <span class="muted">(@WebStrings.McpServerFormOptional)</span></label>
@@ -44,7 +44,7 @@
     {
         <div class="field">
             <label for="mcp-url">@WebStrings.McpServerFormAddress</label>
-            <input id="mcp-url" class="input mono" @bind="Draft.Url" @bind:event="oninput" inputmode="url" spellcheck="false" placeholder="@WebStrings.McpServerFormAddressPlaceholder" />
+            <input id="mcp-url" class="input mono" @bind="Draft.Url" @bind:event="oninput" inputmode="url" spellcheck="false" placeholder="https://example.com/mcp" />
         </div>
         @Entries(Draft.Headers, WebStrings.McpServerFormHeaders, WebStrings.McpServerFormAddHeader, WebStrings.McpServerFormHeaderName)
     }

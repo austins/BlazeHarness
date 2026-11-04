@@ -27,7 +27,7 @@ internal static class ThinkingSendLabels
     /// <returns>The name for a select option.</returns>
     public static string Option(ThinkingSendMode mode) => mode switch
     {
-        ThinkingSendMode.ReasoningEffort => WebStrings.ThinkingSendLabelsReasoningEffortOption,
+        ThinkingSendMode.ReasoningEffort => "reasoning_effort (OpenAI, llama.cpp, vLLM)",
         ThinkingSendMode.ReasoningObject => WebStrings.ThinkingSendLabelsReasoningObjectOption,
         _ => WebStrings.ThinkingSendLabelsCustomFieldOption,
     };

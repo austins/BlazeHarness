@@ -1,3 +1,4 @@
+@using BlazeHarness.Core
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject IJSRuntime JS
@@ -17,7 +18,7 @@
     <div class="app-shell">
         <header class="topbar">
             <button type="button" class="btn btn-ghost btn-icon" aria-label="@(_collapsed ? WebStrings.MainLayoutShowSidebar : WebStrings.MainLayoutHideSidebar)" aria-expanded="@(_collapsed ? "false" : "true")" @onclick="() => _collapsed = !_collapsed"><Icon Name="menu" /></button>
-            <span class="title">@WebStrings.MainLayoutTitle</span>
+            <span class="title">@AppConstants.AppName</span>
             <SidePanelToggle />
         </header>
         <main class="content">

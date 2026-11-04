@@ -1,3 +1,4 @@
+using BlazeHarness.Core;
 using BlazeHarness.Core.Logging;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -114,7 +115,7 @@ public static class HostLauncher
         var port = new Uri(address).Port;
         var url = $"http://127.0.0.1:{port}";
 
-        Console.WriteLine($"BlazeHarness is running at {url}");
+        Console.WriteLine($"{AppConstants.AppName} is running at {url}");
         var policy = app.Services.GetRequiredService<AccessPolicy>();
         if (policy.AllowAnyHost)
         {

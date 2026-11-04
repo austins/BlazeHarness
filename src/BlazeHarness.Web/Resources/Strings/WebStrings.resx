@@ -192,10 +192,6 @@
     <value>Project instructions</value>
     <comment>Heading of the popover that lists the project instruction files (AGENTS.md) given to the model.</comment>
   </data>
-  <data name="ChatViewAgentsMdTrigger" xml:space="preserve">
-    <value>AGENTS.md</value>
-    <comment>Button in the chat header that opens the project instructions popover. AGENTS.md is a file name; do not translate it.</comment>
-  </data>
   <data name="ChatViewInstructionsTooltip" xml:space="preserve">
     <value>Project instructions the model was given</value>
     <comment>Tooltip for the AGENTS.md button in the chat header.</comment>
@@ -352,17 +348,9 @@
     <value>To import again later</value>
     <comment>Description of the JSON export option: the file can be imported back into the app.</comment>
   </data>
-  <data name="ExportMenuJsonName" xml:space="preserve">
-    <value>JSON</value>
-    <comment>Name of the JSON export format in the export popover. JSON is a file format name; do not translate it.</comment>
-  </data>
   <data name="ExportMenuMarkdownHint" xml:space="preserve">
     <value>To read or share</value>
     <comment>Description of the Markdown export option: a readable document of the chat.</comment>
-  </data>
-  <data name="ExportMenuMarkdownName" xml:space="preserve">
-    <value>Markdown</value>
-    <comment>Name of the Markdown export format in the export popover. Markdown is a format name; do not translate it.</comment>
   </data>
   <data name="ExportMenuHeading" xml:space="preserve">
     <value>Export chat</value>
@@ -427,10 +415,6 @@
   <data name="McpPickerFailed" xml:space="preserve">
     <value>Failed</value>
     <comment>Short error badge next to an MCP server in the picker popover when its connection failed; the error text is shown as a tooltip.</comment>
-  </data>
-  <data name="McpPickerTrigger" xml:space="preserve">
-    <value>MCP</value>
-    <comment>Text of the chat toolbar button that opens the MCP servers picker, followed by a count badge. MCP is the Model Context Protocol; keep the abbreviation.</comment>
   </data>
   <data name="McpPickerTitle" xml:space="preserve">
     <value>MCP servers whose tools this chat can use</value>
@@ -716,10 +700,6 @@
     <value>Reload</value>
     <comment>Link in the unhandled-error bar that reloads the page.</comment>
   </data>
-  <data name="MainLayoutTitle" xml:space="preserve">
-    <value>BlazeHarness</value>
-    <comment>Product name shown in the top bar of the main layout. Product name: do not translate.</comment>
-  </data>
   <data name="MainLayoutCloseSidebar" xml:space="preserve">
     <value>Close sidebar</value>
     <comment>Accessible label (aria-label) of the backdrop button that closes the sidebar on narrow screens; not shown on screen.</comment>
@@ -876,10 +856,6 @@
     <value>New chat (Ctrl+Shift+O)</value>
     <comment>Tooltip of the New chat button. The parenthesised text is the keyboard shortcut; keep it matching the real shortcut.</comment>
   </data>
-  <data name="SidebarBrand" xml:space="preserve">
-    <value>BlazeHarness</value>
-    <comment>Product name shown at the top of the sidebar next to the logo. Product name: do not translate.</comment>
-  </data>
   <data name="SidebarNavigationLabel" xml:space="preserve">
     <value>Main</value>
     <comment>Accessible label (aria-label) naming the sidebar as the main navigation landmark; read by screen readers, not shown on screen.</comment>
@@ -907,10 +883,6 @@
   <data name="HomeHeading" xml:space="preserve">
     <value>Welcome to BlazeHarness</value>
     <comment>Main heading of the welcome page. BlazeHarness is the product name: do not translate it.</comment>
-  </data>
-  <data name="HomePageTitle" xml:space="preserve">
-    <value>BlazeHarness</value>
-    <comment>Browser tab title of the welcome page. Product name: do not translate.</comment>
   </data>
   <data name="NotFoundMessage" xml:space="preserve">
     <value>The page you are looking for does not exist.</value>
@@ -1357,7 +1329,6 @@
   <data name="ModelTuningSamplingThinkingOnLabel" xml:space="preserve"><value>{label}, thinking on</value><comment>Accessible label for a sampling value field in the Thinking on column of the model tuning dialog; label is the sampling parameter name, for example Temperature.</comment></data>
   <data name="ThinkingSendLabelsCustomFieldShort" xml:space="preserve"><value>custom body field</value><comment>Short name, shown after "Same as provider:" in the model tuning dialog, for sending the thinking level in a custom request body field.</comment></data>
   <data name="ThinkingSendLabelsCustomFieldOption" xml:space="preserve"><value>Custom body field</value><comment>Select option in the provider and model editors for sending the thinking level in a custom request body field.</comment></data>
-  <data name="ThinkingSendLabelsReasoningEffortOption" xml:space="preserve"><value>reasoning_effort (OpenAI, llama.cpp, vLLM)</value><comment>Select option in the provider and model editors for sending the thinking level as the reasoning_effort request field. Do not translate reasoning_effort or the product names.</comment></data>
   <data name="ThinkingSendLabelsReasoningObjectOption" xml:space="preserve"><value>reasoning object (OpenRouter)</value><comment>Select option in the provider and model editors for sending the thinking level as a reasoning object in the request. Do not translate the product name.</comment></data>
   <data name="ModelTuningValueSentFor" xml:space="preserve"><value>Value sent for {level}</value><comment>Accessible label for a thinking-level value field; level is the thinking-level name.</comment></data>
   <data name="ProvidersSettingsHeaderBefore" xml:space="preserve"><value>Connect any OpenAI-compatible endpoint. Keys are kept in</value><comment>First part of the providers settings description before the name of the secret store.</comment></data>
@@ -1404,6 +1375,71 @@
   <data name="SettingsDialogGeneral" xml:space="preserve"><value>General</value><comment>Settings section name.</comment></data>
   <data name="SettingsDialogProviders" xml:space="preserve"><value>Providers</value><comment>Settings section name.</comment></data>
   <data name="SettingsDialogPermissions" xml:space="preserve"><value>Permissions</value><comment>Settings section name.</comment></data>
+  <data name="InstructionsSettingsTitle" xml:space="preserve">
+    <value>Custom instructions</value>
+    <comment>Title of the Instructions settings page, where the user writes text that is added to the system prompt of every chat.</comment>
+  </data>
+  <data name="InstructionsSettingsDescription" xml:space="preserve">
+    <value>Instructions the model follows in every chat. They are added to the built-in system prompt and do not replace it.</value>
+    <comment>Description under the title of the Instructions settings page.</comment>
+  </data>
+  <data name="InstructionsSettingsHeading" xml:space="preserve">
+    <value>Your instructions</value>
+    <comment>Heading of the card on the Instructions settings page that holds the text box. Also the accessible name of the text box.</comment>
+  </data>
+  <data name="InstructionsSettingsUnsaved" xml:space="preserve">
+    <value>Unsaved changes</value>
+    <comment>Badge on the Instructions settings page shown while the text differs from what is saved.</comment>
+  </data>
+  <data name="InstructionsSettingsPlaceholder" xml:space="preserve">
+    <value>For example: Reply briefly. Prefer TypeScript over JavaScript. Ask before deleting anything.</value>
+    <comment>Placeholder of the empty text box on the Instructions settings page; it shows example instructions.</comment>
+  </data>
+  <data name="InstructionsSettingsHint" xml:space="preserve">
+    <value>Keep it short. This text is sent with every message, so a long one uses up context and costs tokens. Changes apply from the next message in each chat.</value>
+    <comment>Hint under the text box on the Instructions settings page.</comment>
+  </data>
+  <data name="InstructionsSettingsCount" xml:space="preserve">
+    <value>{characters, plural, one {{formattedCharacters} character} other {{formattedCharacters} characters}} · about {tokens, plural, one {{formattedTokens} token} other {{formattedTokens} tokens}}</value>
+    <comment>Size of the text on the Instructions settings page. characters and tokens select singular or plural; formattedCharacters and formattedTokens are the displayed numbers. A token is the unit a language model reads; the count is an estimate.</comment>
+  </data>
+  <data name="InstructionsSettingsSave" xml:space="preserve">
+    <value>Save</value>
+    <comment>Button on the Instructions settings page that saves the text.</comment>
+  </data>
+  <data name="InstructionsSettingsRevert" xml:space="preserve">
+    <value>Revert</value>
+    <comment>Button on the Instructions settings page that discards unsaved changes and shows the saved text again.</comment>
+  </data>
+  <data name="InstructionsSettingsSaved" xml:space="preserve">
+    <value>Instructions saved.</value>
+    <comment>Toast shown after the text on the Instructions settings page was saved.</comment>
+  </data>
+  <data name="InstructionsSettingsOrderSummary" xml:space="preserve">
+    <value>How the prompt is put together</value>
+    <comment>Summary of the collapsible section on the Instructions settings page that lists the parts of the system prompt in order.</comment>
+  </data>
+  <data name="InstructionsSettingsOrderHint" xml:space="preserve">
+    <value>The parts are sent in this order. None of them widens the access level or skips an approval.</value>
+    <comment>Intro to the numbered list of the parts of the system prompt on the Instructions settings page.</comment>
+  </data>
+  <data name="InstructionsSettingsOrderBuiltIn" xml:space="preserve">
+    <value>The built-in system prompt: how the agent uses its tools and what to do when an action is blocked.</value>
+    <comment>First item of the numbered list of the parts of the system prompt on the Instructions settings page.</comment>
+  </data>
+  <data name="InstructionsSettingsOrderYours" xml:space="preserve">
+    <value>Your instructions (this page).</value>
+    <comment>Second item of the numbered list of the parts of the system prompt on the Instructions settings page; it is the text the user writes there.</comment>
+  </data>
+  <data name="InstructionsSettingsOrderAgents" xml:space="preserve">
+    <value>The [code]AGENTS.md[/code] files of the chat's folder. They take priority over your instructions if the two conflict.</value>
+    <comment>Third item of the numbered list of the parts of the system prompt on the Instructions settings page. Keep [code]...[/code] around the file name and do not translate AGENTS.md.</comment>
+  </data>
+  <data name="InstructionsSettingsOrderSkills" xml:space="preserve">
+    <value>The list of available skills.</value>
+    <comment>Fourth item of the numbered list of the parts of the system prompt on the Instructions settings page.</comment>
+  </data>
+  <data name="SettingsDialogInstructions" xml:space="preserve"><value>Instructions</value><comment>Settings section name.</comment></data>
   <data name="SettingsDialogMcpServers" xml:space="preserve"><value>MCP servers</value><comment>Settings section name.</comment></data>
   <data name="SettingsDialogSkills" xml:space="preserve"><value>Skills</value><comment>Settings section name.</comment></data>
   <data name="SettingsDialogWeb" xml:space="preserve"><value>Web</value><comment>Settings section name.</comment></data>
@@ -1490,7 +1526,6 @@
   <data name="DiagnosticsSettingsNotAvailable" xml:space="preserve"><value>Not available</value><comment>Fallback value shown when the shell sandbox is not available.</comment></data>
   <data name="DiagnosticsSettingsMcpSummary" xml:space="preserve"><value>{connected} of {total, plural, one {{total} MCP server connected} other {{total} MCP servers connected}}</value><comment>Summary of connected MCP servers; connected and total are their counts.</comment></data>
   <data name="SkillsSettingsChatFolder" xml:space="preserve"><value>Chat folder</value><comment>Label for skills found in the chat's folder.</comment></data>
-  <data name="SkillsSettingsBlazeHarness" xml:space="preserve"><value>BlazeHarness</value><comment>Label for skills shipped with the application.</comment></data>
   <data name="SkillsSettingsGlobal" xml:space="preserve"><value>Global</value><comment>Label for globally installed skills.</comment></data>
   <data name="SkillsSettingsSaveFailure" xml:space="preserve"><value>The skill setting could not be saved because the settings file could not be written.</value><comment>Error shown when saving a skill setting fails.</comment></data>
   <data name="QuestionCardYourAnswer" xml:space="preserve"><value>Your answer</value><comment>Placeholder and accessible label for an answer when there are no suggested options.</comment></data>
@@ -1514,10 +1549,6 @@
     <value>Always load all of its tools</value>
     <comment>Label of the checkbox in the MCP server form that puts all of the server's tools in the prompt instead of finding them by search. Explained further by the hint text next to it.</comment>
   </data>
-  <data name="McpServerFormAddressPlaceholder" xml:space="preserve">
-    <value>https://example.com/mcp</value>
-    <comment>Placeholder example for the Address field of a remote MCP server. It is a sample URL; do not translate it.</comment>
-  </data>
   <data name="McpServerFormAddress" xml:space="preserve">
     <value>Address</value>
     <comment>Field label in the MCP server form for the URL of a remote (HTTP or SSE) server.</comment>
@@ -1529,10 +1560,6 @@
   <data name="McpServerFormWorkingFolder" xml:space="preserve">
     <value>Working folder</value>
     <comment>Field label in the MCP server form for the directory a local program starts in. Followed by "(optional)".</comment>
-  </data>
-  <data name="McpServerFormCommandPlaceholder" xml:space="preserve">
-    <value>npx</value>
-    <comment>Placeholder example for the Command field of a local MCP server. It is a program name; do not translate it.</comment>
   </data>
   <data name="McpServerFormCommand" xml:space="preserve">
     <value>Command</value>
@@ -1593,10 +1620,6 @@
   <data name="McpSettingsFileHint" xml:space="preserve">
     <value>Changes made outside BlazeHarness show up here too. Turning a server on or off for a chat that is already open changes its tools, which resets that chat's prompt cache.</value>
     <comment>Hint under the advanced mcp.json editor: edits made to the file by other programs are picked up, and changing a server for an open chat resets that chat's prompt cache (the model provider's cache of the conversation prefix). Keep "BlazeHarness" untranslated.</comment>
-  </data>
-  <data name="McpSettingsFileLabel" xml:space="preserve">
-    <value>mcp.json</value>
-    <comment>Label of the text area for editing the MCP configuration file. It is the file name; do not translate it.</comment>
   </data>
   <data name="McpSettingsAdvancedSummary" xml:space="preserve">
     <value>Advanced: edit mcp.json</value>
@@ -1858,10 +1881,6 @@
     <value>Ask for token usage while streaming (turn off if the server rejects [code]stream_options[/code])</value>
     <comment>Checkbox label in the provider editor. Keep the [code] tags; stream_options is an API field name and is not translated.</comment>
   </data>
-  <data name="ProvidersSettingsThinkingFieldPlaceholder" xml:space="preserve">
-    <value>chat_template_kwargs.enable_thinking</value>
-    <comment>Example request body field path shown as the placeholder of the body field input. It is an API field name; do not translate it.</comment>
-  </data>
   <data name="ProvidersSettingsThinkingFieldLabel" xml:space="preserve">
     <value>Body field</value>
     <comment>Label of the input for the request body field that carries the thinking level. It shows only when thinking is sent in the request body.</comment>
@@ -1958,10 +1977,6 @@
     <value>When set, this replaces the stored key.</value>
     <comment>Hint below the environment variable name input. "This" is the environment variable; the stored key is the API key saved in the key store.</comment>
   </data>
-  <data name="ProvidersSettingsEnvVarPlaceholder" xml:space="preserve">
-    <value>PROVIDER_API_KEY</value>
-    <comment>Example environment variable name shown as a placeholder. Do not translate it.</comment>
-  </data>
   <data name="ProvidersSettingsEnvVarLabel" xml:space="preserve">
     <value>Environment variable name</value>
     <comment>Accessible name (aria-label) of the input for the name of the environment variable that holds the API key. Not shown on screen.</comment>
@@ -1973,10 +1988,6 @@
   <data name="ProvidersSettingsApiKeyLabel" xml:space="preserve">
     <value>API key</value>
     <comment>Label of the API key input in the provider editor. A parenthesized "Optional" follows it.</comment>
-  </data>
-  <data name="ProvidersSettingsBaseUrlPlaceholder" xml:space="preserve">
-    <value>https://api.example.com/v1</value>
-    <comment>Example base URL shown as a placeholder. It is a URL; do not translate it.</comment>
   </data>
   <data name="ProvidersSettingsBaseUrlLabel" xml:space="preserve">
     <value>Base URL</value>
@@ -2322,10 +2333,6 @@
     <value>Field value as JSON</value>
     <comment>Accessible name (aria-label) of the input for a custom request field's value. The user types a JSON value such as a number or text in quotes. JSON is a format name and is not translated.</comment>
   </data>
-  <data name="ExtraFieldsNamePlaceholder" xml:space="preserve">
-    <value>mirostat</value>
-    <comment>Example custom request field name shown as a placeholder. It is an API field name (a sampling option); do not translate it.</comment>
-  </data>
   <data name="ExtraFieldsNameLabel" xml:space="preserve">
     <value>Field name</value>
     <comment>Accessible name (aria-label) of the input for a custom request field's name. Not shown on screen.</comment>
@@ -2377,10 +2384,6 @@
   <data name="ModelTuningProviderSettingHint" xml:space="preserve">
     <value>The provider's setting is under Compatibility in the provider's settings. It applies to every model that doesn't pick its own.</value>
     <comment>Hint shown when the model uses the provider's way of sending the thinking level. "Compatibility" is the name of a section in the provider settings; keep it the same as that heading.</comment>
-  </data>
-  <data name="ModelTuningBodyFieldPathPlaceholder" xml:space="preserve">
-    <value>chat_template_kwargs.reasoning_effort</value>
-    <comment>Example request body field path shown as a placeholder. It is an API field name; do not translate it.</comment>
   </data>
   <data name="ModelTuningBodyFieldPathLabel" xml:space="preserve">
     <value>Body field path</value>

@@ -1,4 +1,5 @@
 @using System.Diagnostics
+@using BlazeHarness.Core
 @using BlazeHarness.Core.Chats
 @using BlazeHarness.Core.Chats.Export
 @using BlazeHarness.Web.Services
@@ -13,7 +14,7 @@
 @inject TimeProvider Time
 
 <nav class="sidebar" data-collapsed="@Collapsed.ToString().ToLowerInvariant()" aria-label="@WebStrings.SidebarNavigationLabel">
-    <div class="sidebar-brand"><img class="logo" src="favicon.svg" alt="" aria-hidden="true" /> @WebStrings.SidebarBrand</div>
+    <div class="sidebar-brand"><img class="logo" src="favicon.svg" alt="" aria-hidden="true" /> @AppConstants.AppName</div>
 
     <NavLink class="btn btn-primary" href="" Match="NavLinkMatch.All" data-shortcut="new-chat" title="@WebStrings.SidebarNewChatTooltip"><Icon Name="plus" /> @WebStrings.SidebarNewChat</NavLink>
 

@@ -145,7 +145,7 @@ public sealed partial class Chat
 
     private string SystemPromptText(ToolSetup setup)
     {
-        return string.Join(Environment.NewLine, new[] { setup.BasePrompt, Project?.ToPrompt(), setup.Tools is null ? null : Skills?.ToPrompt() }.Where(p => !string.IsNullOrWhiteSpace(p)));
+        return string.Join(Environment.NewLine, new[] { setup.BasePrompt, UserInstructions.ToPrompt(CustomInstructionsSource?.Invoke()), Project?.ToPrompt(), setup.Tools is null ? null : Skills?.ToPrompt() }.Where(p => !string.IsNullOrWhiteSpace(p)));
     }
 
     private long ToolTokens(ToolSet? current)

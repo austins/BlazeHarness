@@ -48,6 +48,7 @@ public sealed partial class ChatService : IDisposable
     private readonly SkillCatalog? _skills;
     private readonly Func<CompactionMode>? _compactionMode;
     private readonly Func<bool>? _todosEnabled;
+    private readonly Func<string?>? _customInstructions;
     private readonly ILogger _log;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
@@ -70,6 +71,7 @@ public sealed partial class ChatService : IDisposable
     /// <param name="compactionMode">Tells how summaries are written each time a chat is compacted; without it the model writes them.</param>
     /// <param name="web">Provides the web search and fetch tools; without it chats have no web tools.</param>
     /// <param name="todosEnabled">Tells whether chats get the <c>update_todos</c> tool, read before each reply; without it they always do.</param>
+    /// <param name="customInstructions">Gives the user's custom instructions, read each time the system prompt is built; without it chats have none.</param>
     public ChatService(
         ChatStore store,
         Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
@@ -82,7 +84,8 @@ public sealed partial class ChatService : IDisposable
         SkillCatalog? skills = null,
         Func<CompactionMode>? compactionMode = null,
         WebServices? web = null,
-        Func<bool>? todosEnabled = null)
+        Func<bool>? todosEnabled = null,
+        Func<string?>? customInstructions = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clientFactory);
@@ -100,6 +103,7 @@ public sealed partial class ChatService : IDisposable
         _web = web;
         _compactionMode = compactionMode;
         _todosEnabled = todosEnabled;
+        _customInstructions = customInstructions;
         _log = loggers.CreateLogger<ChatService>();
     }
 
@@ -791,6 +795,7 @@ public sealed partial class ChatService : IDisposable
         {
             Attachments = new ChatAttachments(_store.AttachmentsDirectory(id)),
             CompactionModeSource = _compactionMode,
+            CustomInstructionsSource = _customInstructions,
         };
         chat.Permissions.Sensitive = () => _defaults?.Sensitive(id) ?? SensitivePaths.Default(_store.Paths, id);
         chat.Permissions.ReadableFolders = () => [_store.AttachmentsDirectory(id)];

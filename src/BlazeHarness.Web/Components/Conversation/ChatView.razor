@@ -44,7 +44,7 @@ else
                     @if (Project is { Files.Count: > 0 } project)
                     {
                         <Popover Label="@WebStrings.ChatViewInstructionsLabel" Title="@WebStrings.ChatViewInstructionsTooltip">
-                            <Trigger><Icon Name="file" /> @WebStrings.ChatViewAgentsMdTrigger <span class="badge">@project.Files.Count</span></Trigger>
+                            <Trigger><Icon Name="file" /> AGENTS.md <span class="badge">@project.Files.Count</span></Trigger>
                             <ChildContent>
                                 <div class="panel-head"><span>@WebStrings.ChatViewInstructionsHeading</span></div>
                                 <ul class="panel-list">

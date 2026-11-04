@@ -62,7 +62,7 @@
                             </div>
                             <div class="field">
                                 <label for="p-url">@WebStrings.ProvidersSettingsBaseUrlLabel</label>
-                                <input id="p-url" class="input mono" aria-invalid="@Invalid("baseUrl")" @bind="_edit.BaseUrl" @bind:event="oninput" placeholder="@WebStrings.ProvidersSettingsBaseUrlPlaceholder" inputmode="url" />
+                                <input id="p-url" class="input mono" aria-invalid="@Invalid("baseUrl")" @bind="_edit.BaseUrl" @bind:event="oninput" placeholder="https://api.example.com/v1" inputmode="url" />
                                 @Error("baseUrl")
                             </div>
                             <div class="field">
@@ -71,7 +71,7 @@
                                 <span class="hint">@WebStrings.ProvidersSettingsApiKeyHint</span>
                                 <details class="key-env" open="@(!string.IsNullOrWhiteSpace(_edit.ApiKeyEnvVar))">
                                     <summary>@WebStrings.ProvidersSettingsEnvVarSummary</summary>
-                                    <input id="p-env" class="input mono" aria-label="@WebStrings.ProvidersSettingsEnvVarLabel" @bind="_edit.ApiKeyEnvVar" placeholder="@WebStrings.ProvidersSettingsEnvVarPlaceholder" />
+                                    <input id="p-env" class="input mono" aria-label="@WebStrings.ProvidersSettingsEnvVarLabel" @bind="_edit.ApiKeyEnvVar" placeholder="PROVIDER_API_KEY" />
                                     <span class="hint">@WebStrings.ProvidersSettingsEnvVarHint</span>
                                     @Error("apiKeyRef")
                                 </details>
@@ -196,7 +196,7 @@
                             {
                                 <div class="field">
                                     <label for="p-field">@WebStrings.ProvidersSettingsThinkingFieldLabel</label>
-                                    <input id="p-field" class="input mono" @bind="_edit.ThinkingField" placeholder="@WebStrings.ProvidersSettingsThinkingFieldPlaceholder" />
+                                    <input id="p-field" class="input mono" @bind="_edit.ThinkingField" placeholder="chat_template_kwargs.enable_thinking" />
                                     @Error("thinkingSend.field")
                                 </div>
                             }

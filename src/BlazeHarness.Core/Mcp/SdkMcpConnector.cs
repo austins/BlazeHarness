@@ -44,7 +44,7 @@ public sealed partial class SdkMcpConnector : IMcpConnector
             : HttpTransport(config);
         try
         {
-            var options = new McpClientOptions { ClientInfo = new Implementation { Name = "BlazeHarness", Version = "1.0" } };
+            var options = new McpClientOptions { ClientInfo = new Implementation { Name = AppConstants.AppName, Version = "1.0" } };
             var client = await McpClient.CreateAsync(transport, options, _loggers, cancellationToken);
             return new SdkMcpConnection(client);
         }

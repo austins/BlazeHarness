@@ -8,7 +8,7 @@
 @if (_servers.Count > 0)
 {
     <Popover Label="@WebStrings.McpPickerLabel" Title="@WebStrings.McpPickerTitle">
-        <Trigger><Icon Name="plug" /> @WebStrings.McpPickerTrigger <span class="badge">@_servers.Count(IsOn) / @_servers.Count</span></Trigger>
+        <Trigger><Icon Name="plug" /> MCP <span class="badge">@_servers.Count(IsOn) / @_servers.Count</span></Trigger>
         <ChildContent>
             <ul class="panel-list">
                 @foreach (var status in _servers)

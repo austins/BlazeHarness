@@ -4,7 +4,7 @@
 @foreach (var row in Rows)
 {
     <div class="input-group" @key="row">
-        <input class="input mono" aria-label="@WebStrings.ExtraFieldsNameLabel" placeholder="@WebStrings.ExtraFieldsNamePlaceholder" @bind="row.Name" />
+        <input class="input mono" aria-label="@WebStrings.ExtraFieldsNameLabel" placeholder="mirostat" @bind="row.Name" />
         <input class="input mono" aria-label="@WebStrings.ExtraFieldsValueLabel" placeholder="2" @bind="row.Json" />
         <button type="button" class="btn btn-ghost btn-danger btn-sm" aria-label="@RemoveFieldLabel(row.Name)" @onclick="() => Rows.Remove(row)">@WebStrings.ExtraFieldsRemoveButton</button>
     </div>

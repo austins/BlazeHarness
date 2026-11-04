@@ -1,10 +1,11 @@
 @page "/"
 @page "/chat/{Id}"
+@using BlazeHarness.Core
 @implements IDisposable
 @inject ProviderService Service
 @inject SettingsDialogState SettingsState
 
-<PageTitle>@WebStrings.HomePageTitle</PageTitle>
+<PageTitle>@AppConstants.AppName</PageTitle>
 
 @if (Service.Configured.Count == 0)
 {

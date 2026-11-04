@@ -228,6 +228,14 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     public Func<CompactionMode>? CompactionModeSource { get; set; }
 
     /// <summary>
+    /// Gets or sets where the user's custom instructions are asked for each time the system prompt is built, or null for none.
+    /// </summary>
+    /// <remarks>
+    /// The text is added after the base prompt and before the project instructions, so a change reaches the next reply of an open chat.
+    /// </remarks>
+    public Func<string?>? CustomInstructionsSource { get; set; }
+
+    /// <summary>
     /// Gets a value indicating whether a reply is being produced.
     /// </summary>
     public bool IsRunning => Volatile.Read(ref _stop) is not null;

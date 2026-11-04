@@ -111,7 +111,7 @@
     private static string SourceText(SkillSource source) => source switch
     {
         SkillSource.Project => WebStrings.SkillsSettingsChatFolder,
-        SkillSource.App => WebStrings.SkillsSettingsBlazeHarness,
+        SkillSource.App => AppConstants.AppName,
         _ => WebStrings.SkillsSettingsGlobal,
     };
 

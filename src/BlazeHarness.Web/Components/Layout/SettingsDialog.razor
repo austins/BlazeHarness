@@ -27,6 +27,9 @@
                 case SettingsSection.Skills:
                     <SkillsSettings />
                     break;
+                case SettingsSection.Instructions:
+                    <InstructionsSettings />
+                    break;
                 case SettingsSection.Web:
                     <WebToolsSettings />
                     break;
@@ -47,6 +50,7 @@
     private static readonly (SettingsSection Section, string Icon)[] Sections =
     [
         (SettingsSection.General, "settings"),
+        (SettingsSection.Instructions, "pencil"),
         (SettingsSection.Providers, "server"),
         (SettingsSection.Permissions, "shield"),
         (SettingsSection.Mcp, "plug"),
@@ -62,6 +66,7 @@
         SettingsSection.Permissions => WebStrings.SettingsDialogPermissions,
         SettingsSection.Mcp => WebStrings.SettingsDialogMcpServers,
         SettingsSection.Skills => WebStrings.SettingsDialogSkills,
+        SettingsSection.Instructions => WebStrings.SettingsDialogInstructions,
         SettingsSection.Web => WebStrings.SettingsDialogWeb,
         _ => WebStrings.SettingsDialogDiagnostics,
     };

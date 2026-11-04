@@ -140,7 +140,7 @@
     <details class="card stack" open="@_openAtStart">
         <summary class="label">@WebStrings.McpSettingsAdvancedSummary</summary>
         <div class="field">
-            <label for="mcp-text">@WebStrings.McpSettingsFileLabel</label>
+            <label for="mcp-text">mcp.json</label>
             <textarea id="mcp-text" class="input mono" rows="14" spellcheck="false" aria-invalid="@(Problems.Count > 0 ? "true" : null)" aria-describedby="@(Problems.Count > 0 ? "mcp-problems" : null)" @bind="_text" @bind:event="oninput"></textarea>
             <span class="hint">@WebStrings.McpSettingsFileHint</span>
         </div>

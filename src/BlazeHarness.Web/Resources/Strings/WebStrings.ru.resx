@@ -139,9 +139,6 @@
   <data name="ChatViewInstructionsHeading" xml:space="preserve">
     <value>Инструкции проекта</value>
   </data>
-  <data name="ChatViewAgentsMdTrigger" xml:space="preserve">
-    <value>AGENTS.md</value>
-  </data>
   <data name="ChatViewInstructionsTooltip" xml:space="preserve">
     <value>Инструкции проекта, переданные модели</value>
   </data>
@@ -259,14 +256,8 @@
   <data name="ExportMenuJsonHint" xml:space="preserve">
     <value>Для повторного импорта позже</value>
   </data>
-  <data name="ExportMenuJsonName" xml:space="preserve">
-    <value>JSON</value>
-  </data>
   <data name="ExportMenuMarkdownHint" xml:space="preserve">
     <value>Для чтения или отправки</value>
-  </data>
-  <data name="ExportMenuMarkdownName" xml:space="preserve">
-    <value>Markdown</value>
   </data>
   <data name="ExportMenuHeading" xml:space="preserve">
     <value>Экспорт чата</value>
@@ -315,9 +306,6 @@
   </data>
   <data name="McpPickerFailed" xml:space="preserve">
     <value>Ошибка</value>
-  </data>
-  <data name="McpPickerTrigger" xml:space="preserve">
-    <value>MCP</value>
   </data>
   <data name="McpPickerTitle" xml:space="preserve">
     <value>MCP-серверы, инструменты которых доступны в этом чате</value>
@@ -532,9 +520,6 @@
   <data name="MainLayoutReload" xml:space="preserve">
     <value>Перезагрузить</value>
   </data>
-  <data name="MainLayoutTitle" xml:space="preserve">
-    <value>BlazeHarness</value>
-  </data>
   <data name="MainLayoutCloseSidebar" xml:space="preserve">
     <value>Закрыть боковую панель</value>
   </data>
@@ -652,9 +637,6 @@
   <data name="SidebarNewChatTooltip" xml:space="preserve">
     <value>Новый чат (Ctrl+Shift+O)</value>
   </data>
-  <data name="SidebarBrand" xml:space="preserve">
-    <value>BlazeHarness</value>
-  </data>
   <data name="SidebarNavigationLabel" xml:space="preserve">
     <value>Основная навигация</value>
   </data>
@@ -675,9 +657,6 @@
   </data>
   <data name="HomeHeading" xml:space="preserve">
     <value>Добро пожаловать в BlazeHarness</value>
-  </data>
-  <data name="HomePageTitle" xml:space="preserve">
-    <value>BlazeHarness</value>
   </data>
   <data name="NotFoundMessage" xml:space="preserve">
     <value>Страница, которую вы ищете, не существует.</value>
@@ -1267,9 +1246,6 @@
   <data name="ThinkingSendLabelsCustomFieldOption" xml:space="preserve">
     <value>Своё поле тела запроса</value>
   </data>
-  <data name="ThinkingSendLabelsReasoningEffortOption" xml:space="preserve">
-    <value>reasoning_effort (OpenAI, llama.cpp, vLLM)</value>
-  </data>
   <data name="ThinkingSendLabelsReasoningObjectOption" xml:space="preserve">
     <value>объект reasoning (OpenRouter)</value>
   </data>
@@ -1407,6 +1383,57 @@
   </data>
   <data name="SettingsDialogPermissions" xml:space="preserve">
     <value>Разрешения</value>
+  </data>
+  <data name="InstructionsSettingsTitle" xml:space="preserve">
+    <value>Пользовательские инструкции</value>
+  </data>
+  <data name="InstructionsSettingsDescription" xml:space="preserve">
+    <value>Инструкции, которым модель следует в каждом чате. Они добавляются к встроенному системному промпту и не заменяют его.</value>
+  </data>
+  <data name="InstructionsSettingsHeading" xml:space="preserve">
+    <value>Ваши инструкции</value>
+  </data>
+  <data name="InstructionsSettingsUnsaved" xml:space="preserve">
+    <value>Несохранённые изменения</value>
+  </data>
+  <data name="InstructionsSettingsPlaceholder" xml:space="preserve">
+    <value>Например: Отвечай кратко. Предпочитай TypeScript, а не JavaScript. Спрашивай, прежде чем что-либо удалять.</value>
+  </data>
+  <data name="InstructionsSettingsHint" xml:space="preserve">
+    <value>Пишите кратко. Этот текст отправляется с каждым сообщением, поэтому длинный текст занимает контекст и расходует токены. Изменения применяются со следующего сообщения в каждом чате.</value>
+  </data>
+  <data name="InstructionsSettingsCount" xml:space="preserve">
+    <value>{characters, plural, one {{formattedCharacters} символ} few {{formattedCharacters} символа} many {{formattedCharacters} символов} other {{formattedCharacters} символа}} · приблизительно {tokens, plural, one {{formattedTokens} токен} few {{formattedTokens} токена} many {{formattedTokens} токенов} other {{formattedTokens} токена}}</value>
+  </data>
+  <data name="InstructionsSettingsSave" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="InstructionsSettingsRevert" xml:space="preserve">
+    <value>Сбросить</value>
+  </data>
+  <data name="InstructionsSettingsSaved" xml:space="preserve">
+    <value>Инструкции сохранены.</value>
+  </data>
+  <data name="InstructionsSettingsOrderSummary" xml:space="preserve">
+    <value>Как собирается промпт</value>
+  </data>
+  <data name="InstructionsSettingsOrderHint" xml:space="preserve">
+    <value>Части отправляются в этом порядке. Ни одна из них не расширяет уровень доступа и не пропускает запрос подтверждения.</value>
+  </data>
+  <data name="InstructionsSettingsOrderBuiltIn" xml:space="preserve">
+    <value>Встроенный системный промпт: как агент использует инструменты и что делать, если действие заблокировано.</value>
+  </data>
+  <data name="InstructionsSettingsOrderYours" xml:space="preserve">
+    <value>Ваши инструкции (эта страница).</value>
+  </data>
+  <data name="InstructionsSettingsOrderAgents" xml:space="preserve">
+    <value>Файлы [code]AGENTS.md[/code] папки чата. При конфликте они имеют приоритет над вашими инструкциями.</value>
+  </data>
+  <data name="InstructionsSettingsOrderSkills" xml:space="preserve">
+    <value>Список доступных навыков.</value>
+  </data>
+  <data name="SettingsDialogInstructions" xml:space="preserve">
+    <value>Инструкции</value>
   </data>
   <data name="SettingsDialogMcpServers" xml:space="preserve">
     <value>MCP-серверы</value>
@@ -1666,9 +1693,6 @@
   <data name="SkillsSettingsChatFolder" xml:space="preserve">
     <value>Папка чата</value>
   </data>
-  <data name="SkillsSettingsBlazeHarness" xml:space="preserve">
-    <value>BlazeHarness</value>
-  </data>
   <data name="SkillsSettingsGlobal" xml:space="preserve">
     <value>Глобальные</value>
   </data>
@@ -1702,9 +1726,6 @@
   <data name="McpServerFormAlwaysLoad" xml:space="preserve">
     <value>Всегда загружать все его инструменты</value>
   </data>
-  <data name="McpServerFormAddressPlaceholder" xml:space="preserve">
-    <value>https://example.com/mcp</value>
-  </data>
   <data name="McpServerFormAddress" xml:space="preserve">
     <value>Адрес</value>
   </data>
@@ -1713,9 +1734,6 @@
   </data>
   <data name="McpServerFormWorkingFolder" xml:space="preserve">
     <value>Рабочая папка</value>
-  </data>
-  <data name="McpServerFormCommandPlaceholder" xml:space="preserve">
-    <value>npx</value>
   </data>
   <data name="McpServerFormCommand" xml:space="preserve">
     <value>Команда</value>
@@ -1761,9 +1779,6 @@
   </data>
   <data name="McpSettingsFileHint" xml:space="preserve">
     <value>Изменения, внесённые вне BlazeHarness, тоже отображаются здесь. Включение или отключение сервера для уже открытого чата меняет его инструменты, что сбрасывает кэш промпта этого чата.</value>
-  </data>
-  <data name="McpSettingsFileLabel" xml:space="preserve">
-    <value>mcp.json</value>
   </data>
   <data name="McpSettingsAdvancedSummary" xml:space="preserve">
     <value>Дополнительно: редактировать mcp.json</value>
@@ -1960,9 +1975,6 @@
   <data name="ProvidersSettingsStreamUsage" xml:space="preserve">
     <value>Запрашивать расход токенов при потоковой передаче (отключите, если сервер отклоняет [code]stream_options[/code])</value>
   </data>
-  <data name="ProvidersSettingsThinkingFieldPlaceholder" xml:space="preserve">
-    <value>chat_template_kwargs.enable_thinking</value>
-  </data>
   <data name="ProvidersSettingsThinkingFieldLabel" xml:space="preserve">
     <value>Поле тела запроса</value>
   </data>
@@ -2035,9 +2047,6 @@
   <data name="ProvidersSettingsEnvVarHint" xml:space="preserve">
     <value>Если задана, она заменяет сохранённый ключ.</value>
   </data>
-  <data name="ProvidersSettingsEnvVarPlaceholder" xml:space="preserve">
-    <value>PROVIDER_API_KEY</value>
-  </data>
   <data name="ProvidersSettingsEnvVarLabel" xml:space="preserve">
     <value>Имя переменной окружения</value>
   </data>
@@ -2046,9 +2055,6 @@
   </data>
   <data name="ProvidersSettingsApiKeyLabel" xml:space="preserve">
     <value>API-ключ</value>
-  </data>
-  <data name="ProvidersSettingsBaseUrlPlaceholder" xml:space="preserve">
-    <value>https://api.example.com/v1</value>
   </data>
   <data name="ProvidersSettingsBaseUrlLabel" xml:space="preserve">
     <value>Базовый URL</value>
@@ -2308,9 +2314,6 @@
   <data name="ExtraFieldsValueLabel" xml:space="preserve">
     <value>Значение поля в формате JSON</value>
   </data>
-  <data name="ExtraFieldsNamePlaceholder" xml:space="preserve">
-    <value>mirostat</value>
-  </data>
   <data name="ExtraFieldsNameLabel" xml:space="preserve">
     <value>Имя поля</value>
   </data>
@@ -2349,9 +2352,6 @@
   </data>
   <data name="ModelTuningProviderSettingHint" xml:space="preserve">
     <value>Настройка провайдера находится в разделе «Совместимость» настроек провайдера. Она применяется ко всем моделям, для которых не выбрана своя.</value>
-  </data>
-  <data name="ModelTuningBodyFieldPathPlaceholder" xml:space="preserve">
-    <value>chat_template_kwargs.reasoning_effort</value>
   </data>
   <data name="ModelTuningBodyFieldPathLabel" xml:space="preserve">
     <value>Путь к полю в теле запроса</value>

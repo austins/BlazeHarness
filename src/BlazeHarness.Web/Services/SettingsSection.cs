@@ -26,6 +26,11 @@ public enum SettingsSection
     Skills,
 
     /// <summary>
+    /// The user's own instructions, added to the system prompt of every chat.
+    /// </summary>
+    Instructions,
+
+    /// <summary>
     /// The web search and fetch tools.
     /// </summary>
     Web,
