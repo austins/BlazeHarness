@@ -1,28 +1,24 @@
 using BlazeHarness.Core.Web;
 using BlazeHarness.Core.Web.Content;
+using BlazeHarness.Tests.Shared;
 using BlazeHarness.Tests.Shared.Office;
 using System.Globalization;
 using System.Net;
-using System.Net.Sockets;
 using System.Web;
 
 namespace BlazeHarness.Core.Tests.Integration.Web;
 
 public sealed class SafeWebClientTests : IDisposable
 {
-    private readonly HttpListener _listener = new();
+    private readonly HttpListener _listener;
     private readonly string _prefix;
     private readonly CancellationTokenSource _stop = new();
 
     public SafeWebClientTests()
     {
-        using var probe = new TcpListener(IPAddress.Loopback, 0);
-        probe.Start();
-        var port = ((IPEndPoint)probe.LocalEndpoint).Port;
-        probe.Stop();
+        var (listener, port) = LocalHttpListener.Start("127.0.0.1");
+        _listener = listener;
         _prefix = $"http://127.0.0.1:{port}/";
-        _listener.Prefixes.Add(_prefix);
-        _listener.Start();
         _ = Task.Run(ServeAsync, _stop.Token);
     }
 

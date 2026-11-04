@@ -12,20 +12,14 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
     private const string Chat = "chat1";
     private const string Reason = "Needs a Chrome program; set BLAZEHARNESS_TEST_CHROME or install Playwright's Chromium.";
 
-    private readonly HttpListener _listener = new();
+    private readonly HttpListener _listener;
     private readonly TempFolder _folder = new("bh-browser-");
     private readonly CancellationTokenSource _stop = new();
     private readonly int _port;
 
     public PuppeteerBrowserEngineTests()
     {
-        using var probe = new TcpListener(IPAddress.Loopback, 0);
-        probe.Start();
-        _port = ((IPEndPoint)probe.LocalEndpoint).Port;
-        probe.Stop();
-        _listener.Prefixes.Add($"http://127.0.0.1:{_port}/");
-        _listener.Prefixes.Add($"http://localhost:{_port}/");
-        _listener.Start();
+        (_listener, _port) = LocalHttpListener.Start("127.0.0.1", "localhost");
         _ = Task.Run(ServeAsync, _stop.Token);
     }
 
