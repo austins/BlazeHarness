@@ -26,7 +26,8 @@ AppContext.SetData("REGEX_DEFAULT_MATCH_TIMEOUT", TimeSpan.FromSeconds(2));
 const int MaxHubMessageBytes = 4 * 1024 * 1024;
 const string WebSearchClientName = "web-search";
 
-var builder = WebApplication.CreateBuilder(args);
+// The app's folder, not the working directory, so a launch from anywhere finds wwwroot and appsettings.json.
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 
 var listenAddress = HostLauncher.ConfiguredHost(args, builder.Configuration);
 var listenOnAllInterfaces = Equals(listenAddress, System.Net.IPAddress.Any);
@@ -102,7 +103,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddHubOptions(options => options.MaximumReceiveMessageSize = MaxHubMessageBytes);
 builder.Services.AddLocalization();
-var uiLanguages = UiLanguages.Discover(AppContext.BaseDirectory);
+var uiLanguages = UiLanguages.Discover();
 builder.Services.AddSingleton(uiLanguages);
 
 await using var app = builder.Build();

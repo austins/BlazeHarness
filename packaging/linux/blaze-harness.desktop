@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Blaze Harness
+Comment=Local AI agent
+Exec=blaze-harness
+Icon=blaze-harness
+Terminal=true
+Categories=Development;

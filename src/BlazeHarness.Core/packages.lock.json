@@ -362,6 +362,30 @@
         "resolved": "0.0.61",
         "contentHash": "UJGHt0DqU2nNHf8l12QvJZvj47dFb0VUcKsY6KTn+Cm6tlwXfcmkftfsED9ce+KJCmx4ZgvcaBZjWlae3GKunw=="
       }
+    },
+    "net10.0/linux-x64": {
+      "Microsoft.Mxc.Sdk": {
+        "type": "Direct",
+        "requested": "[1.0.1, )",
+        "resolved": "1.0.1",
+        "contentHash": "+UjsTZiLDtxKRLWJgYphaQ4C8mG9tLNASaHJvskpIzy96kDY06PuQLyJad8l9JIjylbnEmAvuw5nUrDBeAoAXQ=="
+      }
+    },
+    "net10.0/osx-arm64": {
+      "Microsoft.Mxc.Sdk": {
+        "type": "Direct",
+        "requested": "[1.0.1, )",
+        "resolved": "1.0.1",
+        "contentHash": "+UjsTZiLDtxKRLWJgYphaQ4C8mG9tLNASaHJvskpIzy96kDY06PuQLyJad8l9JIjylbnEmAvuw5nUrDBeAoAXQ=="
+      }
+    },
+    "net10.0/win-x64": {
+      "Microsoft.Mxc.Sdk": {
+        "type": "Direct",
+        "requested": "[1.0.1, )",
+        "resolved": "1.0.1",
+        "contentHash": "+UjsTZiLDtxKRLWJgYphaQ4C8mG9tLNASaHJvskpIzy96kDY06PuQLyJad8l9JIjylbnEmAvuw5nUrDBeAoAXQ=="
+      }
     }
   }
 }

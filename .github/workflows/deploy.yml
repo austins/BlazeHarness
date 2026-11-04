@@ -1,0 +1,138 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: deploy-${{ github.event.release.tag_name }}
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - id: version
+        shell: pwsh
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          $version = $env:TAG -replace '^v', ''
+          $parsed = $null
+          if (-not [System.Management.Automation.SemanticVersion]::TryParse($version, [ref]$parsed)) {
+              throw "Release tag '$env:TAG' is not a semantic version (like v1.2.3)."
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+  test:
+    needs: version
+    uses: ./.github/workflows/test.yml
+
+  publish:
+    name: Publish (${{ matrix.rid }})
+    needs: [version, test]
+    environment: release
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-latest
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      RID: ${{ matrix.rid }}
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-dotnet-environment
+
+      - name: Publish
+        run: dotnet publish src/BlazeHarness.Web -c Release -r "$RID" -p:Version="$VERSION" -p:RestoreLockedMode=true -o publish
+
+      - name: Smoke test
+        run: |
+          BLAZEHARNESS_HOME="$(mktemp -d)" ./publish/BlazeHarness.Web --no-browser --port 5380 &
+          pid=$!
+          ok=
+          for _ in $(seq 30); do
+            if curl -fsS -o /dev/null http://127.0.0.1:5380/; then ok=1; break; fi
+            sleep 1
+          done
+          kill "$pid"
+          test -n "$ok"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $asset = "BlazeHarness-$env:VERSION-win-x64.zip"
+          Compress-Archive -Path publish/* -DestinationPath $asset
+          "ASSET=$asset" >> $env:GITHUB_ENV
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -fsSL -o appimagetool https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage
+          curl -fsSL -o runtime https://github.com/AppImage/type2-runtime/releases/download/20251108/runtime-x86_64
+          sha256sum -c <<'SUMS'
+          ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0  appimagetool
+          2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d  runtime
+          SUMS
+          chmod +x appimagetool
+          mkdir -p AppDir/usr/bin
+          cp -R publish/. AppDir/usr/bin/
+          cp packaging/linux/AppRun packaging/linux/blaze-harness.desktop AppDir/
+          cp publish/wwwroot/favicon.svg AppDir/blaze-harness.svg
+          ln -s blaze-harness.svg AppDir/.DirIcon
+          asset="BlazeHarness-$VERSION-x86_64.AppImage"
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run --runtime-file runtime AppDir "$asset"
+          echo "ASSET=$asset" >> "$GITHUB_ENV"
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # Contents/MacOS holds only code (codesign rejects data files there), so the app lives in Resources.
+          app="dmg/Blaze Harness.app/Contents"
+          mkdir -p "$app/MacOS" "$app/Resources/app"
+          cp -R publish/. "$app/Resources/app/"
+          cp packaging/macos/launch "$app/MacOS/"
+          cp packaging/macos/Info.plist "$app/"
+          # Bundle versions are numbers only, so a prerelease suffix (-beta.1) or build metadata (+abc) is dropped.
+          plutil -replace CFBundleShortVersionString -string "${VERSION%%[-+]*}" "$app/Info.plist"
+          plutil -replace CFBundleVersion -string "${VERSION%%[-+]*}" "$app/Info.plist"
+          codesign --force --deep --sign - "dmg/Blaze Harness.app"
+          codesign --verify --deep --strict "dmg/Blaze Harness.app"
+          ln -s /Applications dmg/Applications
+          asset="BlazeHarness-$VERSION-osx-arm64.dmg"
+          hdiutil create -volname "Blaze Harness" -srcfolder dmg -format UDZO "$asset"
+          echo "ASSET=$asset" >> "$GITHUB_ENV"
+
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ${{ env.ASSET }}
+
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" "$ASSET" --clobber

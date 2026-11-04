@@ -1,4 +1,3 @@
-using BlazeHarness.Tests.Shared;
 using BlazeHarness.Web.Resources;
 
 namespace BlazeHarness.Web.Tests.Integration.Resources;
@@ -6,24 +5,7 @@ namespace BlazeHarness.Web.Tests.Integration.Resources;
 public sealed class UiLanguagesDiscoveryTests
 {
     [Fact]
-    public void Discover_FoldersWithSatelliteAssemblies_ListsOnlyThoseCultures()
-    {
-        // Arrange
-        using var folder = new TempFolder();
-        var satellite = typeof(WebStrings).Assembly.GetName().Name + ".resources.dll";
-        File.WriteAllText(Path.Combine(folder.CreateDirectory("ru"), satellite), string.Empty);
-        File.WriteAllText(Path.Combine(folder.CreateDirectory("not-a-culture-at-all"), satellite), string.Empty);
-        folder.CreateDirectory("fr");
-
-        // Act
-        var languages = UiLanguages.Discover(folder.Root);
-
-        // Assert
-        languages.All.Select(language => language.Culture).Should().Equal("en-US", "ru");
-    }
-
-    [Fact]
-    public void Discover_AppDirectory_FindsEveryTranslatedResourceFile()
+    public void Discover_BuiltApp_ListsEveryTranslatedResourceFile()
     {
         // Arrange
         var translated = Directory
@@ -31,10 +13,10 @@ public sealed class UiLanguagesDiscoveryTests
             .Select(file => Path.GetFileNameWithoutExtension(file)["WebStrings.".Length..]);
 
         // Act
-        var languages = UiLanguages.Discover(AppContext.BaseDirectory);
+        var languages = UiLanguages.Discover();
 
         // Assert
-        translated.Except(languages.All.Select(language => language.Culture)).Should().BeEmpty();
+        languages.All.Select(language => language.Culture).Should().BeEquivalentTo([UiLanguages.DefaultCulture, .. translated]);
     }
 
     private static string WebProject()

@@ -7,11 +7,24 @@ A local web app for chatting and coding with any OpenAI-compatible LLM. It runs 
 
 ## Requirements
 
-* [.NET 10 SDK](https://dotnet.microsoft.com/download)
 * An OpenAI-compatible endpoint and API key. You add providers in the app's settings.
 * Optional, on Linux: `socat` and `nsenter` (util-linux), so servers that sandboxed commands start can be reached (see [Background commands](#background-commands)).
 
+## Installing
+
+Download the file for your system from the [latest release](https://github.com/austins/BlazeHarness/releases/latest). Each one includes the .NET runtime.
+
+* Windows (x64): extract `BlazeHarness-<version>-win-x64.zip` and run `BlazeHarness.Web.exe`. The app isn't signed, so SmartScreen may stop the first run: choose More info, then Run anyway.
+* macOS (Apple silicon): open `BlazeHarness-<version>-osx-arm64.dmg` and drag Blaze Harness to Applications, or run it from the image. The app isn't notarized, so macOS blocks the first launch: open System Settings > Privacy & Security and choose Open Anyway.
+* Linux (x64): make `BlazeHarness-<version>-x86_64.AppImage` executable (`chmod +x`, or the file's properties) and run it. It needs FUSE and libicu, which most desktop distributions include.
+
+The app runs in a terminal window that shows its address and log. Press Ctrl+C or close the window to stop it.
+
+To check that a download was built from this repository, run `gh attestation verify <file> --repo austins/BlazeHarness`.
+
 ## Running
+
+To run from source, install the [.NET 10 SDK](https://dotnet.microsoft.com/download), then:
 
 ```bash
 dotnet run --project src/BlazeHarness.Web
@@ -160,7 +173,6 @@ Not built yet, and not promised:
 * Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits. A subagent would run the same loop at the same or a lower access level, and its approval requests would go to the parent chat's approver, never be granted on their own. A subagent starts without the parent's history, so it would need the to-do list passed in or a `get_todos` tool; a chat today needs neither, because the list is in its own history and in compaction summaries.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
 * Look into Blazor AI components, once they are stable on the target .NET version.
-* Deployment and publishing settings. The language list is found from the translated satellite assemblies (`<culture>/BlazeHarness.Web.resources.dll`) next to the app, so a published build must keep them; check single-file, trimming and self-contained options for this.
 
 ## Not goals
 

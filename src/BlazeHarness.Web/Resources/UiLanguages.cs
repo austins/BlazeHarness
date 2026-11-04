@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reflection;
 
 namespace BlazeHarness.Web.Resources;
 
@@ -6,8 +7,9 @@ namespace BlazeHarness.Web.Resources;
 /// The languages the web UI is translated into, found from the translated resource files built with the app.
 /// </summary>
 /// <remarks>
-/// Each <c>WebStrings.&lt;culture&gt;.resx</c> is compiled into a satellite assembly in a folder named after the
-/// culture, so adding a translation needs no other registration.
+/// The build records the culture of each <c>WebStrings.&lt;culture&gt;.resx</c> in an assembly attribute, so adding a
+/// translation needs no other registration. The attribute is read rather than the satellite folders because a
+/// single-file publish bundles those folders into the executable.
 /// </remarks>
 internal sealed class UiLanguages
 {
@@ -16,7 +18,8 @@ internal sealed class UiLanguages
     /// </summary>
     internal const string DefaultCulture = "en-US";
 
-    private static readonly string SatelliteFileName = typeof(WebStrings).Assembly.GetName().Name + ".resources.dll";
+    // Matches the AssemblyMetadata item the AddUiCultureMetadata target in the project file adds per translation.
+    private const string CultureMetadataKey = "UiCulture";
 
     private readonly Dictionary<string, UiLanguage> _byCulture;
 
@@ -53,32 +56,14 @@ internal sealed class UiLanguages
     ];
 
     /// <summary>
-    /// Finds the folder of translated resources under a directory and lists the languages they hold.
+    /// Lists the languages of the translated resources the app was built with.
     /// </summary>
-    /// <param name="directory">The directory the app runs from.</param>
     /// <returns>The available languages.</returns>
-    internal static UiLanguages Discover(string directory)
-    {
-        var cultures = new List<CultureInfo>();
-        foreach (var folder in Directory.EnumerateDirectories(directory))
-        {
-            if (!File.Exists(Path.Combine(folder, SatelliteFileName)))
-            {
-                continue;
-            }
-
-            try
-            {
-                cultures.Add(CultureInfo.GetCultureInfo(Path.GetFileName(folder), predefinedOnly: true));
-            }
-            catch (CultureNotFoundException)
-            {
-                // A folder that isn't named after a culture isn't a translation.
-            }
-        }
-
-        return new UiLanguages(cultures);
-    }
+    internal static UiLanguages Discover() =>
+        new(typeof(WebStrings).Assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .Where(attribute => attribute.Key == CultureMetadataKey && !string.IsNullOrEmpty(attribute.Value))
+            .Select(attribute => CultureInfo.GetCultureInfo(attribute.Value!, predefinedOnly: true)));
 
     /// <summary>
     /// Finds the language the UI is shown in for a culture.

@@ -8,6 +8,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <!-- Symbols inside each assembly, so a single-file publish keeps line numbers in stack traces. -->
+        <DebugType>embedded</DebugType>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <WarningsNotAsErrors>S1135,NU1901,NU1902,NU1903</WarningsNotAsErrors>
         <NoWarn>CS1591,S3928,S125</NoWarn>

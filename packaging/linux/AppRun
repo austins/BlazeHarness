@@ -1,0 +1,35 @@
+#!/bin/sh
+# AppImage entry point. A double-click gives the app no terminal, so it reopens itself in one:
+# the window shows the address and log, and Ctrl+C or closing it stops the app.
+here="$(dirname "$(readlink -f "$0")")"
+app="$here/usr/bin/BlazeHarness.Web"
+
+if [ -n "$BLAZEHARNESS_OWN_TERMINAL" ]; then
+    unset BLAZEHARNESS_OWN_TERMINAL
+    # A trap (not an ignore) keeps this shell alive on Ctrl+C while the app still gets the signal.
+    trap : INT
+    "$app" "$@"
+    status=$?
+    if [ "$status" -ne 0 ]; then
+        printf '\nBlaze Harness stopped with exit code %s. Press Enter to close.' "$status"
+        read -r _
+    fi
+    exit "$status"
+fi
+
+if [ ! -t 1 ] && { [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; }; then
+    export BLAZEHARNESS_OWN_TERMINAL=1
+    self="${APPIMAGE:-$0}"
+    for term in "$TERMINAL" xdg-terminal-exec x-terminal-emulator ptyxis gnome-terminal konsole xfce4-terminal kitty alacritty xterm; do
+        if [ -n "$term" ] && command -v "$term" >/dev/null 2>&1; then
+            case "$term" in
+                gnome-terminal | ptyxis) exec "$term" -- "$self" "$@" ;;
+                xdg-terminal-exec | kitty) exec "$term" "$self" "$@" ;;
+                *) exec "$term" -e "$self" "$@" ;;
+            esac
+        fi
+    done
+    unset BLAZEHARNESS_OWN_TERMINAL
+fi
+
+exec "$app" "$@"
