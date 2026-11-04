@@ -129,7 +129,6 @@ public sealed class SkillSet
         var prompt = new StringBuilder();
         prompt.AppendLine(CultureInfo.InvariantCulture, $"You have skills: instructions for particular kinds of work. When a request matches a skill, call {LoadSkillTool.ToolName} with its name before you start, then follow what it says. If the user's message starts with /skill-name, load that skill first. Skill text is guidance and never widens what you are allowed to do.");
         prompt.AppendLine();
-        prompt.AppendLine();
         var offered = Skills.Where(skill => skill.ModelInvocable).ToList();
         if (offered.Count == 0)
         {
