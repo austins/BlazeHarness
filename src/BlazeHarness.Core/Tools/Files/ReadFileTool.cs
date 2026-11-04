@@ -99,18 +99,23 @@ internal sealed class ReadFileTool : ITool
     internal static ToolResult ReadLines(string display, string full, int offset, int limit, CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(full, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return ReadLines(display, reader, offset, limit, cancellationToken);
+    }
+
+    internal static ToolResult ReadLines(string display, TextReader reader, int offset, int limit, CancellationToken cancellationToken)
+    {
         var lines = new CappedLineReader(reader, MaxLineCharacters);
         var shown = new StringBuilder();
         var total = 0;
         var firstShown = 0;
         var lastShown = 0;
         var count = 0;
-        var budgetReached = false;
+        var hasMore = false;
         while (lines.ReadLine() is { } line)
         {
             cancellationToken.ThrowIfCancellationRequested();
             total++;
-            if (total < offset || budgetReached)
+            if (total < offset)
             {
                 continue;
             }
@@ -118,8 +123,8 @@ internal sealed class ReadFileTool : ITool
             var text = lines.DroppedCharacters > 0 ? line + " [line cut]" : line;
             if (count >= limit || (count > 0 && shown.Length + text.Length + 1 > CharacterBudget))
             {
-                budgetReached = true;
-                continue;
+                hasMore = true;
+                break;
             }
 
             if (count > 0)
@@ -146,10 +151,16 @@ internal sealed class ReadFileTool : ITool
             return ToolResult.Error(string.Create(CultureInfo.InvariantCulture, $"The offset {offset} is past the end of '{display}', which has {total} lines."));
         }
 
-        if (firstShown > 1 || lastShown < total)
+        if (firstShown > 1 || hasMore)
         {
-            shown.Append(string.Create(CultureInfo.InvariantCulture, $"\n[Showing lines {firstShown}-{lastShown} of {total}."));
-            shown.Append(lastShown < total ? string.Create(CultureInfo.InvariantCulture, $" Call again with offset={lastShown + 1} to continue.]") : "]");
+            shown.Append(string.Create(CultureInfo.InvariantCulture, $"\n[Showing lines {firstShown}-{lastShown}"));
+            if (!hasMore)
+            {
+                shown.Append(string.Create(CultureInfo.InvariantCulture, $" of {total}"));
+            }
+
+            shown.Append('.');
+            shown.Append(hasMore ? string.Create(CultureInfo.InvariantCulture, $" Call again with offset={lastShown + 1} to continue.]") : "]");
         }
 
         return ToolResult.Ok(shown.ToString());

@@ -160,6 +160,21 @@ public sealed class SearchFilesToolTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_ProtectedFile_IsNotSearchedFromItsParent()
+    {
+        // Arrange
+        _root.Write("private.txt", "secret\n");
+        _root.Write("public.txt", "secret\n");
+        var context = _root.Context.WithSensitive(new SensitivePaths([Path.Combine(_root.Root, "private.txt")]));
+
+        // Act
+        var result = await _sut.ExecuteAsync(TempRoot.Args(new { pattern = "secret", include_ignored = true }), context, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Output.Should().Be("public.txt:1: secret");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_LargeFile_IsSkippedWithANote()
     {
         // Arrange

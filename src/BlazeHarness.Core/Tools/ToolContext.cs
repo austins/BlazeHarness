@@ -71,6 +71,8 @@ public sealed class ToolContext
     /// </summary>
     public INetworkGate? Network { get; }
 
+    private IReadOnlyList<string>? CheckedPaths { get; init; }
+
     /// <summary>
     /// Get a copy of this context that accepts paths outside the working folder.
     /// </summary>
@@ -140,7 +142,24 @@ public sealed class ToolContext
     /// <returns>True when the path is allowed.</returns>
     public bool TryResolve(string? input, out string fullPath, out string error)
     {
-        return RootedPath.TryResolve(Root, input, out fullPath, out error, AllowsOutside);
+        if (!RootedPath.TryResolve(Root, input, out fullPath, out error, AllowsOutside))
+        {
+            return false;
+        }
+
+        if (Sensitive.IsProtected(fullPath) || Refused.IsRefused(fullPath))
+        {
+            error = "This path is protected or refused by a file path rule.";
+            return false;
+        }
+
+        if (CheckedPaths is not null && !CheckedPaths.Contains(fullPath, Folders.FolderPaths.Comparer))
+        {
+            error = "The resolved path changed after the permission check. Request the call again.";
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -149,4 +168,7 @@ public sealed class ToolContext
     /// <param name="fullPath">A path inside the working folder.</param>
     /// <returns>The relative path.</returns>
     public string Relative(string fullPath) => RootedPath.Relative(Root, fullPath);
+
+    internal ToolContext WithCheckedPaths(IReadOnlyList<string>? paths) =>
+        new(Root, AllowsOutside, Shell, ShellReadFolders, Sensitive, Refused, Network) { CheckedPaths = paths };
 }

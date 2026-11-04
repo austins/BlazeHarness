@@ -42,7 +42,7 @@ public sealed class ReadAttachmentToolTests : IDisposable
         var result = await RunAsync(new { id = info.Id, offset = 3, limit = 2 });
 
         // Assert
-        result.Output.Should().StartWith("line3\nline4").And.Contain("[Showing lines 3-4 of 10. Call again with offset=5 to continue.]");
+        result.Output.Should().StartWith("line3\nline4").And.Contain("[Showing lines 3-4. Call again with offset=5 to continue.]");
     }
 
     [Fact]

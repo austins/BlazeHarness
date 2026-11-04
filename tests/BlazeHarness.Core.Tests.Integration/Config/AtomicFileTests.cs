@@ -59,6 +59,24 @@ public sealed class AtomicFileTests : IDisposable
         File.GetUnixFileMode(path).Should().Be(OwnerOnly);
     }
 
+    [Fact(Skip = "Unix file modes don't exist on Windows.", SkipWhen = nameof(IsWindows))]
+    [UnsupportedOSPlatform("windows")]
+    public void CreateStagingFile_RestrictiveTarget_IsRestrictedBeforeContentIsWritten()
+    {
+        // Arrange
+        var target = _temp.Combine("private.bin");
+        File.WriteAllBytes(target, [0]);
+        File.SetUnixFileMode(target, OwnerOnly);
+        var staging = _temp.Combine("staging.bin");
+
+        // Act
+        using var stream = AtomicFile.CreateStagingFile(staging, target);
+
+        // Assert
+        stream.Length.Should().Be(0);
+        File.GetUnixFileMode(staging).Should().Be(OwnerOnly);
+    }
+
     [Fact]
     public async Task WriteAllTextAsync_Text_IsUtf8WithoutBomAndLeavesNoTempFile()
     {

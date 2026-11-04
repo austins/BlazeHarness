@@ -308,6 +308,31 @@ public sealed class ChatRunnerToolTests
     }
 
     [Fact]
+    public async Task RunAsync_AccessDowngradedDuringApproval_DoesNotRunTheCall()
+    {
+        // Arrange
+        var write = new FakeTool("write", isReadOnly: false);
+        var permissions = new PermissionEngine();
+        var approver = Substitute.For<IToolApprover>();
+        approver.RequestAsync(Arg.Any<ApprovalRequest>(), Arg.Any<CancellationToken>()).Returns(_ =>
+        {
+            permissions.Settings = new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst);
+            return Task.FromResult(ApprovalChoice.AllowForChat);
+        });
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "write")])
+            .Enqueue([ScriptedChatClient.Text("done")]);
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(write), approver: approver, permissions: permissions);
+
+        // Assert
+        write.Started.Should().Be(0);
+        events.OfType<ToolCallFinished>().Single().Status.Should().Be(ToolCallStatus.Denied);
+        permissions.Settings = PermissionSettings.Default;
+        permissions.Evaluate(write, "{}", Tools(write).Context).Verdict.Should().Be(PermissionVerdict.Ask);
+    }
+
+    [Fact]
     public async Task RunAsync_WriteWhenAutoApprove_RunsWithoutAsking()
     {
         // Arrange

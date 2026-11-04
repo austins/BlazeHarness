@@ -103,13 +103,14 @@ public static class OfficeFiles
         S.Stylesheet? styles = null,
         S.SharedStringItem[]? sharedItems = null,
         bool withChartSheet = false,
-        string? title = null)
+        string? title = null,
+        bool date1904 = false)
     {
         using var stream = new MemoryStream();
         using (var document = SpreadsheetDocument.Create(stream, SpreadsheetDocumentType.Workbook))
         {
             var workbook = document.AddWorkbookPart();
-            workbook.Workbook = new S.Workbook(new S.Sheets());
+            workbook.Workbook = new S.Workbook(new S.WorkbookProperties { Date1904 = date1904 }, new S.Sheets());
             if (sharedItems is not null || sharedStrings is not null)
             {
                 var items = sharedItems ?? [.. sharedStrings!.Select(text => new S.SharedStringItem(new S.Text(text)))];

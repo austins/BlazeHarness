@@ -23,7 +23,7 @@ internal static class AtomicFile
         var temp = Path.Combine(folder, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
         try
         {
-            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (var stream = CreateStagingFile(temp, path))
             {
                 stream.Write(bytes);
 
@@ -66,6 +66,22 @@ internal static class AtomicFile
     public static Task WriteAllOwnerOnlyTextAsync(string path, string content, CancellationToken cancellationToken = default)
     {
         return WriteAsync(path, content, ownerOnly: true, cancellationToken);
+    }
+
+    internal static FileStream CreateStagingFile(string path, string target)
+    {
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.Write,
+            Share = FileShare.None,
+        };
+        if (!OperatingSystem.IsWindows() && File.Exists(target))
+        {
+            options.UnixCreateMode = File.GetUnixFileMode(target);
+        }
+
+        return new FileStream(path, options);
     }
 
     private static async Task WriteAsync(string path, string content, bool ownerOnly, CancellationToken cancellationToken)

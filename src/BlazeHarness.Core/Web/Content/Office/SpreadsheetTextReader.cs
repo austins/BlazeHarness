@@ -32,6 +32,7 @@ internal static partial class SpreadsheetTextReader
 
         var shared = SharedStrings(workbook);
         var dateStyles = DateStyles(workbook);
+        var date1904 = workbook.Workbook.WorkbookProperties?.Date1904?.Value == true;
         var clipped = false;
         foreach (var sheet in sheets.Elements<Sheet>())
         {
@@ -47,7 +48,7 @@ internal static partial class SpreadsheetTextReader
                 continue;
             }
 
-            var table = ReadSheet(part, shared, dateStyles, cancellationToken, out var sheetClipped);
+            var table = ReadSheet(part, shared, dateStyles, date1904, cancellationToken, out var sheetClipped);
             clipped |= sheetClipped;
             output.AddHeading(2, sheet.Name?.Value ?? "Sheet");
             output.AddBlock(MarkdownTable.Render(table));
@@ -56,7 +57,7 @@ internal static partial class SpreadsheetTextReader
         return clipped ? $"Only the first {MaxRowsPerSheet} rows and {MaxColumns} columns of a sheet are read." : null;
     }
 
-    private static List<IReadOnlyList<string>> ReadSheet(WorksheetPart part, string[] shared, HashSet<uint> dateStyles, CancellationToken cancellationToken, out bool clipped)
+    private static List<IReadOnlyList<string>> ReadSheet(WorksheetPart part, string[] shared, HashSet<uint> dateStyles, bool date1904, CancellationToken cancellationToken, out bool clipped)
     {
         List<IReadOnlyList<string>> rows = [];
         clipped = false;
@@ -78,7 +79,7 @@ internal static partial class SpreadsheetTextReader
                     cells.Add(string.Empty);
                 }
 
-                cells.Add(CellText(cell, shared, dateStyles));
+                cells.Add(CellText(cell, shared, dateStyles, date1904));
             }
 
             while (cells.Count > 0 && cells[^1].Length == 0)
@@ -103,7 +104,7 @@ internal static partial class SpreadsheetTextReader
         return rows;
     }
 
-    private static string CellText(Cell cell, string[] shared, HashSet<uint> dateStyles)
+    private static string CellText(Cell cell, string[] shared, HashSet<uint> dateStyles, bool date1904)
     {
         var value = cell.CellValue?.Text;
         var type = cell.DataType?.Value;
@@ -132,7 +133,7 @@ internal static partial class SpreadsheetTextReader
         {
             try
             {
-                var date = DateTime.FromOADate(serial);
+                var date = DateTime.FromOADate(date1904 ? serial + 1462 : serial);
                 return date.TimeOfDay == TimeSpan.Zero ? date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : date.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
             }
             catch (ArgumentException)

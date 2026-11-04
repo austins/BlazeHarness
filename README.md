@@ -49,6 +49,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 
 * Chat and coding in one interface, with streamed replies and multiple providers. Settings > General offers full-width chats and text-size controls, saved in the browser.
 * Tools for shell commands, reading, writing and editing files, listing folders, and searching files. Read-only tools run in parallel.
+  * File reads stop after the requested page and one lookahead line. Continuation results include the next offset; the total line count is included only when the read reaches the end.
 * Folders and chats. Open a folder and run chats inside it, grouped by folder. A chat can also exist without a folder, as a general chat.
 * Diffs, syntax highlighting, and find in the chat, with smooth scrolling in very long chats.
 * Plain-CSS motion for new messages, opening panels, tool results and hover or press feedback. It is off when your system asks for reduced motion.
@@ -56,12 +57,14 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 ### Approvals and sandboxing
 
 * Approvals let you decide, per tool and per action, what runs without asking.
+  * Permissions and resolved file paths are checked again after approval. If they change while a question is open, the call is refused and must be requested again.
   * Risky commands (recursive deletes, disk tools, `sudo`, commands that print secrets) need approval every time below the Unrestricted access level, even with Never ask.
   * In a Read only chat, commands whose only risk is changing files run without asking, because the sandbox makes them fail.
 * Shell sandboxing where the platform supports it, so commands can stay inside the folder you opened. Otherwise commands run directly, behind approvals.
   * Files that a file path rule refuses are also kept out of a sandboxed command's reach: an exact path wherever it is, and a wildcard pattern inside the working folder and approved folders.
   * This is best effort. It covers only files that exist when the command starts, not what git history holds, and on macOS renaming a folder above one may get around it.
   * Where the sandbox can't keep a single file out, those commands don't run.
+* Git status and diffs disable repository-configured clean and process filters, so inspecting changes does not run those helpers.
 * An optional network host filter for sandboxed commands (Settings > Permissions > Network, off by default).
   * When it is on, a sandboxed command's HTTP and HTTPS traffic goes through a local proxy and everything else is blocked.
   * The first time a command reaches a host you have no rule for, the chat asks: allow once, for this chat, or always (a Network host rule). Deny rules win, allow rules skip the question, and with Never ask an unlisted host is refused.
@@ -73,7 +76,9 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 
 #### Background commands
 
-The `shell` tool's `background` option keeps a command running after the call returns, for servers and watchers. A command started with `&` or `nohup` is killed when the call ends.
+The `shell` tool's `background` option keeps a command running after the call returns, for servers and watchers. Processes started with `&` or `nohup` are stopped when their owning command ends.
+
+Without the sandbox, leftover background processes are stopped when the command ends, so build and compiler servers start fresh each time. On POSIX, automatic exit cleanup does not cover separate process groups or sessions, such as `timeout` or `setsid`.
 
 * Each background command gets an id such as `bg1` and a time limit (`timeout_seconds`, default 1 hour, at most 8 hours). At most 8 run at once, and they stop when the chat closes.
 * The `shell_jobs` tool lists them, reads their output (optionally waiting for them to end) and stops them. Running ones are listed above the message box with a Stop button for you.

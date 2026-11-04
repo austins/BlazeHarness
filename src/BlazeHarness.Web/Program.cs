@@ -4,7 +4,6 @@ using BlazeHarness.Core.Chats.Titles;
 using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Folders;
 using BlazeHarness.Core.Git;
-using BlazeHarness.Core.Logging;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Mcp.Config;
 using BlazeHarness.Core.Mcp.Tools;
@@ -18,6 +17,7 @@ using BlazeHarness.Web.Components;
 using BlazeHarness.Web.Hosting;
 using BlazeHarness.Web.Resources;
 using BlazeHarness.Web.Services;
+using Microsoft.AspNetCore.Hosting.Server;
 using System.Globalization;
 
 // Code colors are matched with patterns from a library, against text a model wrote, so a slow match must give up.
@@ -40,7 +40,7 @@ HostLauncher.ConfigureKestrel(builder, listenAddress, listenPort);
 builder.Services.AddSingleton(new AccessPolicy(listenOnAllInterfaces) { MachineName = Environment.MachineName });
 
 var paths = AppPaths.FromConfiguration(builder.Configuration);
-builder.Services.AddSingleton<ILoggerProvider>(_ => new FileLoggerProvider(paths.LogsDirectory, TimeProvider.System));
+HostLauncher.ConfigureLogging(builder.Logging, paths.LogsDirectory, TimeProvider.System);
 builder.Services.AddSingleton(paths);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(await SecretStoreFactory.CreateAsync(paths));
@@ -75,7 +75,7 @@ builder.Services.AddSingleton(sp => new WebServices(
     sp.GetRequiredService<ILoggerFactory>(),
     sp.GetRequiredService<TimeProvider>(),
     paths.BrowserDirectory,
-    listenPort));
+    HostLauncher.ListeningPort(sp.GetRequiredService<IServer>())));
 builder.Services.AddSingleton(sp => new ChatService(
     sp.GetRequiredService<ChatStore>(),
     sp.GetRequiredService<ChatClientSource>().CreateAsync,

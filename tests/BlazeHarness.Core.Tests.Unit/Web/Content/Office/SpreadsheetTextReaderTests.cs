@@ -67,6 +67,23 @@ public sealed class SpreadsheetTextReaderTests
     }
 
     [Fact]
+    public void Read_Date1904Workbook_UsesTheWorkbookEpoch()
+    {
+        // Arrange
+        var styles = new S.Stylesheet(new S.CellFormats(new S.CellFormat { NumberFormatId = 14 }));
+        var file = OfficeFiles.Spreadsheet(
+            [("Data", false, [OfficeFiles.Row(OfficeFiles.NumberCell("A1", "43538.5", 0))])],
+            styles: styles,
+            date1904: true);
+
+        // Act
+        var (text, _) = Read(file);
+
+        // Assert
+        text.Should().Contain("2023-03-15 12:00:00");
+    }
+
+    [Fact]
     public void Read_CustomDateFormat_IsShownAsDate()
     {
         // Arrange

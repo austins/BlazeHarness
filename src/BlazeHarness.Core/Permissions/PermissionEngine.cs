@@ -132,33 +132,7 @@ public sealed class PermissionEngine
     /// <param name="context">The working folder the call runs against.</param>
     /// <returns>The decision.</returns>
     public PermissionDecision Evaluate(ITool tool, string argumentsJson, ToolContext context)
-    {
-        ArgumentNullException.ThrowIfNull(tool);
-        ArgumentNullException.ThrowIfNull(context);
-
-        var settings = Settings;
-        using var document = Parse(argumentsJson);
-        var arguments = document.RootElement;
-
-        // Resolving a path follows its links, so a path tool's paths are resolved once for both the access check and the rules.
-        var paths = tool is IMcpTool or IWebTool || tool.RunsCommands ? null : ResolvePaths(tool, arguments, context);
-        var decision = tool switch
-        {
-            IMcpTool mcp => EvaluateMcp(mcp, settings),
-            IWebTool web => EvaluateWeb(web, arguments, settings),
-            { RunsCommands: true } => EvaluateCommand(arguments, settings),
-            _ => EvaluatePaths(tool, paths!, settings, context),
-        };
-        decision = ApplyRules(tool, arguments, paths, context, decision);
-        if (decision is { Verdict: PermissionVerdict.Ask, GrantKey: { } key } && _grants.ContainsKey(key))
-        {
-            decision = PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell };
-        }
-
-        return tool.RunsCommands && decision.Verdict != PermissionVerdict.Deny
-            ? decision with { ShellReadFolders = GrantedFolders() }
-            : decision;
-    }
+        => Evaluate(tool, argumentsJson, context, out _);
 
     /// <summary>
     /// Get the paths the user's rules refuse, for the tools that walk folders and so see paths no call named.
@@ -221,6 +195,36 @@ public sealed class PermissionEngine
         return Settings.Approvals == ApprovalMode.NeverAsk
             ? new PermissionDecision(PermissionVerdict.Deny, $"{host} is not on the list of hosts commands may connect to, and this chat never asks. The user can allow it with a host rule in Settings.")
             : new PermissionDecision(PermissionVerdict.Ask, reason, key);
+    }
+
+    internal PermissionDecision Evaluate(ITool tool, string argumentsJson, ToolContext context, out IReadOnlyList<string>? resolvedPaths)
+    {
+        ArgumentNullException.ThrowIfNull(tool);
+        ArgumentNullException.ThrowIfNull(context);
+
+        var settings = Settings;
+        using var document = Parse(argumentsJson);
+        var arguments = document.RootElement;
+
+        // Resolving a path follows its links, so a path tool's paths are resolved once for both the access check and the rules.
+        var paths = tool is IMcpTool or IWebTool || tool.RunsCommands ? null : ResolvePaths(tool, arguments, context);
+        resolvedPaths = paths;
+        var decision = tool switch
+        {
+            IMcpTool mcp => EvaluateMcp(mcp, settings),
+            IWebTool web => EvaluateWeb(web, arguments, settings),
+            { RunsCommands: true } => EvaluateCommand(arguments, settings),
+            _ => EvaluatePaths(tool, paths!, settings, context),
+        };
+        decision = ApplyRules(tool, arguments, paths, context, decision);
+        if (decision is { Verdict: PermissionVerdict.Ask, GrantKey: { } key } && _grants.ContainsKey(key))
+        {
+            decision = PermissionDecision.Allow with { AllowOutside = decision.AllowOutside, Shell = decision.Shell };
+        }
+
+        return tool.RunsCommands && decision.Verdict != PermissionVerdict.Deny
+            ? decision with { ShellReadFolders = GrantedFolders() }
+            : decision;
     }
 
 #pragma warning disable CA1308 // Host names are compared in lower case and the key is never shown.

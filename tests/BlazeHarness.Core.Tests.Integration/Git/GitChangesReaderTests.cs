@@ -39,6 +39,27 @@ public sealed class GitChangesReaderTests : IDisposable
         after!.Files.Should().ContainSingle().Which.Path.Should().Be("new.txt");
     }
 
+    [Theory(Skip = Reason, SkipUnless = nameof(TestGit.IsAvailable), SkipType = typeof(TestGit))]
+    [InlineData("clean")]
+    [InlineData("process")]
+    public async Task GetStatusAsync_ConfiguredFilters_DoesNotExecuteHelpers(string filter)
+    {
+        // Arrange
+        await TestGit.InitAsync(_folder.Root);
+        await File.WriteAllTextAsync(_folder.Combine(".gitattributes"), "*.txt filter=external\n", TestContext.Current.CancellationToken);
+        await TestGit.RunAsync(_folder.Root, "config", $"filter.external.{filter}", "echo helper-ran > helper.txt");
+        await TestGit.RunAsync(_folder.Root, "config", "filter.external.required", "true");
+        await File.WriteAllTextAsync(_folder.Combine("a.txt"), "changed contents\n", TestContext.Current.CancellationToken);
+
+        // Act
+        var status = await _sut.GetStatusAsync(_folder.Root, GitChangeScope.All, TestContext.Current.CancellationToken).Bounded();
+        var diff = await _sut.GetDiffAsync(_folder.Root, GitChangeScope.All, status!.Files.Single(file => file.Path == "a.txt"), TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        diff.Should().NotBeNull();
+        File.Exists(_folder.Combine("helper.txt")).Should().BeFalse();
+    }
+
     [Fact(Skip = Reason, SkipUnless = nameof(TestGit.IsAvailable), SkipType = typeof(TestGit))]
     public async Task GetStatusAsync_CleanRepository_ListsNothing()
     {

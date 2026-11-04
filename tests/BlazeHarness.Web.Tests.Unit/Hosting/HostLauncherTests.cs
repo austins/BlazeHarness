@@ -1,11 +1,34 @@
+using BlazeHarness.Core.Logging;
 using BlazeHarness.Web.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using System.Net;
 
 namespace BlazeHarness.Web.Tests.Unit.Hosting;
 
 public sealed class HostLauncherTests
 {
+    [Fact]
+    public void ConfigureLogging_DefaultProviders_LeavesOnlyTheRedactingProvider()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging(logging =>
+        {
+            logging.AddConsole();
+            logging.AddDebug();
+            HostLauncher.ConfigureLogging(logging, Path.GetFullPath("."), new FakeTimeProvider());
+        });
+        using var provider = services.BuildServiceProvider();
+
+        // Act
+        var loggers = provider.GetServices<ILoggerProvider>();
+
+        // Assert
+        loggers.Should().ContainSingle().Which.Should().BeOfType<FileLoggerProvider>();
+    }
+
     [Theory]
     [InlineData("0.0.0.0", true)]
     [InlineData(" 0.0.0.0 ", true)]

@@ -480,7 +480,7 @@ internal static class ChatRunner
                     continue;
                 }
 
-                var decision = permissions.Evaluate(p.Tool!, p.Json, tools!.Context);
+                var decision = permissions.Evaluate(p.Tool!, p.Json, tools!.Context, out var paths);
                 if (decision.Verdict == PermissionVerdict.Deny)
                 {
                     results[index] = ToolResult.Error(decision.Reason);
@@ -527,12 +527,12 @@ internal static class ChatRunner
 
                 if (p.Tool!.IsReadOnly && decision.Verdict == PermissionVerdict.Allow)
                 {
-                    var contexts = new List<ToolContext> { ContextFor(tools, decision, permissions) };
+                    var contexts = new List<ToolContext> { ContextFor(tools, decision, permissions, paths) };
                     while (index + contexts.Count < planned.Count
                         && planned[index + contexts.Count] is { CanRun: true, Tool.IsReadOnly: true, Tool: not AskUserTool } next
-                        && permissions.Evaluate(next.Tool, next.Json, tools.Context) is { Verdict: PermissionVerdict.Allow } nextDecision)
+                        && permissions.Evaluate(next.Tool, next.Json, tools.Context, out var nextPaths) is { Verdict: PermissionVerdict.Allow } nextDecision)
                     {
-                        contexts.Add(ContextFor(tools, nextDecision, permissions));
+                        contexts.Add(ContextFor(tools, nextDecision, permissions, nextPaths));
                     }
 
                     var end = index + contexts.Count;
@@ -561,6 +561,7 @@ internal static class ChatRunner
                 }
 
                 var allowed = decision.Verdict == PermissionVerdict.Allow;
+                string? refusal = null;
                 if (!allowed && approver is not null)
                 {
                     var request = new ApprovalRequest(p.Call.CallId, p.Name, p.Json, decision.Reason, decision.GrantKey is not null);
@@ -570,7 +571,28 @@ internal static class ChatRunner
                     {
                         var choice = await answer;
                         allowed = choice != ApprovalChoice.Deny;
-                        if (choice == ApprovalChoice.AllowForChat && decision.GrantKey is { } key)
+                        if (allowed)
+                        {
+                            var current = permissions.Evaluate(p.Tool, p.Json, tools.Context, out var currentPaths);
+                            var changed = (paths is null ? currentPaths is not null : currentPaths is null || !paths.SequenceEqual(currentPaths, StringComparer.Ordinal))
+                                || current.Shell != decision.Shell
+                                || current.AllowOutside != decision.AllowOutside
+                                || (current.Verdict == PermissionVerdict.Ask && (current.GrantKey != decision.GrantKey || current.Reason != decision.Reason || current.Sticky != decision.Sticky));
+                            if (current.Verdict == PermissionVerdict.Deny || changed)
+                            {
+                                allowed = false;
+                                refusal = current.Verdict == PermissionVerdict.Deny
+                                    ? current.Reason
+                                    : "The permissions or resolved paths changed while approval was pending. Request the call again.";
+                            }
+                            else
+                            {
+                                decision = current;
+                                paths = currentPaths;
+                            }
+                        }
+
+                        if (allowed && choice == ApprovalChoice.AllowForChat && decision.GrantKey is { } key)
                         {
                             permissions.Remember(key);
                         }
@@ -584,9 +606,9 @@ internal static class ChatRunner
 
                 if (!allowed)
                 {
-                    results[index] = ToolResult.Error(approver is null
+                    results[index] = ToolResult.Error(refusal ?? (approver is null
                         ? "This call was not run because there is no way to ask the user for approval."
-                        : "The user denied this call. Do not retry it; say what you could not do and suggest an alternative.");
+                        : "The user denied this call. Do not retry it; say what you could not do and suggest an alternative."));
                     statuses[index] = ToolCallStatus.Denied;
                     yield return Finished(p, results[index]!, statuses[index]);
                     index++;
@@ -596,7 +618,7 @@ internal static class ChatRunner
                 yield return new ToolCallRunning(p.Call.CallId);
                 try
                 {
-                    results[index] = await RunAsync(tools, p, ContextFor(tools, decision, permissions, p.Tool.RunsCommands ? new HostQuestions(approver as IHostApprover, p.Call.CallId) : null), cancellationToken);
+                    results[index] = await RunAsync(tools, p, ContextFor(tools, decision, permissions, paths, p.Tool.RunsCommands ? new HostQuestions(approver as IHostApprover, p.Call.CallId) : null), cancellationToken);
                     statuses[index] = results[index]!.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -695,7 +717,7 @@ internal static class ChatRunner
         return new ToolCallFinished(call.Call.CallId, call.Call.Name, result.Output, status, result.Image);
     }
 
-    private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision, PermissionEngine permissions, HostQuestions? hosts = null)
+    private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision, PermissionEngine permissions, IReadOnlyList<string>? paths, HostQuestions? hosts = null)
     {
         var context = (decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context).WithSensitive(permissions.Sensitive()).WithRefused(permissions.Refused(tools.Context.Root));
         if (decision.ShellReadFolders is { Count: > 0 } folders)
@@ -706,9 +728,10 @@ internal static class ChatRunner
         context = decision.Shell == context.Shell ? context : context.WithShell(decision.Shell);
 
         // A command that runs unconfined is not inside the sandbox that enforces the filter.
-        return hosts is not null && permissions.NetworkFilter() && context.Shell != ShellMode.Unconfined
+        context = hosts is not null && permissions.NetworkFilter() && context.Shell != ShellMode.Unconfined
             ? context.WithNetwork(new NetworkHostGate(permissions, hosts.Approver, hosts.CallId))
             : context;
+        return context.WithCheckedPaths(paths);
     }
 
     private sealed record HostQuestions(IHostApprover? Approver, string CallId);

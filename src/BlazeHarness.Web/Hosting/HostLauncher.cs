@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Logging;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -165,6 +166,20 @@ public static class HostLauncher
     public static void ConfigureKestrel(WebApplicationBuilder builder, IPAddress address, int port)
     {
         builder.WebHost.ConfigureKestrel(options => options.Listen(address, port));
+    }
+
+    internal static void ConfigureLogging(ILoggingBuilder logging, string directory, TimeProvider time)
+    {
+        logging.ClearProviders();
+        logging.Services.AddSingleton<ILoggerProvider>(_ => new FileLoggerProvider(directory, time));
+    }
+
+    internal static int ListeningPort(IServer server)
+    {
+        var address = server.Features.Get<IServerAddressesFeature>()?.Addresses.FirstOrDefault();
+        return address is not null && new Uri(address).Port is > 0 and var port
+            ? port
+            : throw new InvalidOperationException("The server has not bound a listening port.");
     }
 
     private static IEnumerable<IPAddress> LocalIPv4Addresses()

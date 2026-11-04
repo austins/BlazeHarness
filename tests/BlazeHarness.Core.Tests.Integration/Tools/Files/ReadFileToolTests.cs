@@ -36,7 +36,7 @@ public sealed class ReadFileToolTests : IDisposable
 
         // Assert
         result.IsError.Should().BeFalse();
-        result.Output.Should().Be("line3\nline4\n[Showing lines 3-4 of 10. Call again with offset=5 to continue.]");
+        result.Output.Should().Be("line3\nline4\n[Showing lines 3-4. Call again with offset=5 to continue.]");
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class ReadFileToolTests : IDisposable
         var result = await RunAsync(new { path = "big.txt" });
 
         // Assert
-        result.Output.Should().EndWith("[Showing lines 1-2000 of 2500. Call again with offset=2001 to continue.]");
+        result.Output.Should().EndWith("[Showing lines 1-2000. Call again with offset=2001 to continue.]");
     }
 
     [Fact]
