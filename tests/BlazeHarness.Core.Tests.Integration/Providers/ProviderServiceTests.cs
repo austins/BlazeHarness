@@ -219,7 +219,7 @@ public sealed class ProviderServiceTests : IDisposable
     }
 
     [Theory]
-    [InlineData("DeepSeek", "deepseek")]
+    [InlineData("MyProvider", "myprovider")]
     [InlineData("  My Local  LLM! ", "my-local-llm")]
     [InlineData("!!!", "provider")]
     public void NewId_Slugifies(string name, string expected)
@@ -235,13 +235,13 @@ public sealed class ProviderServiceTests : IDisposable
     public async Task NewId_TakenId_AppendsNumber()
     {
         // Arrange
-        await _sut.SaveAsync(Provider("deepseek", "m1"), null, TestContext.Current.CancellationToken);
+        await _sut.SaveAsync(Provider("myprovider", "m1"), null, TestContext.Current.CancellationToken);
 
         // Act
-        var id = _sut.NewId("DeepSeek");
+        var id = _sut.NewId("MyProvider");
 
         // Assert
-        id.Should().Be("deepseek-2");
+        id.Should().Be("myprovider-2");
     }
 
     private static ProviderConfig Provider(string id, params string[] models)

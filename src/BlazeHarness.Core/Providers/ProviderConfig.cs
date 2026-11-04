@@ -21,7 +21,7 @@ public sealed record ProviderConfig
     public ApiType ApiType { get; init; } = ApiType.ChatCompletions;
 
     /// <summary>
-    /// Gets the base URL of the API, e.g. <c>https://api.deepseek.com</c>.
+    /// Gets the base URL of the API, e.g. <c>https://api.example.com/v1</c>.
     /// </summary>
     public required Uri BaseUrl { get; init; }
 

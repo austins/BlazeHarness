@@ -857,7 +857,7 @@
     <value>Укажите название.</value>
   </data>
   <data name="ValidationBaseUrlInvalid" xml:space="preserve">
-    <value>Базовый URL должен быть абсолютным адресом http или https, например https://api.openai.com/v1.</value>
+    <value>Базовый URL должен быть абсолютным адресом http или https, например https://api.example.com/v1.</value>
   </data>
   <data name="ValidationApiKeyRefInvalid" xml:space="preserve">
     <value>Используйте формат {example} или оставьте поле пустым, чтобы использовать сохранённый ключ.</value>
@@ -2036,7 +2036,7 @@
     <value>Если задана, она заменяет сохранённый ключ.</value>
   </data>
   <data name="ProvidersSettingsEnvVarPlaceholder" xml:space="preserve">
-    <value>DEEPSEEK_API_KEY</value>
+    <value>PROVIDER_API_KEY</value>
   </data>
   <data name="ProvidersSettingsEnvVarLabel" xml:space="preserve">
     <value>Имя переменной окружения</value>
@@ -2054,7 +2054,7 @@
     <value>Базовый URL</value>
   </data>
   <data name="ProvidersSettingsNamePlaceholder" xml:space="preserve">
-    <value>напр., DeepSeek</value>
+    <value>напр., Мой провайдер</value>
   </data>
   <data name="ProvidersSettingsNameLabel" xml:space="preserve">
     <value>Название</value>

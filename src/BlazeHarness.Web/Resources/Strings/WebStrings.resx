@@ -1142,7 +1142,7 @@
   </data>
   <data name="ValidationIdRequired" xml:space="preserve"><value>An identifier is required.</value><comment>Validation error under the provider id field when it is empty.</comment></data>
   <data name="ValidationNameRequired" xml:space="preserve"><value>A name is required.</value><comment>Validation error under the provider name field when it is empty.</comment></data>
-  <data name="ValidationBaseUrlInvalid" xml:space="preserve"><value>The base URL must be an absolute http or https address, e.g. https://api.openai.com/v1.</value><comment>Validation error under the provider base URL field. Keep the example address as is.</comment></data>
+  <data name="ValidationBaseUrlInvalid" xml:space="preserve"><value>The base URL must be an absolute http or https address, e.g. https://api.example.com/v1.</value><comment>Validation error under the provider base URL field. Keep the example address as is.</comment></data>
   <data name="ValidationApiKeyRefInvalid" xml:space="preserve"><value>Use the form {example}, or leave it empty to use the stored key.</value><comment>Validation error under the provider API key field. {example} is the literal text ${ENV_VAR}; do not translate it.</comment></data>
   <data name="ValidationThinkingFieldRequired" xml:space="preserve"><value>Name the body field that carries the thinking level.</value><comment>Validation error under the field for the request body field that carries the thinking level.</comment></data>
   <data name="ValidationThinkingFieldInvalid" xml:space="preserve"><value>Use letters, digits, dashes and underscores, with dots to reach into an object; no spaces or brackets.</value><comment>Validation error when the request body field name is not a valid path.</comment></data>
@@ -1959,7 +1959,7 @@
     <comment>Hint below the environment variable name input. "This" is the environment variable; the stored key is the API key saved in the key store.</comment>
   </data>
   <data name="ProvidersSettingsEnvVarPlaceholder" xml:space="preserve">
-    <value>DEEPSEEK_API_KEY</value>
+    <value>PROVIDER_API_KEY</value>
     <comment>Example environment variable name shown as a placeholder. Do not translate it.</comment>
   </data>
   <data name="ProvidersSettingsEnvVarLabel" xml:space="preserve">
@@ -1983,8 +1983,8 @@
     <comment>Label of the input for the web address of the provider's API server.</comment>
   </data>
   <data name="ProvidersSettingsNamePlaceholder" xml:space="preserve">
-    <value>e.g. DeepSeek</value>
-    <comment>Placeholder of the provider name input. DeepSeek is a product name and is not translated.</comment>
+    <value>e.g. My provider</value>
+    <comment>Placeholder of the provider name input, an example of a name the user might choose.</comment>
   </data>
   <data name="ProvidersSettingsNameLabel" xml:space="preserve">
     <value>Name</value>

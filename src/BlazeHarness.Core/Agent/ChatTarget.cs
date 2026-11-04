@@ -12,7 +12,7 @@ namespace BlazeHarness.Core.Agent;
 public sealed record ChatTarget(ProviderConfig Provider, ModelConfig Model, ThinkingLevel? Level)
 {
     /// <summary>
-    /// Gets a short label for the target, such as "DeepSeek · deepseek-chat · high".
+    /// Gets a short label for the target, such as "My provider · my-model · high".
     /// </summary>
     public string Label
     {

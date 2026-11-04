@@ -11,10 +11,10 @@ public sealed class ProviderEditModelTests
         // Arrange
         var provider = new ProviderConfig
         {
-            Id = "ds",
-            DisplayName = "DeepSeek",
-            BaseUrl = new Uri("https://api.deepseek.com/v1"),
-            ApiKeyRef = "${DEEPSEEK_API_KEY}",
+            Id = "my-provider",
+            DisplayName = "MyProvider",
+            BaseUrl = new Uri("https://api.example.com/v1"),
+            ApiKeyRef = "${PROVIDER_API_KEY}",
             Headers = new Dictionary<string, string> { ["X-Org"] = "acme" },
             SendStreamUsage = false,
             LegacyMaxTokens = false,
@@ -23,7 +23,7 @@ public sealed class ProviderEditModelTests
             [
                 new ModelConfig
                 {
-                    Id = "deepseek-chat",
+                    Id = "my-model",
                     DisplayName = "Chat",
                     ContextWindow = 64000,
                     MaxOutputTokens = 8000,
@@ -37,9 +37,9 @@ public sealed class ProviderEditModelTests
         var result = ProviderEditModel.FromConfig(provider).ToConfig();
 
         // Assert
-        result.Id.Should().Be("ds");
-        result.BaseUrl.Should().Be(new Uri("https://api.deepseek.com/v1"));
-        result.ApiKeyRef.Should().Be("${DEEPSEEK_API_KEY}");
+        result.Id.Should().Be("my-provider");
+        result.BaseUrl.Should().Be(new Uri("https://api.example.com/v1"));
+        result.ApiKeyRef.Should().Be("${PROVIDER_API_KEY}");
         result.Headers.Should().ContainSingle().Which.Should().Be(new KeyValuePair<string, string>("X-Org", "acme"));
         result.SendStreamUsage.Should().BeFalse();
         result.LegacyMaxTokens.Should().BeFalse();

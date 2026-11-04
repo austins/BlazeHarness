@@ -857,7 +857,7 @@
     <value>需要填写名称。</value>
   </data>
   <data name="ValidationBaseUrlInvalid" xml:space="preserve">
-    <value>基础 URL 必须是绝对 http 或 https 地址，例如 https://api.openai.com/v1。</value>
+    <value>基础 URL 必须是绝对 http 或 https 地址，例如 https://api.example.com/v1。</value>
   </data>
   <data name="ValidationApiKeyRefInvalid" xml:space="preserve">
     <value>请使用 {example} 格式，或留空以使用已保存的密钥。</value>
@@ -2036,7 +2036,7 @@
     <value>设置后，此变量将替代已存储的密钥。</value>
   </data>
   <data name="ProvidersSettingsEnvVarPlaceholder" xml:space="preserve">
-    <value>DEEPSEEK_API_KEY</value>
+    <value>PROVIDER_API_KEY</value>
   </data>
   <data name="ProvidersSettingsEnvVarLabel" xml:space="preserve">
     <value>环境变量名称</value>
@@ -2054,7 +2054,7 @@
     <value>基础 URL</value>
   </data>
   <data name="ProvidersSettingsNamePlaceholder" xml:space="preserve">
-    <value>例如 DeepSeek</value>
+    <value>例如 我的提供商</value>
   </data>
   <data name="ProvidersSettingsNameLabel" xml:space="preserve">
     <value>名称</value>

@@ -120,8 +120,8 @@ public sealed class SandboxPolicyTests : IDisposable
         {
             ["PATH"] = _toolBin,
             ["LANG"] = "en_US.UTF-8",
-            ["OPENAI_API_KEY"] = "sk-secret",
-            ["GITHUB_TOKEN"] = "ghp-secret",
+            ["PROVIDER_API_KEY"] = "key-secret",
+            ["SERVICE_TOKEN"] = "token-secret",
             ["HOME"] = "/home/someone",
         };
 
@@ -129,7 +129,7 @@ public sealed class SandboxPolicyTests : IDisposable
         var policy = Create(ShellMode.Writable, host: host, command: "echo hi");
 
         // Assert
-        policy.Environment.Should().NotContainKey("OPENAI_API_KEY").And.NotContainKey("GITHUB_TOKEN");
+        policy.Environment.Should().NotContainKey("PROVIDER_API_KEY").And.NotContainKey("SERVICE_TOKEN");
         policy.Environment["PATH"].Should().Be(_toolBin);
         policy.Environment["LANG"].Should().Be("en_US.UTF-8");
         policy.Environment["HOME"].Should().Be(Path.Combine(Canonical(_scratch), "home"));

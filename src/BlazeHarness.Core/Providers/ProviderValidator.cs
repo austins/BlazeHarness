@@ -32,7 +32,7 @@ internal static class ProviderValidator
 
         if (!provider.BaseUrl.IsAbsoluteUri || provider.BaseUrl.Scheme is not ("http" or "https"))
         {
-            issues.Add(new ValidationIssue("baseUrl", ValidationCode.BaseUrlInvalid, "The base URL must be an absolute http or https address, e.g. https://api.openai.com/v1."));
+            issues.Add(new ValidationIssue("baseUrl", ValidationCode.BaseUrlInvalid, "The base URL must be an absolute http or https address, e.g. https://api.example.com/v1."));
         }
 
         if (!string.IsNullOrWhiteSpace(provider.ApiKeyRef) && !ApiKeyResolver.IsEnvironmentReference(provider.ApiKeyRef))
