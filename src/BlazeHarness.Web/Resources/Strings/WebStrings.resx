@@ -345,7 +345,7 @@
     <comment>Accessible name (aria-label) of the diff, the list of added and removed lines of a file change.</comment>
   </data>
   <data name="ExportMenuSecretsWarning" xml:space="preserve">
-    <value>The file holds everything in the chat, including what tools printed, such as the contents of files they read. Check it for secrets before you share it. Attached files are not included.</value>
+    <value>The file includes everything in the chat, such as tool output and the contents of files the tools read. Check it for secrets before you share it. Attached files are not included.</value>
     <comment>Warning at the bottom of the export popover: the exported file may contain sensitive data such as secrets read by tools.</comment>
   </data>
   <data name="ExportMenuJsonHint" xml:space="preserve">
@@ -665,7 +665,7 @@
     <comment>Label of the text box in the folder picker where the user types or pastes a directory path.</comment>
   </data>
   <data name="ChatListDeleteWarning" xml:space="preserve">
-    <value>This can't be undone. [strong]{title}[/strong] and everything stored for it is removed. Files in your project folder are not touched.</value>
+    <value>This can't be undone. [strong]{title}[/strong] and everything stored for it will be deleted. Files in your project folder are not touched.</value>
     <comment>Body of the dialog that confirms deleting a chat. {title} is the chat title. Keep the [strong] tags around it; they make it bold.</comment>
   </data>
   <data name="ChatListDeleteConfirm" xml:space="preserve">
@@ -1089,7 +1089,7 @@
     <comment>Label for the UI language picker.</comment>
   </data>
   <data name="GeneralSettingsCompactionDescription" xml:space="preserve">
-    <value>When a chat gets too long, the model normally summarizes the older messages. Extraction builds the summary from your requests, the files touched and the latest steps instead, without a model call: instant and free, but less thorough. The agent can still look up what was left out.</value>
+    <value>When a chat gets too long, the model normally summarizes the older messages. Extraction builds the summary itself from your requests, the files touched and the latest steps. It is instant and free but less thorough, and the agent can still look up what was left out.</value>
     <comment>Explains the extractive compaction option.</comment>
   </data>
   <data name="ChatViewTranscriptLabel" xml:space="preserve">
@@ -1157,7 +1157,7 @@
   <data name="ConnectionTestConnected" xml:space="preserve"><value>Connected. The server lists {count, plural, one {# model} other {# models}}.</value><comment>Result of Test connection when the server listed models. {count} is the number of models.</comment></data>
   <data name="ConnectionTestConnectedNoModels" xml:space="preserve"><value>Connected, but the server listed no models. Add them manually.</value><comment>Result of Test connection when the server answered but listed no models.</comment></data>
   <data name="ConnectionTestInvalidBaseUrl" xml:space="preserve"><value>The base URL is not a valid http or https address.</value><comment>Result of Test connection when the base URL is invalid.</comment></data>
-  <data name="ConnectionTestModelListTooLarge" xml:space="preserve"><value>The server's model list is too large to be an OpenAI-style answer.</value><comment>Result of Test connection when the answer is unreasonably large.</comment></data>
+  <data name="ConnectionTestModelListTooLarge" xml:space="preserve"><value>The server's model list is too large. It may not be an OpenAI-compatible server.</value><comment>Result of Test connection when the answer is unreasonably large.</comment></data>
   <data name="ConnectionTestTimeout" xml:space="preserve"><value>The server did not answer within {seconds} seconds. Check that it is running and the address is right.</value><comment>Result of Test connection when the server is too slow. {seconds} is the time limit.</comment></data>
   <data name="ConnectionTestConnectionFailed" xml:space="preserve"><value>Could not connect: {detail}. Check that the server is running and the address is right.</value><comment>Result of Test connection when the connection failed. {detail} is the system's own explanation, which is not translated.</comment></data>
   <data name="ConnectionTestNotAModelList" xml:space="preserve"><value>The server answered, but not with an OpenAI-style model list. Check that the base URL points at the API (usually ending in /v1).</value><comment>Result of Test connection when the answer is not a model list. Keep /v1 as is.</comment></data>
@@ -1258,7 +1258,7 @@
     <comment>Label of a checkbox on the Permissions page. The "command" is a shell command that runs in the sandbox.</comment>
   </data>
   <data name="PermissionsSettingsNetworkHint" xml:space="preserve">
-    <value>When on, a command in the sandbox can only reach hosts you allow. You are asked the first time it connects to one, unless a Network host rule decides. With Never ask, a host that no rule allows is refused. Only web traffic (HTTP and HTTPS) gets through, so SSH, raw connections and tools that ignore proxy settings are blocked. Hosts on your own network or computer are always refused. A command with Unrestricted access is not sandboxed, so the filter does not apply to it. Not available on Windows yet.</value>
+    <value>When on, a command in the sandbox can only reach hosts you allow. You are asked the first time it connects to a host, unless a Network host rule decides. With Never ask, hosts that no rule allows are refused. Only HTTP and HTTPS traffic gets through, so SSH, raw connections and tools that ignore proxy settings are blocked. Hosts on your own network or computer are always refused. Commands with Unrestricted access aren't sandboxed, so the filter doesn't apply to them. Not available on Windows yet.</value>
     <comment>Hint under the checkbox in the Network card on the Permissions page. "Network host" is the name of a rule target (see PermissionsSettingsTargetNetworkHost), "Never ask" and "Unrestricted" are the names of an approval mode and an access level (see PermissionPickerNeverAsk and PermissionPickerUnrestricted) and should match their translations. HTTP, HTTPS and SSH are protocol names, do not translate them.</comment>
   </data>
   <data name="ToolCallMcpBadgeTitle" xml:space="preserve">
@@ -1275,11 +1275,11 @@
   <data name="ToolCallInterrupted" xml:space="preserve"><value>Interrupted</value><comment>Tool call status label.</comment></data>
   <data name="ParamInputDefault" xml:space="preserve"><value>default</value><comment>Placeholder indicating that the provider default is used.</comment></data>
   <data name="ParamInputReplaces" xml:space="preserve"><value>Replaces {value}. Clear to use it again.</value><comment>Tooltip for an overridden inherited sampling value; value is the inherited value.</comment></data>
-  <data name="ParamInputClearForServer" xml:space="preserve"><value>Clear to leave it to the server.</value><comment>Tooltip explaining that an explicit sampling value can be cleared to use the server default.</comment></data>
+  <data name="ParamInputClearForServer" xml:space="preserve"><value>Clear to use the server's default.</value><comment>Tooltip explaining that an explicit sampling value can be cleared to use the server default.</comment></data>
   <data name="ParamInputUsesThinkingOff" xml:space="preserve"><value>Uses the Thinking off value. Type to replace it.</value><comment>Tooltip for an unset sampling value inherited from the Thinking off value.</comment></data>
   <data name="ParamInputNotSent" xml:space="preserve"><value>Not sent; the server default applies.</value><comment>Tooltip for a sampling value that is unset and not inherited.</comment></data>
   <data name="PermissionsRulesDescription" xml:space="preserve">
-    <value>A rule that refuses always wins. Otherwise the last matching rule decides. An allow rule skips the question but never gets a call out of the sandbox or into a protected folder. Use * for any text and ? for one character. In a path, * stays inside one folder and ** crosses folders. An MCP tool rule matches the server name and the tool name written as server/tool. A rule that refuses a file path also hides those files from listing and search. In a sandboxed shell command, those files are kept out of reach when the command starts, so they look empty or unreadable: an exact path wherever it is, and a pattern with a wildcard inside the working folder and the folders you approved. It is best effort: the shell can still read a refused file from git history, a file made later is not covered, on macOS renaming a folder above a refused file may get around it, and a command with Unrestricted access is not sandboxed. Shell commands don't run while a rule matches too many files, or a ** rule would need a look through a very large folder; a rule such as secrets/** or *.pem stays quick. They also don't run where this system's sandbox can't keep a single file out of reach.</value>
+    <value>A rule that refuses always wins. Otherwise the last matching rule decides. An allow rule skips the question, but it never takes a call out of the sandbox or into a protected folder. Use * for any text and ? for one character. In a path, * stays inside one folder and ** crosses folders. An MCP tool rule matches the server name and tool name joined as server/tool. A rule that refuses a file path also hides those files from listing and search. In a sandboxed shell command they are kept out of reach when the command starts, so they look empty or unreadable. This covers an exact path anywhere, and a wildcard pattern inside the working folder and the folders you approved. It is best effort: the shell can still read a refused file from git history, a file created later is not covered, on macOS renaming a folder above a refused file may get around it, and a command with Unrestricted access is not sandboxed. Shell commands don't run if a rule matches too many files, if a ** rule would have to scan a very large folder, or if this system's sandbox can't hide a single file. A rule such as secrets/** or *.pem stays quick.</value>
     <comment>Explains permission rules and their safety limits.</comment>
   </data>
   <data name="PermissionsRemoveProtectedFolder" xml:space="preserve"><value>Remove {folder} from the protected folders</value><comment>Accessible label for removing a protected folder; folder is its path.</comment></data>
@@ -1349,7 +1349,7 @@
   <data name="ModelTuningSameAsProvider" xml:space="preserve"><value>Same as provider:</value><comment>Option to use the provider's default thinking-level setting.</comment></data>
   <data name="ModelTuningThinkingOff" xml:space="preserve"><value>Thinking off</value><comment>Column heading for sampling values when model thinking is disabled.</comment></data>
   <data name="ModelTuningValue" xml:space="preserve"><value>Value</value><comment>Column heading for a sampling value.</comment></data>
-  <data name="ModelTuningEmptyUsesDefault" xml:space="preserve"><value>Leave a cell empty to leave it to the server.</value><comment>Hint explaining that empty sampling values use server defaults.</comment></data>
+  <data name="ModelTuningEmptyUsesDefault" xml:space="preserve"><value>Leave a cell empty to use the server's default.</value><comment>Hint explaining that empty sampling values use server defaults.</comment></data>
   <data name="ModelTuningCustomFields" xml:space="preserve"><value>Custom fields</value><comment>Heading for provider-specific sampling fields.</comment></data>
   <data name="ModelTuningCustomFieldsCount" xml:space="preserve"><value>Custom fields ({count})</value><comment>Heading for provider-specific sampling fields; count is the number of fields.</comment></data>
   <data name="ModelTuningThinkingOnFieldsHint" xml:space="preserve"><value>Added to the Thinking off fields; a field with the same name replaces it.</value><comment>Explains how Thinking on sampling fields relate to Thinking off fields.</comment></data>
@@ -1381,7 +1381,7 @@
   <data name="ChatViewReplyStarted" xml:space="preserve"><value>Reply started</value><comment>Screen-reader announcement when the assistant begins a reply.</comment></data>
   <data name="ChatViewReplyFailed" xml:space="preserve"><value>Reply failed</value><comment>Screen-reader announcement when an assistant reply fails.</comment></data>
   <data name="ChatViewReplyFinished" xml:space="preserve"><value>Reply finished</value><comment>Screen-reader announcement when an assistant reply finishes.</comment></data>
-  <data name="ChatViewAttachmentLimit" xml:space="preserve"><value>The files of a message can add up to at most {size}.</value><comment>Error shown when selected files exceed the message size limit; size is the limit formatted for display.</comment></data>
+  <data name="ChatViewAttachmentLimit" xml:space="preserve"><value>A message's files can total at most {size}.</value><comment>Error shown when selected files exceed the message size limit; size is the limit formatted for display.</comment></data>
   <data name="ChatViewNoLongerExists" xml:space="preserve"><value>This chat no longer exists.</value><comment>Error shown when a chat disappears while saving an attachment.</comment></data>
   <data name="ChatViewNotEnoughToSummarize" xml:space="preserve"><value>There is not enough earlier conversation to summarize.</value><comment>Informational toast when there is too little history to compact.</comment></data>
   <data name="ChatViewEnableExtractionHint" xml:space="preserve"><value> You can turn on "Compact without the model (Extraction)" under Settings &gt; General.</value><comment>Hint appended to a compaction error when extractive compaction is disabled.</comment></data>
@@ -1419,9 +1419,9 @@
   <data name="SidebarImportNotAnExport" xml:space="preserve"><value>The file is not a BlazeHarness chat export.</value><comment>Error shown when an imported file is not a chat export. BlazeHarness is the app name: do not translate it.</comment></data>
   <data name="SidebarImportNewerVersion" xml:space="preserve"><value>The file was exported by a newer version of BlazeHarness.</value><comment>Error shown when an imported chat export comes from a newer app version. BlazeHarness is the app name: do not translate it.</comment></data>
   <data name="SidebarImportNoMessages" xml:space="preserve"><value>The file has no messages.</value><comment>Error shown when an imported chat export contains no messages.</comment></data>
-  <data name="AttachmentUnsupported" xml:space="preserve"><value>“{name}” can't be attached. Only images (PNG, JPEG, GIF, WebP) and text files are supported.</value><comment>Error shown above the message box when a file can't be attached. {name} is the file name. PNG, JPEG, GIF and WebP are file formats: do not translate them.</comment></data>
-  <data name="AttachmentTooLarge" xml:space="preserve"><value>“{name}” is larger than {size} MB.</value><comment>Error shown above the message box when a file to attach is too large. {name} is the file name and {size} the limit in megabytes.</comment></data>
-  <data name="AttachmentEmpty" xml:space="preserve"><value>“{name}” is empty.</value><comment>Error shown above the message box when a file to attach is empty. {name} is the file name.</comment></data>
+  <data name="AttachmentUnsupported" xml:space="preserve"><value>"{name}" can't be attached. Only images (PNG, JPEG, GIF, WebP) and text files are supported.</value><comment>Error shown above the message box when a file can't be attached. {name} is the file name. PNG, JPEG, GIF and WebP are file formats: do not translate them.</comment></data>
+  <data name="AttachmentTooLarge" xml:space="preserve"><value>"{name}" is larger than {size} MB.</value><comment>Error shown above the message box when a file to attach is too large. {name} is the file name and {size} the limit in megabytes.</comment></data>
+  <data name="AttachmentEmpty" xml:space="preserve"><value>"{name}" is empty.</value><comment>Error shown above the message box when a file to attach is empty. {name} is the file name.</comment></data>
   <data name="SidebarImportFileTooLarge" xml:space="preserve"><value>That file is too large to be a chat export.</value><comment>Error shown when a chat export file exceeds the import limit.</comment></data>
   <data name="SidebarImportReadFailed" xml:space="preserve"><value>The file could not be read.</value><comment>Error shown when a chat export file cannot be read.</comment></data>
   <data name="SidebarOpenFolderFailed" xml:space="preserve"><value>That folder could not be opened.</value><comment>Error shown when opening a folder fails.</comment></data>
@@ -1456,10 +1456,10 @@
   <data name="ComposerQuestionAlreadyHandled" xml:space="preserve"><value>The question was answered or stopped before this arrived. Send it again.</value><comment>Hint shown when an answer can no longer be queued.</comment></data>
   <data name="ComposerReplyEnded" xml:space="preserve"><value>The reply ended before the message could be queued. Send it again.</value><comment>Hint shown when a reply ends before a message can be queued.</comment></data>
   <data name="ComposerMaxFiles" xml:space="preserve"><value>A message can carry at most {count} files.</value><comment>Hint shown when a user attaches more than the maximum number of files; count is the limit.</comment></data>
-  <data name="ComposerFileTooLarge" xml:space="preserve"><value>“{name}” is larger than {size}.</value><comment>Hint shown when an attached file exceeds the per-file size limit; name is the file name and size is the limit.</comment></data>
+  <data name="ComposerFileTooLarge" xml:space="preserve"><value>"{name}" is larger than {size}.</value><comment>Hint shown when an attached file exceeds the per-file size limit; name is the file name and size is the limit.</comment></data>
   <data name="ComposerAttachmentImage" xml:space="preserve"><value>Sent as an image</value><comment>Attachment hint for a file sent as an image.</comment></data>
   <data name="ComposerAttachmentInline" xml:space="preserve"><value>Added to the message</value><comment>Attachment hint for a file included directly in the message.</comment></data>
-  <data name="ComposerAttachmentTooLong" xml:space="preserve"><value>Too long to add, the model reads it as needed</value><comment>Attachment hint for a file that is not included directly because it is too long.</comment></data>
+  <data name="ComposerAttachmentTooLong" xml:space="preserve"><value>Too long to add to the message. The model reads it as needed.</value><comment>Attachment hint for a file that is not included directly because it is too long.</comment></data>
   <data name="ContextIndicatorEstimatedSize" xml:space="preserve"><value>The size of the next request, estimated</value><comment>Detail explaining that the next request size is estimated.</comment></data>
   <data name="ContextIndicatorServerCountedSize" xml:space="preserve"><value>The size of the next request, as the server counted it</value><comment>Detail explaining that the next request size is reported by the server.</comment></data>
   <data name="ContextIndicatorSummarizeAfter" xml:space="preserve"><value>Older messages are summarized after {count, plural, one {{tokens} token} other {{tokens} tokens}}</value><comment>Detail stating the context limit after which older messages are summarized; count selects singular or plural and tokens is formatted for display.</comment></data>
@@ -1591,7 +1591,7 @@
     <comment>Button in the advanced mcp.json editor that saves the edited file text.</comment>
   </data>
   <data name="McpSettingsFileHint" xml:space="preserve">
-    <value>Changes made outside BlazeHarness show up here too. Turning a server on or off for a chat that is already open changes its tools, which starts that chat's prompt cache over.</value>
+    <value>Changes made outside BlazeHarness show up here too. Turning a server on or off for a chat that is already open changes its tools, which resets that chat's prompt cache.</value>
     <comment>Hint under the advanced mcp.json editor: edits made to the file by other programs are picked up, and changing a server for an open chat resets that chat's prompt cache (the model provider's cache of the conversation prefix). Keep "BlazeHarness" untranslated.</comment>
   </data>
   <data name="McpSettingsFileLabel" xml:space="preserve">
@@ -1923,7 +1923,7 @@
     <comment>Label of the input for the model identifier that the server expects, such as a name from its model list.</comment>
   </data>
   <data name="ProvidersSettingsModelLimitsHint" xml:space="preserve">
-    <value>Servers rarely report limits, so check these. Context window feeds compaction, and max output must be smaller than it.</value>
+    <value>Servers rarely report limits, so check these. The context window decides when compaction happens, and max output must be smaller than it.</value>
     <comment>Hint above the model rows about the token limits. "Context window" and "max output" name the two limit inputs; keep them the same as their labels. Compaction means summarizing old messages to free space.</comment>
   </data>
   <data name="ProvidersSettingsNoModelsMessage" xml:space="preserve">
@@ -2023,7 +2023,7 @@
     <comment>Title of the settings page where the user manages model providers.</comment>
   </data>
   <data name="SkillsSettingsLocationsHint" xml:space="preserve">
-    <value>Skills from all three are used. If two have the same name, the one from the folder higher in this list is used and the other is hidden. Changes to the BlazeHarness and global folders show up here by themselves. Skills in a chat's folder are read each time the chat sends a message.</value>
+    <value>Skills from all three are used. If two have the same name, the one from the folder higher in this list is used and the other is hidden. Changes to the BlazeHarness and global folders show up here automatically. Skills in a chat's folder are read each time the chat sends a message.</value>
     <comment>Hint under the list of skill locations. "All three" means the chat folder, BlazeHarness folder and global folder listed above it. Keep "BlazeHarness" untranslated.</comment>
   </data>
   <data name="SkillsSettingsGlobalLocation" xml:space="preserve">
@@ -2091,19 +2091,19 @@
     <comment>Label of a checkbox on the Web page that turns the browser tools on or off. They let the agent open a page of a web app running on this computer in a headless browser, read it and check its own UI changes.</comment>
   </data>
   <data name="WebToolsSettingsBrowserHint" xml:space="preserve">
-    <value>The agent can open pages on this computer (localhost) in a hidden browser that runs their scripts, and read what they show and any errors. It can't open the internet or BlazeHarness itself; each address asks first, like web fetch. This is a remote-controlled test browser, not a full one: it has no tabs, extensions or developer tools, and the agent can navigate, click, type, scroll, wait and take screenshots, but not drag, upload files or reach pages inside iframes. The side panel shows a live picture of the page that you can click, hover, type and scroll in. The browser is downloaded once, about 125 MB.</value>
+    <value>The agent can open pages on this computer (localhost) in a hidden browser that runs their scripts, and read what they show along with any errors. It can't open sites on the internet or BlazeHarness itself, and each address asks first, like web fetch. This is a remote-controlled test browser, not a full one: it has no tabs, extensions or developer tools. The agent can navigate, click, type, scroll, wait and take screenshots, but it can't drag, upload files or reach pages inside iframes. The side panel shows a live picture of the page that you can click, hover, type and scroll in. The browser is downloaded once, about 125 MB.</value>
     <comment>Hint under the Browser checkbox on the Web page. It explains that the tool opens only addresses on this computer (localhost), runs the page's scripts in a hidden (headless) browser, cannot open internet addresses or the app itself, asks for approval per address, is a remote-controlled test browser with limited features (no tabs, extensions or developer tools; no dragging, file uploads or iframe pages), shows a live picture in the side panel, and needs a one-time download of about 125 MB.</comment>
   </data>
   <data name="WebToolsSettingsBrowserForwarded" xml:space="preserve">
-    <value>The browser tools are offered in every chat. A server that a sandboxed command starts can be opened when the command runs in the background: its ports are forwarded to localhost. A server started without background can't be reached from outside its command.</value>
+    <value>The browser tools are offered in every chat. A server started by a sandboxed command can be opened only if the command runs in the background, which forwards its ports to localhost. A server started in the foreground can't be reached from outside its command.</value>
     <comment>Note under the Browser hint when the ports of sandboxed background commands are forwarded to this computer. "background" refers to the shell tool's option that keeps a command running; keep it as it is.</comment>
   </data>
   <data name="WebToolsSettingsBrowserNeedsForwarding" xml:space="preserve">
-    <value>Servers that sandboxed commands start can't be reached from outside the sandbox until socat and nsenter (util-linux) are installed, so until then the browser tools are offered only in chats with the Unrestricted access level.</value>
+    <value>Servers started by sandboxed commands can't be reached from outside the sandbox until socat and nsenter (util-linux) are installed. Until then, the browser tools are offered only in chats with Unrestricted access.</value>
     <comment>Note under the Browser hint on Linux when the programs that forward ports out of the command sandbox are missing. "socat", "nsenter" and "util-linux" are program and package names; keep them as they are. "Unrestricted" is the name of an access level shown in the chat's permission picker.</comment>
   </data>
   <data name="WebToolsSettingsBrowserNeedsUnrestricted" xml:space="preserve">
-    <value>Servers that sandboxed commands start can't be reached from outside the sandbox on this computer, so the browser tools are offered only in chats with the Unrestricted access level.</value>
+    <value>Servers started by sandboxed commands can't be reached from outside the sandbox on this computer, so the browser tools are offered only in chats with Unrestricted access.</value>
     <comment>Note under the Browser hint on macOS and Windows, where the command sandbox's servers can't be reached by the browser. "Unrestricted" is the name of an access level shown in the chat's permission picker.</comment>
   </data>
   <data name="WebToolsSettingsBrowserInstalled" xml:space="preserve">
@@ -2287,7 +2287,7 @@
     <comment>Heading of the card on the Web page that lists the search services web search can use and how they are combined.</comment>
   </data>
   <data name="WebToolsSettingsFetchHint" xml:space="preserve">
-    <value>A fetch only reaches the public internet. Addresses on this computer or the local network are refused. The proxy settings of the system are not used. Fetched pages are kept in memory for a short while so a long page can be read in pieces.</value>
+    <value>A fetch only reaches the public internet. Addresses on this computer or the local network are refused. System proxy settings are not used. Fetched pages are kept in memory for a short while so a long page can be read in pieces.</value>
     <comment>Hint under the Web fetch checkbox on the Web page. It explains the limits of the tool: it only reaches public internet addresses (local network addresses are refused), ignores the system proxy settings, and caches fetched pages briefly so long pages can be read in pieces.</comment>
   </data>
   <data name="WebToolsSettingsFetchLabel" xml:space="preserve">
@@ -2303,7 +2303,7 @@
     <comment>Heading of the card on the Web page with the checkboxes that turn the web search, web fetch and browser tools on or off.</comment>
   </data>
   <data name="WebToolsSettingsDescription" xml:space="preserve">
-    <value>Lets the agent search the web, read pages, PDF files and Office documents, and open pages on this computer in a browser. Each use asks first, unless the chat's access level is Unrestricted or it never asks. The page text is treated as data, never as instructions. Web fetch does not run JavaScript, so pages that need it may come out empty.</value>
+    <value>Lets the agent search the web, read pages, PDF files and Office documents, and open pages on this computer in a browser. Each use asks first, unless the chat is set to Unrestricted or Never ask. The page text is treated as data, never as instructions. Web fetch does not run JavaScript, so pages that need it may come out empty.</value>
     <comment>Introductory paragraph under the title of the Web page. "Unrestricted" is the name of an access level (see PermissionPickerUnrestricted) and should match its translation. JavaScript is a technology name, do not translate it.</comment>
   </data>
   <data name="WebToolsSettingsTitle" xml:space="preserve">
@@ -2375,7 +2375,7 @@
     <comment>Heading of the section in the model tuning dialog for sampling parameters such as temperature and top-p.</comment>
   </data>
   <data name="ModelTuningProviderSettingHint" xml:space="preserve">
-    <value>The provider's setting is under Compatibility in its settings, and applies to every model that doesn't pick its own.</value>
+    <value>The provider's setting is under Compatibility in the provider's settings. It applies to every model that doesn't pick its own.</value>
     <comment>Hint shown when the model uses the provider's way of sending the thinking level. "Compatibility" is the name of a section in the provider settings; keep it the same as that heading.</comment>
   </data>
   <data name="ModelTuningBodyFieldPathPlaceholder" xml:space="preserve">

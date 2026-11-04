@@ -254,7 +254,7 @@
     <value>更改</value>
   </data>
   <data name="ExportMenuSecretsWarning" xml:space="preserve">
-    <value>该文件包含聊天中的所有内容，包括工具输出的内容（例如读取的文件内容）。分享前请检查其中是否包含机密信息。附件不包含在内。</value>
+    <value>该文件包含聊天中的所有内容，例如工具输出和工具读取的文件内容。分享前请检查其中是否包含机密信息。附件不包含在内。</value>
   </data>
   <data name="ExportMenuJsonHint" xml:space="preserve">
     <value>以便日后重新导入</value>
@@ -812,7 +812,7 @@
     <value>显示语言</value>
   </data>
   <data name="GeneralSettingsCompactionDescription" xml:space="preserve">
-    <value>当聊天过长时，通常由模型总结较早的消息。提取模式则根据你的请求、涉及的文件和最新步骤生成摘要，无需调用模型：即时且免费，但不够详尽。智能体仍可查阅省略的内容。</value>
+    <value>当聊天过长时，通常由模型总结较早的消息。提取模式会根据你的请求、涉及的文件和最新步骤自行生成摘要。这种方式即时且免费，但不够详尽，不过智能体仍可查阅省略的内容。</value>
   </data>
   <data name="ChatViewTranscriptLabel" xml:space="preserve">
     <value>消息</value>
@@ -902,7 +902,7 @@
     <value>基础 URL 不是有效的 http 或 https 地址。</value>
   </data>
   <data name="ConnectionTestModelListTooLarge" xml:space="preserve">
-    <value>服务器返回的模型列表过大，不像 OpenAI 格式的响应。</value>
+    <value>服务器返回的模型列表过大。这可能不是兼容 OpenAI 的服务器。</value>
   </data>
   <data name="ConnectionTestTimeout" xml:space="preserve">
     <value>服务器未在 {seconds} 秒内响应。请检查服务器是否正在运行且地址正确。</value>
@@ -995,7 +995,7 @@
     <value>在命令连接到主机前询问</value>
   </data>
   <data name="PermissionsSettingsNetworkHint" xml:space="preserve">
-    <value>开启后，沙箱中的命令只能访问你允许的主机。首次连接某个主机时会向你询问，除非已有“网络主机”规则作出决定。在“从不询问”模式下，未被任何规则允许的主机将被拒绝。仅允许网页流量（HTTP 和 HTTPS）通过，因此 SSH、原始连接以及忽略代理设置的工具都会被拦截。位于你本地网络或本机上的主机始终会被拒绝。具有“无限制”访问级别的命令不在沙箱中运行，因此不受此过滤器限制。暂不支持 Windows。</value>
+    <value>开启后，沙箱中的命令只能访问你允许的主机。首次连接某个主机时会向你询问，除非已有“网络主机”规则作出决定。在“从不询问”模式下，未被任何规则允许的主机将被拒绝。仅允许 HTTP 和 HTTPS 流量通过，因此 SSH、原始连接以及忽略代理设置的工具都会被拦截。位于你本地网络或本机上的主机始终会被拒绝。具有“无限制”访问级别的命令不在沙箱中运行，因此不受此过滤器限制。暂不支持 Windows。</value>
   </data>
   <data name="ToolCallMcpBadgeTitle" xml:space="preserve">
     <value>来自 MCP 服务器 {server} 的工具。它在沙箱外运行。</value>
@@ -1031,7 +1031,7 @@
     <value>替换 {value}。清空即可恢复使用该值。</value>
   </data>
   <data name="ParamInputClearForServer" xml:space="preserve">
-    <value>清空即可交由服务器决定。</value>
+    <value>清空以使用服务器默认值。</value>
   </data>
   <data name="ParamInputUsesThinkingOff" xml:space="preserve">
     <value>使用“关闭思考”时的值。输入内容即可替换。</value>
@@ -1040,7 +1040,7 @@
     <value>未发送；使用服务器默认值。</value>
   </data>
   <data name="PermissionsRulesDescription" xml:space="preserve">
-    <value>拒绝规则始终优先。否则，由最后一条匹配的规则决定。允许规则会跳过询问，但绝不会让调用脱离沙箱或进入受保护的文件夹。使用 * 匹配任意文本，使用 ? 匹配单个字符。在路径中，* 仅限单个文件夹内，而 ** 可跨越多个文件夹。MCP 工具规则匹配写作 server/tool 的服务器名称和工具名称。拒绝文件路径的规则还会将这些文件从列表和搜索结果中隐藏。在沙箱中运行的 Shell 命令启动时，这些文件会被隔离，使其看起来为空或不可读：具体路径无论位于何处都会生效，带通配符的模式则在工作文件夹及你已批准的文件夹内生效。此机制尽力而为：Shell 仍可从 Git 历史记录中读取被拒绝的文件，之后新建的文件不受保护，在 macOS 上重命名被拒绝文件上层的文件夹可能会绕过限制，且具有“无限制”访问级别的命令不在沙箱中运行。如果某条规则匹配的文件过多，或者 ** 规则需要遍历非常大的文件夹，Shell 命令将不会运行；像 secrets/** 或 *.pem 这样的规则则依然快速。如果当前系统的沙箱无法隔离单个文件，Shell 命令同样不会运行。</value>
+    <value>拒绝规则始终优先。否则，由最后一条匹配的规则决定。允许规则会跳过询问，但绝不会让调用脱离沙箱或进入受保护的文件夹。使用 * 匹配任意文本，使用 ? 匹配单个字符。在路径中，* 仅限单个文件夹内，而 ** 可跨越多个文件夹。MCP 工具规则匹配拼接为 server/tool 的服务器名称和工具名称。拒绝文件路径的规则还会将这些文件从列表和搜索结果中隐藏。在沙箱中运行的 Shell 命令启动时，这些文件会被隔离，使其看起来为空或不可读。这涵盖任意位置的具体路径，以及工作文件夹及你已批准的文件夹内的通配符模式。此机制尽力而为：Shell 仍可从 Git 历史记录中读取被拒绝的文件，之后创建的文件不受保护，在 macOS 上重命名被拒绝文件上层的文件夹可能会绕过限制，且具有“无限制”访问级别的命令不在沙箱中运行。如果某条规则匹配的文件过多、** 规则需要扫描非常大的文件夹，或者当前系统的沙箱无法隐藏单个文件，Shell 命令将不会运行。像 secrets/** 或 *.pem 这样的规则则依然快速。</value>
   </data>
   <data name="PermissionsRemoveProtectedFolder" xml:space="preserve">
     <value>从受保护的文件夹中移除 {folder}</value>
@@ -1244,7 +1244,7 @@
     <value>值</value>
   </data>
   <data name="ModelTuningEmptyUsesDefault" xml:space="preserve">
-    <value>留空单元格即交由服务器决定。</value>
+    <value>留空单元格即使用服务器默认值。</value>
   </data>
   <data name="ModelTuningCustomFields" xml:space="preserve">
     <value>自定义字段</value>
@@ -1574,7 +1574,7 @@
     <value>已添加到消息中</value>
   </data>
   <data name="ComposerAttachmentTooLong" xml:space="preserve">
-    <value>内容过长无法直接添加，模型会按需读取</value>
+    <value>内容过长，无法添加到消息中。模型会按需读取。</value>
   </data>
   <data name="ContextIndicatorEstimatedSize" xml:space="preserve">
     <value>下一次请求的预估大小</value>
@@ -2009,7 +2009,7 @@
     <value>模型 ID</value>
   </data>
   <data name="ProvidersSettingsModelLimitsHint" xml:space="preserve">
-    <value>服务器很少报告限制，请务必核对。上下文窗口用于触发压缩，且最大输出必须小于上下文窗口。</value>
+    <value>服务器很少报告限制，请务必核对。上下文窗口决定何时进行压缩，且最大输出必须小于上下文窗口。</value>
   </data>
   <data name="ProvidersSettingsNoModelsMessage" xml:space="preserve">
     <value>暂无模型。请使用上方的“检查连接并列出模型”，或手动添加。</value>
@@ -2135,16 +2135,16 @@
     <value>浏览器（打开此计算机上的页面）</value>
   </data>
   <data name="WebToolsSettingsBrowserHint" xml:space="preserve">
-    <value>智能体可以在隐藏浏览器中打开此计算机（localhost）上的页面并运行其脚本，读取页面显示的内容及任何错误。它无法打开互联网或 BlazeHarness 本身；每个地址都会像网页获取一样先询问批准。这是一个远程控制的测试浏览器，而非完整浏览器：它没有标签页、扩展程序或开发者工具，智能体可以导航、点击、输入、滚动、等待和截图，但无法拖拽、上传文件或访问 iframe 内的页面。侧面板会显示页面的实时画面，您可以在其中点击、悬停、输入和滚动。浏览器只需下载一次，约 125 MB。</value>
+    <value>智能体可以在隐藏浏览器中打开此计算机（localhost）上的页面并运行其脚本，读取页面显示的内容以及任何错误。它无法打开互联网上的网站或 BlazeHarness 本身，且每个地址都会像网页获取一样先询问批准。这是一个远程控制的测试浏览器，而非完整浏览器：它没有标签页、扩展程序或开发者工具。智能体可以导航、点击、输入、滚动、等待和截图，但无法拖拽、上传文件或访问 iframe 内的页面。侧面板会显示页面的实时画面，您可以在其中点击、悬停、输入和滚动。浏览器只需下载一次，约 125 MB。</value>
   </data>
   <data name="WebToolsSettingsBrowserForwarded" xml:space="preserve">
-    <value>浏览器工具在每个聊天中均可使用。沙箱命令启动的服务器在以 background 方式运行命令时可以打开：其端口会转发到 localhost。未使用 background 启动的服务器无法从该命令外部访问。</value>
+    <value>浏览器工具在每个聊天中均可使用。沙箱命令启动的服务器只有在命令以 background 方式运行时才能打开，该方式会将端口转发到 localhost。在前台启动的服务器无法从该命令外部访问。</value>
   </data>
   <data name="WebToolsSettingsBrowserNeedsForwarding" xml:space="preserve">
-    <value>在安装 socat 和 nsenter（util-linux）之前，无法从沙箱外部访问沙箱命令启动的服务器，因此在此之前，浏览器工具仅在具有“无限制”访问级别的聊天中提供。</value>
+    <value>在安装 socat 和 nsenter（util-linux）之前，无法从沙箱外部访问沙箱命令启动的服务器。在此之前，浏览器工具仅在具有“无限制”访问权限的聊天中提供。</value>
   </data>
   <data name="WebToolsSettingsBrowserNeedsUnrestricted" xml:space="preserve">
-    <value>在此计算机上，无法从沙箱外部访问沙箱命令启动的服务器，因此浏览器工具仅在具有“无限制”访问级别的聊天中提供。</value>
+    <value>在此计算机上，无法从沙箱外部访问沙箱命令启动的服务器，因此浏览器工具仅在具有“无限制”访问权限的聊天中提供。</value>
   </data>
   <data name="WebToolsSettingsBrowserInstalled" xml:space="preserve">
     <value>浏览器已安装</value>
@@ -2294,7 +2294,7 @@
     <value>工具</value>
   </data>
   <data name="WebToolsSettingsDescription" xml:space="preserve">
-    <value>允许助手搜索网页、读取网页、PDF 文件和 Office 文档，并在本机的浏览器中打开页面。每次使用前都会先询问，除非聊天的访问级别为“无限制”或设为从不询问。页面文本仅作为数据处理，绝不作为指令。网页抓取不会运行 JavaScript，因此需要它的页面可能为空。</value>
+    <value>允许助手搜索网页、读取网页、PDF 文件和 Office 文档，并在本机的浏览器中打开页面。每次使用前都会先询问，除非聊天设为“无限制”或“从不询问”。页面文本仅作为数据处理，绝不作为指令。网页抓取不会运行 JavaScript，因此需要它的页面可能为空。</value>
   </data>
   <data name="WebToolsSettingsTitle" xml:space="preserve">
     <value>网页</value>
@@ -2348,7 +2348,7 @@
     <value>采样</value>
   </data>
   <data name="ModelTuningProviderSettingHint" xml:space="preserve">
-    <value>提供商的设置位于其设置中的“兼容性”下，适用于所有未单独指定设置的模型。</value>
+    <value>提供商的设置位于提供商设置中的“兼容性”下。它适用于所有未单独指定设置的模型。</value>
   </data>
   <data name="ModelTuningBodyFieldPathPlaceholder" xml:space="preserve">
     <value>chat_template_kwargs.reasoning_effort</value>
