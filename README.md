@@ -14,9 +14,9 @@ A local web app for chatting and coding with any OpenAI-compatible LLM. It runs 
 
 Download the file for your system from the [latest release](https://github.com/austins/BlazeHarness/releases/latest). Each one includes the .NET runtime.
 
-* Windows (x64): extract `BlazeHarness-<version>-win-x64.zip` and run `BlazeHarness.Web.exe`. The app isn't signed, so SmartScreen may stop the first run: choose More info, then Run anyway.
-* macOS (Apple silicon): open `BlazeHarness-<version>-osx-arm64.dmg` and drag Blaze Harness to Applications, or run it from the image. The app isn't notarized, so macOS blocks the first launch: open System Settings > Privacy & Security and choose Open Anyway.
-* Linux (x64): make `BlazeHarness-<version>-x86_64.AppImage` executable (`chmod +x`, or the file's properties) and run it. It needs FUSE and libicu, which most desktop distributions include.
+* On Windows (x64), extract the `.zip` and run `BlazeHarness.Web.exe`. The app isn't signed, so SmartScreen may stop the first run: choose More info, then Run anyway.
+* On macOS (Apple silicon), open the `.dmg` and drag Blaze Harness to Applications. The app isn't notarized, so macOS blocks the first launch: open System Settings > Privacy & Security and choose Open Anyway.
+* On Linux (x64), make the `.AppImage` executable (`chmod +x`) and run it. It needs FUSE and libicu, which most desktop distributions include.
 
 The app runs in a terminal window that shows its address and log. Press Ctrl+C or close the window to stop it.
 
