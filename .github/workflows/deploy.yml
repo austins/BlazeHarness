@@ -67,7 +67,7 @@ jobs:
       - uses: ./.github/actions/setup-dotnet-environment
 
       - name: Publish
-        run: dotnet publish src/BlazeHarness.Web -c Release -r "$RID" -p:Version="$VERSION" -p:RestoreLockedMode=true -o publish
+        run: dotnet publish src/BlazeHarness.Web -c Release -r "$RID" -p:Version="$VERSION" -o publish
 
       - name: Smoke test
         run: |

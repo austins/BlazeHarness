@@ -5,7 +5,6 @@
 - `dotnet build` is the lint: analyzers run in the build and warnings are errors.
 - `dotnet test` runs everything. One project: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit`. One class: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit -- --filter-class "*ResolvedRequestParamsTests"`.
 - Running the app and its environment variables: see [README.md](README.md).
-- After changing packages, commit every updated `packages.lock.json`.
 
 ## Architecture
 
