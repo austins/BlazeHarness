@@ -99,7 +99,14 @@ public abstract class TestBase : IAsyncLifetime
     protected async Task LaunchAsync(string path = "/")
     {
         await Page.GotoAsync(path);
-        await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
+        await CircuitReadyAsync();
+    }
+
+    /// <summary>Reload the page and wait for the Blazor circuit, so nothing is clicked before the page can answer.</summary>
+    protected async Task ReloadAsync()
+    {
+        await Page.ReloadAsync();
+        await CircuitReadyAsync();
     }
 
     /// <summary>Gets the chunks the fake provider streams for a request body. Override to script a chat.</summary>
@@ -112,4 +119,6 @@ public abstract class TestBase : IAsyncLifetime
         var finish = finishReason is null ? "null" : $"\"{finishReason}\"";
         return $$"""{"id":"1","object":"chat.completion.chunk","model":"fake-model","choices":[{"index":0,"delta":{{delta}},"finish_reason":{{finish}}}]}""";
     }
+
+    private Task CircuitReadyAsync() => Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
 }

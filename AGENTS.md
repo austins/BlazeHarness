@@ -4,6 +4,7 @@
 
 - `dotnet build` is the lint: analyzers run in the build and warnings are errors.
 - `dotnet test` runs everything. One project: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit`. One class: `dotnet test --project tests/BlazeHarness.Core.Tests.Unit -- --filter-class "*ResolvedRequestParamsTests"`.
+- A failed CI run: `gh run view <run-id> --log-failed | grep -n '##\[error\]'` lists each failed test with its stack; the rest of the log is skipped-test noise.
 - Running the app and its environment variables: see [README.md](README.md).
 
 ## Architecture
@@ -88,7 +89,7 @@ To seed a chat without a model server, write `providers.json`, `chats/<32-hex>/c
 - xUnit v3 on Microsoft.Testing.Platform, NSubstitute, AwesomeAssertions (`.Should()`). `Method_Scenario_Expected` names, `// Arrange` / `// Act` / `// Assert` (omit a marker whose section would be empty), class under test in `_sut`.
 - Prefer the real class when cheap and deterministic (`TempFolder`, `FakeTimeProvider`, real file tools), NSubstitute for simple interface stubs, and a shared hand-written fake when it needs its own state or logic.
 - Use `LoggerFake<T>` for loggers, and pass `TestContext.Current.CancellationToken` to async calls.
-- `BlazeHarness.Web.Tests.E2E` is the Playwright smoke suite: derive from `TestBase`, open the app with `LaunchAsync()`, and assert with `Expect(...)`. Any test host that runs `Program` must set `HostLauncher.NoBrowserSettingKey` (plus `Staging` and `UseStaticWebAssets()` when serving static assets) so it does not open a browser.
+- `BlazeHarness.Web.Tests.E2E` is the Playwright smoke suite: derive from `TestBase`, open the app with `LaunchAsync()`, reload with `ReloadAsync()` (both wait for the Blazor circuit), and assert with `Expect(...)`. Any test host that runs `Program` must set `HostLauncher.NoBrowserSettingKey` (plus `Staging` and `UseStaticWebAssets()` when serving static assets) so it does not open a browser.
 - Real OS keyring tests are opt-in via `BLAZEHARNESS_TEST_KEYRING=1`.
 
 ### Isolation
@@ -97,4 +98,6 @@ All test projects run with `ParallelMode.All`, so keep tests deterministic and i
 
 - Wait with `FakeTimeProvider.Advance`, a `TaskCompletionSource`, or polling bounded by `TestTimeouts.Default`. Keep a tool's own timeout short or injectable when testing the timeout path.
 - Share no state: a `TempFolder` per test, port 0 for servers (`LocalHttpListener` for an `HttpListener`), and no shared files, environment variables or static fields.
+- A test ends on the reply's end state: `data-status="done"` in E2E, `!chat.IsReplying` in Core tests. A writer still running blocks `TempFolder` deletion on Windows only, so CI is the first place it shows.
+- `GatedChatClient` (`Core.Tests.Integration/Chats`) holds a reply open; use it to test a race deterministically.
 - Use `SkipWhen` for OS-specific features. Fix flakes at the cause.

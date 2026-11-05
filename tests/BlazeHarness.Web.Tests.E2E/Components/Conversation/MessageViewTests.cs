@@ -23,8 +23,7 @@ public sealed class MessageViewTests(BrowserFixture browser) : TestBase(browser)
         ]);
 
         // Act
-        await Page.ReloadAsync();
-        await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
+        await ReloadAsync();
         await Expect(Page.Locator("html")).ToHaveAttributeAsync("lang", culture);
         var timestamp = Page.Locator("[data-role=user] .msg-time");
         var created = (await timestamp.GetAttributeAsync("datetime"))!;

@@ -51,8 +51,7 @@ public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(brow
         await Expect(Page.GetByRole(AriaRole.Dialog, new PageGetByRoleOptions { Name = "Settings" })).ToBeVisibleAsync();
         await Expect(Page.GetByLabel("Display language")).ToHaveValueAsync("en-US");
 
-        await Page.ReloadAsync();
-        await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
+        await ReloadAsync();
         await Expect(Page.GetByRole(AriaRole.Dialog)).Not.ToBeVisibleAsync();
     }
 
@@ -120,8 +119,7 @@ public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(brow
         fullTodo.Width.Should().BeApproximately(fullComposerBox.Width, 1);
         fullTodo.X.Should().BeApproximately(fullComposerBox.X, 1);
 
-        await Page.ReloadAsync();
-        await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
+        await ReloadAsync();
         await Expect(todo).ToBeVisibleAsync();
         await Expect(Page.Locator("html")).ToHaveAttributeAsync("data-chat-full-width", string.Empty);
         (await thread.BoundingBoxAsync())!.Width.Should().BeApproximately(chatWidth, 1);
@@ -135,8 +133,7 @@ public sealed class GeneralSettingsTests(BrowserFixture browser) : TestBase(brow
         (await composer.BoundingBoxAsync())!.Width.Should().BeApproximately(defaultComposerWidth, 1);
         (await todo.BoundingBoxAsync())!.Width.Should().BeApproximately(defaultTodo.Width, 1);
 
-        await Page.ReloadAsync();
-        await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
+        await ReloadAsync();
         await Expect(Page.Locator("html")).Not.ToHaveAttributeAsync("data-chat-full-width", string.Empty);
         await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Settings", Exact = true }).ClickAsync();
         await Expect(toggle).Not.ToBeCheckedAsync();
