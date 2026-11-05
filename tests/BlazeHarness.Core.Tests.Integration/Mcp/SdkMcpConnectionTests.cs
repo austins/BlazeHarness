@@ -13,6 +13,7 @@ public sealed class SdkMcpConnectionTests : IAsyncLifetime
     private readonly Pipe _toClient = new();
     private readonly Pipe _toServer = new();
     private McpServer _server = null!;
+    private Task _serverRun = null!;
     private StreamServerTransport _transport = null!;
     private SdkMcpConnection _sut = null!;
 
@@ -36,7 +37,7 @@ public sealed class SdkMcpConnectionTests : IAsyncLifetime
 
         _transport = new StreamServerTransport(_toServer.Reader.AsStream(), _toClient.Writer.AsStream());
         _server = McpServer.Create(_transport, options);
-        _ = _server.RunAsync(_stop.Token);
+        _serverRun = _server.RunAsync(_stop.Token);
         var client = await McpClient.CreateAsync(
             new StreamClientTransport(_toServer.Writer.AsStream(), _toClient.Reader.AsStream()),
             cancellationToken: TestContext.Current.CancellationToken);
@@ -49,6 +50,9 @@ public sealed class SdkMcpConnectionTests : IAsyncLifetime
         await _stop.CancelAsync();
         await _server.DisposeAsync();
         await _transport.DisposeAsync();
+#pragma warning disable VSTHRD003 // The run is started by this fixture and ends once its token is cancelled.
+        await _serverRun.Bounded();
+#pragma warning restore VSTHRD003
         _stop.Dispose();
     }
 

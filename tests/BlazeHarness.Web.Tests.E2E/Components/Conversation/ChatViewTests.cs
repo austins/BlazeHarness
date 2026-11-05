@@ -33,6 +33,7 @@ public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)
         await Page.Keyboard.PressAsync("Escape");
         await SendAsync("Say hello");
         await Expect(Page.Locator("[data-role=assistant]")).ToContainTextAsync("Hello from the fake model.");
+        await Expect(Page.Locator("[data-role=assistant]")).ToHaveAttributeAsync("data-status", "done");
         await Page.ReloadAsync();
         await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
         await Page.GetByTitle("Skills this chat can load").ClickAsync();
@@ -192,6 +193,7 @@ public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)
 
         // Assert
         await Expect(Page.Locator("[data-role=assistant]").Last).ToContainTextAsync("The file was not written.");
+        await Expect(Page.Locator("[data-role=assistant]").Last).ToHaveAttributeAsync("data-status", "done");
         await Expect(Page.Locator(".tool-approval")).ToHaveCountAsync(0);
         File.Exists(ProjectFolder.Combine("note.txt")).Should().BeFalse();
     }

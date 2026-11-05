@@ -31,6 +31,7 @@ public sealed class QuestionCardTests(BrowserFixture browser) : TestBase(browser
         await card.GetByRole(AriaRole.Textbox).FillAsync("just a note");
         await send.ClickAsync();
         await Expect(Page.Locator("[data-role=assistant]").Last).ToContainTextAsync("Thanks.");
+        await Expect(Page.Locator("[data-role=assistant]").Last).ToHaveAttributeAsync("data-status", "done");
         _toolRequest.Should().Contain("The user answered: just a note").And.NotContain("The user chose");
     }
 

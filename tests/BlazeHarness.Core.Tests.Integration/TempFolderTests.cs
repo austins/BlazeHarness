@@ -23,6 +23,23 @@ public sealed class TempFolderTests
         Directory.Exists(root).Should().BeFalse();
     }
 
+    [Fact(Skip = "Windows file locking only.", SkipUnless = nameof(IsWindows))]
+    public void Dispose_FileOpenForAMoment_WaitsAndDeletesTheFolder()
+    {
+        // Arrange
+        using var sut = new TempFolder("bh-cleanup-");
+        using var busy = new FileStream(sut.Combine("busy.bin"), FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+        using var release = new Timer(_ => busy.Dispose(), null, TimeSpan.FromMilliseconds(500), Timeout.InfiniteTimeSpan);
+
+        // Act
+#pragma warning disable IDISP016, IDISP017 // Disposing explicitly is the act under test; the second dispose at scope end does nothing.
+        sut.Dispose();
+#pragma warning restore IDISP016, IDISP017
+
+        // Assert
+        Directory.Exists(sut.Root).Should().BeFalse();
+    }
+
     [Fact(Skip = "Windows file attributes only.", SkipUnless = nameof(IsWindows))]
     public void Dispose_HiddenGitFolderWithAReadOnlyObject_DeletesTheFolder()
     {
