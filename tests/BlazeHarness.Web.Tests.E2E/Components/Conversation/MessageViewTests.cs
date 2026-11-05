@@ -3,6 +3,56 @@ namespace BlazeHarness.Web.Tests.E2E.Components.Conversation;
 public sealed class MessageViewTests(BrowserFixture browser) : TestBase(browser)
 {
     [Theory]
+    [InlineData("ru")]
+    [InlineData("zh-Hans")]
+    public async Task MessageTimes_SelectedLanguage_UsesAppLocaleAndBrowserTimeZone(string culture)
+    {
+        // Arrange
+        await LaunchAsync();
+        await Page.GetByPlaceholder("Message the model").FillAsync("Hi");
+        await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Send" }).ClickAsync();
+        await Expect(Page.Locator("[data-role=assistant]")).ToHaveAttributeAsync("data-status", "done");
+        await Page.Context.AddCookiesAsync(
+        [
+            new Cookie
+            {
+                Name = ".AspNetCore.Culture",
+                Value = Uri.EscapeDataString($"c={culture}|uic={culture}"),
+                Url = Factory.ClientOptions.BaseAddress.AbsoluteUri,
+            },
+        ]);
+
+        // Act
+        await Page.ReloadAsync();
+        await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
+        await Expect(Page.Locator("html")).ToHaveAttributeAsync("lang", culture);
+        var timestamp = Page.Locator("[data-role=user] .msg-time");
+        var created = (await timestamp.GetAttributeAsync("datetime"))!;
+        foreach (var instant in new[] { created, "2000-01-01T12:34:56Z" })
+        {
+            await timestamp.EvaluateAsync("(element, instant) => element.setAttribute('datetime', instant)", instant);
+            var expected = await Page.EvaluateAsync<string[]>(
+                """
+                ({ culture, instant }) => {
+                    const when = new Date(instant);
+                    const options = when.toDateString() === new Date().toDateString()
+                        ? { hour: "numeric", minute: "2-digit" }
+                        : { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
+                    return [
+                        new Intl.DateTimeFormat(culture, options).format(when),
+                        new Intl.DateTimeFormat(culture, { dateStyle: "full", timeStyle: "medium" }).format(when)
+                    ];
+                }
+                """,
+                new { culture, instant });
+
+            // Assert
+            await Expect(timestamp).ToHaveTextAsync(expected[0]);
+            await Expect(timestamp).ToHaveAttributeAsync("title", expected[1]);
+        }
+    }
+
+    [Theory]
     [InlineData(1280, ColorScheme.Light)]
     [InlineData(390, ColorScheme.Light)]
     [InlineData(1280, ColorScheme.Dark)]

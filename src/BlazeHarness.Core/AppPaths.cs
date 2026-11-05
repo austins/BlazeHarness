@@ -69,11 +69,6 @@ public sealed class AppPaths
     public string FoldersFile => Path.Combine(Home, "folders.json");
 
     /// <summary>
-    /// Gets the path of <c>trust.json</c> (trust decisions for project instructions and MCP servers).
-    /// </summary>
-    public string TrustFile => Path.Combine(Home, "trust.json");
-
-    /// <summary>
     /// Gets the path of <c>secrets.json</c>, used only when no OS secret store is available.
     /// </summary>
     public string SecretsFile => Path.Combine(Home, "secrets.json");

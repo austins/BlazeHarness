@@ -61,7 +61,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 
 ### Chat and tools
 
-* Chat and coding in one interface, with streamed replies and multiple providers. Settings > General offers full-width chats and text-size controls, saved in the browser.
+* Chat and coding in one interface, with streamed replies and multiple providers. Settings > General offers full-width chats and text-size controls, saved in the browser. Message timestamps use the selected display language and the browser's local time zone.
 * Tools for shell commands, reading, writing and editing files, listing folders, and searching files. Read-only tools run in parallel.
   * File reads stop after the requested page and one lookahead line. Continuation results include the next offset; the total line count is included only when the read reaches the end.
 * Folders and chats. Open a folder and run chats inside it, grouped by folder. A chat can also exist without a folder, as a general chat.
@@ -116,7 +116,7 @@ Without the sandbox, leftover background processes are stopped when the command 
   1. Old large tool results (file reads, command logs) are replaced in the request by a short stub. Every call and its result stay paired, and a marker shows where.
   2. Only if that is not enough, the older messages are summarized.
 
-  The full output stays in the chat and its log, and `search_chat` still finds it. To-do, skill and question results are never replaced. By default the model writes the summary. Settings > General can switch to deterministic extraction (no model request), which lists the requests, changed and read files, and commands, and relies on `search_chat` for detail.
+  The full output stays in the chat and its log, and `search_chat` still finds it. To-do, skill and question results are never replaced. By default the model writes the summary. Automatic chat titles and model-written summaries use the chat's selected model. Settings > General can switch to deterministic extraction (no model request), which lists the requests, changed and read files, and commands, and relies on `search_chat` for detail.
 * A `search_chat` tool lets the agent look back through the full chat (including tool output) for something compaction summarized away, and optionally through the other chats of the same folder.
 * A `send_to_chat` tool lets the agent pass context to another chat and start a turn there, for example from a finished story to one that depends on it. To point it at a chat, right-click the chat, choose "Copy chat reference" and paste the `chat:<id>` into your message. The agent can also name a chat by its exact title, or start a new one. The receiving chat runs with its own permissions, shows which chat sent the message, and doesn't reply back. If it is busy, the message waits until its reply ends. A send to a chat in another folder, or from a Read only chat, asks you every time; a chat set to Never ask refuses it. A message that has passed through 3 chats without you is refused.
 * Attachments from the composer. Images go to the model as image input, and text files are added to the message, or read on demand with `read_attachment` when they are large. An image's path is in the message, and tools and sandboxed commands can read the chat's attachments without asking, so a text-only model can still inspect an image.

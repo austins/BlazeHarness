@@ -22,11 +22,6 @@ public sealed record AppConfig
     public string? DefaultModelId { get; init; }
 
     /// <summary>
-    /// Gets an optional cheaper model for titles and compaction, as <c>providerId/modelId</c>.
-    /// </summary>
-    public string? SideTaskModel { get; init; }
-
-    /// <summary>
     /// Gets the access level new chats start with.
     /// </summary>
     /// <remarks>

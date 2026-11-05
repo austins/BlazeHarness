@@ -132,11 +132,12 @@ window.bhChat = {
             }
         });
     },
-    // Message times are rendered as UTC instants and shown in the browser's own locale and time zone.
+    // Message times use the app's display language and the browser's local time zone.
     initTimes: () => {
-        const clock = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
-        const dated = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-        const full = new Intl.DateTimeFormat(undefined, { dateStyle: "full", timeStyle: "medium" });
+        const locale = document.documentElement.lang;
+        const clock = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" });
+        const dated = new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+        const full = new Intl.DateTimeFormat(locale, { dateStyle: "full", timeStyle: "medium" });
         const show = (el) => {
             const when = new Date(el.getAttribute("datetime"));
             if (Number.isNaN(when.getTime())) {

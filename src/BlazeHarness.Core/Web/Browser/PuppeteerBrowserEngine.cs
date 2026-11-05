@@ -100,11 +100,6 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         _downloadTimeout = downloadTimeout ?? TimeSpan.FromMinutes(1);
     }
 
-    /// <summary>
-    /// Gets how many chats have a page open.
-    /// </summary>
-    internal int OpenPages => _sessions.Count;
-
     /// <inheritdoc />
     public event EventHandler<BrowserFrameChangedEventArgs>? FrameChanged;
 
