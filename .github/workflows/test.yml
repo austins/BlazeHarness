@@ -37,7 +37,9 @@ jobs:
         if: always()
         with:
           report-path: ./test-results/*.ctrf
+          # Listing every passing test exceeds GitHub's 1 MiB step-summary limit.
           summary-report: true
-          file-report: true
           failed-folded-report: true
           skipped-report: true
+          upload-artifact: true
+          artifact-name: ctrf-report-${{ runner.os }}

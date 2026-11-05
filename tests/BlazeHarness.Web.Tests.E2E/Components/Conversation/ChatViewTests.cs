@@ -34,6 +34,7 @@ public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)
         await SendAsync("Say hello");
         await Expect(Page.Locator("[data-role=assistant]")).ToContainTextAsync("Hello from the fake model.");
         await Page.ReloadAsync();
+        await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
         await Page.GetByTitle("Skills this chat can load").ClickAsync();
 
         // Assert
@@ -126,6 +127,7 @@ public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)
         if (existingChat)
         {
             await Page.ReloadAsync();
+            await Expect(Page.Locator(".app")).ToHaveAttributeAsync("data-circuit", "ready");
             foreach (var picker in pickers)
             {
                 await Page.GetByTitle(picker.Title).ClickAsync();
