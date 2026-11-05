@@ -3,13 +3,15 @@ namespace BlazeHarness.Web.Tests.E2E.Components.Conversation;
 public sealed class MessageViewTests(BrowserFixture browser) : TestBase(browser)
 {
     [Theory]
-    [InlineData(1280)]
-    [InlineData(390)]
-    public async Task UserMessage_HoverAndKeyboardFocus_ActionsStayBelowCompactBubble(int width)
+    [InlineData(1280, ColorScheme.Light)]
+    [InlineData(390, ColorScheme.Light)]
+    [InlineData(1280, ColorScheme.Dark)]
+    [InlineData(390, ColorScheme.Dark)]
+    public async Task UserMessage_HoverAndKeyboardFocus_ActionsStayLeftOfAlignedTimestamp(int width, ColorScheme colorScheme)
     {
         // Arrange
         await Page.SetViewportSizeAsync(width, 844);
-        await Page.EmulateMediaAsync(new PageEmulateMediaOptions { ReducedMotion = ReducedMotion.Reduce });
+        await Page.EmulateMediaAsync(new PageEmulateMediaOptions { ReducedMotion = ReducedMotion.Reduce, ColorScheme = colorScheme });
         await LaunchAsync();
         await Page.GetByPlaceholder("Message the model").FillAsync("Hi");
         await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Send" }).ClickAsync();
@@ -18,16 +20,19 @@ public sealed class MessageViewTests(BrowserFixture browser) : TestBase(browser)
         var message = Page.Locator("[data-role=user]");
         var bubble = message.Locator(".msg-content");
         var footer = message.Locator(".msg-meta");
+        var timestamp = footer.Locator(".msg-time");
         var copy = message.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Copy this message" });
         var edit = message.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Edit and resend this message" });
         await Expect(edit).ToHaveCountAsync(1);
         await Page.Mouse.MoveAsync(0, 0);
         await Expect(copy).ToHaveCSSAsync("opacity", "0");
+        await Expect(timestamp).ToBeVisibleAsync();
         var bubbleBox = (await bubble.BoundingBoxAsync())!;
         var bodyBox = (await bubble.Locator(".msg-body").BoundingBoxAsync())!;
         var footerBox = (await footer.BoundingBoxAsync())!;
         var messageBox = (await message.BoundingBoxAsync())!;
         var replyBox = (await reply.BoundingBoxAsync())!;
+        var timestampBox = (await timestamp.BoundingBoxAsync())!;
         var padding = await bubble.EvaluateAsync<float>(
             "element => { const style = getComputedStyle(element); return parseFloat(style.paddingTop) + parseFloat(style.paddingBottom); }");
 
@@ -41,6 +46,12 @@ public sealed class MessageViewTests(BrowserFixture browser) : TestBase(browser)
         footerBox.Y.Should().BeGreaterThanOrEqualTo(bubbleBox.Y + bubbleBox.Height);
         bubbleBox.Height.Should().BeApproximately(bodyBox.Height + padding, 1);
         bubbleBox.Width.Should().BeLessThan(footerBox.Width);
+        (timestampBox.X + timestampBox.Width).Should().BeApproximately(bubbleBox.X + bubbleBox.Width, 1);
+        (await timestamp.BoundingBoxAsync()).Should().BeEquivalentTo(timestampBox);
+        var copyBox = (await copy.BoundingBoxAsync())!;
+        var editBox = (await edit.BoundingBoxAsync())!;
+        (copyBox.X + copyBox.Width).Should().BeLessThanOrEqualTo(editBox.X);
+        (editBox.X + editBox.Width).Should().BeLessThanOrEqualTo(timestampBox.X);
         (await message.BoundingBoxAsync()).Should().BeEquivalentTo(messageBox);
         (await reply.BoundingBoxAsync()).Should().BeEquivalentTo(replyBox);
         (await Page.EvaluateAsync<int>("() => document.documentElement.scrollWidth")).Should().BeLessThanOrEqualTo(width);
@@ -49,6 +60,7 @@ public sealed class MessageViewTests(BrowserFixture browser) : TestBase(browser)
         await Expect(copy).ToHaveCSSAsync("opacity", "0");
         await copy.FocusAsync();
         await Expect(copy).ToHaveCSSAsync("opacity", "1");
+        (await timestamp.BoundingBoxAsync()).Should().BeEquivalentTo(timestampBox);
         await Page.Keyboard.PressAsync("Tab");
         await Expect(edit).ToBeFocusedAsync();
         await Page.Keyboard.PressAsync("Enter");
@@ -60,7 +72,33 @@ public sealed class MessageViewTests(BrowserFixture browser) : TestBase(browser)
         editingBox.Width.Should().Be(bubbleBox.Width);
         editingBox.Height.Should().Be(bubbleBox.Height);
 
-        await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Cancel", Exact = true }).ClickAsync();
+        var editor = Page.Locator(".composer-box");
+        var notice = editor.GetByRole(AriaRole.Status);
+        var cancel = notice.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Cancel", Exact = true });
+        await Expect(notice).ToContainTextAsync("Editing a message.");
+        await Expect(cancel).ToBeVisibleAsync();
+        await Expect(cancel.Locator(".icon")).ToHaveCountAsync(1);
+        await Expect(cancel).Not.ToHaveCSSAsync("border-top-color", "rgba(0, 0, 0, 0)");
+        await Expect(notice).Not.ToHaveCSSAsync("background-color", await editor.EvaluateAsync<string>("element => getComputedStyle(element).backgroundColor"));
+        var editorBox = (await editor.BoundingBoxAsync())!;
+        var noticeBox = (await notice.BoundingBoxAsync())!;
+        var cancelBox = (await cancel.BoundingBoxAsync())!;
+        var inputBox = (await editor.Locator("textarea").BoundingBoxAsync())!;
+        noticeBox.Y.Should().BeGreaterThanOrEqualTo(editorBox.Y);
+        (noticeBox.Y + noticeBox.Height).Should().BeLessThanOrEqualTo(inputBox.Y);
+        cancelBox.X.Should().BeGreaterThanOrEqualTo(noticeBox.X);
+        (cancelBox.X + cancelBox.Width).Should().BeLessThanOrEqualTo(noticeBox.X + noticeBox.Width);
+        cancelBox.Height.Should().BeGreaterThanOrEqualTo(32);
+        if (width == 1280)
+        {
+            noticeBox.Height.Should().BeLessThanOrEqualTo(40);
+        }
+
+        (await Page.EvaluateAsync<int>("() => document.documentElement.scrollWidth")).Should().BeLessThanOrEqualTo(width);
+
+        await cancel.FocusAsync();
+        await Page.Keyboard.PressAsync("Enter");
+        await Expect(notice).ToHaveCountAsync(0);
         await Expect(bubble).ToHaveCSSAsync("outline-style", "none");
     }
 

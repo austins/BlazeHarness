@@ -21,13 +21,6 @@ else
 {
     <div class="composer">
     <form class="composer-form" @onsubmit="SubmitAsync" novalidate @ref="_form">
-        @if (Editing is not null)
-        {
-            <div class="composer-editing" role="status">
-                <span>@WebStrings.ComposerEditingHint</span>
-                <button type="button" class="btn btn-ghost btn-sm" @onclick="CancelEditAsync">@WebStrings.ComposerCancelEdit</button>
-            </div>
-        }
         @if (Suggestions() is { Count: > 0 } suggestions)
         {
             <ul class="composer-suggestions" role="listbox" aria-label="@WebStrings.ComposerSkillsLabel">
@@ -57,6 +50,13 @@ else
             </ul>
         }
         <div class="composer-box">
+        @if (Editing is not null)
+        {
+            <div class="composer-editing" role="status">
+                <span>@WebStrings.ComposerEditingHint</span>
+                <button type="button" class="btn btn-sm" @onclick="CancelEditAsync"><Icon Name="close" />@WebStrings.ComposerCancelEdit</button>
+            </div>
+        }
         @if (_files.Count > 0)
         {
             var deliveries = Deliveries();

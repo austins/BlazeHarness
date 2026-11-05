@@ -700,12 +700,12 @@ html[data-chat-full-width] .chat { --chat-width: 100%; }
 .msg-meta > .popover-trigger { padding: var(--space-1); gap: var(--space-1); color: inherit; font-weight: 400; }
 .msg-usage-details { padding: var(--space-2) var(--space-3); white-space: pre-line; overflow-wrap: anywhere; overflow-y: auto; }
 .msg[data-role="user"] > .msg-meta { justify-content: flex-end; }
+.msg[data-role="user"] > .msg-meta > .msg-time { order: 1; }
 .msg-time:empty { display: none; }
 .msg-action { opacity: 0; padding: var(--space-1); transition: opacity var(--duration) var(--ease), background var(--duration) var(--ease); }
 .msg:hover .msg-action, .msg:focus-within .msg-action, .msg[data-editing] .msg-action { opacity: 1; }
 .msg[data-editing] > .msg-content { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (hover: none) { .msg-action { opacity: 1; } }
-.composer-editing { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm); color: var(--fg-muted); }
 .chat-thread > .msg { animation: rise var(--duration-slow) var(--ease); }
 .msg-wait { color: var(--fg-muted); font-size: var(--text-sm); }
 .msg[data-status="streaming"] > .msg-content > .msg-body:last-of-type:not(.md)::after, .msg[data-status="streaming"] > .msg-content > .md:last-of-type > :last-child::after { content: "▍"; color: var(--fg-muted); }
@@ -792,6 +792,13 @@ legend.question-text + * { clear: both; }
     transition: border-color var(--duration) var(--ease), box-shadow var(--duration) var(--ease);
 }
 .composer-box:focus-within { border-color: var(--fg-muted); }
+.composer-box:has(> .composer-editing) { border-color: var(--accent); }
+.composer-editing {
+    display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--fg); font-size: var(--text-sm);
+}
+.composer-editing > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.composer-editing > .btn { flex: none; min-height: 2rem; }
 .composer-input {
     display: block; width: 100%; resize: none; max-height: 15rem; min-height: 2.75rem;
     padding: var(--space-2); border: 0; background: transparent; color: var(--fg); font: inherit;
