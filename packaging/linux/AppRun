@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # AppImage entry point. A double-click gives the app no terminal, so it reopens itself in one:
-# the window shows the address and log, and Ctrl+C or closing it stops the app.
+# the window shows the address, and Ctrl+C or closing it stops the app.
 here="$(dirname "$(readlink -f "$0")")"
 app="$here/usr/bin/BlazeHarness.Web"
 

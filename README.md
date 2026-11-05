@@ -18,7 +18,7 @@ Download the file for your system from the [latest release](https://github.com/a
 * On macOS (Apple silicon), open the `.dmg` and drag Blaze Harness to Applications. The app isn't notarized, so macOS blocks the first launch: open System Settings > Privacy & Security and choose Open Anyway.
 * On Linux (x64), make the `.AppImage` executable (`chmod +x`) and run it. It needs FUSE and libicu, which most desktop distributions include.
 
-The app runs in a terminal window that shows its address and log. Press Ctrl+C or close the window to stop it.
+The app runs in a terminal window that shows its address. Press Ctrl+C or close the window to stop it. Log entries go to a file, not the terminal (see [Data and secrets](#data-and-secrets)).
 
 To check that a download was built from this repository, run `gh attestation verify <file> --repo austins/BlazeHarness`.
 
@@ -53,7 +53,7 @@ The app stores everything under `~/.blazeharness` (`%USERPROFILE%\.blazeharness`
 | `providers.json` | Providers and models |
 | `config.json` | Settings and permissions |
 | `chats/<id>/` | One folder per chat |
-| `logs/` | One log file per day, capped at 5 MB; files older than 7 days are deleted |
+| `logs/` | One log file per day, capped at 5 MB; files older than 7 days are deleted. Holds warnings and errors, and the app's own information messages. Exception messages are left out because they can echo prompts or replies |
 
 API keys are kept in your OS secret store (Windows Credential Manager, macOS Keychain or Linux Secret Service). If none is available, they fall back to an owner-only file. They are never written to `config.json`, `providers.json`, chat files or logs.
 

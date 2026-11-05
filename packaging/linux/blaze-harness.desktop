@@ -2,7 +2,7 @@
 Type=Application
 Name=Blaze Harness
 Comment=Local AI agent
-Exec=blaze-harness
+Exec=BlazeHarness.Web
 Icon=blaze-harness
 Terminal=true
 Categories=Development;
