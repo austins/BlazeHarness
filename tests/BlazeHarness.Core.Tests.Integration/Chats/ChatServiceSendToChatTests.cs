@@ -187,17 +187,28 @@ public sealed class ChatServiceSendToChatTests : IAsyncLifetime
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
-        var source = await _sut.CreateAsync(cancellationToken: ct);
+        using var gated = new GatedChatClient();
+        var service = CreateService(gated);
+        var source = await service.CreateAsync(cancellationToken: ct);
         var before = _store.List().Count;
         var plan = new SendToChatPlan(null, null, null, SameScope: true, "Start here.");
 
         // Act
-        var result = await _sut.SendToChatAsync(source.Id, (await _sut.OpenAsync(source.Id, ct))!, plan, ct);
+        var result = await service.SendToChatAsync(source.Id, (await service.OpenAsync(source.Id, ct))!, plan, ct);
+        await gated.Started.Bounded();
 
         // Assert
         result.IsError.Should().BeFalse();
         result.Output.Should().StartWith("Created and sent to");
         _store.List().Should().HaveCount(before + 1);
+        var created = _store.List().Single(c => c.Id != source.Id);
+        var chat = (await service.OpenAsync(created.Id, ct))!;
+        chat.IsReplying.Should().BeTrue();
+        gated.Release();
+        await WaitForAsync(() => !chat.IsReplying);
+        chat.Entries.Should().ContainSingle(e => e.Role == ChatRole.Assistant).Which.Text.Should().Be("Hello");
+        var events = await _store.GetLog(created.Id).ReadAsync(ct);
+        events.OfType<AssistantEndEvent>().Should().ContainSingle().Which.Status.Should().Be(EntryStatus.Done);
     }
 
     [Fact]
