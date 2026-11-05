@@ -69,7 +69,11 @@ public sealed class McpToolCache : IDisposable
     /// <inheritdoc />
     public void Dispose() => _store.Dispose();
 
-    // Covers what decides which server starts, as McpServerConfig.SameAs does, using the values as written so no secret is read.
+    /// <summary>
+    /// Fingerprint the configuration that decides which server starts, as McpServerConfig.SameAs does.
+    /// </summary>
+    /// <remarks>Use the values as written so no secret is read.</remarks>
+    /// <param name="server">The server configuration to fingerprint.</param>
     private static string Fingerprint(McpServerConfig server)
     {
         var text = new StringBuilder()

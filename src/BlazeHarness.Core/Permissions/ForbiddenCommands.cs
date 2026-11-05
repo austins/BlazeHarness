@@ -134,7 +134,15 @@ public sealed class ForbiddenCommands
         }
     }
 
-    // GNU programs accept any unambiguous start of a long option, so --rec means --recursive. Without each program's option list, any start counts.
+    /// <summary>
+    /// Determine whether an argument abbreviates a forbidden long option.
+    /// </summary>
+    /// <remarks>
+    /// GNU programs accept any unambiguous prefix, so --rec means --recursive.
+    /// Without each program's option list, any matching prefix counts.
+    /// </remarks>
+    /// <param name="flag">The forbidden option.</param>
+    /// <param name="argument">The command argument to check.</param>
     private static bool IsAbbreviation(string flag, string argument)
     {
         var name = argument.Split('=', 2)[0];

@@ -46,7 +46,8 @@ internal sealed class BrowserWaitTool : IWebTool
 
     public string Summarize(JsonElement arguments) => ToolSupport.Text(arguments, "text");
 
-    // The page was opened by an approved browser_navigate; waiting changes nothing outside it.
+    /// <inheritdoc />
+    /// <remarks>The page was opened by an approved browser_navigate; waiting changes nothing outside it.</remarks>
     public WebRequest? Describe(JsonElement arguments) => null;
 
     public async Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)

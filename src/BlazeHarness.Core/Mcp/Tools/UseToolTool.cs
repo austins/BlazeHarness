@@ -60,7 +60,11 @@ internal sealed class UseToolTool : IForwardingTool
         return Task.FromResult(ToolResult.Error("This call was not resolved to the tool it names, so nothing ran."));
     }
 
-    // Some models send the arguments as JSON text instead of an object.
+    /// <summary>
+    /// Normalize forwarded arguments to a JSON object string.
+    /// </summary>
+    /// <remarks>Some models send the arguments as JSON text instead of an object.</remarks>
+    /// <param name="element">The forwarded arguments, or null for an empty object.</param>
     private static string ArgumentsOf(JsonElement? element)
     {
         switch (element)

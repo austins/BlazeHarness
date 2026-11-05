@@ -472,9 +472,15 @@ internal static partial class ShellCommandParser
             return Math.Min(stop + 1, text.Length);
         }
 
-        // Finds the ')' that closes a substitution whose body starts at 'start', or the end of the text.
-        // Quotes must be followed: a ')' inside them doesn't close it, and stopping there would leave the rest of the body to be read as the outer
-        // command with its quoting flipped, so a command in the body could pass for a quoted argument.
+        /// <summary>
+        /// Find the ')' closing a substitution, or the end of the text.
+        /// </summary>
+        /// <remarks>
+        /// Follow quotes because a ')' inside them does not close the substitution. Stopping there would
+        /// leave the remaining body to be read as the outer command with its quoting flipped, allowing
+        /// a command in the body to pass for a quoted argument.
+        /// </remarks>
+        /// <param name="start">The index where the substitution's body starts.</param>
         private int SubstitutionEnd(int start)
         {
             // One entry per open substitution: its '(' count and whether its body is inside double quotes.

@@ -29,7 +29,10 @@ public sealed class ConversationContext
     private const double ManualTailFraction = 0.1;
     private const long UnknownLimitTail = 8_000;
 
-    // After compacting, the request should leave room to grow, or the next call compacts again.
+    /// <summary>
+    /// The target fraction of the context limit used after compaction.
+    /// </summary>
+    /// <remarks>Leave room for growth so the next call does not compact again.</remarks>
     private const double TargetAfterFraction = 0.6;
     private const double MinTailFraction = 0.05;
     private const double MinGrowthFraction = 0.1;
@@ -257,7 +260,12 @@ public sealed class ConversationContext
         return view;
     }
 
-    // Returns the list itself when no result in [kept, boundary) is large enough to replace, otherwise a copy with new messages for the ones that change.
+    /// <summary>
+    /// Replace large tool results between the kept boundary and the requested boundary with stubs.
+    /// </summary>
+    /// <param name="messages">The request messages, including the leading prefix.</param>
+    /// <param name="boundary">The exclusive history boundary for replacements, after the leading messages.</param>
+    /// <returns>The original list if nothing changes, or a copy with new messages for the results that change.</returns>
     private IList<ChatMessage> Stub(IList<ChatMessage> messages, int boundary)
     {
         var from = _leading + _keptFrom;
@@ -321,7 +329,11 @@ public sealed class ConversationContext
         return names;
     }
 
-    // A message a cut can start at: one that has an entry in the chat, and not a tool result, which must stay with its call.
+    /// <summary>
+    /// Determine whether a cut can start at a message that has a chat entry and is not a tool result.
+    /// </summary>
+    /// <remarks>Tool results must stay with their calls.</remarks>
+    /// <param name="message">The message to inspect.</param>
     private static bool IsCuttable(ChatMessage message)
     {
         if (message.Role == ChatRole.Tool)
@@ -332,7 +344,12 @@ public sealed class ConversationContext
         return !StepMessage.Is(message);
     }
 
-    // Returns the index after the leading messages where the kept messages should begin, or 0 when there is nothing to fold in.
+    /// <summary>
+    /// Choose where the kept messages should begin after the leading messages.
+    /// </summary>
+    /// <param name="messages">The request messages, including the leading prefix.</param>
+    /// <param name="manual">Whether the user requested compaction.</param>
+    /// <returns>The index after the leading messages, or zero when there is nothing to fold in.</returns>
     private int ChooseCut(IList<ChatMessage> messages, bool manual)
     {
         var count = messages.Count - _leading;

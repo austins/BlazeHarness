@@ -179,7 +179,10 @@
     private bool _statusIsError;
     private bool _saving;
 
-    // Checked as the user types, so a mistake shows up before Save; the result is kept until the text changes.
+    /// <summary>
+    /// Gets the validation problems for the current text, cached until the text changes.
+    /// </summary>
+    /// <remarks>Validation runs as the user types so mistakes appear before saving.</remarks>
     private IReadOnlyList<string> Problems
     {
         get

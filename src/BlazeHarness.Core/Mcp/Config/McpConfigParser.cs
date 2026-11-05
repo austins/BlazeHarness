@@ -204,7 +204,12 @@ internal static partial class McpConfigParser
         return $"\"{key}\" must be true or false.";
     }
 
-    // "alwaysLoad" is true for every tool, or a list of name patterns.
+    /// <summary>
+    /// Read "alwaysLoad" as a boolean for every tool or a list of name patterns.
+    /// </summary>
+    /// <param name="fields">The server configuration fields.</param>
+    /// <param name="into">The list receiving the patterns to load.</param>
+    /// <returns>A validation error, or null when the value is valid or absent.</returns>
     private static string? ReadAlwaysLoad(JsonObject fields, List<string> into)
     {
         if (fields["alwaysLoad"] is not { } node)

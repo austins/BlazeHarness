@@ -19,7 +19,10 @@ internal sealed class FindToolsTool : ITool
     private const int MaxListing = 100;
     private const int InventoryDescriptionCharacters = 100;
 
-    // A match far behind the best one is noise, not an alternative.
+    /// <summary>
+    /// The minimum share of the best match's score needed to keep a result.
+    /// </summary>
+    /// <remarks>A match far behind the best one is noise, not an alternative.</remarks>
     private const double MinimumShareOfBest = 0.35;
 
     private readonly McpManager _manager;
@@ -35,7 +38,8 @@ internal sealed class FindToolsTool : ITool
 
     public string Name => ToolName;
 
-    // The servers are named here and nowhere else, so the request does not change when a server connects.
+    /// <inheritdoc />
+    /// <remarks>The servers are named here and nowhere else, so the request does not change when a server connects.</remarks>
     public string Description =>
         $"Find tools that are not listed in this request. They belong to these MCP servers: {string.Join(", ", _servers)}. " +
         "Describe what you need in a few English keywords, for example \"search reddit posts\", and add \"server\" to search only one. " +

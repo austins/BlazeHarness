@@ -66,7 +66,11 @@ internal static class ChatExport
         return JsonSerializer.Serialize(document, JsonDefaults.Options);
     }
 
-    // A name that is safe on every file system: lowercase letters, digits and dashes.
+    /// <summary>
+    /// Build a file name using only lowercase letters, digits and dashes.
+    /// </summary>
+    /// <remarks>These characters are safe on every file system.</remarks>
+    /// <param name="info">The chat whose title supplies the name.</param>
     private static string FileNameOf(ChatInfo info)
     {
         var name = new StringBuilder();

@@ -14,10 +14,14 @@ public static class ChatClientFactory
 {
     private const int MaxRetries = 4;
 
-    // The SDK insists on a credential even when the server needs none.
+    /// <summary>
+    /// The placeholder credential required by the SDK for keyless servers.
+    /// </summary>
     private const string PlaceholderApiKey = "not-needed";
 
-    // Local models can take minutes to start answering a long prompt.
+    /// <summary>
+    /// The request timeout, allowing local models minutes to start answering a long prompt.
+    /// </summary>
     private static readonly TimeSpan NetworkTimeout = TimeSpan.FromMinutes(10);
 
     /// <summary>
@@ -99,7 +103,15 @@ public static class ChatClientFactory
         };
     }
 
-    // Tests pass a policy without the backoff delay.
+    /// <summary>
+    /// Create a chat client with a supplied retry policy.
+    /// </summary>
+    /// <remarks>Tests pass a policy without the backoff delay.</remarks>
+    /// <param name="provider">The provider to talk to.</param>
+    /// <param name="modelId">The model identifier to request.</param>
+    /// <param name="apiKey">The API key, or null for keyless servers.</param>
+    /// <param name="httpClient">The caller-owned HTTP transport.</param>
+    /// <param name="retryPolicy">The policy for retrying transient failures.</param>
     internal static IChatClient Create(ProviderConfig provider, string modelId, string? apiKey, HttpClient httpClient, ClientRetryPolicy retryPolicy)
     {
         var options = new OpenAIClientOptions

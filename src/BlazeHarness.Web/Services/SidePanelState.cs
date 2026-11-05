@@ -150,7 +150,10 @@ public sealed class SidePanelState
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
-    // A panel left with nothing to show must not open by itself when something shows up later.
+    /// <summary>
+    /// Close an empty panel and notify listeners of the changed state.
+    /// </summary>
+    /// <remarks>An empty panel must not open by itself when something shows up later.</remarks>
     private void Settle()
     {
         if (Current is null)

@@ -125,7 +125,9 @@ var reversed = new string(chars);</code></pre>
 
     private sealed record Step(string Key, string Percent);
 
-    // Keys and scales must match the steps in wwwroot/theme.js.
+    /// <summary>
+    /// The text size steps, with keys and scales matching wwwroot/theme.js.
+    /// </summary>
     private static readonly Step[] Steps =
     [
         new("small", "87.5%"),

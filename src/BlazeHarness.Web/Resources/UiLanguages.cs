@@ -18,7 +18,9 @@ internal sealed class UiLanguages
     /// </summary>
     internal const string DefaultCulture = "en-US";
 
-    // Matches the AssemblyMetadata item the AddUiCultureMetadata target in the project file adds per translation.
+    /// <summary>
+    /// The assembly metadata key added per translation by the project's AddUiCultureMetadata target.
+    /// </summary>
     private const string CultureMetadataKey = "UiCulture";
 
     private readonly Dictionary<string, UiLanguage> _byCulture;
@@ -81,7 +83,12 @@ internal sealed class UiLanguages
         }
     }
 
-    // Native names are lower case in some languages, such as Russian; a list reads better with a capital.
+    /// <summary>
+    /// Capitalize the native language name for display in a list.
+    /// </summary>
+    /// <remarks>Native names are lowercase in some languages, such as Russian.</remarks>
+    /// <param name="name">The native language name.</param>
+    /// <param name="culture">The culture whose casing rules to use.</param>
     private static string Capitalize(string name, CultureInfo culture) =>
         name.Length == 0 ? name : char.ToUpper(name[0], culture) + name[1..];
 }

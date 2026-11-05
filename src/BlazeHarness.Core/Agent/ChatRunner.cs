@@ -697,7 +697,13 @@ internal static class ChatRunner
         return question;
     }
 
-    // A call to a forwarding tool is planned as the tool it names, so permissions and approvals judge the tool that really runs.
+    /// <summary>
+    /// Resolve a tool call into the tool and arguments that will run.
+    /// </summary>
+    /// <remarks>Forwarded calls are planned as their target tool so permissions and approvals judge the tool that really runs.</remarks>
+    /// <param name="call">The call from the model.</param>
+    /// <param name="tools">The available tools, or null when none are offered.</param>
+    /// <param name="cancellationToken">A token that cancels resolution.</param>
     private static async Task<PlannedCall> PlanAsync(FunctionCallContent call, ToolSet? tools, CancellationToken cancellationToken)
     {
         var raw = ArgumentsJson(call);
@@ -783,7 +789,15 @@ internal static class ChatRunner
         public bool AllFailed { get; set; }
     }
 
-    // Json holds the arguments of the tool that runs, which for a forwarded call are not the ones the model sent (RawJson).
+    /// <summary>
+    /// A resolved tool call ready for permission checks and execution.
+    /// </summary>
+    /// <param name="Call">The original call from the model.</param>
+    /// <param name="Tool">The tool that will run, or null when resolution failed.</param>
+    /// <param name="Json">The arguments of the tool that runs, which may differ from the model's arguments for forwarded calls.</param>
+    /// <param name="RawJson">The original arguments sent by the model.</param>
+    /// <param name="Name">The name of the tool that will run.</param>
+    /// <param name="Error">The resolution error, if any.</param>
     private sealed record PlannedCall(FunctionCallContent Call, ITool? Tool, string Json, string RawJson, string Name, string? Error)
     {
         public bool CanRun => Tool is not null && Call.Exception is null;

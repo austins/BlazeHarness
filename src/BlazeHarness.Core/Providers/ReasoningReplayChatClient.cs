@@ -64,7 +64,12 @@ internal sealed class ReasoningReplayChatClient(IChatClient inner) : DelegatingC
         return string.Concat(message.Contents.OfType<TextReasoningContent>().Select(r => r.Text));
     }
 
-    // Built the way the OpenAI client builds an assistant message, so the request is the same apart from the added field.
+    /// <summary>
+    /// Build an OpenAI assistant message with replayed reasoning.
+    /// </summary>
+    /// <remarks>Use the OpenAI client's message shape so the request is unchanged apart from the added field.</remarks>
+    /// <param name="message">The assistant message to convert.</param>
+    /// <param name="reasoning">The reasoning to replay.</param>
     private static AssistantChatMessage ToRaw(ChatMessage message, string reasoning)
     {
         var text = message.Contents.OfType<TextContent>().Where(t => t.Text.Length > 0).Select(t => ChatMessageContentPart.CreateTextPart(t.Text)).ToList();

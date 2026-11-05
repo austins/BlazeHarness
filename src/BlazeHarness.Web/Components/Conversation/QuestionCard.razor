@@ -85,7 +85,11 @@
 
     private bool CanSend => _picked.Count > 0 || !string.IsNullOrWhiteSpace(_text);
 
-    // A radio fires no change event when it is clicked again, so a click on the picked option unpicks it.
+    /// <summary>
+    /// Pick an option, or unpick it when it is clicked again.
+    /// </summary>
+    /// <remarks>A radio fires no change event when the selected option is clicked again.</remarks>
+    /// <param name="label">The clicked option's label.</param>
     private void Choose(string label)
     {
         var wasPicked = _picked.Contains(label);

@@ -270,12 +270,22 @@ public sealed class MxcShellSandbox : IShellSandbox
         };
     }
 
-    // The backend also sets the proxy variables (HTTP_PROXY, HTTPS_PROXY, ALL_PROXY and their lower-case forms) from this URL.
+    /// <summary>
+    /// Build the loopback URL of the egress proxy.
+    /// </summary>
+    /// <remarks>The backend also sets HTTP_PROXY, HTTPS_PROXY, ALL_PROXY and their lowercase forms from this URL.</remarks>
+    /// <param name="port">The proxy's listening port.</param>
     private static string ProxyUrl(int port) => string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}");
 
-    // The backend drops NO_PROXY from the environment it is given, so the command sets it itself. A server the command
-    // starts on its own loopback on Linux is not on the internet, so talking to it needs no proxy.
-    // macOS shares the host network, so its backend blocks those connections along with host-local services.
+    /// <summary>
+    /// Build the shell prefix that bypasses the proxy for loopback hosts.
+    /// </summary>
+    /// <remarks>
+    /// The backend drops NO_PROXY from its environment, so the command sets it itself.
+    /// A server started on the command's own loopback on Linux needs no proxy.
+    /// macOS shares the host network, so its backend blocks those connections along with host-local services.
+    /// </remarks>
+    /// <param name="shell">The shell whose environment syntax to use.</param>
     private static string NoProxyPrefix(ShellInfo shell)
     {
         const string Hosts = "localhost,127.0.0.1,::1";

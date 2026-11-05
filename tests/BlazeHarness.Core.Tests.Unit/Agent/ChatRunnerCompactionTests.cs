@@ -164,7 +164,10 @@ public sealed class ChatRunnerCompactionTests
         return messages;
     }
 
-    // Messages that alternate between user and assistant, ending with the user's, at about 100 tokens each.
+    /// <summary>
+    /// Create alternating user and assistant messages of about 100 tokens each.
+    /// </summary>
+    /// <param name="count">The number of messages; an odd count ends with a user message.</param>
     private static List<ChatMessage> Conversation(int count)
     {
         return [.. Enumerable.Range(0, count).Select(i => new ChatMessage(i % 2 == 0 ? ChatRole.User : ChatRole.Assistant, new string('x', 400)))];

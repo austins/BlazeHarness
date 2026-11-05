@@ -67,8 +67,17 @@ public sealed partial class Chat
             && selected.All(label => question.Options.Any(option => option.Label == label));
     }
 
-    // The question must be registered before the first await, because the loop announces it only after this call returns.
-    // It is registered before the settings are checked, and SetPermissionsAsync sets them before sweeping, so a switch to Never ask can't miss it.
+    /// <summary>
+    /// Register a question and wait for its answer.
+    /// </summary>
+    /// <remarks>
+    /// Register before the first await because the loop announces the question only after this call returns.
+    /// Registration also precedes the settings check, and SetPermissionsAsync updates settings before sweeping,
+    /// so a switch to Never ask cannot miss the question.
+    /// </remarks>
+    /// <param name="callId">The tool call asking the question.</param>
+    /// <param name="question">The question to register.</param>
+    /// <param name="cancellationToken">A token that cancels the wait.</param>
     private async Task<UserAnswer> WaitForAnswerAsync(string callId, UserQuestion question, CancellationToken cancellationToken)
     {
         var waiting = new TaskCompletionSource<UserAnswer>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -85,7 +94,10 @@ public sealed partial class Chat
         }
     }
 
-    // A chat switched to Never ask has nobody to wait for, so a waiting question is answered as if the user chose "You decide".
+    /// <summary>
+    /// Answer pending questions with "You decide" when approvals are set to Never ask.
+    /// </summary>
+    /// <remarks>A chat switched to Never ask has nobody to wait for.</remarks>
     private void LeaveQuestionsToModelIfNeverAsk()
     {
         if (Permissions.Settings.Approvals != ApprovalMode.NeverAsk)
@@ -99,7 +111,11 @@ public sealed partial class Chat
         }
     }
 
-    // A message written while a question waits is the answer to it, not a message for the reply to pick up later.
+    /// <summary>
+    /// Try to use the user's text as the answer to a waiting question.
+    /// </summary>
+    /// <remarks>A message written while a question waits is its answer, not a message for the reply to pick up later.</remarks>
+    /// <param name="text">The user's message.</param>
     private bool TryAnswerWithText(string text)
     {
         return _questions.Keys.Any(callId => Answer(callId, UserAnswer.Answered(text)));

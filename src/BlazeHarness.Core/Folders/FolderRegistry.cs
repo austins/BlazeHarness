@@ -223,7 +223,11 @@ public sealed class FolderRegistry : IDisposable
         _store.Dispose();
     }
 
-    // Working in the root or home would let every tool reach everything the user owns, and the app's own folder holds provider keys.
+    /// <summary>
+    /// Determine whether a folder grants tools overly broad or sensitive access.
+    /// </summary>
+    /// <remarks>Root and home expose everything the user owns, and the app's own folder holds provider keys.</remarks>
+    /// <param name="full">The full folder path to check.</param>
     private bool IsTooBroad(string full)
     {
         var real = RootedPath.CanonicalRoot(full);

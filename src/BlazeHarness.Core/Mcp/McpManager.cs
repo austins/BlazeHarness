@@ -562,7 +562,11 @@ public sealed partial class McpManager : IAsyncDisposable
         }
     }
 
-    // Trust was given to what the server was when the user chose it, not to whatever the file says next.
+    /// <summary>
+    /// Withdraw any saved trust for a server whose configuration changed.
+    /// </summary>
+    /// <remarks>Trust applies to the server the user chose, not to whatever the configuration file says next.</remarks>
+    /// <param name="name">The server whose trust to withdraw.</param>
     private async Task WithdrawTrustAsync(string name)
     {
         if (_permissions?.IsMcpServerTrusted(name) == true)

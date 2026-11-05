@@ -67,7 +67,12 @@ internal static class ListeningPorts
         return [.. ports.GroupBy(port => port.Port).Select(group => new ListeningPort(group.Key, group.Any(port => port.OverIpv4))).OrderBy(port => port.Port)];
     }
 
-    // The address is the 32-bit value in host order, so 127.0.0.1 reads 0100007F: the first octet is the last pair.
+    /// <summary>
+    /// Determine whether a Linux IPv4 listener is reachable through loopback.
+    /// </summary>
+    /// <remarks>The address is in host order, so 127.0.0.1 reads 0100007F: the first octet is the last pair.</remarks>
+    /// <param name="address">The hexadecimal address from the Linux socket table.</param>
+    /// <returns>True for an all-address or loopback listener; otherwise null.</returns>
     private static bool? ReachedV4(string address)
     {
         return address == AnyV4 || (address.Length == 8 && address.EndsWith("7F", StringComparison.OrdinalIgnoreCase)) ? true : null;

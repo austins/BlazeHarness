@@ -202,7 +202,12 @@ internal sealed class ExtractiveSummarizer : ISummarizer
         };
     }
 
-    // One line, so an entry can never look like a section heading or a second entry.
+    /// <summary>
+    /// Flatten an entry to one line and limit its length.
+    /// </summary>
+    /// <remarks>A single line keeps an entry from looking like a section heading or a second entry.</remarks>
+    /// <param name="text">The entry text.</param>
+    /// <param name="max">The character limit before the truncation marker.</param>
     private static string Flatten(string text, int max)
     {
         var line = string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));

@@ -44,7 +44,8 @@ internal sealed class BrowserTypeTool : IWebTool
 
     public string Summarize(JsonElement arguments) => ToolSupport.Text(arguments, "ref");
 
-    // The page was opened by an approved browser_navigate; what typing does stays inside that page.
+    /// <inheritdoc />
+    /// <remarks>The page was opened by an approved browser_navigate; what typing does stays inside that page.</remarks>
     public WebRequest? Describe(JsonElement arguments) => null;
 
     public async Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)

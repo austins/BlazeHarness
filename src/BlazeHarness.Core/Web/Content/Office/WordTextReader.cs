@@ -118,7 +118,12 @@ internal static class WordTextReader
         }
     }
 
-    // Style ids can be localized or custom, so the heading level comes from the style's name, then from the outline level.
+    /// <summary>
+    /// Find a paragraph's heading level from its style name, then its outline level.
+    /// </summary>
+    /// <remarks>Style IDs can be localized or custom.</remarks>
+    /// <param name="paragraph">The paragraph to inspect.</param>
+    /// <param name="styles">The style names indexed by style ID.</param>
     private static int? HeadingLevel(Paragraph paragraph, Dictionary<string, string> styles)
     {
         var properties = paragraph.ParagraphProperties;

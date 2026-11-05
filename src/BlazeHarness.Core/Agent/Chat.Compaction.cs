@@ -10,14 +10,25 @@ namespace BlazeHarness.Core.Agent;
 
 public sealed partial class Chat
 {
-    // The summary that replaces older messages (null when only tool output was trimmed), the history index where the messages that are sent as they were begin,
-    // and the history index before which large tool output is a stub. Null when the conversation has no marker. Guarded by _gate.
+    /// <summary>
+    /// The summary replacing older messages, the history index where unchanged messages begin,
+    /// and the history index before which large tool output is a stub.
+    /// </summary>
+    /// <remarks>
+    /// Null when the conversation has no marker; the summary is null when only tool output was trimmed. Guarded by _gate.
+    /// </remarks>
     private (string? Summary, int KeptFrom, int StubbedBefore)? _compaction;
 
-    // The newest entry when the conversation was last compacted. Its prompt size, and that of the ones before it, was reported for a request that was not compacted.
+    /// <summary>
+    /// The newest entry when the conversation was last compacted.
+    /// </summary>
+    /// <remarks>Its prompt size, and that of the ones before it, was reported for a request that was not compacted.</remarks>
     private ChatEntry? _compactedAfter;
 
-    // The estimated size of the tool definitions the last reply sent, used while no reported size covers them. Read with Interlocked.
+    /// <summary>
+    /// The estimated size of the tool definitions the last reply sent, used while no reported size covers them.
+    /// </summary>
+    /// <remarks>Read with Interlocked.</remarks>
     private long _toolTokens;
 
     /// <summary>
@@ -187,13 +198,20 @@ public sealed partial class Chat
         };
     }
 
-    // Must be called with the gate held. A reported size from before a compaction or a trim describes a request that no longer exists.
+    /// <summary>
+    /// Determine whether reported usage predates a compaction or trim.
+    /// </summary>
+    /// <remarks>Call with the gate held. Earlier usage describes a request that no longer exists.</remarks>
+    /// <param name="lastUsage">The entry index of the last reported usage, or a negative value when none exists.</param>
     private bool UsageIsStale(int lastUsage)
     {
         return lastUsage >= 0 && (lastUsage < _entries.FindLastIndex(e => e.Compaction is not null) || (_compactedAfter is not null && lastUsage <= _entries.IndexOf(_compactedAfter)));
     }
 
-    // Must be called with the gate held, after the entries or the history changed.
+    /// <summary>
+    /// Rebuild the compaction state after the entries or history change.
+    /// </summary>
+    /// <remarks>Call with the gate held.</remarks>
     private void RefreshCompaction()
     {
         _compaction = null;
@@ -205,7 +223,11 @@ public sealed partial class Chat
         }
     }
 
-    // Must be called with the gate held. The history index of the first message after a marker.
+    /// <summary>
+    /// Find the history index of the first message after a compaction marker.
+    /// </summary>
+    /// <remarks>Call with the gate held.</remarks>
+    /// <param name="marker">The entry index of the compaction marker.</param>
     private int NextHistoryIndex(int marker)
     {
         return _entries.Skip(marker + 1).FirstOrDefault(e => e.Compaction is null)?.HistoryIndex ?? _history.Count;

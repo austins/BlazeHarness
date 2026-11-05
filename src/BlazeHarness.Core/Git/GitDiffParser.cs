@@ -96,7 +96,13 @@ internal static class GitDiffParser
         return new GitFileDiff(path, binary, truncated, hunks);
     }
 
-    // A header reads "@@ -12,5 +12,6 @@ optional text"; the counts are left out when they are 1.
+    /// <summary>
+    /// Parse the starting line numbers from a unified diff hunk header.
+    /// </summary>
+    /// <remarks>A header reads "@@ -12,5 +12,6 @@ optional text"; counts are omitted when they are one.</remarks>
+    /// <param name="line">The hunk header.</param>
+    /// <param name="oldStart">The starting line in the original file.</param>
+    /// <param name="newStart">The starting line in the changed file.</param>
     private static bool TryParseHeader(string line, out int oldStart, out int newStart)
     {
         oldStart = 0;

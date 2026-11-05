@@ -29,7 +29,14 @@ public sealed class ToolSet
     {
     }
 
-    // The declarations of the first tools are already built when a set is extended, so only the added tools' schemas are parsed.
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ToolSet"/> class, reusing existing declarations.
+    /// </summary>
+    /// <remarks>When extending a set, only the added tools' schemas need parsing.</remarks>
+    /// <param name="tools">The tools to offer, with the known tools first.</param>
+    /// <param name="context">What the calls run against.</param>
+    /// <param name="time">The clock that times each call's timeout.</param>
+    /// <param name="known">The declarations already built for the first tools.</param>
     private ToolSet(IEnumerable<ITool> tools, ToolContext context, TimeProvider time, IReadOnlyList<AITool> known)
     {
         ArgumentNullException.ThrowIfNull(tools);
@@ -162,7 +169,14 @@ public sealed class ToolSet
         }
     }
 
-    // File tools do blocking I/O that a token can't interrupt, such as opening a pipe, so the call runs on its own thread and is left behind when it is stopped.
+    /// <summary>
+    /// Run a tool on a separate thread so cancellation can abandon its result.
+    /// </summary>
+    /// <remarks>File tools can block in I/O that a token cannot interrupt, such as opening a pipe.</remarks>
+    /// <param name="tool">The tool to execute.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="context">What the call runs against.</param>
+    /// <param name="cancellationToken">A token that stops waiting for the result.</param>
     private static Task<ToolResult> RunAbandonableAsync(ITool tool, ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)
     {
         return Task.Run(() => tool.ExecuteAsync(arguments, context, cancellationToken), CancellationToken.None).WaitAsync(cancellationToken);

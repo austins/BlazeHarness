@@ -6,7 +6,10 @@ public sealed class MacKeychainStoreIntegrationTests
 {
     private const string OptInVariable = "BLAZEHARNESS_TEST_KEYRING";
 
-    // Writes to the real login keychain, so it only runs on macOS when explicitly requested.
+    /// <summary>
+    /// Gets whether real login keychain tests have been explicitly enabled on macOS.
+    /// </summary>
+    /// <remarks>These tests write to the real login keychain.</remarks>
     public static bool IsEnabled => OperatingSystem.IsMacOS() && Environment.GetEnvironmentVariable(OptInVariable) == "1";
 
     [Fact(Skip = $"Needs macOS and {OptInVariable}=1 to run against the real Keychain.", SkipUnless = nameof(IsEnabled))]

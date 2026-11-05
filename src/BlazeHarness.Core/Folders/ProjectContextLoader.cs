@@ -107,7 +107,11 @@ internal static class ProjectContextLoader
         }
     }
 
-    // A named pipe or device reports a length of zero, and opening a pipe would block forever, so only files with a size are read.
+    /// <summary>
+    /// Determine whether a file has content that can be read.
+    /// </summary>
+    /// <remarks>A named pipe or device reports zero length, and opening a pipe would block forever.</remarks>
+    /// <param name="file">The file to inspect.</param>
     private static bool HasContent(FileInfo file) => file.Length > 0;
 
     private static async Task<(string Text, bool Truncated)> ReadAsync(string path, int limit, CancellationToken cancellationToken)

@@ -13,7 +13,10 @@ namespace BlazeHarness.Core.Mcp.Tools;
 /// </remarks>
 internal static class McpToolRanker
 {
-    // How much a word counts in each place; a name says more about what a tool does than one of its parameters.
+    /// <summary>
+    /// The score weight of a word in a tool name.
+    /// </summary>
+    /// <remarks>A name says more about what a tool does than one of its parameters.</remarks>
     private const double NameWeight = 4;
     private const double ServerWeight = 3;
     private const double DescriptionWeight = 2;

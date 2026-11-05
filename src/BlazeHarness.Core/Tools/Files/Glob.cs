@@ -8,7 +8,10 @@ namespace BlazeHarness.Core.Tools.Files;
 /// </summary>
 internal static class Glob
 {
-    // Linear-time matching, so a pattern of many wildcards from a call or a .gitignore file can't make a match slow.
+    /// <summary>
+    /// The timeout for glob matching.
+    /// </summary>
+    /// <remarks>Matching is linear-time so many wildcards from a call or .gitignore file cannot make a match slow.</remarks>
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromSeconds(1);
 
     private static readonly bool IgnoreCase = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();

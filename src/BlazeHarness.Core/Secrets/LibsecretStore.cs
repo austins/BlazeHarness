@@ -11,7 +11,10 @@ internal sealed class LibsecretStore(string serviceName = "blazeharness") : ISec
 {
     private const string Tool = "secret-tool";
 
-    // A locked keyring can wait on a prompt forever; without this startup would hang.
+    /// <summary>
+    /// The maximum wait for a keyring availability probe.
+    /// </summary>
+    /// <remarks>A locked keyring can wait on a prompt forever, which would otherwise hang startup.</remarks>
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(5);
 
     /// <inheritdoc />

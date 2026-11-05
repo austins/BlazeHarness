@@ -119,7 +119,10 @@ public sealed partial class ChatAttachments
         return new AttachmentFile(path, name, MediaTypeOf(name));
     }
 
-    // A short id can clash; Find would then return another file's name.
+    /// <summary>
+    /// Generate a short attachment ID that does not already exist.
+    /// </summary>
+    /// <remarks>A collision would make Find return another file's name.</remarks>
     private string NewId()
     {
         string id;

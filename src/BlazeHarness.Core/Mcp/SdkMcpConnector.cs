@@ -16,7 +16,10 @@ public sealed partial class SdkMcpConnector : IMcpConnector
 {
     private const int StderrLinesKept = 8;
 
-    // Shorter values would blank out ordinary words in the output.
+    /// <summary>
+    /// The minimum secret length to redact from server output.
+    /// </summary>
+    /// <remarks>Redacting shorter values would blank out ordinary words.</remarks>
     private const int MinRedactedLength = 4;
 
     private readonly ILoggerFactory _loggers;

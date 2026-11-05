@@ -206,7 +206,12 @@ public sealed partial class Chat
         await SaveAsync([new ToolResultEvent(_time.GetUtcNow(), entry.Id, finished.CallId, finished.Status, finished.Output, Image: call.Image)]);
     }
 
-    // The copy lets a resumed chat show the model the same picture, even after the tool's own file changes.
+    /// <summary>
+    /// Save a copy of a tool's image in the chat's attachments.
+    /// </summary>
+    /// <remarks>The copy lets a resumed chat show the model the same picture after the tool's own file changes.</remarks>
+    /// <param name="toolName">The tool that produced the image.</param>
+    /// <param name="image">The image to keep.</param>
     private async Task<AttachmentInfo?> KeepImageAsync(string toolName, DataContent image)
     {
         if (Attachments is not { } store)
@@ -235,7 +240,11 @@ public sealed partial class Chat
         }
     }
 
-    // The text of a reply is complete once its tool calls are known, so it is saved before the calls run.
+    /// <summary>
+    /// Finish and save the current assistant response.
+    /// </summary>
+    /// <remarks>The text is complete once its tool calls are known, so it is saved before the calls run.</remarks>
+    /// <param name="reply">The reply whose current response is complete.</param>
     private Task EndResponseAsync(Reply reply)
     {
         var entry = reply.Entry;
@@ -251,7 +260,11 @@ public sealed partial class Chat
         return SaveAsync(events);
     }
 
-    // A response without tool calls, such as one the runner asks again after, is still open here, so it is ended first.
+    /// <summary>
+    /// Finish any open response and start the next assistant response.
+    /// </summary>
+    /// <remarks>A response without tool calls, such as one the runner asks again after, is still open here.</remarks>
+    /// <param name="reply">The reply receiving the next response.</param>
     private async Task StartNextResponseAsync(Reply reply)
     {
         if (reply.Entry.Status == EntryStatus.Streaming)
@@ -277,7 +290,12 @@ public sealed partial class Chat
         await SaveAsync([new AssistantStartEvent(startedAt, next.Id, next.Label)]);
     }
 
-    // The loop has already put the message at the end of the working history, so the entry points at that index.
+    /// <summary>
+    /// Add and save the user entry for an injected message.
+    /// </summary>
+    /// <remarks>The loop has already appended the message to the working history, so the entry points at that index.</remarks>
+    /// <param name="reply">The reply receiving the message.</param>
+    /// <param name="injected">The injected message.</param>
     private async Task AddInjectedMessageAsync(Reply reply, MessagesInjected injected)
     {
         if (reply.Entry.Status == EntryStatus.Streaming)

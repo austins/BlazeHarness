@@ -6,7 +6,10 @@ public sealed class LibsecretStoreTests
 {
     private const string OptInVariable = "BLAZEHARNESS_TEST_KEYRING";
 
-    // Writes to the real user keyring, so it only runs when explicitly requested.
+    /// <summary>
+    /// Gets whether real user keyring tests have been explicitly enabled.
+    /// </summary>
+    /// <remarks>These tests write to the real user keyring.</remarks>
     public static bool IsEnabled => Environment.GetEnvironmentVariable(OptInVariable) == "1";
 
     [Fact(Skip = $"Set {OptInVariable}=1 to run against the real Secret Service.", SkipUnless = nameof(IsEnabled))]

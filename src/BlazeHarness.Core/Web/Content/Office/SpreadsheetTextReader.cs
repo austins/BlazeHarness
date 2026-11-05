@@ -13,7 +13,9 @@ internal static partial class SpreadsheetTextReader
     internal const int MaxRowsPerSheet = 2_000;
     internal const int MaxColumns = 100;
 
-    // Built-in number formats that show a date or a time.
+    /// <summary>
+    /// The built-in number formats that show a date or a time.
+    /// </summary>
     private static readonly HashSet<uint> DateFormatIds = [.. Enumerable.Range(14, 9).Select(id => (uint)id), .. Enumerable.Range(27, 10).Select(id => (uint)id), 45, 46, 47, .. Enumerable.Range(50, 9).Select(id => (uint)id)];
 
     /// <summary>
@@ -145,7 +147,11 @@ internal static partial class SpreadsheetTextReader
         return value;
     }
 
-    // A cell may omit its reference; then it follows the one before.
+    /// <summary>
+    /// Read a cell's column index, using the next column when its reference is omitted.
+    /// </summary>
+    /// <param name="reference">The cell reference, if present.</param>
+    /// <param name="fallback">The column following the previous cell.</param>
     private static int ColumnIndex(string? reference, int fallback)
     {
         if (string.IsNullOrEmpty(reference))
@@ -195,7 +201,10 @@ internal static partial class SpreadsheetTextReader
         return styles;
     }
 
-    // A custom format is a date when it has a date or time letter outside quoted text and brackets.
+    /// <summary>
+    /// Determine whether a custom format contains a date or time letter outside quoted text and brackets.
+    /// </summary>
+    /// <param name="code">The custom number format.</param>
     private static bool IsDateFormat(string code)
     {
         return DatePart().IsMatch(QuotedOrBracketed().Replace(code, string.Empty));

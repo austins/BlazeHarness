@@ -6,7 +6,9 @@ internal static class ChatImportExceptionExtensions
 {
     extension(ChatImportException exception)
     {
-        // Gets the message in the user's language.
+        /// <summary>
+        /// Gets the message in the user's language.
+        /// </summary>
         public string LocalizedMessage => exception.Error switch
         {
             ChatImportError.NotAnExport => WebStrings.SidebarImportNotAnExport,

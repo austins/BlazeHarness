@@ -427,7 +427,10 @@ else
         StateHasChanged();
     }
 
-    // Messages still queued once the reply has stopped or failed were never added, so they go back in the message box.
+    /// <summary>
+    /// Return unsent queued messages to the message box after a reply stops or fails.
+    /// </summary>
+    /// <remarks>These messages were never added to the conversation.</remarks>
     private void ReturnQueued()
     {
         if (_composer is not null && _chat is { IsRunning: false, Queued.Count: > 0 } chat && chat.TakeQueued() is { Count: > 0 } returned)

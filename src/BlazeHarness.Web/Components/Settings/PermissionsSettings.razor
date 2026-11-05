@@ -144,7 +144,11 @@
     private static string RemoveRuleLabel(string pattern) =>
         ResourceMessageFormatter.Web.Format(nameof(WebStrings.PermissionsRemoveRule), new Dictionary<string, object?> { ["pattern"] = pattern });
 
-    // The lists are edited before they are saved, so a failed save shows what is really stored again.
+    /// <summary>
+    /// Save the edited rules and reload the stored values if saving fails.
+    /// </summary>
+    /// <remarks>The lists are edited before saving, so a failed save must restore what is really stored.</remarks>
+    /// <param name="save">The operation that saves the edited rules.</param>
     private async Task PersistAsync(Func<Task> save)
     {
         if (!await Toasts.TrySaveAsync(save, WebStrings.PermissionsSaveFailure))

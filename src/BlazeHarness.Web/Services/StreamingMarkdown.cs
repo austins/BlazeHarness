@@ -80,7 +80,12 @@ public sealed class StreamingMarkdown(MarkdownRenderer renderer, string? chatId 
         }
     }
 
-    // A fence closes only with the same character, at least as long, and nothing after it.
+    /// <summary>
+    /// Track whether a line opens or closes a code fence.
+    /// </summary>
+    /// <remarks>A fence closes only with the same character, at least as long, and nothing after it.</remarks>
+    /// <param name="line">The line to inspect.</param>
+    /// <returns>True when the line opens or closes a fence.</returns>
     private bool TrackFence(ReadOnlySpan<char> line)
     {
         if (line.Length < MinFenceLength || (line[0] != '`' && line[0] != '~'))

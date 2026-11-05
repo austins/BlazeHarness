@@ -140,7 +140,11 @@ public sealed class EgressProxyTests : IDisposable
         return client;
     }
 
-    // Reads the proxy's reply head, which ends at the blank line.
+    /// <summary>
+    /// Send a request and read the proxy's reply head through the terminating blank line.
+    /// </summary>
+    /// <param name="client">The connected proxy client.</param>
+    /// <param name="request">The HTTP request to send.</param>
     private static async Task<string> SendAsync(TcpClient client, string request)
     {
 #pragma warning disable IDISP001 // The stream belongs to the client, which the caller disposes.

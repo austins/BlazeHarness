@@ -98,7 +98,11 @@ public sealed partial class MarkdownRenderer
         return html;
     }
 
-    // A path rather than a URL: no scheme (a single letter before the colon is a Windows drive) and not protocol-relative.
+    /// <summary>
+    /// Determine whether a link target is a folder path rather than a URL.
+    /// </summary>
+    /// <remarks>A path has no scheme or protocol-relative prefix; a single letter before a colon is a Windows drive.</remarks>
+    /// <param name="url">The link target to inspect.</param>
     private static bool IsFolderPath(string? url)
     {
         return !string.IsNullOrWhiteSpace(url)
@@ -170,7 +174,10 @@ public sealed partial class MarkdownRenderer
         attributes.AddProperty("target", "_blank");
     }
 
-    // Keep the visible text of a link that is not allowed, without the link.
+    /// <summary>
+    /// Keep the visible text of a link that is not allowed, without the link.
+    /// </summary>
+    /// <param name="link">The link to unwrap.</param>
     private static void Unwrap(LinkInline link)
     {
         foreach (var child in link.ToList())

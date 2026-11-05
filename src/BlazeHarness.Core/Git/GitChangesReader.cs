@@ -152,7 +152,12 @@ public sealed class GitChangesReader
         _ => GitChangeKind.Modified,
     };
 
-    // Git does not diff a file it does not track, so the file is shown as all added lines.
+    /// <summary>
+    /// Read an untracked file as a diff containing only added lines.
+    /// </summary>
+    /// <remarks>Git does not diff files it does not track.</remarks>
+    /// <param name="root">The repository root.</param>
+    /// <param name="relativePath">The file's path relative to the repository root.</param>
     private static GitFileDiff? ReadUntracked(string root, string relativePath)
     {
         var rootFull = Path.GetFullPath(root);

@@ -41,7 +41,8 @@ internal sealed class BrowserScrollTool : IWebTool
 
     public string Summarize(JsonElement arguments) => ToolSupport.Text(arguments, "direction");
 
-    // The page was opened by an approved browser_navigate; scrolling stays inside that page.
+    /// <inheritdoc />
+    /// <remarks>The page was opened by an approved browser_navigate; scrolling stays inside that page.</remarks>
     public WebRequest? Describe(JsonElement arguments) => null;
 
     public async Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)

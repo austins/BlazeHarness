@@ -8,7 +8,9 @@ internal static class ValidationIssueExtensions
 
     extension(ValidationIssue issue)
     {
-        // Gets the message in the user's language.
+        /// <summary>
+        /// Gets the message in the user's language.
+        /// </summary>
         public string LocalizedMessage
         {
             get

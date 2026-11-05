@@ -251,7 +251,8 @@
     private string _settledHtml = string.Empty;
     private string _tailHtml = string.Empty;
 
-    // Every token re-renders every message, so the HTML is only rebuilt when the text it came from is a new string.
+    /// <inheritdoc />
+    /// <remarks>Every token re-renders every message, so the HTML is only rebuilt when the text it came from is a new string.</remarks>
     protected override void OnParametersSet()
     {
         if (Entry.Role != ChatRole.Assistant)

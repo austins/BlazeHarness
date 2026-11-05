@@ -167,7 +167,10 @@ public sealed class FileLoggerProvider : ILoggerProvider
         _ => "CRT",
     };
 
-    // Runs on the first entry of each day: makes the folder, deletes files past the retention and opens the day's file.
+    /// <summary>
+    /// Create the log folder, delete expired files and open the day's log on its first entry.
+    /// </summary>
+    /// <param name="today">The date of the log entry.</param>
     private void OpenStream(DateOnly today)
     {
         _stream?.Dispose();

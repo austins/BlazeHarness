@@ -100,7 +100,10 @@ internal sealed class CappedLineReader
 
     private string Complete() => _line.ToString();
 
-    // Returns true when the buffer held the end of the line.
+    /// <summary>
+    /// Consume buffered text up to the end of the line or buffer.
+    /// </summary>
+    /// <returns>True when the buffer held the end of the line.</returns>
     private bool Take()
     {
         if (_skipLineFeed)

@@ -64,7 +64,11 @@ internal sealed class DuckDuckGoSearchProvider : ISearchProvider
         return results;
     }
 
-    // Results link through a redirect page, and the real address is in its uddg parameter.
+    /// <summary>
+    /// Extract the destination address from a search result link.
+    /// </summary>
+    /// <remarks>Redirect links carry the real address in their uddg parameter.</remarks>
+    /// <param name="href">The search result's link target.</param>
     private static string? Unwrap(string href)
     {
         var text = href.StartsWith("//", StringComparison.Ordinal) ? "https:" + href : href;

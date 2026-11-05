@@ -126,7 +126,10 @@
         }
     }
 
-    // Reading the changes costs a few git runs, so it only happens when the panel opens, a turn ends or the user asks.
+    /// <summary>
+    /// Refresh the folder's changes and the chat's side panel content.
+    /// </summary>
+    /// <remarks>Reading the changes costs a few git runs, so it only happens when the panel opens, a turn ends or the user asks.</remarks>
     private async Task RefreshAsync()
     {
         var version = ++_refreshVersion;

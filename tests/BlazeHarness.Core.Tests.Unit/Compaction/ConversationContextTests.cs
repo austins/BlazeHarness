@@ -824,7 +824,11 @@ public sealed class ConversationContextTests
         ];
     }
 
-    // Messages that alternate between user and assistant and are about 100 tokens each.
+    /// <summary>
+    /// Create messages that alternate between user and assistant roles.
+    /// </summary>
+    /// <param name="count">The number of messages.</param>
+    /// <param name="tokens">The approximate tokens per message, defaulting to 100.</param>
     private static List<ChatMessage> Conversation(int count, int tokens = 100)
     {
         return [.. Enumerable.Range(0, count).Select(i => new ChatMessage(i % 2 == 0 ? ChatRole.User : ChatRole.Assistant, Text(tokens)))];

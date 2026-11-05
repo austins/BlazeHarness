@@ -22,7 +22,10 @@ internal sealed class ShellTool : ITool
 
     private static readonly TimeSpan OutputGrace = TimeSpan.FromSeconds(2);
 
-    // Long enough for a command that is going to fail at once to do so, short enough not to hold up one that starts a server.
+    /// <summary>
+    /// The initial wait for a background command to exit or fail.
+    /// </summary>
+    /// <remarks>Catch immediate failures without holding up a command that starts a server.</remarks>
     private static readonly TimeSpan StartupWait = TimeSpan.FromSeconds(3);
 
     private readonly ShellInfo _shell;

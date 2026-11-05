@@ -14,7 +14,10 @@ public sealed partial class SkillCatalog : IDisposable
 {
     private const int DebounceMilliseconds = 300;
 
-    // Short enough that an edit shows up on the next turn, long enough that one turn's several lookups scan once.
+    /// <summary>
+    /// The project scan cache lifetime in seconds.
+    /// </summary>
+    /// <remarks>Short enough for edits to appear next turn, long enough for one turn's lookups to share a scan.</remarks>
     private const int ProjectCacheSeconds = 5;
     private const int MaxCachedProjects = 64;
 

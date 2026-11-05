@@ -117,7 +117,13 @@ internal static class ChatMarkdown
         }
     }
 
-    // The question and the answer are the user's side of the conversation, so they are quoted in the open rather than collapsed.
+    /// <summary>
+    /// Write a user question and its answer as visible quotations.
+    /// </summary>
+    /// <remarks>They are the user's side of the conversation, so they stay in the open rather than collapsed.</remarks>
+    /// <param name="text">The Markdown output.</param>
+    /// <param name="call">The question's tool call and answer.</param>
+    /// <param name="question">The question and its options.</param>
     private static void WriteQuestion(StringBuilder text, ToolCallEntry call, UserQuestion question)
     {
         Quote(text, "**The assistant asked:** " + question.Question);
@@ -149,7 +155,12 @@ internal static class ChatMarkdown
         text.Append("<details>\n<summary>").Append(summary).Append("</summary>\n\n").Append(body).Append("\n\n</details>\n\n");
     }
 
-    // A fence longer than any run of backticks inside the text, so the text can't end the block early.
+    /// <summary>
+    /// Wrap content in a code fence longer than any backtick run inside it.
+    /// </summary>
+    /// <remarks>The content cannot end the block early.</remarks>
+    /// <param name="content">The code block's content.</param>
+    /// <param name="language">The code fence's language label.</param>
     private static string Fence(string content, string language)
     {
         var fence = new string('`', Math.Max(3, AttachmentMessage.LongestBacktickRun(content) + 1));

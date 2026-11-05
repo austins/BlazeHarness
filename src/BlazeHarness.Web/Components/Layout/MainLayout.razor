@@ -38,7 +38,11 @@
 
 @code {
     private bool _collapsed;
-    // Lets end-to-end tests wait until the circuit is live, since prerendered buttons do nothing yet.
+
+    /// <summary>
+    /// Whether the interactive circuit is connected.
+    /// </summary>
+    /// <remarks>End-to-end tests wait for this state because prerendered buttons do nothing yet.</remarks>
     private bool _connected;
 
     public void Dispose()
@@ -63,13 +67,23 @@
         }
     }
 
-    // An async void handler has nowhere to send an exception, so a closed browser must not escape it.
+    /// <summary>
+    /// Collapse the drawer after navigation on a narrow screen.
+    /// </summary>
+    /// <remarks>An async void handler has nowhere to send an exception, so a closed browser must not escape it.</remarks>
+    /// <param name="sender">The navigation event sender.</param>
+    /// <param name="e">The new location.</param>
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         await CollapseIfNarrowAsync();
     }
 
-    // The settings dialog opens over the drawer on a narrow screen, so the drawer closes first.
+    /// <summary>
+    /// Close the drawer before showing settings on a narrow screen.
+    /// </summary>
+    /// <remarks>The settings dialog opens over the drawer.</remarks>
+    /// <param name="sender">The settings event sender.</param>
+    /// <param name="e">The settings change event.</param>
     private async void OnSettingsChanged(object? sender, EventArgs e)
     {
         if (SettingsState.Section is not null)

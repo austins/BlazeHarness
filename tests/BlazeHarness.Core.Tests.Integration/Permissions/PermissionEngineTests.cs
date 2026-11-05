@@ -766,7 +766,10 @@ public sealed class PermissionEngineTests : IDisposable
         decision.Verdict.Should().Be(PermissionVerdict.Allow);
     }
 
-    // Permission checks never start a job, so one registry for the whole class is enough.
+    /// <summary>
+    /// The shared empty background job registry for permission checks.
+    /// </summary>
+    /// <remarks>Permission checks never start a job, so one registry for the whole class is enough.</remarks>
     private static readonly BackgroundShells NoJobs = new(TimeProvider.System);
 
     private static ShellTool NewShell() => new(

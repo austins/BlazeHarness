@@ -8,7 +8,9 @@ internal static class ConnectionTestResultExtensions
 
     extension(ConnectionTestResult result)
     {
-        // Gets the message in the user's language.
+        /// <summary>
+        /// Gets the message in the user's language.
+        /// </summary>
         public string LocalizedMessage
         {
             get

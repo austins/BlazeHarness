@@ -8,7 +8,9 @@ namespace BlazeHarness.Web.Resources;
 
 internal sealed class ResourceMessageFormatter(ResourceManager resources, CultureInfo neutralCulture)
 {
-    // The only tags a translation may use; everything else in a pattern is encoded as text.
+    /// <summary>
+    /// The only tags a translation may use; everything else in a pattern is encoded as text.
+    /// </summary>
     private static readonly (string Tag, string Html)[] MarkupTags =
     [
         ("[code]", "<code>"), ("[/code]", "</code>"),
@@ -16,7 +18,10 @@ internal sealed class ResourceMessageFormatter(ResourceManager resources, Cultur
         ("[seconds]", "<span id=\"components-seconds-to-next-attempt\"></span>"),
     ];
 
-    // Keep exact-culture lookups separate from ResourceManager's cached parent fallbacks.
+    /// <summary>
+    /// Gets the shared formatter for web UI resources.
+    /// </summary>
+    /// <remarks>Exact-culture lookups stay separate from ResourceManager's cached parent fallbacks.</remarks>
     internal static ResourceMessageFormatter Web { get; } =
         new(new ResourceManager(typeof(WebStrings)), CultureInfo.GetCultureInfo("en-US"));
 
@@ -26,8 +31,13 @@ internal sealed class ResourceMessageFormatter(ResourceManager resources, Cultur
         return MessageFormatter.Format(pattern, arguments, formatCulture);
     }
 
-    // Formats a sentence with inline markup: the pattern may use [code] and [strong] tags, and the rest of it
-    // and every text argument is HTML-encoded.
+    /// <summary>
+    /// Format a sentence with the allowed inline markup.
+    /// </summary>
+    /// <remarks>The rest of the pattern and every text argument are HTML-encoded.</remarks>
+    /// <param name="key">The resource key of the sentence.</param>
+    /// <param name="arguments">The values to substitute into the pattern.</param>
+    /// <param name="culture">The resource culture, or null for the current UI culture.</param>
     internal MarkupString FormatMarkup(string key, IReadOnlyDictionary<string, object?> arguments, CultureInfo? culture = null)
     {
         var (pattern, formatCulture) = Find(key, culture);

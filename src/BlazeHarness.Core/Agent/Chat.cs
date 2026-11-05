@@ -41,7 +41,10 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     /// </summary>
     public static readonly TimeSpan ApprovalTimeout = TimeSpan.FromMinutes(30);
 
-    // Stands in for a reply that ended with nothing, so the next user message doesn't follow another one, which strict chat templates reject.
+    /// <summary>
+    /// The placeholder for a reply that ended without content.
+    /// </summary>
+    /// <remarks>This keeps consecutive user messages apart, as strict chat templates require.</remarks>
     internal const string EmptyReplyText = "(No reply was produced.)";
 
     private static readonly TimeSpan FlushInterval = TimeSpan.FromMilliseconds(250);
@@ -804,9 +807,15 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         }
     }
 
-    // A message that was queued too late for the running reply starts the next one, but only after a normal finish.
-    // After a stop or failure, a message from another chat is added to the chat without a reply, so it is neither lost nor handed back as the user's text.
-    // Taking it and ending the turn happen under one lock, so a message is either taken here or refused by Queue and QueueFromChat.
+    /// <summary>
+    /// Take a message queued too late for the running reply and decide whether to start another reply.
+    /// </summary>
+    /// <remarks>
+    /// Start another reply only after a normal finish. After a stop or failure, add a message from another chat
+    /// without a reply so it is neither lost nor handed back as the user's text.
+    /// Taking the message and ending the turn share one lock, so Queue and QueueFromChat either hand it here or refuse it.
+    /// </remarks>
+    /// <param name="finishedNormally">Whether the running reply finished without a stop or failure.</param>
     private (IReadOnlyList<ChatEvent> Events, bool Reply)? TakeFollowUp(bool finishedNormally)
     {
         lock (_gate)
@@ -927,7 +936,11 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         }
     }
 
-    // Must be called with the gate held.
+    /// <summary>
+    /// Ensure the chat is empty and idle before restoring saved state.
+    /// </summary>
+    /// <remarks>Call with the gate held.</remarks>
+    /// <exception cref="InvalidOperationException">The chat already has entries or a running reply.</exception>
     private void EnsureRestorable()
     {
         if (_entries.Count > 0 || _stop is not null)

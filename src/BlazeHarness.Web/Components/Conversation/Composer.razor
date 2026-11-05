@@ -404,7 +404,10 @@ else
         RefreshContext();
     }
 
-    // Reading the context takes the chat lock and may estimate the whole history, so it is not done on every keystroke.
+    /// <summary>
+    /// Refresh the context estimate for the current target.
+    /// </summary>
+    /// <remarks>Reading the context takes the chat lock and may estimate the whole history, so it is not done on every keystroke.</remarks>
     private void RefreshContext()
     {
         _context = CurrentTarget() is { } target ? ContextOf?.Invoke(target) : null;
@@ -520,7 +523,10 @@ else
 
     private static string ShortDescription(SkillInfo skill) => TextShortener.Shorten(skill.Description, SuggestionDescriptionLength);
 
-    // Looking up skills reads the disk, so the list is only rebuilt when the text changes.
+    /// <summary>
+    /// Get skill suggestions for the current text, reusing the list until the text changes.
+    /// </summary>
+    /// <remarks>Looking up skills reads the disk.</remarks>
     private List<SkillInfo>? Suggestions()
     {
         if (_suggestedFor == _text)

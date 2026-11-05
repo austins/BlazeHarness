@@ -97,7 +97,11 @@ public sealed class ChatRunnerTodoReminderTests
         history.Should().NotContain(m => HasNotice(m, ChatRunner.TodoReminder));
     }
 
-    // One update_todos round that sets the list, then the given number of rounds with one other tool call each.
+    /// <summary>
+    /// Create one update_todos round followed by rounds with one other tool call each.
+    /// </summary>
+    /// <param name="list">The arguments that set the list.</param>
+    /// <param name="workCalls">The number of subsequent work rounds.</param>
     private static ScriptedChatClient Rounds(string list, int workCalls)
     {
         var client = new ScriptedChatClient([ScriptedChatClient.Call("t1", TodoList.ToolName, list)]);

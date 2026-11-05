@@ -263,7 +263,10 @@
         _expanded = !Open;
     }
 
-    // The arguments of a call never change, so they are parsed once, and only when the call is opened.
+    /// <summary>
+    /// Parse the call's details the first time they are opened.
+    /// </summary>
+    /// <remarks>The arguments of a call never change, so they only need to be parsed once.</remarks>
     private void ShowDetails()
     {
         if (_detailsReady)

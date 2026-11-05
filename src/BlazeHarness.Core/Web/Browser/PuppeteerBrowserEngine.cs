@@ -36,10 +36,20 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     private static readonly TimeSpan NavigationTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan SettleTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan SweepInterval = TimeSpan.FromMinutes(1);
-    // Chrome sends the next screencast frame only after the last one is acknowledged, so waiting before the
-    // acknowledgement caps the frame rate (about 30 per second) without dropping the frame that shows where the page ended up.
+
+    /// <summary>
+    /// The interval between acknowledgements of screencast frames.
+    /// </summary>
+    /// <remarks>
+    /// Chrome sends the next frame only after the last is acknowledged. Waiting caps the frame rate at about
+    /// 30 per second without dropping the frame that shows where the page ended up.
+    /// </remarks>
     private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(33);
-    // Reading the title is a round trip to the page, so a frame of the same page reuses a title read this recently.
+
+    /// <summary>
+    /// The maximum age of a cached page title reused by a screencast frame.
+    /// </summary>
+    /// <remarks>Reading the title is a round trip to the page.</remarks>
     private static readonly TimeSpan TitleMaxAge = TimeSpan.FromSeconds(1);
 
     private readonly int? _appPort;

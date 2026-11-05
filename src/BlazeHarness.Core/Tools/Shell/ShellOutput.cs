@@ -19,7 +19,10 @@ internal sealed class ShellOutput
     private readonly Lock _gate = new();
     private readonly StringBuilder _head = new();
 
-    // Whole lines, so dropping the oldest text never copies the rest; only the first line can be partly dropped.
+    /// <summary>
+    /// The retained output tail, stored as whole lines.
+    /// </summary>
+    /// <remarks>Dropping the oldest text never copies the rest; only the first line can be partly dropped.</remarks>
     private readonly Queue<string> _tail = new();
     private int _tailLength;
     private int _firstLineOffset;
