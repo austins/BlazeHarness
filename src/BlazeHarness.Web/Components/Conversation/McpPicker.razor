@@ -17,7 +17,13 @@
                     <li>
                         <label class="panel-check">
                             <input type="checkbox" checked="@IsOn(status)" @onchange="e => SetAsync(server.Name, (bool)e.Value!)" />
-                            <span class="panel-check-name">@server.Name</span>
+                            <span class="panel-option-text">
+                                <span class="panel-check-name">@server.Name</span>
+                                @if (server.Disabled && IsOn(status))
+                                {
+                                    <span class="panel-option-hint">@WebStrings.ChatViewGlobalOverrideHint</span>
+                                }
+                            </span>
                             @if (status.State is McpServerState.Failed)
                             {
                                 <span class="panel-check-error" title="@status.Error">@WebStrings.McpPickerFailed</span>

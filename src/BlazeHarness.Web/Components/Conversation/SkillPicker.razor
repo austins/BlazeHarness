@@ -16,7 +16,13 @@
                     <li>
                         <label class="panel-check" title="@skill.Description">
                             <input type="checkbox" checked="@IsOn(skill)" @onchange="e => SetAsync(skill.Name, (bool)e.Value!)" />
-                            <span class="panel-check-name">@skill.Name</span>
+                            <span class="panel-option-text">
+                                <span class="panel-check-name">@skill.Name</span>
+                                @if (Catalog.IsDisabledGlobally(skill.Name) && IsOn(skill))
+                                {
+                                    <span class="panel-option-hint">@WebStrings.ChatViewGlobalOverrideHint</span>
+                                }
+                            </span>
                         </label>
                     </li>
                 }

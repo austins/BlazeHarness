@@ -200,6 +200,10 @@
     <value>Project instructions</value>
     <comment>Accessible name (aria-label) of the project instructions popover and its trigger button.</comment>
   </data>
+  <data name="ChatViewGlobalOverrideHint" xml:space="preserve">
+    <value>Disabled globally; enabled for this chat</value>
+    <comment>Note below an MCP server or skill in the chat picker when global settings disable it but the current chat enables it. No placeholders.</comment>
+  </data>
   <data name="ChatViewConversationLabel" xml:space="preserve">
     <value>Conversation</value>
     <comment>Accessible name (aria-label) of the region that holds the chat messages.</comment>

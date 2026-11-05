@@ -98,7 +98,7 @@
         <time class="msg-time" datetime="@Entry.At.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)"></time>
         @if (Entry.Usage is { } usage)
         {
-            <Popover Label="@WebStrings.MessageViewUsageLabel" Title="@WebStrings.MessageViewUsageLabel">
+            <Popover Label="@WebStrings.MessageViewUsageLabel" Title="@UsageDetails(usage)" ShowChevron="false">
                 <Trigger>
                     <span class="sr-only">@WebStrings.MessageViewUsageLabel </span>
                     @if (usage.DecodeTokensPerSecond is { } rate)

@@ -470,6 +470,7 @@ dialog.dialog.dialog-settings { width: min(68rem, calc(100vw - 2rem)); height: m
 }
 .panel-check:hover { background: var(--bg-hover); }
 .panel-check input { accent-color: var(--accent); width: 1rem; height: 1rem; margin: 0; flex: none; }
+.panel-check > .panel-option-text { flex: 1; }
 .panel-check-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .panel-check-error { flex: none; font-size: var(--text-xs); color: var(--danger); }
 .panel-note { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-block-start: 1px solid var(--border); font-size: var(--text-xs); color: var(--fg-muted); }
@@ -697,7 +698,6 @@ html[data-chat-full-width] .chat { --chat-width: 100%; }
 .msg-label { font-size: var(--text-xs); color: var(--fg-muted); font-family: var(--font-mono); }
 .msg-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); max-width: 100%; font-size: var(--text-xs); color: var(--fg-muted); }
 .msg-meta > .popover-trigger { padding: var(--space-1); gap: var(--space-1); color: inherit; font-weight: 400; }
-.msg-meta > .popover-trigger > .icon:last-child { width: 0.75rem; height: 0.75rem; opacity: 0.7; }
 .msg-usage-details { padding: var(--space-2) var(--space-3); white-space: pre-line; overflow-wrap: anywhere; overflow-y: auto; }
 .msg[data-role="user"] > .msg-meta { justify-content: flex-end; }
 .msg-time:empty { display: none; }

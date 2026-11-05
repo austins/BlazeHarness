@@ -104,6 +104,8 @@ public sealed class MessageViewTests(BrowserFixture browser) : TestBase(browser)
         var panel = Page.GetByRole(AriaRole.Dialog, new PageGetByRoleOptions { Name = "Message statistics" });
         await Page.GetByPlaceholder("Message the model").HoverAsync();
         await Expect(statistics).ToBeVisibleAsync();
+        await Expect(statistics.Locator("svg")).ToHaveCountAsync(hasSpeed ? 0 : 1);
+        await Expect(statistics).ToHaveAttributeAsync("title", new System.Text.RegularExpressions.Regex("Prompt: 10 tokens, 3 from the cache"));
         await Expect(message.Locator(".msg-time")).ToBeVisibleAsync();
         await Expect(panel).Not.ToBeVisibleAsync();
         if (hasSpeed)

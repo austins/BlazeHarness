@@ -1,7 +1,10 @@
 @* A button that opens a panel of free content in a popover below it. The browser closes it on Escape or a click outside. *@
 <button type="button" class="btn btn-ghost btn-sm popover-trigger" popovertarget="@_id" title="@Title" style="anchor-name: --@_id">
     @Trigger
-    <Icon Name="chevron-down" />
+    @if (ShowChevron)
+    {
+        <Icon Name="chevron-down" />
+    }
 </button>
 <div id="@_id" class="popover-panel" popover="auto" role="dialog" aria-label="@Label" style="position-anchor: --@_id">
     @ChildContent
@@ -21,6 +24,12 @@
     /// </summary>
     [Parameter]
     public string? Title { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to show the chevron beside the button content.
+    /// </summary>
+    [Parameter]
+    public bool ShowChevron { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the content of the button.

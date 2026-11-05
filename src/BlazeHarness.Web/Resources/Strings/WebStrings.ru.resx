@@ -145,6 +145,9 @@
   <data name="ChatViewInstructionsLabel" xml:space="preserve">
     <value>Инструкции проекта</value>
   </data>
+  <data name="ChatViewGlobalOverrideHint" xml:space="preserve">
+    <value>Отключено глобально; включено для этого чата</value>
+  </data>
   <data name="ChatViewConversationLabel" xml:space="preserve">
     <value>Переписка</value>
   </data>

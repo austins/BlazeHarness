@@ -145,6 +145,9 @@
   <data name="ChatViewInstructionsLabel" xml:space="preserve">
     <value>项目指令</value>
   </data>
+  <data name="ChatViewGlobalOverrideHint" xml:space="preserve">
+    <value>全局已禁用；此聊天已启用</value>
+  </data>
   <data name="ChatViewConversationLabel" xml:space="preserve">
     <value>对话</value>
   </data>
