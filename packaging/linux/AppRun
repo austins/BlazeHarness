@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # AppImage entry point. A double-click gives the app no terminal, so it reopens itself in one:
 # the window shows the address and log, and Ctrl+C or closing it stops the app.
 here="$(dirname "$(readlink -f "$0")")"

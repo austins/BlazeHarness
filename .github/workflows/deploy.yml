@@ -85,7 +85,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $asset = "BlazeHarness-$env:VERSION-win-x64.zip"
+          $asset = "BlazeHarness-$env:VERSION-$env:RID.zip"
           Compress-Archive -Path publish/* -DestinationPath $asset
           "ASSET=$asset" >> $env:GITHUB_ENV
 
@@ -104,7 +104,7 @@ jobs:
           cp packaging/linux/AppRun packaging/linux/blaze-harness.desktop AppDir/
           cp publish/wwwroot/favicon.svg AppDir/blaze-harness.svg
           ln -s blaze-harness.svg AppDir/.DirIcon
-          asset="BlazeHarness-$VERSION-x86_64.AppImage"
+          asset="BlazeHarness-$VERSION-$RID.AppImage"
           ARCH=x86_64 ./appimagetool --appimage-extract-and-run --runtime-file runtime AppDir "$asset"
           echo "ASSET=$asset" >> "$GITHUB_ENV"
 
@@ -123,7 +123,7 @@ jobs:
           codesign --force --deep --sign - "dmg/Blaze Harness.app"
           codesign --verify --deep --strict "dmg/Blaze Harness.app"
           ln -s /Applications dmg/Applications
-          asset="BlazeHarness-$VERSION-osx-arm64.dmg"
+          asset="BlazeHarness-$VERSION-$RID.dmg"
           hdiutil create -volname "Blaze Harness" -srcfolder dmg -format UDZO "$asset"
           echo "ASSET=$asset" >> "$GITHUB_ENV"
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # The app bundle's entry point. Finder starts an app without a terminal, so open the app in Terminal:
 # the window shows the address and log, Ctrl+C or closing it stops the app, and it stays open after
 # an error so the message can be read.
