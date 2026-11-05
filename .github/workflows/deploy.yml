@@ -111,20 +111,42 @@ jobs:
       - name: Package (macOS)
         if: runner.os == 'macOS'
         run: |
+          brew install librsvg
+          iconset="$RUNNER_TEMP/BlazeHarness.iconset"
+          mkdir -p "$iconset"
+          for size in 16 32 128 256 512; do
+            rsvg-convert -w "$size" -h "$size" publish/wwwroot/favicon.svg -o "$iconset/icon_${size}x${size}.png"
+            rsvg-convert -w "$((size * 2))" -h "$((size * 2))" publish/wwwroot/favicon.svg -o "$iconset/icon_${size}x${size}@2x.png"
+          done
           # Contents/MacOS holds only code (codesign rejects data files there), so the app lives in Resources.
           app="dmg/Blaze Harness.app/Contents"
           mkdir -p "$app/MacOS" "$app/Resources/app"
           cp -R publish/. "$app/Resources/app/"
           cp packaging/macos/launch "$app/MacOS/"
           cp packaging/macos/Info.plist "$app/"
+          iconutil -c icns "$iconset" -o "$app/Resources/BlazeHarness.icns"
+          test -s "$app/Resources/$(plutil -extract CFBundleIconFile raw "$app/Info.plist")"
           # Bundle versions are numbers only, so a prerelease suffix (-beta.1) or build metadata (+abc) is dropped.
           plutil -replace CFBundleShortVersionString -string "${VERSION%%[-+]*}" "$app/Info.plist"
           plutil -replace CFBundleVersion -string "${VERSION%%[-+]*}" "$app/Info.plist"
           codesign --force --deep --sign - "dmg/Blaze Harness.app"
           codesign --verify --deep --strict "dmg/Blaze Harness.app"
           ln -s /Applications dmg/Applications
+          cp "$app/Resources/BlazeHarness.icns" dmg/.VolumeIcon.icns
           asset="BlazeHarness-$VERSION-$RID.dmg"
-          hdiutil create -volname "Blaze Harness" -srcfolder dmg -format UDZO "$asset"
+          # Set the custom-icon flag on the mounted volume, not just the staging folder.
+          writable="$RUNNER_TEMP/BlazeHarness.dmg"
+          hdiutil create -volname "Blaze Harness" -srcfolder dmg -fs HFS+ -format UDRW "$writable"
+          volume="$(mktemp -d)"
+          hdiutil attach -nobrowse -mountpoint "$volume" "$writable"
+          trap 'hdiutil detach "$volume"' EXIT
+          SetFile -a C "$volume"
+          test -s "$volume/.VolumeIcon.icns"
+          test "$(GetFileInfo -aC "$volume")" = 1
+          hdiutil detach "$volume"
+          trap - EXIT
+          rmdir "$volume"
+          hdiutil convert "$writable" -format UDZO -o "$asset"
           echo "ASSET=$asset" >> "$GITHUB_ENV"
 
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2

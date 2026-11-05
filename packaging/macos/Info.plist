@@ -6,6 +6,8 @@
     <string>launch</string>
     <key>CFBundleIdentifier</key>
     <string>io.github.austins.BlazeHarness</string>
+    <key>CFBundleIconFile</key>
+    <string>BlazeHarness.icns</string>
     <key>CFBundleName</key>
     <string>Blaze Harness</string>
     <key>CFBundlePackageType</key>

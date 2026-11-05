@@ -7,6 +7,10 @@ Follow the repository guidance in [AGENTS.md](AGENTS.md). It applies to people a
 1. Run `dotnet build`. Analyzers run in the build and warnings are errors.
 2. Run the smallest test command that covers your change. If you touched web UI text, run the Web integration tests (see [Checks](#checks)).
 
+## Packaging
+
+The [release workflow](.github/workflows/deploy.yml) uses `src/BlazeHarness.Web/wwwroot/favicon.svg` for Linux and macOS icons. On macOS, it installs `librsvg` to render the icon sizes and uses `iconutil` to build the app's `.icns` file. The mounted DMG uses the same icon, with its custom-icon flag set before compression.
+
 ## Web UI text
 
 ### Adding text
