@@ -49,6 +49,11 @@ public sealed class AppPaths
     public string McpFile => Path.Combine(Home, "mcp.json");
 
     /// <summary>
+    /// Gets the path of <c>instructions.md</c> (the user's custom instructions).
+    /// </summary>
+    public string InstructionsFile => Path.Combine(Home, "instructions.md");
+
+    /// <summary>
     /// Gets the folder of files the app rebuilds when they are missing, so they are safe to delete and not meant to be edited.
     /// </summary>
     public string CacheDirectory => Path.Combine(Home, "cache");

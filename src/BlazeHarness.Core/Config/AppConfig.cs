@@ -81,11 +81,6 @@ public sealed record AppConfig
     public bool TodosEnabled { get; init; } = true;
 
     /// <summary>
-    /// Gets the user's own instructions, added to the built-in system prompt for every chat, or null for none.
-    /// </summary>
-    public string? CustomInstructions { get; init; }
-
-    /// <summary>
     /// Gets the switches and search providers of the web search and web fetch tools.
     /// </summary>
     public WebSettings Web { get; init; } = new();

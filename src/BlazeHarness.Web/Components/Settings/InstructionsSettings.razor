@@ -2,7 +2,7 @@
 @using BlazeHarness.Core.Compaction
 @using BlazeHarness.Core.Config
 @implements IDisposable
-@inject JsonFileStore<AppConfig> Config
+@inject CustomInstructionsFile Instructions
 @inject ToastService Toasts
 
 <div class="page">
@@ -68,22 +68,22 @@
 
     protected override void OnInitialized()
     {
-        _loaded = _text = Config.Current.CustomInstructions ?? string.Empty;
-        Config.ExternalChange += OnExternalChange;
+        _loaded = _text = Instructions.Text;
+        Instructions.ExternalChange += OnExternalChange;
     }
 
     public void Dispose()
     {
-        Config.ExternalChange -= OnExternalChange;
+        Instructions.ExternalChange -= OnExternalChange;
     }
 
-    private void OnExternalChange(object? sender, ValueEventArgs<AppConfig> e)
+    private void OnExternalChange(object? sender, EventArgs e)
     {
         _ = InvokeAsync(() =>
         {
             if (!Dirty)
             {
-                _loaded = _text = e.Value.CustomInstructions ?? string.Empty;
+                _loaded = _text = Instructions.Text;
                 StateHasChanged();
             }
         });
@@ -94,10 +94,10 @@
         _saving = true;
         try
         {
-            var value = string.IsNullOrWhiteSpace(_text) ? null : _text;
-            if (await Toasts.TrySaveAsync(() => Config.UpdateAsync(config => config with { CustomInstructions = value }), WebStrings.GeneralSettingsSaveFailure))
+            var value = string.IsNullOrWhiteSpace(_text) ? string.Empty : _text;
+            if (await Toasts.TrySaveAsync(() => Instructions.SaveAsync(value), WebStrings.GeneralSettingsSaveFailure))
             {
-                _loaded = _text = value ?? string.Empty;
+                _loaded = _text = value;
                 Toasts.Show(WebStrings.InstructionsSettingsSaved, ToastKind.Success);
             }
         }

@@ -65,6 +65,7 @@ builder.Services.AddSingleton<ChatClientSource>();
 builder.Services.AddSingleton(sp => new ChatStore(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<IShellSandbox>(sp => new MxcShellSandbox(() => sp.GetRequiredService<PermissionDefaults>().Sensitive()));
 builder.Services.AddSingleton(sp => new McpConfigFile(paths.McpFile, sp.GetRequiredService<ILogger<McpConfigFile>>(), time: sp.GetRequiredService<TimeProvider>()));
+builder.Services.AddSingleton(sp => new CustomInstructionsFile(paths.InstructionsFile, sp.GetRequiredService<ILogger<CustomInstructionsFile>>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<IMcpConnector, SdkMcpConnector>();
 builder.Services.AddSingleton(sp => new McpToolCache(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<McpManager>();
@@ -90,7 +91,7 @@ builder.Services.AddSingleton(sp => new ChatService(
     () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.Compaction,
     sp.GetRequiredService<WebServices>(),
     () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.TodosEnabled,
-    () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.CustomInstructions,
+    () => sp.GetRequiredService<CustomInstructionsFile>().Text,
     sp.GetRequiredService<ProviderService>(),
     sp.GetRequiredService<FolderRegistry>()));
 builder.Services.AddSingleton(sp => new FolderRegistry(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));

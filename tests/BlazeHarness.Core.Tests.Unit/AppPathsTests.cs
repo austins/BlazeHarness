@@ -19,6 +19,13 @@ public sealed class AppPathsTests
     }
 
     [Fact]
+    public void InstructionsFile_Default_IsInstructionsMdUnderHome()
+    {
+        // Assert
+        _sut.InstructionsFile.Should().Be(Path.Combine(_sut.Home, "instructions.md"));
+    }
+
+    [Fact]
     public void UserAgentsSkillsDirectory_Default_IsUnderUserHome()
     {
         // Assert

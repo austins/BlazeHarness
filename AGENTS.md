@@ -25,6 +25,7 @@
 
 - Log IDs and counts. Pass an exception as the logger's exception argument; `FileLoggerProvider` writes only its type and HTTP status. Keep `ex.Message` out of log messages: it can echo a prompt or reply.
 - Make types `internal` unless another project uses them. `BlazeHarness.Core` exposes internals only to its two test projects (`InternalsVisibleTo`).
+- The app is pre-release: breaking changes are fine. Don't add migrations, compatibility shims or fallbacks for old file formats, settings or names.
 - Persistence is plain files under `AppPaths` (no database, no migrations). Prefer Microsoft packages (`Microsoft.Extensions.*`, `System.Text.Json`, `System.Threading.Channels`); add another package only when no real alternative exists.
 - Read the time through the `TimeProvider` registered in `Program.cs`, injected as a required constructor parameter: `GetUtcNow()` where you'd write `DateTime.Now`/`UtcNow`, and its timers and delays. Tests pass a `FakeTimeProvider`. Add a `?? TimeProvider.System` fallback only for a caller that has no provider to pass.
 - Write XML docs on every public type and member in `src/`; the build doesn't check this (CS1591 is suppressed), so add them yourself: `<summary>`, plus `<remarks>`, `<param>`, `<returns>` and `<exception>` where they add something. Use `<inheritdoc />` on interface implementations and `<param>` on the type for positional records. Properties start with "Gets" or "Gets or sets"; method summaries use the imperative.

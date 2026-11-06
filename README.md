@@ -52,6 +52,7 @@ The app stores everything under `~/.blazeharness` (`%USERPROFILE%\.blazeharness`
 |---|---|
 | `providers.json` | Providers and models |
 | `config.json` | Settings and permissions |
+| `instructions.md` | Your custom instructions |
 | `chats/<id>/` | One folder per chat |
 | `logs/` | One log file per day, capped at 5 MB; files older than 7 days are deleted. Holds warnings and errors, and the app's own information messages. Exception messages are left out because they can echo prompts or replies |
 
@@ -128,7 +129,7 @@ Without the sandbox, leftover background processes are stopped when the command 
   * List tool name patterns in `"excludeTools"` to keep a server's tools from the model entirely. The tool list in Settings > MCP has a checkbox per tool that edits this list (a tool kept out by a pattern can only be changed in the file).
   * The tool lists are remembered in `cache/mcp-tools.json`, which is safe to delete.
 * Skills, loaded on demand from `SKILL.md` folders in `~/.blazeharness/skills`, `~/.agents/skills`, and a folder's own `.agents/skills`.
-* Custom instructions (Settings > Instructions): your own text, stored in `config.json` and added to every chat's system prompt after the built-in prompt. It does not replace the built-in prompt. A folder's `AGENTS.md` comes after it and takes priority if the two conflict. There is no length limit, but the text is sent with every message, so keep it short. Edits apply from the next message in each chat.
+* Custom instructions (Settings > Instructions): your own text, stored in `instructions.md` and added to every chat's system prompt after the built-in prompt. It does not replace the built-in prompt. A folder's `AGENTS.md` comes after it and takes priority if the two conflict. There is no length limit, but the text is sent with every message, so keep it short. Edits apply from the next message in each chat.
 
 ### Web access
 
