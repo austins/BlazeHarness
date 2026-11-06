@@ -8,6 +8,8 @@
         <!-- A release publish (`dotnet publish -r <rid>`) is one self-contained executable; trimming and AOT don't support Blazor Server. -->
         <RuntimeIdentifiers>win-x64;linux-x64;osx-arm64</RuntimeIdentifiers>
         <PublishSingleFile>true</PublishSingleFile>
+        <!-- Built from wwwroot/favicon.svg; only the Windows executable carries it (macOS and Linux get theirs at packaging). -->
+        <ApplicationIcon Condition="$(RuntimeIdentifier.StartsWith('win'))">$(MSBuildThisFileDirectory)..\..\packaging\windows\BlazeHarness.ico</ApplicationIcon>
         <SelfContained Condition="'$(RuntimeIdentifier)' != ''">true</SelfContained>
         <PublishDocumentationFile>false</PublishDocumentationFile>
         <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>

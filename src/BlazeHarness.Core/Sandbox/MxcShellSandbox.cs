@@ -20,7 +20,10 @@ namespace BlazeHarness.Core.Sandbox;
 /// </remarks>
 public sealed class MxcShellSandbox : IShellSandbox
 {
-    private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(15);
+    /// <summary>
+    /// The time a self-test command gets. The Windows container takes about 28 seconds to start a command on some Windows 11 builds (microsoft/mxc#1629).
+    /// </summary>
+    private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(OperatingSystem.IsWindows() ? 60 : 15);
 
     private readonly Func<SensitivePaths> _sensitive;
     private readonly Func<IReadOnlyDictionary<string, string>> _hostEnvironment;
@@ -126,7 +129,7 @@ public sealed class MxcShellSandbox : IShellSandbox
             var result = MxcContainer.Run(BuildRequest(launch).Request);
             if (result is not { ExitCode: 0, TimedOut: false })
             {
-                return SandboxStatus.Unavailable($"The {BackendName()} sandbox failed its self-test (exit code {result.ExitCode}). Commands can only run with the Unrestricted access level.");
+                return SandboxStatus.Unavailable($"The {BackendName()} sandbox failed its self-test (exit code {result.ExitCode}, 0x{result.ExitCode:X8}{(result.TimedOut ? ", timed out" : string.Empty)}). Commands can only run with the Unrestricted access level.");
             }
 
             // Running isn't enough: the sandbox is only worth trusting if a write outside the working folder didn't land.
@@ -256,6 +259,13 @@ public sealed class MxcShellSandbox : IShellSandbox
             Network = proxyPort is { } port ? FilteredNetwork(port) : new NetworkPolicy { Egress = new NetworkEgressPolicy { Default = NetworkAction.Allow } },
             TimeoutMs = (uint)Math.Clamp(launch.Timeout.TotalMilliseconds + 5_000, 1, uint.MaxValue),
         };
+        if (platform == SandboxPlatform.Windows)
+        {
+            // With UI disabled the Windows container blocks the Win32k calls that PowerShell needs to start (exit code 0xC0000142 on Windows 11).
+            // The clipboard and input injection stay off.
+            request.Ui = new UiPolicy { Disable = false };
+        }
+
         return (request, policy);
     }
 
