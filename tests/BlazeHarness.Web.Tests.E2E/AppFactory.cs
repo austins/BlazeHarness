@@ -1,7 +1,9 @@
 using BlazeHarness.Core;
+using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Web.Hosting;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Hosting;
 
 namespace BlazeHarness.Web.Tests.E2E;
@@ -30,5 +32,6 @@ public sealed class AppFactory : WebApplicationFactory<Program>
         builder.UseSetting(HostLauncher.PortSettingKey, "0");
         // Program starts the launcher, which would open the developer's default browser without this.
         builder.UseSetting(HostLauncher.NoBrowserSettingKey, "1");
+        builder.ConfigureTestServices(services => services.AddSingleton<IShellSandbox, UnavailableShellSandbox>());
     }
 }
