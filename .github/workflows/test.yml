@@ -43,7 +43,7 @@ jobs:
           # The Chrome headless shell the browser tests download into the app's browser folder (TestChrome).
           path: ~/.blazeharness/cache/browser
           # The Core project declares the PuppeteerSharp version, which decides the Chrome build.
-          key: ${{ runner.os }}-chrome-${{ hashFiles('src/BlazeHarness.Core/BlazeHarness.Core.csproj') }}
+          key: ${{ runner.os }}-puppeteer-${{ hashFiles('src/BlazeHarness.Core/BlazeHarness.Core.csproj') }}
       - run: dotnet test --no-restore -c Release --results-directory ./test-results -- --report-xunit-ctrf
       - uses: ctrf-io/github-test-reporter@dbb08957b5b2af918b39136ab2c5532002c7649b # v1.3.2
         if: always()
