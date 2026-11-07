@@ -18,7 +18,7 @@ public sealed class MxcShellSandboxTests : IDisposable
     /// </summary>
     /// <remarks>
     /// The Windows tests disable parallelization: each starts a process container, which takes seconds, and a dozen starting at once on a
-    /// small machine pushed some past their timeouts.
+    /// small machine pushed some past their timeouts. Their commands use absolute paths: the Windows container starts every command in <c>C:\</c>.
     /// </remarks>
     private const string WindowsSkipReason = "The sandbox isn't available on this computer, or the test uses PowerShell syntax.";
 

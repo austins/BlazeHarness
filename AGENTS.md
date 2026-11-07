@@ -98,7 +98,7 @@ To seed a chat without a model server, write `providers.json`, `chats/<32-hex>/c
 All test projects run with `ParallelMode.All`, so keep tests deterministic and isolated:
 
 - Wait with `FakeTimeProvider.Advance`, a `TaskCompletionSource`, or polling bounded by `TestTimeouts.Default`. Keep a tool's own timeout short or injectable when testing the timeout path.
-- Share no state: a `TempFolder` per test, port 0 for servers (`LocalHttpListener` for an `HttpListener`), and no shared files, environment variables or static fields.
+- Share no state: a `TempFolder` per test, port 0 for servers (`LocalHttpListener` for an `HttpListener`), and no shared files, environment variables or mutable static fields. A static that caches a probe or a stateless service (`SandboxSupport.Shared`) is fine and saves a slow setup in every test.
 - A test ends on the reply's end state: `data-status="done"` in E2E, `!chat.IsReplying` in Core tests. A writer still running blocks `TempFolder` deletion on Windows only, so CI is the first place it shows.
 - `GatedChatClient` (`Core.Tests.Integration/Chats`) holds a reply open; use it to test a race deterministically.
-- Use `SkipWhen` for OS-specific features. Fix flakes at the cause.
+- Gate an OS-specific test on a probed capability (`SymlinkSupport.CanCreate`, `SandboxSupport.IsAvailableOnWindows`, `TestChrome.IsAvailable`) or on its own shell syntax, rather than the OS name, so CI runs every test its runner can. After adding or changing a skip, read each OS job's skipped list in the run summary. Fix flakes at the cause.
