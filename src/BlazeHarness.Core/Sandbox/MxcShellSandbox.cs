@@ -84,7 +84,8 @@ public sealed class MxcShellSandbox : IShellSandbox
 
     private static Dictionary<string, string> HostEnvironment()
     {
-        var host = new Dictionary<string, string>(StringComparer.Ordinal);
+        // Windows names are case-insensitive, and the runner spells SystemRoot as SYSTEMROOT.
+        var host = new Dictionary<string, string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables())
         {
             if (entry.Key is string key && entry.Value is string value)
