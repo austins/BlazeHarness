@@ -10,7 +10,7 @@ namespace BlazeHarness.Core.Tests.Integration.Web.Browser;
 public sealed class PuppeteerBrowserEngineTests : IDisposable
 {
     private const string Chat = "chat1";
-    private const string Reason = "Needs a Chrome program; set BLAZEHARNESS_TEST_CHROME or install Playwright's Chromium.";
+    private const string Reason = "Couldn't download Chrome (offline?); set BLAZEHARNESS_TEST_CHROME to a Chrome program.";
 
     private readonly HttpListener _listener;
     private readonly TempFolder _folder = new("bh-browser-");
