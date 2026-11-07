@@ -667,6 +667,11 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     /// </summary>
     public void Dispose()
     {
+        lock (_gate)
+        {
+            _closed = true;
+        }
+
         Stop();
         BackgroundShells.Dispose();
     }

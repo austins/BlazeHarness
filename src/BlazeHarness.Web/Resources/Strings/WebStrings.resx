@@ -592,6 +592,10 @@
     <value>To-do list</value>
     <comment>Accessible name (aria-label) of the list of to-do items the model keeps for its task.</comment>
   </data>
+  <data name="TodoPanelProgress" xml:space="preserve">
+    <value>{completed} of {total} done</value>
+    <comment>Summary in the header of the to-do panel above the composer. {completed} is the number of finished to-do items and {total} the number of items in the list.</comment>
+  </data>
   <data name="TodoPanelLabel" xml:space="preserve">
     <value>To-do list</value>
     <comment>Accessible name (aria-label) of the collapsible panel that shows the model's to-do list above the composer.</comment>
@@ -1468,6 +1472,7 @@
   <data name="SidebarNoChatsYet" xml:space="preserve"><value>No chats yet.</value><comment>Empty state shown when there are no chats.</comment></data>
   <data name="SidebarNewChatInFolder" xml:space="preserve"><value>New chat in {folder}</value><comment>Accessible label for creating a chat in a folder; folder is its name.</comment></data>
   <data name="SidebarFindFolder" xml:space="preserve"><value>Find {folder}</value><comment>Accessible label for locating a missing folder; folder is its name.</comment></data>
+  <data name="SidebarFolderActionsFor" xml:space="preserve"><value>Actions for {folder}</value><comment>Accessible label for the button that opens a folder's actions menu in the sidebar; folder is its name.</comment></data>
   <data name="SidebarFolderActions" xml:space="preserve"><value>Folder actions</value><comment>Accessible label for the folder context menu.</comment></data>
   <data name="SidebarSwitchToLightTheme" xml:space="preserve"><value>Switch to light theme</value><comment>Accessible label for switching to the light theme.</comment></data>
   <data name="SidebarSwitchToDarkTheme" xml:space="preserve"><value>Switch to dark theme</value><comment>Accessible label for switching to the dark theme.</comment></data>

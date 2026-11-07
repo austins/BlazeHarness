@@ -239,6 +239,11 @@ public sealed partial class ChatService : IDisposable
                 return live;
             }
 
+            if (_store.Find(id) is null)
+            {
+                return null;
+            }
+
             Chat? chat = null;
             try
             {
@@ -578,14 +583,22 @@ public sealed partial class ChatService : IDisposable
             chat.Dispose();
         }
 
-        _web?.Forget(id);
-        await _store.DeleteAsync(id, CancellationToken.None);
-        _titleFailures.TryRemove(id, out _);
-
-        // An open that was restoring the chat meanwhile may have registered it after the check above.
-        if (_live.TryRemove(id, out var late))
+        // Holding the open guard means an open that was restoring the chat has either registered it by now or will find it gone.
+        await _opening.WaitAsync(CancellationToken.None);
+        try
         {
-            late.Dispose();
+            _web?.Forget(id);
+            await _store.DeleteAsync(id, CancellationToken.None);
+            _titleFailures.TryRemove(id, out _);
+
+            if (_live.TryRemove(id, out var late))
+            {
+                late.Dispose();
+            }
+        }
+        finally
+        {
+            _opening.Release();
         }
 
         return true;

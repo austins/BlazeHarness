@@ -127,6 +127,16 @@
                                     <button type="button" class="btn btn-ghost btn-sm btn-icon" title="@WebStrings.SidebarFindFolderTooltip"
                                             aria-label="@FolderActionLabel(nameof(WebStrings.SidebarFindFolder), folder.Name)" @onclick="() => _locating = folder"><Icon Name="folder" /></button>
                                 }
+                                <Menu Label="@FolderActionLabel(nameof(WebStrings.SidebarFolderActionsFor), folder.Name)" Title="@WebStrings.SidebarFolderActions" IconOnly="true">
+                                    <Trigger><Icon Name="more" /></Trigger>
+                                    <ChildContent>
+                                        @if (available)
+                                        {
+                                            <MenuItem IsAction="true" Label="@WebStrings.SidebarOpenFolderMenuItem" OnSelect="() => OpenFolder(folder)" />
+                                        }
+                                        <MenuItem IsAction="true" Label="@WebStrings.SidebarRemoveFolderMenuItem" OnSelect="() => _removing = folder" />
+                                    </ChildContent>
+                                </Menu>
                             </div>
                         </div>
                         @if (!available)

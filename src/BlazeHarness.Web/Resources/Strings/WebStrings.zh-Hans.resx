@@ -439,6 +439,9 @@
   <data name="TodoChecklistLabel" xml:space="preserve">
     <value>待办列表</value>
   </data>
+  <data name="TodoPanelProgress" xml:space="preserve">
+    <value>已完成 {completed}/{total}</value>
+  </data>
   <data name="TodoPanelLabel" xml:space="preserve">
     <value>待办列表</value>
   </data>
@@ -1473,6 +1476,9 @@
   </data>
   <data name="SidebarFindFolder" xml:space="preserve">
     <value>查找 {folder}</value>
+  </data>
+  <data name="SidebarFolderActionsFor" xml:space="preserve">
+    <value>{folder} 的操作</value>
   </data>
   <data name="SidebarFolderActions" xml:space="preserve">
     <value>文件夹操作</value>

@@ -1,4 +1,3 @@
-@using System.Globalization
 @using BlazeHarness.Core.Agent
 
 @if (Todos is { Items.Count: > 0 })
@@ -37,7 +36,11 @@
     [Parameter]
     public bool Running { get; set; }
 
-    private string Count => string.Create(CultureInfo.CurrentCulture, $"{Todos!.CompletedCount} of {Todos.Items.Count} done") + (Running && Todos.Current is not null ? ":" : string.Empty);
+    private string Count =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.TodoPanelProgress),
+            new Dictionary<string, object?> { ["completed"] = Todos!.CompletedCount, ["total"] = Todos.Items.Count })
+        + (Running && Todos.Current is not null ? ":" : string.Empty);
 
     private void Toggle() => _open = !_open;
 }

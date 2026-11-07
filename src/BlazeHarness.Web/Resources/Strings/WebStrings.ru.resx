@@ -439,6 +439,9 @@
   <data name="TodoChecklistLabel" xml:space="preserve">
     <value>Список задач</value>
   </data>
+  <data name="TodoPanelProgress" xml:space="preserve">
+    <value>Выполнено {completed} из {total}</value>
+  </data>
   <data name="TodoPanelLabel" xml:space="preserve">
     <value>Список задач</value>
   </data>
@@ -1473,6 +1476,9 @@
   </data>
   <data name="SidebarFindFolder" xml:space="preserve">
     <value>Найти папку {folder}</value>
+  </data>
+  <data name="SidebarFolderActionsFor" xml:space="preserve">
+    <value>Действия с папкой {folder}</value>
   </data>
   <data name="SidebarFolderActions" xml:space="preserve">
     <value>Действия с папкой</value>

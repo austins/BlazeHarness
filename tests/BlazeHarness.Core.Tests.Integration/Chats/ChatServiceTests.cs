@@ -519,6 +519,27 @@ public sealed class ChatServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SendAsync_OnADisposedChat_DoesNotStartAReply()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        var sut = Create(client);
+        var info = await sut.CreateAsync(cancellationToken: ct);
+        var chat = (await sut.OpenAsync(info.Id, cancellationToken: ct))!;
+#pragma warning disable IDISP016, IDISP017 // Disposing explicitly is the act under test, and the service disposes the chat again at the end.
+        chat.Dispose();
+
+        // Act
+        await chat.SendAsync("late", [], TestTargets.Create("p1", "fast"));
+
+        // Assert
+        client.Requests.Should().BeEmpty();
+        chat.Entries.Should().BeEmpty();
+#pragma warning restore IDISP016, IDISP017
+    }
+
+    [Fact]
     public async Task ActivityChanged_ReplyStartsAndEnds_IsRaisedForBoth()
     {
         // Arrange

@@ -263,7 +263,9 @@ window.bhChat = {
         });
 
         // The suggestion list stays mouse-driven markup; the arrows move a highlight through it while focus stays in the box.
-        const suggestions = () => [...(form.querySelector(".composer-suggestions")?.querySelectorAll("button") ?? [])];
+        // Escape hides it until the text changes, so Tab can leave the box again.
+        const list = () => form.querySelector(".composer-suggestions");
+        const suggestions = () => (list()?.hidden ? [] : [...(list()?.querySelectorAll("button") ?? [])]);
         const highlight = (index) => {
             const items = suggestions();
             items.forEach((item, at) => {
@@ -298,6 +300,14 @@ window.bhChat = {
                     return;
                 }
 
+                if (e.key === "Escape") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    list().hidden = true;
+                    highlight(-1);
+                    return;
+                }
+
                 if (e.key === "Tab" || (e.key === "Enter" && at >= 0)) {
                     e.preventDefault();
                     choose(Math.max(at, 0));
@@ -315,6 +325,10 @@ window.bhChat = {
             }
         });
         input.addEventListener("input", () => {
+            if (list()) {
+                list().hidden = false;
+            }
+
             highlight(-1);
             window.bhChat.resize(input);
         });
