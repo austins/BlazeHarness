@@ -64,7 +64,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         Directory.CreateSymbolicLink(alias, _root.Root);
         var shell = ShellInfo.DetectCurrent()!;
         var launch = new ShellLaunch(shell, "pwd", alias, ShellMode.Writable, _scratchFolder.Root, TimeSpan.FromSeconds(10));
-        var sandbox = new MxcShellSandbox(() => SensitivePaths.None);
+        var sandbox = SandboxSupport.Shared;
         var ct = TestContext.Current.CancellationToken;
 
         // Act
@@ -290,7 +290,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         var made = Path.Combine(_root.Root, "made.txt");
         var shell = ShellInfo.DetectCurrent()!;
         var launch = new ShellLaunch(shell, $"Set-Content '{made}' made", alias, ShellMode.Writable, _scratchFolder.Root, TimeSpan.FromSeconds(30));
-        var sandbox = new MxcShellSandbox(() => SensitivePaths.None);
+        var sandbox = SandboxSupport.Shared;
         var ct = TestContext.Current.CancellationToken;
 
         // Act
@@ -520,7 +520,7 @@ public sealed class MxcShellSandboxTests : IDisposable
     {
         var shell = ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false);
         using var background = new BackgroundShells(_time);
-        var tool = new ShellTool(shell, sandbox ?? new MxcShellSandbox(() => SensitivePaths.None), _scratchFolder.Root, background, _time);
+        var tool = new ShellTool(shell, sandbox ?? SandboxSupport.Shared, _scratchFolder.Root, background, _time);
         return await tool.ExecuteAsync(
             TempRoot.Args(new { command, timeout_seconds = timeoutSeconds }),
             _root.Context.WithShell(mode).WithShellReadFolders(readFolders ?? []).WithRefused(refused ?? RefusedPaths.None),

@@ -1,4 +1,3 @@
-using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
 using BlazeHarness.Core.Sandbox.Ports;
 using BlazeHarness.Core.Tests.Integration.Tools;
@@ -28,7 +27,7 @@ public sealed class SandboxPortsTests : IDisposable
         }
 
         var shell = ShellInfo.DetectCurrent() ?? new ShellInfo("sh", "/bin/sh", IsPowerShell: false);
-        _shell = new ShellTool(shell, new MxcShellSandbox(() => SensitivePaths.None), _scratchFolder.Root, _background, TimeProvider.System);
+        _shell = new ShellTool(shell, SandboxSupport.Shared, _scratchFolder.Root, _background, TimeProvider.System);
     }
 
     public static bool CanForward =>

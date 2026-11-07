@@ -8,9 +8,13 @@ namespace BlazeHarness.Core.Tests.Integration.Sandbox;
 /// </summary>
 internal static class SandboxSupport
 {
-    private static readonly Lazy<bool> Available = new(() => new MxcShellSandbox(() => SensitivePaths.None).Status.IsAvailable);
+    /// <summary>
+    /// Gets a sandbox that protects nothing, shared so the tests run its self-tests once.
+    /// </summary>
+    /// <remarks>Each self-test starts a container, which takes seconds on Windows. Every command still gets its own container.</remarks>
+    public static MxcShellSandbox Shared { get; } = new(() => SensitivePaths.None);
 
-    public static bool IsAvailable => Available.Value;
+    public static bool IsAvailable => Shared.Status.IsAvailable;
 
     public static bool IsAvailableOnPosix => IsAvailable && !OperatingSystem.IsWindows();
 
