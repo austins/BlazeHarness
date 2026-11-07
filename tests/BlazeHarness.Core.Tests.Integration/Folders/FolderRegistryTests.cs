@@ -7,8 +7,6 @@ namespace BlazeHarness.Core.Tests.Integration.Folders;
 
 public sealed class FolderRegistryTests : IDisposable
 {
-    public static bool IsWindows => OperatingSystem.IsWindows();
-
     private readonly TempFolder _temp = new("bh-folders-");
     private readonly string _home;
     private readonly AppPaths _paths;
@@ -109,7 +107,7 @@ public sealed class FolderRegistryTests : IDisposable
         second.Folder.LastOpenedAt.Should().Be(first.Folder.LastOpenedAt.AddHours(1));
     }
 
-    [Fact(Skip = "Creating links needs privileges on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task OpenAsync_FolderReachedThroughALink_IsTheSameEntryAsTheRealFolder()
     {
         // Arrange
@@ -126,7 +124,7 @@ public sealed class FolderRegistryTests : IDisposable
         viaLink.Folder!.Path.Should().Be(_sut.Find(real)!.Path);
     }
 
-    [Fact(Skip = "Creating links needs privileges on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task OpenAsync_TypedLinkName_IsUsedAsTheDisplayName()
     {
         // Arrange

@@ -1,13 +1,12 @@
 using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Tests.Integration.Tools;
+using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Skills;
 
 public sealed class SkillScannerTests : IDisposable
 {
     private readonly SkillFolders _folders = new();
-
-    public static bool IsWindows => OperatingSystem.IsWindows();
 
     public void Dispose() => _folders.Dispose();
 
@@ -159,7 +158,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Problems.Should().ContainSingle().Which.Should().Contain("only the first");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void Scan_ProjectLinkLeavingTheFolder_IsSkipped()
     {
         // Arrange
@@ -177,7 +176,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Problems.Should().ContainSingle().Which.Should().Contain("links outside");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void Scan_LinkInsideTheProject_IsKept()
     {
         // Arrange
@@ -193,7 +192,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Skills.Should().ContainSingle().Which.Name.Should().Be("reused");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void Scan_LinkTargetThroughAProjectAlias_IsKept()
     {
         // Arrange
@@ -213,7 +212,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Problems.Should().BeEmpty();
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void Scan_LinkTargetThroughAnEscapingProjectAlias_IsSkipped()
     {
         // Arrange
@@ -232,7 +231,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Problems.Should().ContainSingle().Which.Should().Be("sneaky: skipped because it links outside the project folder.");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void Scan_LinkWithoutABoundary_IsFollowed()
     {
         // Arrange
@@ -248,7 +247,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Skills.Should().ContainSingle().Which.Name.Should().Be("shared");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void Scan_ProjectSkillsFolderIsALinkOutside_IsSkipped()
     {
         // Arrange
@@ -265,7 +264,7 @@ public sealed class SkillScannerTests : IDisposable
         scan.Problems.Should().ContainSingle().Which.Should().Contain("links outside");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void Scan_ProjectAgentsFolderIsALinkOutside_IsSkipped()
     {
         // Arrange

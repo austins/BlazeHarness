@@ -24,8 +24,6 @@ public sealed class SandboxPolicyTests : IDisposable
 
     public void Dispose() => _temp.Dispose();
 
-    public static bool IsWindows => OperatingSystem.IsWindows();
-
     [Fact]
     public void Create_Writable_GivesTheWorkingFolderAndScratchWriteAccess()
     {
@@ -198,7 +196,7 @@ public sealed class SandboxPolicyTests : IDisposable
         policy.Denied.Should().ContainSingle().Which.Should().Be(Canonical(inside));
     }
 
-    [Theory(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Theory(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     [InlineData(false)]
     [InlineData(true)]
     public void Create_DeniedFileThroughALink_IsDenied(bool refused)

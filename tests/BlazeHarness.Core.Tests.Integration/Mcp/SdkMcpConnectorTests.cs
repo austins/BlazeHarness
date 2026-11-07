@@ -27,16 +27,15 @@ public sealed class SdkMcpConnectorTests : IDisposable
             sys.stdout.flush()
         """;
 
+    private const string PythonSkip = "Needs Python on PATH to act as a stdio MCP server.";
     private const string FailingServer = "import os, sys; sys.stderr.write('bad key ' + os.environ['API_KEY']); sys.exit(1)";
 
     private readonly TempFolder _temp = new("bh-mcp-stdio-");
     private readonly SdkMcpConnector _sut = new(NullLoggerFactory.Instance);
 
-    public static bool PythonMissing => !PathLookup("python3");
-
     public void Dispose() => _temp.Dispose();
 
-    [Fact(Skip = "Needs python3 on PATH to act as a stdio MCP server.", SkipWhen = nameof(PythonMissing))]
+    [Fact(Skip = PythonSkip, SkipUnless = nameof(TestPython.IsAvailable), SkipType = typeof(TestPython))]
     public async Task ConnectAsync_StdioServer_ListsAndCallsItsTools()
     {
         // Arrange
@@ -55,7 +54,7 @@ public sealed class SdkMcpConnectorTests : IDisposable
         result.Output.Should().Be("echo:hi");
     }
 
-    [Fact(Skip = "Needs python3 on PATH to act as a stdio MCP server.", SkipWhen = nameof(PythonMissing))]
+    [Fact(Skip = PythonSkip, SkipUnless = nameof(TestPython.IsAvailable), SkipType = typeof(TestPython))]
     public async Task ConnectAsync_ServerExitsWritingASetting_FailsWithoutRevealingTheValue()
     {
         // Arrange
@@ -83,14 +82,8 @@ public sealed class SdkMcpConnectorTests : IDisposable
         await act.Should().ThrowAsync<McpConnectException>();
     }
 
-    private static bool PathLookup(string program)
-    {
-        var path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-        return path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries).Any(dir => File.Exists(Path.Combine(dir, program)));
-    }
-
     private McpServerConfig Config(string[] args, Dictionary<string, string>? env = null)
     {
-        return new McpServerConfig("py", McpTransport.Stdio, "python3", args, env ?? [], _temp.Root, null, new Dictionary<string, string>(), false);
+        return new McpServerConfig("py", McpTransport.Stdio, TestPython.Command!, args, env ?? [], _temp.Root, null, new Dictionary<string, string>(), false);
     }
 }

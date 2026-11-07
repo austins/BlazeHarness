@@ -9,7 +9,6 @@ namespace BlazeHarness.Core.Tests.Integration.Tools.Files;
 /// </summary>
 public sealed class PathEscapeTests : IDisposable
 {
-    private const string SkipReason = "Creating symbolic links needs a privilege on Windows.";
     private const string Secret = "top secret";
 
     private readonly TempRoot _root = new();
@@ -30,7 +29,7 @@ public sealed class PathEscapeTests : IDisposable
         _outside.Dispose();
     }
 
-    [Fact(Skip = SkipReason, SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task ReadFile_ThroughASymlinkedFolder_IsRefused()
     {
         // Arrange
@@ -44,7 +43,7 @@ public sealed class PathEscapeTests : IDisposable
         result.Output.Should().NotContain(Secret);
     }
 
-    [Fact(Skip = SkipReason, SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task WriteFile_NewFileInASymlinkedFolder_IsRefusedAndCreatesNothing()
     {
         // Arrange
@@ -58,7 +57,7 @@ public sealed class PathEscapeTests : IDisposable
         File.Exists(Path.Combine(_outside.Root, "new.txt")).Should().BeFalse();
     }
 
-    [Fact(Skip = SkipReason, SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task WriteFile_OverASymlinkedFile_IsRefusedAndKeepsTheTarget()
     {
         // Arrange
@@ -72,7 +71,7 @@ public sealed class PathEscapeTests : IDisposable
         (await File.ReadAllTextAsync(_secretFile, TestContext.Current.CancellationToken)).Should().Be(Secret);
     }
 
-    [Fact(Skip = SkipReason, SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task EditFile_ASymlinkedFile_IsRefusedAndKeepsTheTarget()
     {
         // Arrange
@@ -89,7 +88,7 @@ public sealed class PathEscapeTests : IDisposable
         (await File.ReadAllTextAsync(_secretFile, TestContext.Current.CancellationToken)).Should().Be(Secret);
     }
 
-    [Fact(Skip = SkipReason, SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void TryResolve_ChainOfSymlinks_IsFollowedToTheEndAndRefused()
     {
         // Arrange
@@ -105,7 +104,7 @@ public sealed class PathEscapeTests : IDisposable
         error.Should().Contain("outside");
     }
 
-    [Fact(Skip = SkipReason, SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void TryResolve_RelativeSymlinkTarget_IsRefused()
     {
         // Arrange
@@ -119,7 +118,7 @@ public sealed class PathEscapeTests : IDisposable
         ok.Should().BeFalse();
     }
 
-    [Fact(Skip = SkipReason, SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void TryResolve_SymlinkLoop_IsRefusedWithoutHanging()
     {
         // Arrange
@@ -135,7 +134,7 @@ public sealed class PathEscapeTests : IDisposable
         ok.Should().BeFalse();
     }
 
-    [Fact(Skip = SkipReason, SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void TryResolve_DotDotAfterASymlink_IsResolvedFromTheLinkNotItsTarget()
     {
         // Arrange

@@ -13,11 +13,9 @@ public sealed class ChatRunnerApprovalTests : IDisposable
 {
     private readonly TempFolder _temp = new("approval-");
 
-    public static bool IsWindows => OperatingSystem.IsWindows();
-
     public void Dispose() => _temp.Dispose();
 
-    [Theory(Skip = "Creating Unix symlinks requires no special privileges.", SkipWhen = nameof(IsWindows))]
+    [Theory(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     [InlineData(true)]
     [InlineData(false)]
     public async Task RunAsync_LinkRetargetedDuringApproval_DoesNotReadEitherTarget(bool protectTarget)

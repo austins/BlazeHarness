@@ -21,8 +21,6 @@ public sealed class PermissionEngineTests : IDisposable
         File.WriteAllText(Path.Combine(_temp.Root, "note.txt"), "hi");
     }
 
-    public static bool IsWindows => OperatingSystem.IsWindows();
-
     private static SandboxStatus Available { get; } = new(true, "test", "A test sandbox.");
 
     public void Dispose()
@@ -310,7 +308,7 @@ public sealed class PermissionEngineTests : IDisposable
         write.Verdict.Should().Be(PermissionVerdict.Deny);
     }
 
-    [Fact(Skip = "Creating a symbolic link needs privileges on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void Evaluate_SymlinkIntoProtectedFolder_Denies()
     {
         // Arrange
@@ -324,7 +322,7 @@ public sealed class PermissionEngineTests : IDisposable
         decision.Verdict.Should().Be(PermissionVerdict.Deny);
     }
 
-    [Fact(Skip = "Creating a symbolic link needs privileges on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void Evaluate_SymlinkOutOfTheFolder_CountsAsOutside()
     {
         // Arrange

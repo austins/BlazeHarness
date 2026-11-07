@@ -1,12 +1,11 @@
 using BlazeHarness.Core.Tools.Files;
+using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Tools.Files;
 
 public sealed class RootWalkerTests : IDisposable
 {
     private readonly TempRoot _root = new();
-
-    public static bool IsWindows => OperatingSystem.IsWindows();
 
     public void Dispose() => _root.Dispose();
 
@@ -84,7 +83,7 @@ public sealed class RootWalkerTests : IDisposable
         result.Should().Equal("a", "a/.gitignore", "b", "b/gen.cs");
     }
 
-    [Fact(Skip = "Creating a symbolic link needs privileges on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void Walk_LinkedFolder_IsListedButNotEntered()
     {
         // Arrange

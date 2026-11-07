@@ -8,8 +8,6 @@ public sealed class RefusedFilesTests : IDisposable
 {
     private readonly TempRoot _root = new();
 
-    public static bool IsWindows => OperatingSystem.IsWindows();
-
     public void Dispose() => _root.Dispose();
 
     [Fact]
@@ -129,7 +127,7 @@ public sealed class RefusedFilesTests : IDisposable
         complete.Should().BeTrue();
     }
 
-    [Fact(Skip = "Creating a symbolic link needs a privilege on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void TryFind_FolderLink_IsNotFollowed()
     {
         // Arrange

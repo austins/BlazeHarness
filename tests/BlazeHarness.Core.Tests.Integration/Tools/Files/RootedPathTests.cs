@@ -89,7 +89,7 @@ public sealed class RootedPathTests : IDisposable
         error.Should().Contain("not valid");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void TryResolve_SymlinkedFolderLeadingOut_IsRefused()
     {
         // Arrange
@@ -108,7 +108,7 @@ public sealed class RootedPathTests : IDisposable
         missing.Should().BeFalse();
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void TryResolve_SymlinkedFileLeadingOut_IsRefused()
     {
         // Arrange
@@ -124,7 +124,7 @@ public sealed class RootedPathTests : IDisposable
         ok.Should().BeFalse();
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void TryResolve_SymlinkStayingInside_IsAllowedAndResolved()
     {
         // Arrange
@@ -139,7 +139,7 @@ public sealed class RootedPathTests : IDisposable
         full.Should().Be(Path.Combine(_root.Root, "real", "file.txt"));
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public void TryResolve_DanglingSymlink_IsRefused()
     {
         // Arrange

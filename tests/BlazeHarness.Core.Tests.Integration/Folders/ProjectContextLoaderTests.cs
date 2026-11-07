@@ -125,7 +125,7 @@ public sealed class ProjectContextLoaderTests : IDisposable
         context.Files[1].Truncated.Should().BeFalse();
     }
 
-    [Fact(Skip = "Symbolic links need privileges on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task LoadAsync_LinkToAFileInsideTheRepo_IsFollowed()
     {
         // Arrange
@@ -141,7 +141,7 @@ public sealed class ProjectContextLoaderTests : IDisposable
         context.Files.Should().ContainSingle().Which.Content.Should().Be("shared rules");
     }
 
-    [Fact(Skip = "Symbolic links need privileges on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task LoadAsync_LinkToAFileOutsideTheRepo_IsIgnored()
     {
         // Arrange
@@ -158,7 +158,7 @@ public sealed class ProjectContextLoaderTests : IDisposable
         context.Files.Should().BeEmpty();
     }
 
-    [Fact(Skip = "Symbolic links need privileges on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task LoadAsync_BrokenLink_IsIgnored()
     {
         // Arrange

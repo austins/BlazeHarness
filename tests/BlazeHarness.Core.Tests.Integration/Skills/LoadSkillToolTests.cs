@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Skills;
 using BlazeHarness.Core.Tests.Integration.Tools;
 using BlazeHarness.Core.Tools;
+using BlazeHarness.Tests.Shared;
 using System.Text.Json;
 
 namespace BlazeHarness.Core.Tests.Integration.Skills;
@@ -22,8 +23,6 @@ public sealed class LoadSkillToolTests : IDisposable
         _context = new ToolContext(_folders.Root);
         _sut = new LoadSkillTool(new SkillSet([new SkillInfo("report", "Write reports.", _folder, SkillSource.App)]));
     }
-
-    public static bool IsWindows => OperatingSystem.IsWindows();
 
     public void Dispose() => _folders.Dispose();
 
@@ -67,7 +66,7 @@ public sealed class LoadSkillToolTests : IDisposable
         result.Output.Should().StartWith("line2\nline3");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task ExecuteAsync_SkillFolderThroughALink_ReadsABundledFile()
     {
         // Arrange
@@ -98,7 +97,7 @@ public sealed class LoadSkillToolTests : IDisposable
         result.Output.Should().NotContain("TOPSECRET");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task ExecuteAsync_PathThroughALinkOutside_IsAnError()
     {
         // Arrange
@@ -112,7 +111,7 @@ public sealed class LoadSkillToolTests : IDisposable
         result.Output.Should().NotContain("TOPSECRET");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task ExecuteAsync_FolderLinkLoop_IsListedOnceAndDoesNotFail()
     {
         // Arrange

@@ -12,6 +12,7 @@ namespace BlazeHarness.Core.Tests.Integration.Sandbox;
 public sealed class MxcShellSandboxTests : IDisposable
 {
     private const string SkipReason = "The sandbox isn't available on this computer, or the test uses POSIX shell syntax.";
+    private const string WindowsSkipReason = "The sandbox isn't available on this computer, or the test uses PowerShell syntax.";
 
     private readonly TempRoot _root = new();
     private readonly TempFolder _outsideFolder = new("bh-outside-");
@@ -24,6 +25,10 @@ public sealed class MxcShellSandboxTests : IDisposable
     }
 
     public static bool IsAvailableOnPosix => SandboxSupport.IsAvailableOnPosix;
+
+    public static bool IsAvailableOnWindows => SandboxSupport.IsAvailableOnWindows;
+
+    public static bool IsAvailableOnWindowsWithSymlinks => SandboxSupport.IsAvailableOnWindows && SymlinkSupport.CanCreate;
 
     public void Dispose()
     {
@@ -245,6 +250,188 @@ public sealed class MxcShellSandboxTests : IDisposable
 
         // Act
         var run = RunAsync($"echo ready > '{ready}'; sleep 30", ShellMode.Writable, timeoutSeconds: 1);
+        await WaitForFileAsync(ready);
+        var result = await _time.AdvanceUntilAsync(run, TimeSpan.FromSeconds(1));
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.Output.Should().Contain("ran longer than 1 seconds");
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    public async Task Run_WindowsWritable_CanChangeTheWorkingFolder()
+    {
+        // Act
+        var result = await RunAsync("Set-Content made.txt made; Get-Content made.txt", ShellMode.Writable);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Output.Should().Contain("made");
+        _root.Read("made.txt").Trim().Should().Be("made");
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindowsWithSymlinks))]
+    public async Task StartAsync_WindowsWorkingFolderThroughALink_UsesTheRealPath()
+    {
+        // Arrange
+        var alias = Path.Combine(_outsideFolder.Root, "work");
+        Directory.CreateSymbolicLink(alias, _root.Root);
+        var shell = ShellInfo.DetectCurrent()!;
+        var launch = new ShellLaunch(shell, "(Get-Location).Path", alias, ShellMode.Writable, _scratchFolder.Root, TimeSpan.FromSeconds(10));
+        var sandbox = new MxcShellSandbox(() => SensitivePaths.None);
+        var ct = TestContext.Current.CancellationToken;
+
+        // Act
+        using var process = await sandbox.StartAsync(launch, ct);
+        using var reader = new StreamReader(process.Output);
+        var output = await reader.ReadToEndAsync(ct).Bounded();
+        var exit = await process.WaitAsync(ct).Bounded();
+
+        // Assert
+        output.Trim().Should().BeEquivalentTo(_root.Root);
+        exit.Should().Be(0);
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    public async Task Run_WindowsReadOnly_CanReadButNotChangeTheWorkingFolder()
+    {
+        // Arrange
+        _root.Write("keep.txt", "original");
+
+        // Act
+        var result = await RunAsync("Get-Content keep.txt; Set-Content keep.txt changed; Set-Content new.txt new", ShellMode.ReadOnly);
+
+        // Assert
+        result.Output.Should().Contain("original");
+        _root.Read("keep.txt").Should().Be("original");
+        File.Exists(Path.Combine(_root.Root, "new.txt")).Should().BeFalse();
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    public async Task Run_WindowsWritable_CannotReadAFolderOutsideTheAllowList()
+    {
+        // Act
+        var result = await RunAsync($"Get-Content '{Path.Combine(_outsideFolder.Root, "secret.txt")}'", ShellMode.Writable);
+
+        // Assert
+        result.Output.Should().NotContain("top-secret");
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    public async Task Run_WindowsApprovedReadFolder_CanBeReadButNotChanged()
+    {
+        // Arrange
+        var file = Path.Combine(RootedPath.CanonicalRoot(_outsideFolder.Root), "secret.txt");
+
+        // Act
+        var result = await RunAsync(
+            $"Get-Content '{file}'; Set-Content '{file}' changed",
+            ShellMode.Writable,
+            readFolders: [_outsideFolder.Root]);
+
+        // Assert
+        result.Output.Should().Contain("top-secret");
+        (await File.ReadAllTextAsync(Path.Combine(_outsideFolder.Root, "secret.txt"), TestContext.Current.CancellationToken)).Should().Be("top-secret");
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    public async Task Run_WindowsParentPathEscape_CannotReachFilesOutside()
+    {
+        // Arrange
+        var relative = Path.GetRelativePath(_root.Root, Path.Combine(_outsideFolder.Root, "secret.txt"));
+
+        // Act
+        var result = await RunAsync($"Get-Content '{relative}'", ShellMode.Writable);
+
+        // Assert
+        result.Output.Should().NotContain("top-secret");
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindowsWithSymlinks))]
+    public async Task Run_WindowsSymlinkToOutside_CannotReadOrWriteThroughIt()
+    {
+        // Arrange
+        var target = Path.Combine(_outsideFolder.Root, "secret.txt");
+        File.CreateSymbolicLink(Path.Combine(_root.Root, "link.txt"), target);
+
+        // Act
+        var result = await RunAsync("Get-Content link.txt; Set-Content link.txt overwritten", ShellMode.Writable);
+
+        // Assert
+        result.Output.Should().NotContain("top-secret");
+        (await File.ReadAllTextAsync(target, TestContext.Current.CancellationToken)).Should().Be("top-secret");
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    public async Task Run_WindowsProtectedFolderInsideTheWorkingFolder_IsOutOfReach()
+    {
+        // Arrange
+        _root.Write(".keys/token.txt", "key-material");
+        var sensitive = new SensitivePaths([Path.Combine(_root.Root, ".keys")]);
+
+        // Act
+        var result = await RunAsync("Get-Content .keys/token.txt; Set-Content .keys/other.txt x", ShellMode.Writable, new MxcShellSandbox(() => sensitive));
+
+        // Assert
+        result.Output.Should().NotContain("key-material");
+        _root.Read(".keys/token.txt").Should().Be("key-material");
+        File.Exists(Path.Combine(_root.Root, ".keys", "other.txt")).Should().BeFalse();
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    public async Task Run_WindowsWritable_DoesNotPassSecretEnvironmentVariables()
+    {
+        // Arrange
+        var host = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables())
+        {
+            if (entry.Key is string key && entry.Value is string value)
+            {
+                host[key] = value;
+            }
+        }
+
+        host["BH_TEST_TOKEN"] = "env-secret";
+        var sandbox = new MxcShellSandbox(() => SensitivePaths.None, () => host);
+
+        // Act
+        var result = await RunAsync("\"[$env:BH_TEST_TOKEN]\"", ShellMode.Writable, sandbox);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Output.Should().Contain("[]").And.NotContain("env-secret");
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    public async Task Run_WindowsWritable_UsesTheScratchFolderAsHome()
+    {
+        // Act
+        var result = await RunAsync("$env:USERPROFILE; Set-Content \"$env:USERPROFILE\\file.txt\" data", ShellMode.Writable);
+
+        // Assert
+        result.Output.Should().StartWith(Path.Combine(RootedPath.CanonicalRoot(_scratchFolder.Root), "home"));
+        File.Exists(Path.Combine(_scratchFolder.Root, "home", "file.txt")).Should().BeTrue();
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    public async Task Run_WindowsUnconfined_CanReachFilesOutsideTheWorkingFolder()
+    {
+        // Act
+        var result = await RunAsync($"Get-Content '{Path.Combine(_outsideFolder.Root, "secret.txt")}'", ShellMode.Unconfined);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Output.Should().Contain("top-secret");
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    public async Task Run_WindowsCommandThatOutlivesTheTimeout_IsStopped()
+    {
+        // Arrange
+        var ready = Path.Combine(_root.Root, "ready.txt");
+
+        // Act
+        var run = RunAsync($"Set-Content '{ready}' ready; Start-Sleep -Seconds 30", ShellMode.Writable, timeoutSeconds: 1);
         await WaitForFileAsync(ready);
         var result = await _time.AdvanceUntilAsync(run, TimeSpan.FromSeconds(1));
 

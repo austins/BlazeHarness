@@ -10,8 +10,6 @@ public sealed class SearchFilesToolTests : IDisposable
     private readonly TempRoot _root = new();
     private readonly SearchFilesTool _sut = new();
 
-    public static bool IsWindows => OperatingSystem.IsWindows();
-
     public void Dispose() => _root.Dispose();
 
     [Fact]
@@ -101,7 +99,7 @@ public sealed class SearchFilesToolTests : IDisposable
         result.Output.Should().Be("src/real.txt:1: needle");
     }
 
-    [Fact(Skip = "Symlinks need elevated rights on Windows.", SkipWhen = nameof(IsWindows))]
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
     public async Task ExecuteAsync_SymlinkedFile_IsNotFollowed()
     {
         // Arrange

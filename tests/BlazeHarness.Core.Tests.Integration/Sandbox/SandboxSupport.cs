@@ -13,4 +13,6 @@ internal static class SandboxSupport
     public static bool IsAvailable => Available.Value;
 
     public static bool IsAvailableOnPosix => IsAvailable && !OperatingSystem.IsWindows();
+
+    public static bool IsAvailableOnWindows => IsAvailable && OperatingSystem.IsWindows();
 }
