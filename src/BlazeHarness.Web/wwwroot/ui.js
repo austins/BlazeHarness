@@ -30,8 +30,9 @@ window.bhUi = {
             input.select();
         }
     },
-    setCulture: (culture) => {
-        document.cookie = `.AspNetCore.Culture=${encodeURIComponent(`c=${culture}|uic=${culture}`)}; path=/; max-age=31536000; samesite=lax`;
+    setCulture: async (culture) => {
+        // The server sets the cookie: one written to document.cookie can miss the reload that follows it.
+        await fetch(`api/culture/${encodeURIComponent(culture)}`, { method: "POST" });
         sessionStorage.setItem(settingsAfterCultureChangeKey, "true");
         window.location.reload();
     },

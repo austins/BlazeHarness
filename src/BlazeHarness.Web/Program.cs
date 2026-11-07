@@ -134,6 +134,7 @@ app.MapStaticAssets();
 app.MapAttachments();
 app.MapBrowser();
 app.MapExport();
+app.MapCulture();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
