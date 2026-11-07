@@ -53,6 +53,9 @@ The app stores everything under `~/.blazeharness` (`%USERPROFILE%\.blazeharness`
 | `providers.json` | Providers and models |
 | `config.json` | Settings and permissions |
 | `instructions.md` | Your custom instructions |
+| `mcp.json` | MCP servers |
+| `folders.json` | Working folders you registered |
+| `skills/` | Your own skills |
 | `chats/<id>/` | One folder per chat |
 | `logs/` | One log file per day, capped at 5 MB; files older than 7 days are deleted. Holds warnings and errors, and the app's own information messages. Exception messages are left out because they can echo prompts or replies |
 
