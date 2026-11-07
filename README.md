@@ -8,7 +8,9 @@ A local web app for chatting and coding with any OpenAI-compatible LLM. It runs 
 ## Requirements
 
 * An OpenAI-compatible endpoint and API key. You add providers in the app's settings.
-* Optional, on Linux: `socat` and `nsenter` (util-linux), so servers that sandboxed commands start can be reached (see [Background commands](#background-commands)).
+* Optional, on Linux:
+  * `bubblewrap` (`bwrap`), for the command sandbox. Without it, commands run directly, behind approvals. The sandbox also needs unprivileged user namespaces, which some distributions restrict.
+  * `socat` and `nsenter` (util-linux), so servers that sandboxed commands start can be reached (see [Background commands](#background-commands)).
 
 ## Installing
 
