@@ -12,6 +12,14 @@ namespace BlazeHarness.Core.Tests.Integration.Sandbox;
 public sealed class MxcShellSandboxTests : IDisposable
 {
     private const string SkipReason = "The sandbox isn't available on this computer, or the test uses POSIX shell syntax.";
+
+    /// <summary>
+    /// The skip reason of the Windows tests.
+    /// </summary>
+    /// <remarks>
+    /// The Windows tests disable parallelization: each starts a process container, which takes seconds, and a dozen starting at once on a
+    /// small machine pushed some past their timeouts.
+    /// </remarks>
     private const string WindowsSkipReason = "The sandbox isn't available on this computer, or the test uses PowerShell syntax.";
 
     private readonly TempRoot _root = new();
@@ -258,7 +266,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         result.Output.Should().Contain("ran longer than 1 seconds");
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
     public async Task Run_WindowsWritable_CanChangeTheWorkingFolder()
     {
         // Arrange
@@ -273,7 +281,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         _root.Read("made.txt").Trim().Should().Be("made");
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindowsWithSymlinks))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindowsWithSymlinks), DisableParallelization = true)]
     public async Task Run_WindowsWorkingFolderThroughALink_GrantsTheRealFolder()
     {
         // Arrange
@@ -296,7 +304,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         _root.Read("made.txt").Trim().Should().Be("made");
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
     public async Task Run_WindowsReadOnly_CanReadButNotChangeTheWorkingFolder()
     {
         // Arrange
@@ -313,7 +321,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         File.Exists(added).Should().BeFalse();
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
     public async Task Run_WindowsWritable_CannotReadAFolderOutsideTheAllowList()
     {
         // Arrange
@@ -328,7 +336,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         _root.Read("control.txt").Trim().Should().Be("ran");
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
     public async Task Run_WindowsApprovedReadFolder_CanBeReadButNotChanged()
     {
         // Arrange
@@ -345,7 +353,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         (await File.ReadAllTextAsync(Path.Combine(_outsideFolder.Root, "secret.txt"), TestContext.Current.CancellationToken)).Should().Be("top-secret");
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
     public async Task Run_WindowsParentPathEscape_CannotReachFilesOutside()
     {
         // Arrange
@@ -361,7 +369,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         _root.Read("control.txt").Trim().Should().Be("ran");
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindowsWithSymlinks))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindowsWithSymlinks), DisableParallelization = true)]
     public async Task Run_WindowsSymlinkToOutside_CannotReadOrWriteThroughIt()
     {
         // Arrange
@@ -379,7 +387,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         _root.Read("control.txt").Trim().Should().Be("ran");
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
     public async Task Run_WindowsProtectedFolderInsideTheWorkingFolder_IsOutOfReach()
     {
         // Arrange
@@ -396,13 +404,47 @@ public sealed class MxcShellSandboxTests : IDisposable
             new MxcShellSandbox(() => sensitive));
 
         // Assert
+        // The Windows process container can't deny a folder inside a granted one, so the sandbox refuses the command; a backend that can runs it.
         result.Output.Should().NotContain("key-material");
         _root.Read(".keys/token.txt").Should().Be("key-material");
         File.Exists(other).Should().BeFalse();
-        _root.Read("control.txt").Trim().Should().Be("ran");
+        if (File.Exists(control))
+        {
+            _root.Read("control.txt").Trim().Should().Be("ran");
+        }
+        else
+        {
+            result.Output.Should().Contain("This command was not run");
+        }
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
+    public async Task Run_WindowsRefusedFile_IsOutOfReach()
+    {
+        // Arrange
+        _root.Write(".env", "api-password");
+        var refused = new RefusedPaths([new PermissionRule(RuleTarget.FilePath, PermissionVerdict.Deny, "**/.env")], _root.Root);
+
+        // Act
+        var env = Path.Combine(_root.Root, ".env");
+        var control = Path.Combine(_root.Root, "control.txt");
+        var result = await RunAsync($"Get-Content '{env}'; Set-Content '{env}' changed; Set-Content '{control}' ran", ShellMode.Writable, refused: refused);
+
+        // Assert
+        // As with folders, the sandbox refuses the command where the backend can't deny the file.
+        result.Output.Should().NotContain("password");
+        _root.Read(".env").Should().Be("api-password");
+        if (File.Exists(control))
+        {
+            _root.Read("control.txt").Trim().Should().Be("ran");
+        }
+        else
+        {
+            result.Output.Should().Contain("This command was not run");
+        }
+    }
+
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
     public async Task Run_WindowsWritable_DoesNotPassSecretEnvironmentVariables()
     {
         // Arrange
@@ -426,7 +468,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         result.Output.Should().Contain("[]").And.NotContain("env-secret");
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
     public async Task Run_WindowsWritable_UsesTheScratchFolderAsHome()
     {
         // Act
@@ -437,7 +479,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         File.Exists(Path.Combine(_scratchFolder.Root, "home", "file.txt")).Should().BeTrue();
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
     public async Task Run_WindowsUnconfined_CanReachFilesOutsideTheWorkingFolder()
     {
         // Act
@@ -448,7 +490,7 @@ public sealed class MxcShellSandboxTests : IDisposable
         result.Output.Should().Contain("top-secret");
     }
 
-    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows))]
+    [Fact(Skip = WindowsSkipReason, SkipUnless = nameof(IsAvailableOnWindows), DisableParallelization = true)]
     public async Task Run_WindowsCommandThatOutlivesTheTimeout_IsStopped()
     {
         // Arrange

@@ -84,7 +84,7 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
 * Shell sandboxing where the platform supports it, so commands can stay inside the folder you opened. Otherwise commands run directly, behind approvals.
   * Files that a file path rule refuses are also kept out of a sandboxed command's reach: an exact path wherever it is, and a wildcard pattern inside the working folder and approved folders.
   * This is best effort. It covers only files that exist when the command starts, not what git history holds, and on macOS renaming a folder above one may get around it.
-  * Where the sandbox can't keep a single file out, those commands don't run.
+  * Where the sandbox can't keep a single file, or a protected folder inside the working folder, out of reach, those commands don't run. On Windows this is currently always the case, so a command whose folder holds a refused file or a protected folder needs the Unrestricted access level.
 * Git status and diffs disable repository-configured clean and process filters, so inspecting changes does not run those helpers.
 * An optional network host filter for sandboxed commands (Settings > Permissions > Network, off by default).
   * When it is on, a sandboxed command's HTTP and HTTPS traffic goes through a local proxy and everything else is blocked.

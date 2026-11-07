@@ -28,7 +28,7 @@ public sealed class MxcShellSandbox : IShellSandbox
     private readonly Func<SensitivePaths> _sensitive;
     private readonly Func<IReadOnlyDictionary<string, string>> _hostEnvironment;
     private readonly Lazy<SandboxStatus> _status;
-    private readonly Lazy<string?> _fileDenyProblem;
+    private readonly Lazy<(bool Files, bool Folders)> _denies;
     private readonly TimeProvider _time;
 
     /// <summary>
@@ -44,7 +44,7 @@ public sealed class MxcShellSandbox : IShellSandbox
         _sensitive = sensitive;
         _hostEnvironment = hostEnvironment ?? HostEnvironment;
         _status = new Lazy<SandboxStatus>(Probe, LazyThreadSafetyMode.ExecutionAndPublication);
-        _fileDenyProblem = new Lazy<string?>(ProbeFileDeny, LazyThreadSafetyMode.ExecutionAndPublication);
+        _denies = new Lazy<(bool Files, bool Folders)>(ProbeDenies, LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <inheritdoc />
@@ -163,17 +163,21 @@ public sealed class MxcShellSandbox : IShellSandbox
     }
 
     /// <summary>
-    /// Find out once whether the backend really keeps a single file out of reach: some only accept denied folders, and a deny
-    /// the backend accepted but didn't apply would leave a refused file readable.
+    /// Find out once whether the backend really keeps a file, and a folder, inside the working folder out of reach.
     /// </summary>
-    /// <returns>Why commands that need a file kept out of reach can't run, or null when they can.</returns>
-    private string? ProbeFileDeny()
+    /// <remarks>
+    /// Some backends only accept denied folders, and a deny the backend accepted but didn't apply would leave a refused path readable:
+    /// the Windows process container grants the denied path no rights of its own but keeps the access it inherits from the working folder.
+    /// The command reads by absolute path because the Windows container doesn't start in the working folder.
+    /// </remarks>
+    /// <returns>Whether a denied file and a denied folder stayed unreadable.</returns>
+    private (bool Files, bool Folders) ProbeDenies()
     {
-        const string Secret = "blazeharness-probe-secret";
-        var cannot = $"This command was not run: the {BackendName()} sandbox on this system can't keep a single file out of a command's reach, which a file path rule of the user's or a protected file needs. Say what you wanted to do; the user can narrow the rule or choose the Unrestricted access level.";
+        const string FileSecret = "blazeharness-probe-file-secret";
+        const string FolderSecret = "blazeharness-probe-folder-secret";
         if (ShellInfo.DetectCurrent() is not { } shell)
         {
-            return cannot;
+            return (false, false);
         }
 
         var folder = Path.Combine(Path.GetTempPath(), "blazeharness-probe-deny-" + Guid.NewGuid().ToString("N"));
@@ -181,17 +185,25 @@ public sealed class MxcShellSandbox : IShellSandbox
         {
             Directory.CreateDirectory(folder);
             folder = RootedPath.CanonicalRoot(folder);
-            var secret = Path.Combine(folder, "secret.txt");
-            File.WriteAllText(secret, Secret);
-            var command = shell.IsPowerShell ? "Get-Content -Raw -Path secret.txt -ErrorAction SilentlyContinue; exit 0" : "cat secret.txt 2>/dev/null; exit 0";
-            var launch = new ShellLaunch(shell, command, folder, ShellMode.Writable, folder, ProbeTimeout, DeniedPaths: [secret]);
+            var secretFile = Path.Combine(folder, "secret.txt");
+            var secretFolder = Path.Combine(folder, "secrets");
+            var inFolder = Path.Combine(secretFolder, "secret.txt");
+            File.WriteAllText(secretFile, FileSecret);
+            Directory.CreateDirectory(secretFolder);
+            File.WriteAllText(inFolder, FolderSecret);
+            var command = shell.IsPowerShell
+                ? $"Get-Content -Raw -LiteralPath {PowerShellQuote(secretFile)} -ErrorAction SilentlyContinue; Get-Content -Raw -LiteralPath {PowerShellQuote(inFolder)} -ErrorAction SilentlyContinue; exit 0"
+                : $"cat {PosixQuote(secretFile)} 2>/dev/null; cat {PosixQuote(inFolder)} 2>/dev/null; exit 0";
+            var launch = new ShellLaunch(shell, command, folder, ShellMode.Writable, folder, ProbeTimeout, DeniedPaths: [secretFile, secretFolder]);
             var result = MxcContainer.Run(BuildRequest(launch).Request);
-            return result.TimedOut || result.Stdout.Contains(Secret, StringComparison.Ordinal) ? cannot : null;
+            return result.TimedOut
+                ? (false, false)
+                : (!result.Stdout.Contains(FileSecret, StringComparison.Ordinal), !result.Stdout.Contains(FolderSecret, StringComparison.Ordinal));
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            // A backend that rejects the request, rather than run it unprotected, can't keep the file out either.
-            return cannot;
+            // A backend that rejects the request, rather than run it unprotected, can't keep the paths out either.
+            return (false, false);
         }
         finally
         {
@@ -199,11 +211,40 @@ public sealed class MxcShellSandbox : IShellSandbox
         }
     }
 
+    /// <summary>
+    /// Explain why a command that needs paths kept out of reach can't run, if it can't.
+    /// </summary>
+    /// <param name="denied">The paths the command must not reach.</param>
+    /// <param name="cancellationToken">Cancels waiting for the first probe.</param>
+    /// <returns>Why the command can't run, or null when it can.</returns>
+    private async Task<string?> DenyProblemAsync(IReadOnlyList<string> denied, CancellationToken cancellationToken)
+    {
+        if (denied.Count == 0)
+        {
+            return null;
+        }
+
+        // The first probe runs a command for seconds; keep it off the caller's thread.
+        var (files, folders) = _denies.IsValueCreated ? _denies.Value : await Task.Run(() => _denies.Value, cancellationToken);
+        if (!folders && denied.Any(Directory.Exists))
+        {
+            return $"This command was not run: the {BackendName()} sandbox on this system can't keep a folder inside the working folder out of a command's reach, which a protected folder or a folder path rule of the user's needs. Say what you wanted to do; the user can narrow the rule, work in another folder, or choose the Unrestricted access level.";
+        }
+
+        return !files && denied.Any(File.Exists)
+            ? $"This command was not run: the {BackendName()} sandbox on this system can't keep a single file out of a command's reach, which a file path rule of the user's or a protected file needs. Say what you wanted to do; the user can narrow the rule or choose the Unrestricted access level."
+            : null;
+    }
+
+    private static string PowerShellQuote(string value) => "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
+
+    private static string PosixQuote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
+
     private static string ProbeCommand(ShellInfo shell, string outside)
     {
         return shell.IsPowerShell
-            ? $"Set-Content -Path '{outside.Replace("'", "''", StringComparison.Ordinal)}' -Value x -ErrorAction SilentlyContinue; exit 0"
-            : $"echo x > '{outside.Replace("'", "'\\''", StringComparison.Ordinal)}' 2>/dev/null; exit 0";
+            ? $"Set-Content -Path {PowerShellQuote(outside)} -Value x -ErrorAction SilentlyContinue; exit 0"
+            : $"echo x > {PosixQuote(outside)} 2>/dev/null; exit 0";
     }
 
     private static void TryDeleteFile(string path)
@@ -316,7 +357,7 @@ public sealed class MxcShellSandbox : IShellSandbox
         try
         {
             var (request, policy) = BuildRequest(launch, proxy?.Port);
-            if (policy.Denied.Any(File.Exists) && (_fileDenyProblem.IsValueCreated ? _fileDenyProblem.Value : await Task.Run(() => _fileDenyProblem.Value, cancellationToken)) is { } problem)
+            if (await DenyProblemAsync(policy.Denied, cancellationToken) is { } problem)
             {
                 throw new IOException(problem);
             }
