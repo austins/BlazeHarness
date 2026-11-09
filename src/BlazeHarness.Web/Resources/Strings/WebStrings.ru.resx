@@ -2218,6 +2218,9 @@
   <data name="SidePanelToggleTooltip" xml:space="preserve">
     <value>Показать или скрыть боковую панель (предпросмотр и изменения)</value>
   </data>
+  <data name="ChangesButtonTooltip" xml:space="preserve">
+    <value>Показать или скрыть изменённые файлы на боковой панели</value>
+  </data>
   <data name="MainLayoutResizeSidebar" xml:space="preserve">
     <value>Изменить размер левой панели</value>
   </data>
@@ -2235,6 +2238,9 @@
   </data>
   <data name="ChangesRefresh" xml:space="preserve">
     <value>Обновить изменения</value>
+  </data>
+  <data name="ChangesWrapLines" xml:space="preserve">
+    <value>Переносить длинные строки</value>
   </data>
   <data name="ChangesFilesLabel" xml:space="preserve">
     <value>Изменённые файлы</value>

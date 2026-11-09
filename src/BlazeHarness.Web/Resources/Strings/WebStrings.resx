@@ -2208,6 +2208,10 @@
     <value>Show or hide the side panel (preview and changes)</value>
     <comment>Tooltip and accessible name of the icon-only button at the right end of the top bar that shows or hides the side panel. The button also shows the number of changed files as a badge.</comment>
   </data>
+  <data name="ChangesButtonTooltip" xml:space="preserve">
+    <value>Show or hide the changed files in the side panel</value>
+    <comment>Tooltip of the Changes button in the bar above the chat that shows or hides the list of files changed in the chat folder. The button shows the word Changes and the number of changed files.</comment>
+  </data>
   <data name="MainLayoutResizeSidebar" xml:space="preserve">
     <value>Resize sidebar</value>
     <comment>Accessible name of the draggable divider between the left sidebar and the page. Arrow keys move it.</comment>
@@ -2231,6 +2235,10 @@
   <data name="ChangesRefresh" xml:space="preserve">
     <value>Refresh changes</value>
     <comment>Tooltip and accessible name of the button in the Changes panel that reads the git changes again.</comment>
+  </data>
+  <data name="ChangesWrapLines" xml:space="preserve">
+    <value>Wrap long lines</value>
+    <comment>Tooltip and accessible name of the toggle button in the Changes panel that wraps long lines of the code view instead of scrolling sideways. It is off by default.</comment>
   </data>
   <data name="ChangesFilesLabel" xml:space="preserve">
     <value>Changed files</value>

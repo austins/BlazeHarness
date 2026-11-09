@@ -2218,6 +2218,9 @@
   <data name="SidePanelToggleTooltip" xml:space="preserve">
     <value>显示或隐藏侧面板（预览和更改）</value>
   </data>
+  <data name="ChangesButtonTooltip" xml:space="preserve">
+    <value>在侧面板中显示或隐藏已更改的文件</value>
+  </data>
   <data name="MainLayoutResizeSidebar" xml:space="preserve">
     <value>调整侧边栏大小</value>
   </data>
@@ -2235,6 +2238,9 @@
   </data>
   <data name="ChangesRefresh" xml:space="preserve">
     <value>刷新更改</value>
+  </data>
+  <data name="ChangesWrapLines" xml:space="preserve">
+    <value>自动换行</value>
   </data>
   <data name="ChangesFilesLabel" xml:space="preserve">
     <value>已更改的文件</value>

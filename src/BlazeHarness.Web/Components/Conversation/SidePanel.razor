@@ -31,7 +31,7 @@
             }
             else if (tab == SidePanelTab.Changes && _status is not null)
             {
-                <ChangesPanel Status="_status" Scope="_scope" Refreshing="_refreshing" OnScopeChange="ChangeScopeAsync" OnRefresh="RefreshAsync" />
+                <ChangesPanel Status="_status" Scope="_scope" Refreshing="_refreshing" WrapLines="_wrapLines" OnWrapLinesChange="wrap => _wrapLines = wrap" OnScopeChange="ChangeScopeAsync" OnRefresh="RefreshAsync" />
             }
         </div>
     </aside>
@@ -49,6 +49,7 @@
     private GitStatus? _status;
     private GitChangeScope _scope;
     private bool _refreshing;
+    private bool _wrapLines;
     private int _refreshVersion;
 
     /// <summary>

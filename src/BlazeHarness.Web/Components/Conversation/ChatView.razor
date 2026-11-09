@@ -74,6 +74,7 @@ else
                     </span>
                 }
 
+                <ChangesButton />
                 <McpPicker ChatId="@_openId" Choices="_newMcpServers" OnChoose="choice => _newMcpServers[choice.Name] = choice.Enabled" />
                 <SkillPicker ChatId="@_openId" FolderPath="@ContextPath" Choices="_newSkills" OnChoose="choice => _newSkills[choice.Name] = choice.Enabled" />
                 @if (_openId is { } mcpId)

@@ -614,6 +614,7 @@ details[open] > summary .skill-blurb { display: none; }
 .side-panel-body > * { animation: fade var(--duration) var(--ease); }
 .side-panel-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .chat-context [aria-pressed="true"] { background: var(--bg-hover); }
+.chat-context > .changes-button { color: var(--fg); }
 
 /* Drag handles for the sidebar and the side panel; a wide hit area around a thin line. */
 .resizer { position: absolute; inset-block: 0; width: 0.5rem; z-index: 4; cursor: col-resize; touch-action: none; }
@@ -642,6 +643,7 @@ details[open] > summary .skill-blurb { display: none; }
 /* Changes tab ------------------------------------------------------------ */
 .changes-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); border-block-end: 1px solid var(--border); }
 .changes-scope { flex: 1; min-width: 0; }
+.changes-bar .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .changes-empty, .changes-note { margin: 0; padding: var(--space-3); color: var(--fg-muted); font-size: var(--text-sm); }
 .changes-files { list-style: none; margin: 0; padding: var(--space-1); max-height: 30%; min-height: 3rem; overflow: auto; border-block-end: 1px solid var(--border); flex: none; }
 .changes-file { display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-1) var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; font: inherit; font-size: var(--text-sm); text-align: start; cursor: pointer; }
@@ -668,6 +670,8 @@ details[open] > summary .skill-blurb { display: none; }
 .gdiff-line[data-kind="added"] .gdiff-sign { color: var(--success); }
 .gdiff-line[data-kind="removed"] .gdiff-sign { color: var(--danger); }
 .gdiff-code { flex: 1; padding-inline-end: var(--space-3); white-space: pre; font: inherit; }
+.gdiff[data-wrap="true"] { min-width: 0; }
+.gdiff[data-wrap="true"] .gdiff-code { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .chat { --chat-width: 52rem; position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0; }
 html[data-chat-full-width] .chat { --chat-width: 100%; }
 .chat-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }

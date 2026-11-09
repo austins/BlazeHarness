@@ -2,7 +2,7 @@
 @using BlazeHarness.Core.Git
 @using System.Globalization
 
-<div class="gdiff" role="table" aria-label="@WebStrings.ChangesDiffLabel">
+<div class="gdiff" role="table" data-wrap="@(Wrap ? "true" : null)" aria-label="@WebStrings.ChangesDiffLabel">
     @foreach (var hunk in _rows)
     {
         <div class="gdiff-hunk" role="row"><span role="cell">@hunk.Header</span></div>
@@ -35,6 +35,12 @@
     /// </summary>
     [Parameter, EditorRequired]
     public GitFileDiff Diff { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether long lines wrap instead of scrolling sideways.
+    /// </summary>
+    [Parameter]
+    public bool Wrap { get; set; }
 
     /// <inheritdoc />
     protected override void OnParametersSet()

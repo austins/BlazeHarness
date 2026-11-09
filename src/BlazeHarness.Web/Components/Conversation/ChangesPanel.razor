@@ -10,6 +10,7 @@
         <option value="@GitChangeScope.Unstaged" selected="@(Scope == GitChangeScope.Unstaged)">@Format(nameof(WebStrings.ChangesScopeUnstaged), Status.UnstagedCount)</option>
     </select>
     <button type="button" class="btn btn-icon" aria-label="@WebStrings.ChangesRefresh" title="@WebStrings.ChangesRefresh" disabled="@Refreshing" @onclick="OnRefresh"><Icon Name="retry" Spin="Refreshing" /></button>
+    <button type="button" class="btn btn-icon" aria-pressed="@(WrapLines ? "true" : "false")" aria-label="@WebStrings.ChangesWrapLines" title="@WebStrings.ChangesWrapLines" @onclick="() => OnWrapLinesChange.InvokeAsync(!WrapLines)"><Icon Name="wrap" /></button>
 </div>
 
 @if (Status.Files.Count == 0)
@@ -53,7 +54,7 @@ else
         }
         else
         {
-            <GitDiffView Diff="_diff" />
+            <GitDiffView Diff="_diff" Wrap="WrapLines" />
             @if (_diff.IsTruncated)
             {
                 <p class="changes-note">@WebStrings.ChangesTruncated</p>
@@ -87,6 +88,18 @@ else
     /// </summary>
     [Parameter]
     public bool Refreshing { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether long lines of the diff wrap instead of scrolling sideways.
+    /// </summary>
+    [Parameter]
+    public bool WrapLines { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user turning line wrapping on or off.
+    /// </summary>
+    [Parameter]
+    public EventCallback<bool> OnWrapLinesChange { get; set; }
 
     /// <summary>
     /// Gets or sets the callback for the user choosing which changes to list.

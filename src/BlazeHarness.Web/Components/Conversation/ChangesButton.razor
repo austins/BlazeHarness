@@ -1,0 +1,45 @@
+@implements IDisposable
+@inject SidePanelState State
+
+@if (State.HasChanges)
+{
+    <button type="button" class="btn btn-ghost btn-sm changes-button" aria-pressed="@(Showing ? "true" : "false")" title="@WebStrings.ChangesButtonTooltip" @onclick="Toggle">
+        <Icon Name="diff" /> @WebStrings.SidePanelTabChanges <span class="badge badge-accent">@State.ChangeCount</span>
+    </button>
+}
+
+@code {
+    private bool _disposed;
+
+    private bool Showing => State.IsVisible && State.Current == SidePanelTab.Changes;
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _disposed = true;
+        State.Changed -= OnChanged;
+    }
+
+    /// <inheritdoc />
+    protected override void OnInitialized() => State.Changed += OnChanged;
+
+    private void Toggle()
+    {
+        if (Showing)
+        {
+            State.Close();
+        }
+        else
+        {
+            State.Open(SidePanelTab.Changes);
+        }
+    }
+
+    private void OnChanged(object? sender, EventArgs e)
+    {
+        if (!_disposed)
+        {
+            _ = InvokeAsync(StateHasChanged);
+        }
+    }
+}
