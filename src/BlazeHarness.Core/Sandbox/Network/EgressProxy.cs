@@ -228,7 +228,11 @@ internal sealed class EgressProxy : IDisposable
             return;
         }
 
-        Track(upstream);
+        if (!Track(upstream))
+        {
+            return;
+        }
+
         try
         {
             using var upstreamStream = new NetworkStream(upstream, ownsSocket: false);

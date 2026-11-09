@@ -57,7 +57,7 @@ public sealed partial class ChatService : IDisposable
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, int> _titleFailures = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, Chat> _live = new(StringComparer.Ordinal);
-    private readonly SemaphoreSlim _opening = new(1, 1);
+    private readonly KeyedGate _opening = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ChatService"/> class.
@@ -231,8 +231,7 @@ public sealed partial class ChatService : IDisposable
             return live;
         }
 
-        await _opening.WaitAsync(cancellationToken);
-        try
+        using (await _opening.EnterAsync(id, cancellationToken))
         {
             if (_live.TryGetValue(id, out live))
             {
@@ -270,10 +269,6 @@ public sealed partial class ChatService : IDisposable
             {
                 chat?.Dispose();
             }
-        }
-        finally
-        {
-            _opening.Release();
         }
     }
 
@@ -584,8 +579,7 @@ public sealed partial class ChatService : IDisposable
         }
 
         // Holding the open guard means an open that was restoring the chat has either registered it by now or will find it gone.
-        await _opening.WaitAsync(CancellationToken.None);
-        try
+        using (await _opening.EnterAsync(id, CancellationToken.None))
         {
             _web?.Forget(id);
             await _store.DeleteAsync(id, CancellationToken.None);
@@ -595,10 +589,6 @@ public sealed partial class ChatService : IDisposable
             {
                 late.Dispose();
             }
-        }
-        finally
-        {
-            _opening.Release();
         }
 
         return true;
@@ -615,7 +605,6 @@ public sealed partial class ChatService : IDisposable
             chat.Dispose();
         }
 
-        _opening.Dispose();
         _shutdown.Dispose();
     }
 

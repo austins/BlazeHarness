@@ -31,8 +31,8 @@ public sealed partial class MarkdownRenderer
         .DisableHtml()
         .Build();
 
-    private readonly Dictionary<string, LinkedListNode<KeyValuePair<string, string>>> _cache = [];
-    private readonly LinkedList<KeyValuePair<string, string>> _recent = new();
+    private readonly Dictionary<(string? ChatId, string Markdown), LinkedListNode<KeyValuePair<(string? ChatId, string Markdown), string>>> _cache = [];
+    private readonly LinkedList<KeyValuePair<(string? ChatId, string Markdown), string>> _recent = new();
     private readonly object _gate = new();
 
     /// <summary>
@@ -70,7 +70,7 @@ public sealed partial class MarkdownRenderer
     public string ToCachedHtml(string markdown, string? chatId = null)
     {
         ArgumentNullException.ThrowIfNull(markdown);
-        var key = chatId is null ? markdown : chatId + '\0' + markdown;
+        var key = (chatId, markdown);
         lock (_gate)
         {
             if (_cache.TryGetValue(key, out var hit))
@@ -86,7 +86,7 @@ public sealed partial class MarkdownRenderer
         {
             if (!_cache.ContainsKey(key))
             {
-                _cache[key] = _recent.AddFirst(new KeyValuePair<string, string>(key, html));
+                _cache[key] = _recent.AddFirst(new KeyValuePair<(string? ChatId, string Markdown), string>(key, html));
                 if (_cache.Count > CacheCapacity && _recent.Last is { } oldest)
                 {
                     _cache.Remove(oldest.Value.Key);

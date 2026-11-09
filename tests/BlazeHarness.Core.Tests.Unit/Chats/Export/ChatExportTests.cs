@@ -139,8 +139,11 @@ public sealed class ChatExportTests
 
     [Theory]
     [InlineData("Fix the build!", "fix-the-build.md")]
-    [InlineData("  ../../Étude: a/b  ", "tude-a-b.md")]
-    [InlineData("日本語", "chat.md")]
+    [InlineData("  ../../Étude: a/b  ", "étude-a-b.md")]
+    [InlineData("日本語のメモ", "日本語のメモ.md")]
+    [InlineData("हिन्दी नोट्स", "हिन्दी-नोट्स.md")]
+    [InlineData("C:\\x<y>|z?*\"", "c-x-y-z.md")]
+    [InlineData("🎉 Party", "party.md")]
     [InlineData("", "chat.md")]
     public void Export_Title_BecomesASafeFileName(string title, string expected)
     {

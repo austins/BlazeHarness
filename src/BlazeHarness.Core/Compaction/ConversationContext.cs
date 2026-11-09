@@ -332,7 +332,6 @@ public sealed class ConversationContext
                     CreatedAt = message.CreatedAt,
                     MessageId = message.MessageId,
                     AdditionalProperties = message.AdditionalProperties,
-                    RawRepresentation = message.RawRepresentation,
                 };
             }
         }

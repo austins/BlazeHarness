@@ -1,6 +1,8 @@
 using BlazeHarness.Core.Web;
 using BlazeHarness.Core.Web.Content;
 using BlazeHarness.Tests.Shared.Office;
+using System.Buffers.Binary;
+using System.IO.Compression;
 
 namespace BlazeHarness.Core.Tests.Unit.Web.Content;
 
@@ -174,6 +176,45 @@ public sealed class OpenXmlTextExtractorTests
     }
 
     [Fact]
+    public void Extract_DeeplyNestedWordPart_ThrowsInsteadOfOverflowingTheStack()
+    {
+        // Arrange
+        var file = WithNestedRun(OfficeFiles.Word([OfficeFiles.Paragraph("text")]), 100_000);
+
+        // Act
+        var act = () => _sut.Extract(file, TestContext.Current.CancellationToken);
+
+        // Assert
+        act.Should().Throw<WebFetchException>().WithMessage("*nested too deeply*");
+    }
+
+    [Fact]
+    public void Extract_NestingBelowTheLimit_ReadsTheText()
+    {
+        // Arrange
+        var file = WithNestedRun(OfficeFiles.Word([OfficeFiles.Paragraph("text")]), 100);
+
+        // Act
+        var result = _sut.Extract(file, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Text.Should().Be("text");
+    }
+
+    [Fact]
+    public void Extract_EntriesSharingOnePayload_Throws()
+    {
+        // Arrange
+        var file = WithRepeatedEntry(10);
+
+        // Act
+        var act = () => _sut.Extract(file, TestContext.Current.CancellationToken);
+
+        // Assert
+        act.Should().Throw<WebFetchException>().WithMessage("*could not be read*");
+    }
+
+    [Fact]
     public void Extract_Cancelled_ThrowsOperationCanceled()
     {
         // Arrange
@@ -186,5 +227,62 @@ public sealed class OpenXmlTextExtractorTests
 
         // Assert
         act.Should().Throw<OperationCanceledException>();
+    }
+
+    /// <summary>
+    /// Builds a zip whose central directory lists one stored entry <paramref name="copies"/> times, every copy pointing at the same data.
+    /// </summary>
+    /// <param name="copies">How many times to list the entry.</param>
+    private static byte[] WithRepeatedEntry(int copies)
+    {
+        using var stream = new MemoryStream();
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            using var writer = new StreamWriter(archive.CreateEntry("part.xml", CompressionLevel.NoCompression).Open());
+            writer.Write("<a>" + new string('x', 1_000) + "</a>");
+        }
+
+        var zip = stream.ToArray();
+        const int endRecordLength = 22;
+        var end = zip.AsSpan(zip.Length - endRecordLength);
+        var directorySize = BinaryPrimitives.ReadInt32LittleEndian(end[12..]);
+        var directoryOffset = BinaryPrimitives.ReadInt32LittleEndian(end[16..]);
+        var record = zip.AsSpan(directoryOffset, directorySize).ToArray();
+
+        var newEnd = end.ToArray();
+        BinaryPrimitives.WriteUInt16LittleEndian(newEnd.AsSpan(8), (ushort)copies);
+        BinaryPrimitives.WriteUInt16LittleEndian(newEnd.AsSpan(10), (ushort)copies);
+        BinaryPrimitives.WriteInt32LittleEndian(newEnd.AsSpan(12), directorySize * copies);
+        return [.. zip.AsSpan(0, directoryOffset), .. Enumerable.Repeat(record, copies).SelectMany(bytes => bytes), .. newEnd];
+    }
+
+    /// <summary>
+    /// Wraps the first run of a Word file's body in <paramref name="depth"/> nested tracked insertions.
+    /// </summary>
+    /// <param name="file">The Word file.</param>
+    /// <param name="depth">How many elements to nest the run in.</param>
+    private static byte[] WithNestedRun(byte[] file, int depth)
+    {
+        using var stream = new MemoryStream();
+        stream.Write(file);
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Update, leaveOpen: true))
+        {
+            var entry = archive.GetEntry("word/document.xml")!;
+            string xml;
+            using (var reader = new StreamReader(entry.Open()))
+            {
+                xml = reader.ReadToEnd();
+            }
+
+            entry.Delete();
+            var start = xml.IndexOf("<w:r>", StringComparison.Ordinal);
+            var end = xml.IndexOf("</w:r>", start, StringComparison.Ordinal) + "</w:r>".Length;
+            var open = string.Concat(Enumerable.Repeat("<w:ins w:id=\"1\" w:author=\"a\">", depth));
+            var close = string.Concat(Enumerable.Repeat("</w:ins>", depth));
+            using var writer = new StreamWriter(archive.CreateEntry("word/document.xml").Open());
+            writer.Write(xml[..start] + open + xml[start..end] + close + xml[end..]);
+        }
+
+        return stream.ToArray();
     }
 }

@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Config;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
@@ -67,22 +68,30 @@ internal static class ChatExport
     }
 
     /// <summary>
-    /// Build a file name using only lowercase letters, digits and dashes.
+    /// Build a file name from the title's letters and digits, in lowercase and of any script, joined by dashes.
     /// </summary>
-    /// <remarks>These characters are safe on every file system.</remarks>
+    /// <remarks>
+    /// Letters, digits and the marks that combine with them are valid in file names on every common file system.
+    /// Everything else, including path separators and the characters Windows forbids, becomes a dash.
+    /// </remarks>
     /// <param name="info">The chat whose title supplies the name.</param>
     private static string FileNameOf(ChatInfo info)
     {
         var name = new StringBuilder();
-        foreach (var c in info.Title)
+        Span<char> encoded = stackalloc char[2];
+        var title = info.Title.Normalize(NormalizationForm.FormC);
+        for (var i = 0; i < title.Length;)
         {
-            if (c is >= 'a' and <= 'z' or >= '0' and <= '9')
+            Rune.DecodeFromUtf16(title.AsSpan(i), out var rune, out var used);
+            i += used;
+            if (Rune.IsLetterOrDigit(rune) || (IsMark(rune) && name.Length > 0 && name[^1] != '-'))
             {
-                name.Append(c);
-            }
-            else if (c is >= 'A' and <= 'Z')
-            {
-                name.Append((char)(c + ('a' - 'A')));
+                if (name.Length + rune.Utf16SequenceLength > MaxFileNameLength)
+                {
+                    break;
+                }
+
+                name.Append(encoded[..Rune.ToLowerInvariant(rune).EncodeToUtf16(encoded)]);
             }
             else if (name.Length > 0 && name[^1] != '-')
             {
@@ -97,5 +106,10 @@ internal static class ChatExport
 
         var text = name.ToString().Trim('-');
         return text.Length == 0 ? "chat" : text;
+    }
+
+    private static bool IsMark(Rune rune)
+    {
+        return Rune.GetUnicodeCategory(rune) is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
     }
 }

@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace BlazeHarness.Core.Compaction;
@@ -20,6 +21,15 @@ public static class TokenEstimate
 
     private const int ImageTokens = 1_000;
     private const int MessageOverheadTokens = 4;
+
+    /// <summary>
+    /// The estimate of each tool call's arguments, kept for as long as the call is.
+    /// </summary>
+    /// <remarks>
+    /// The context is estimated on every render while a reply streams, and serializing every call's arguments each time
+    /// is most of that work. Arguments are not changed once a call exists.
+    /// </remarks>
+    private static readonly ConditionalWeakTable<FunctionCallContent, StrongBox<long>> ArgumentTokens = new();
 
     /// <summary>
     /// Estimate the tokens in a number of characters.
@@ -68,7 +78,7 @@ public static class TokenEstimate
             {
                 TextContent text => Of(text.Text),
                 TextReasoningContent reasoning => Of(reasoning.Text),
-                FunctionCallContent call => Of(call.Name) + Of(JsonSerializer.Serialize(call.Arguments, AIJsonUtilities.DefaultOptions)),
+                FunctionCallContent call => Of(call.Name) + OfArguments(call),
                 FunctionResultContent result => Of(result.Result?.ToString()),
                 DataContent data when data.HasTopLevelMediaType("image") => ImageTokens,
                 UriContent uri when uri.HasTopLevelMediaType("image") => ImageTokens,
@@ -88,5 +98,10 @@ public static class TokenEstimate
     {
         ArgumentNullException.ThrowIfNull(messages);
         return messages.Sum(Of);
+    }
+
+    private static long OfArguments(FunctionCallContent call)
+    {
+        return ArgumentTokens.GetValue(call, c => new StrongBox<long>(Of(JsonSerializer.Serialize(c.Arguments, AIJsonUtilities.DefaultOptions)))).Value;
     }
 }
