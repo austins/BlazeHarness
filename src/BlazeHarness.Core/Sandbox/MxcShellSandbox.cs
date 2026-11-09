@@ -38,13 +38,18 @@ public sealed class MxcShellSandbox : IShellSandbox
     /// <param name="hostEnvironment">Gets the environment variables the command's own environment is built from; defaults to the process environment.</param>
     /// <param name="time">Times the network filter's proxy; defaults to the system clock.</param>
     public MxcShellSandbox(Func<SensitivePaths> sensitive, Func<IReadOnlyDictionary<string, string>>? hostEnvironment = null, TimeProvider? time = null)
+        : this(sensitive, hostEnvironment, time, probed: null)
+    {
+    }
+
+    private MxcShellSandbox(Func<SensitivePaths> sensitive, Func<IReadOnlyDictionary<string, string>>? hostEnvironment, TimeProvider? time, MxcShellSandbox? probed)
     {
         ArgumentNullException.ThrowIfNull(sensitive);
         _time = time ?? TimeProvider.System;
         _sensitive = sensitive;
         _hostEnvironment = hostEnvironment ?? HostEnvironment;
-        _status = new Lazy<SandboxStatus>(Probe, LazyThreadSafetyMode.ExecutionAndPublication);
-        _denies = new Lazy<(bool Files, bool Folders)>(ProbeDenies, LazyThreadSafetyMode.ExecutionAndPublication);
+        _status = probed?._status ?? new Lazy<SandboxStatus>(Probe, LazyThreadSafetyMode.ExecutionAndPublication);
+        _denies = probed?._denies ?? new Lazy<(bool Files, bool Folders)>(ProbeDenies, LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <inheritdoc />
@@ -67,6 +72,18 @@ public sealed class MxcShellSandbox : IShellSandbox
         }
 
         return await SpawnAsync(launch, cancellationToken);
+    }
+
+    /// <summary>
+    /// Creates a sandbox with other inputs that reuses this sandbox's self-test results.
+    /// </summary>
+    /// <remarks>The self-tests check the backend, not these inputs, and each starts a container that takes seconds on Windows.</remarks>
+    /// <param name="sensitive">Gets the protected folders, or null to keep this sandbox's.</param>
+    /// <param name="hostEnvironment">Gets the host environment variables, or null to keep this sandbox's.</param>
+    /// <returns>The new sandbox.</returns>
+    internal MxcShellSandbox With(Func<SensitivePaths>? sensitive = null, Func<IReadOnlyDictionary<string, string>>? hostEnvironment = null)
+    {
+        return new MxcShellSandbox(sensitive ?? _sensitive, hostEnvironment ?? _hostEnvironment, _time, this);
     }
 
     private static string? UnsupportedReason()
