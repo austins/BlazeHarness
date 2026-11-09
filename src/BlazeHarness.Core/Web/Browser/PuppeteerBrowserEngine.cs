@@ -680,7 +680,11 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
                 HeadlessMode = HeadlessMode.Shell,
                 AcceptInsecureCerts = true,
                 DefaultViewport = null,
-                Args = ["--proxy-server=http://127.0.0.1:1"],
+
+                // On Windows 11 and Server 2025 Chrome's port randomization makes loopback connections fail now and then with
+                // ERR_NO_BUFFER_SPACE when many open and close, as when a page talks to a local dev server
+                // (https://github.com/microsoft/playwright/issues/43545). PuppeteerSharp merges this into its own disabled features.
+                Args = ["--proxy-server=http://127.0.0.1:1", "--disable-features=TcpPortRandomizationWin"],
             }).WaitAsync(cancellationToken);
         }
         catch (Exception ex) when (ex is PuppeteerException or IOException)
