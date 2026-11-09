@@ -65,9 +65,10 @@ internal static class PrivateStorage
         security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
         using var identity = WindowsIdentity.GetCurrent();
         security.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.FullControl, AccessControlType.Allow));
+        // Updating the DACL also needs ReadPermissions, which the Append overload rejects.
         var stream = new FileInfo(path).Create(
-            mode,
-            FileSystemRights.Write | FileSystemRights.ChangePermissions,
+            mode == FileMode.Append ? FileMode.OpenOrCreate : mode,
+            FileSystemRights.Write | FileSystemRights.ReadPermissions | FileSystemRights.ChangePermissions,
             share,
             bufferSize,
             options,

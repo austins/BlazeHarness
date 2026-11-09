@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Config;
 using BlazeHarness.Tests.Shared;
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
@@ -9,6 +10,8 @@ namespace BlazeHarness.Core.Tests.Integration.Config;
 public sealed class PrivateStorageTests : IDisposable
 {
     private readonly TempFolder _temp = new("bh-private-");
+
+    public static bool IsWindows => OperatingSystem.IsWindows();
 
     public void Dispose() => _temp.Dispose();
 
@@ -106,6 +109,37 @@ public sealed class PrivateStorageTests : IDisposable
 
         // Assert
         (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).Should().Be("beforeafter");
+    }
+
+    [Theory(Skip = "Windows ACLs only.", SkipUnless = nameof(IsWindows))]
+    [InlineData(FileMode.CreateNew, FileOptions.None)]
+    [InlineData(FileMode.CreateNew, FileOptions.Asynchronous)]
+    [InlineData(FileMode.Append, FileOptions.None)]
+    [InlineData(FileMode.Append, FileOptions.Asynchronous)]
+    [SupportedOSPlatform("windows")]
+    public async Task OpenWrite_OnWindows_HandleCanReadAndUpdatePermissions(FileMode mode, FileOptions options)
+    {
+        // Arrange
+        var path = _temp.Combine("private.txt");
+        var before = mode == FileMode.Append ? "before" : string.Empty;
+        if (mode == FileMode.Append)
+        {
+            await File.WriteAllTextAsync(path, before, TestContext.Current.CancellationToken);
+        }
+
+        // Act
+        await using (var stream = PrivateStorage.OpenWrite(path, mode, options: options))
+        {
+            var security = stream.GetAccessControl();
+            security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+            stream.SetAccessControl(security);
+            new FileInfo(path).ShouldBeOwnerOnly();
+            await stream.WriteAsync(Encoding.UTF8.GetBytes("after"), TestContext.Current.CancellationToken);
+        }
+
+        // Assert
+        (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).Should().Be(before + "after");
+        new FileInfo(path).ShouldBeOwnerOnly();
     }
 
     [Fact]
