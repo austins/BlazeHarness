@@ -13,12 +13,10 @@ namespace BlazeHarness.Core.Secrets;
 /// <param name="path">The full path of the secrets file.</param>
 /// <param name="protect">Turns a plain value into the text stored in the file.</param>
 /// <param name="unprotect">Turns a stored value back into the plain value.</param>
-/// <param name="ownerOnly">True to create the file readable only by the current user.</param>
 internal abstract class FileBackedSecretStore(
     string path,
     Func<string, string> protect,
-    Func<string, string> unprotect,
-    bool ownerOnly) : ISecretStore
+    Func<string, string> unprotect) : ISecretStore
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
 
@@ -118,8 +116,6 @@ internal abstract class FileBackedSecretStore(
     private Task WriteAsync(Dictionary<string, string> all, CancellationToken cancellationToken)
     {
         var json = JsonSerializer.Serialize(all, JsonDefaults.Options);
-        return ownerOnly
-            ? AtomicFile.WriteAllOwnerOnlyTextAsync(path, json, cancellationToken)
-            : AtomicFile.WriteAllTextAsync(path, json, cancellationToken);
+        return AtomicFile.WriteAllOwnerOnlyTextAsync(path, json, cancellationToken);
     }
 }

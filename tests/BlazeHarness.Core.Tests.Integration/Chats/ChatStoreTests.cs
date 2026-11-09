@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Chats.Titles;
+using BlazeHarness.Core.Tests.Integration.Config;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -37,6 +38,7 @@ public sealed class ChatStoreTests : IDisposable
 
         // Assert
         File.Exists(Path.Combine(_paths.ChatDirectory(info.Id), "chat.json")).Should().BeTrue();
+        new FileInfo(Path.Combine(_paths.ChatDirectory(info.Id), "chat.json")).ShouldBeOwnerOnly();
         info.CreatedAt.Should().Be(_time.GetUtcNow());
         info.FolderPath.Should().Be("/work/app");
         _sut.Find(info.Id).Should().Be(info);

@@ -1,5 +1,3 @@
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Text;
 
 namespace BlazeHarness.Core.Config;
@@ -45,69 +43,20 @@ internal static class AtomicFile
     }
 
     /// <summary>
-    /// Write text to a file atomically, creating its folder when needed.
-    /// </summary>
-    /// <param name="path">The target file.</param>
-    /// <param name="content">The text to write.</param>
-    /// <param name="cancellationToken">A token to cancel the write.</param>
-    /// <returns>A task that completes once the target holds the new content.</returns>
-    public static Task WriteAllTextAsync(string path, string content, CancellationToken cancellationToken = default)
-    {
-        return WriteAsync(path, content, ownerOnly: false, cancellationToken);
-    }
-
-    /// <summary>
     /// Write text to a file atomically, with the temp file readable only by the current user before any content is written.
     /// </summary>
     /// <param name="path">The target file.</param>
     /// <param name="content">The text to write.</param>
     /// <param name="cancellationToken">A token to cancel the write.</param>
     /// <returns>A task that completes once the target holds the new content.</returns>
-    public static Task WriteAllOwnerOnlyTextAsync(string path, string content, CancellationToken cancellationToken = default)
-    {
-        return WriteAsync(path, content, ownerOnly: true, cancellationToken);
-    }
-
-    internal static FileStream CreateStagingFile(string path, string target)
-    {
-        var options = new FileStreamOptions
-        {
-            Mode = FileMode.CreateNew,
-            Access = FileAccess.Write,
-            Share = FileShare.None,
-        };
-        if (!OperatingSystem.IsWindows() && File.Exists(target))
-        {
-            options.UnixCreateMode = File.GetUnixFileMode(target);
-        }
-
-        return new FileStream(path, options);
-    }
-
-    private static async Task WriteAsync(string path, string content, bool ownerOnly, CancellationToken cancellationToken)
+    public static async Task WriteAllOwnerOnlyTextAsync(string path, string content, CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
         var temp = path + "." + Guid.NewGuid().ToString("N")[..8] + ".tmp";
         try
         {
-            var options = new FileStreamOptions
-            {
-                Mode = FileMode.CreateNew,
-                Access = FileAccess.Write,
-                Share = FileShare.None,
-                BufferSize = 4096,
-                Options = FileOptions.Asynchronous,
-            };
-            if (ownerOnly && !OperatingSystem.IsWindows())
-            {
-                options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-            }
-
-            var stream = ownerOnly && OperatingSystem.IsWindows()
-                ? CreateOwnerOnlyWindows(temp)
-                : new FileStream(temp, options);
-            await using (stream)
+            await using (var stream = PrivateStorage.OpenWrite(temp, FileMode.CreateNew))
             {
                 await stream.WriteAsync(Utf8WithoutBom.GetBytes(content), cancellationToken);
 
@@ -126,13 +75,19 @@ internal static class AtomicFile
         }
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private static FileStream CreateOwnerOnlyWindows(string path)
+    internal static FileStream CreateStagingFile(string path, string target)
     {
-        var security = new FileSecurity();
-        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
-        using var identity = WindowsIdentity.GetCurrent();
-        security.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.FullControl, AccessControlType.Allow));
-        return new FileInfo(path).Create(FileMode.CreateNew, FileSystemRights.Write, FileShare.None, 4096, FileOptions.Asynchronous, security);
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.Write,
+            Share = FileShare.None,
+        };
+        if (!OperatingSystem.IsWindows() && File.Exists(target))
+        {
+            options.UnixCreateMode = File.GetUnixFileMode(target);
+        }
+
+        return new FileStream(path, options);
     }
 }

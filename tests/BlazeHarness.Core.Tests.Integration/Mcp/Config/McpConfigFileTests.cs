@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Tests.Integration.Config;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -142,6 +143,7 @@ public sealed class McpConfigFileTests : IDisposable
         sut.Parsed.Servers.Should().HaveCount(1);
         raised.Should().Be(1);
         Directory.GetFiles(_temp.Root).Select(Path.GetFileName).Should().BeEquivalentTo("mcp.json");
+        new FileInfo(_path).ShouldBeOwnerOnly();
     }
 
     [Fact]

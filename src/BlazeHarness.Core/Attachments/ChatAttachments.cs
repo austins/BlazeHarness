@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Config;
 using BlazeHarness.Core.Tools;
 using System.Globalization;
 using System.Text;
@@ -168,7 +169,7 @@ public sealed partial class ChatAttachments
     {
         long total = 0;
         var buffer = new byte[81_920];
-        await using var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, buffer.Length, useAsync: true);
+        await using var output = PrivateStorage.OpenWrite(path, FileMode.CreateNew, bufferSize: buffer.Length);
         int read;
         while ((read = await content.ReadAsync(buffer, cancellationToken)) > 0)
         {

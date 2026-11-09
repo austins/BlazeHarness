@@ -76,7 +76,7 @@ public sealed partial class ChatLog : IChatLog, IDisposable
                 text.Insert(0, '\n');
             }
 
-            await using var stream = new FileStream(_path, FileMode.Append, FileAccess.Write, FileShare.Read, bufferSize: 4096, useAsync: true);
+            await using var stream = PrivateStorage.OpenWrite(_path, FileMode.Append, FileShare.Read);
             await stream.WriteAsync(Utf8.GetBytes(text.ToString()), cancellationToken);
             await stream.FlushAsync(cancellationToken);
             _checkedEnding = true;
@@ -143,8 +143,7 @@ public sealed partial class ChatLog : IChatLog, IDisposable
     {
         var file = Guid.NewGuid().ToString("N") + ".txt";
         var path = OutputPath(file);
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllTextAsync(path, result.Output, Utf8, cancellationToken);
+        await AtomicFile.WriteAllOwnerOnlyTextAsync(path, result.Output, cancellationToken);
 
         var length = PreviewLength;
         if (char.IsHighSurrogate(result.Output[length - 1]))

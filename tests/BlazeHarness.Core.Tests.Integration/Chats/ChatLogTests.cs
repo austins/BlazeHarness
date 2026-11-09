@@ -1,6 +1,7 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Chats.Events;
+using BlazeHarness.Core.Tests.Integration.Config;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 using ChatLog = BlazeHarness.Core.Chats.ChatLog;
@@ -60,6 +61,7 @@ public sealed class ChatLogTests : IDisposable
         // Assert
         read.Should().Equal(written);
         (await File.ReadAllLinesAsync(_path, TestContext.Current.CancellationToken)).Should().HaveCount(7);
+        new FileInfo(_path).ShouldBeOwnerOnly();
     }
 
     [Theory]
@@ -139,6 +141,7 @@ public sealed class ChatLogTests : IDisposable
         (await File.ReadAllTextAsync(_path, ct)).Length.Should().BeLessThan(2_000);
         var saved = Directory.GetFiles(Path.Combine(_temp.Root, ChatLog.OutputsFolder)).Should().ContainSingle().Subject;
         (await File.ReadAllTextAsync(saved, ct)).Should().Be(output);
+        new FileInfo(saved).ShouldBeOwnerOnly();
     }
 
     [Fact]

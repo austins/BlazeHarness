@@ -74,7 +74,7 @@ public sealed partial class CustomInstructionsFile : IDisposable
         await _lock.WaitAsync(cancellationToken);
         try
         {
-            await AtomicFile.WriteAllTextAsync(_path, text, cancellationToken);
+            await AtomicFile.WriteAllOwnerOnlyTextAsync(_path, text, cancellationToken);
             Volatile.Write(ref _text, text);
         }
         finally

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Tests.Integration.Config;
 using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Attachments;
@@ -30,6 +31,7 @@ public sealed class ChatAttachmentsTests : IDisposable
         info.Should().Match<AttachmentInfo>(i => i.Name == "notes.md" && i.MediaType == "text/plain" && i.Size == 14 && i.Lines == 3 && i.Id.Length == 8);
         _sut.Find(info.Id).Should().Match<AttachmentFile>(f => f.Name == "notes.md" && f.MediaType == "text/plain");
         (await File.ReadAllTextAsync(_sut.Find(info.Id)!.Path, TestContext.Current.CancellationToken)).Should().Be("one\ntwo\nthree\n");
+        new FileInfo(_sut.Find(info.Id)!.Path).ShouldBeOwnerOnly();
     }
 
     [Fact]

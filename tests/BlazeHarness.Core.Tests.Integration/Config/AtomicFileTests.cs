@@ -45,20 +45,22 @@ public sealed class AtomicFileTests : IDisposable
         File.ReadAllBytes(path).Should().Equal(1);
     }
 
-    [Fact(Skip = "Unix file modes don't exist on Windows.", SkipWhen = nameof(IsWindows))]
+    [Theory(Skip = "Unix file modes don't exist on Windows.", SkipWhen = nameof(IsWindows))]
+    [InlineData(UnixFileMode.UserRead | UnixFileMode.UserWrite)]
+    [InlineData(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead)]
     [UnsupportedOSPlatform("windows")]
-    public void Write_ExistingFile_KeepsItsUnixMode()
+    public void Write_ExistingFile_KeepsItsUnixMode(UnixFileMode mode)
     {
         // Arrange
         var path = _temp.Combine("secret.bin");
         File.WriteAllBytes(path, [0]);
-        File.SetUnixFileMode(path, OwnerOnly);
+        File.SetUnixFileMode(path, mode);
 
         // Act
         AtomicFile.Write(path, [1]);
 
         // Assert
-        File.GetUnixFileMode(path).Should().Be(OwnerOnly);
+        File.GetUnixFileMode(path).Should().Be(mode);
     }
 
     [Fact(Skip = "Unix file modes don't exist on Windows.", SkipWhen = nameof(IsWindows))]
@@ -80,13 +82,13 @@ public sealed class AtomicFileTests : IDisposable
     }
 
     [Fact]
-    public async Task WriteAllTextAsync_Text_IsUtf8WithoutBomAndLeavesNoTempFile()
+    public async Task WriteAllOwnerOnlyTextAsync_Text_IsUtf8WithoutBomAndLeavesNoTempFile()
     {
         // Arrange
         var path = _temp.Combine("nested", "doc.json");
 
         // Act
-        await AtomicFile.WriteAllTextAsync(path, "caf\u00e9", TestContext.Current.CancellationToken);
+        await AtomicFile.WriteAllOwnerOnlyTextAsync(path, "caf\u00e9", TestContext.Current.CancellationToken);
 
         // Assert
         (await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken)).Should().Equal(Encoding.UTF8.GetBytes("caf\u00e9"));
@@ -106,6 +108,23 @@ public sealed class AtomicFileTests : IDisposable
         // Assert
         File.GetUnixFileMode(path).Should().Be(OwnerOnly);
         (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).Should().Be("secret");
+    }
+
+    [Fact]
+    public async Task WriteAllOwnerOnlyTextAsync_Replacement_RestrictsFileAndAllowsManualEditing()
+    {
+        // Arrange
+        var path = _temp.Combine("config.json");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
+
+        // Act
+        await AtomicFile.WriteAllOwnerOnlyTextAsync(path, "saved", TestContext.Current.CancellationToken);
+
+        // Assert
+        new FileInfo(path).ShouldBeOwnerOnly();
+        await File.WriteAllTextAsync(path, "manually edited", TestContext.Current.CancellationToken);
+        (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).Should().Be("manually edited");
+        Directory.GetFiles(_temp.Root).Select(Path.GetFileName).Should().Equal("config.json");
     }
 
     [Theory(Skip = "Windows ACLs only.", SkipUnless = nameof(IsWindows))]
@@ -137,19 +156,15 @@ public sealed class AtomicFileTests : IDisposable
         Directory.GetFiles(_temp.Root).Select(Path.GetFileName).Should().Equal("key.txt");
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task WriteAllTextAsync_Cancelled_LeavesTheOldContentAndNoTempFile(bool ownerOnly)
+    [Fact]
+    public async Task WriteAllOwnerOnlyTextAsync_Cancelled_LeavesTheOldContentAndNoTempFile()
     {
         // Arrange
         var path = _temp.Combine("doc.txt");
         await File.WriteAllTextAsync(path, "old", TestContext.Current.CancellationToken);
 
         // Act
-        var act = () => ownerOnly
-            ? AtomicFile.WriteAllOwnerOnlyTextAsync(path, "new", new CancellationToken(canceled: true))
-            : AtomicFile.WriteAllTextAsync(path, "new", new CancellationToken(canceled: true));
+        var act = () => AtomicFile.WriteAllOwnerOnlyTextAsync(path, "new", new CancellationToken(canceled: true));
 
         // Assert
         await act.Should().ThrowAsync<OperationCanceledException>();

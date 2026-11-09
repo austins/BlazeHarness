@@ -30,6 +30,28 @@ public sealed class JsonFileStoreTests : IDisposable
         // Assert
         _sut.Current.Count.Should().Be(3);
         Directory.GetFiles(_temp.Root).Select(Path.GetFileName).Should().BeEquivalentTo("doc.json");
+        new FileInfo(_temp.Combine("doc.json")).ShouldBeOwnerOnly();
+    }
+
+    [Fact]
+    public async Task OnExternalChange_EditorReplacesPrivateFile_ReloadsAndCanSaveAgain()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        await _sut.UpdateAsync(d => d with { Count = 1 }, ct);
+        var edited = _temp.Combine("editor.tmp");
+        await File.WriteAllTextAsync(edited, """{"count": 8}""", ct);
+
+        // Act
+        File.Move(edited, _temp.Combine("doc.json"), overwrite: true);
+        _sut.OnExternalChange();
+        var reloaded = _sut.Current.Count;
+        await _sut.UpdateAsync(d => d with { Count = d.Count + 1 }, ct);
+
+        // Assert
+        reloaded.Should().Be(8);
+        _sut.Current.Count.Should().Be(9);
+        new FileInfo(_temp.Combine("doc.json")).ShouldBeOwnerOnly();
     }
 
     [Fact]

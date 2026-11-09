@@ -1,3 +1,4 @@
+using BlazeHarness.Core.Config;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Text;
@@ -193,11 +194,11 @@ public sealed class FileLoggerProvider : ILoggerProvider
             }
         }
 
-        _stream = new FileStream(
+        _stream = PrivateStorage.OpenWrite(
             Path.Combine(_directory, FileNameOf(today)),
             FileMode.Append,
-            FileAccess.Write,
-            FileShare.ReadWrite | FileShare.Delete);
+            FileShare.ReadWrite | FileShare.Delete,
+            options: FileOptions.None);
         _streamDay = today;
         _size = _stream.Length;
 

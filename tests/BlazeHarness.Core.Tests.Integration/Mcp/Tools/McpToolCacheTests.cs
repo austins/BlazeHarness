@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Mcp.Tools;
+using BlazeHarness.Core.Tests.Integration.Config;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -38,6 +39,7 @@ public sealed class McpToolCacheTests : IDisposable
         // Assert
         tools.Should().Equal(Tools);
         File.Exists(Path.Combine(_temp.Root, "cache", "mcp-tools.json")).Should().BeTrue();
+        new FileInfo(_temp.Combine("cache", "mcp-tools.json")).ShouldBeOwnerOnly();
     }
 
     [Fact]

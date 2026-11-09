@@ -60,6 +60,7 @@ public sealed class CustomInstructionsFileTests : IDisposable
         sut.Text.Should().Be("# Rules\n\nBe kind.");
         (await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken)).Should().Be("# Rules\n\nBe kind.");
         raised.Should().Be(0);
+        new FileInfo(_path).ShouldBeOwnerOnly();
     }
 
     [Fact]

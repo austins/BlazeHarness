@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Logging;
+using BlazeHarness.Core.Tests.Integration.Config;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Time.Testing;
 
@@ -26,6 +27,7 @@ public sealed class FileLoggerProviderTests : IDisposable
         // Assert
         var text = await ReadLogAsync("blazeharness-20260310.log");
         text.Should().Be("2026-03-10T08:30:15.123Z WRN Some.Category Could not read config.json.\n");
+        new FileInfo(Path.Combine(Logs, "blazeharness-20260310.log")).ShouldBeOwnerOnly();
     }
 
     [Fact]
@@ -74,6 +76,7 @@ public sealed class FileLoggerProviderTests : IDisposable
         Directory.GetFiles(Logs).Select(Path.GetFileName).Order(StringComparer.Ordinal)
             .Should().Equal("blazeharness-20260310.log", "blazeharness-20260311.log");
         (await ReadLogAsync("blazeharness-20260311.log")).Should().Contain("tomorrow").And.NotContain("today");
+        new FileInfo(Path.Combine(Logs, "blazeharness-20260311.log")).ShouldBeOwnerOnly();
     }
 
     [Fact]

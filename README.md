@@ -50,6 +50,10 @@ The connection is plain HTTP. By default the URL must use `localhost` or `127.0.
 
 The app stores everything under `~/.blazeharness` (`%USERPROFILE%\.blazeharness` on Windows). Set `BLAZEHARNESS_HOME` to use another folder, for example a temp folder when experimenting.
 
+App-owned settings, chats, attachments, tool outputs, logs and the MCP cache use owner-only permissions: `0600` on Linux/macOS, owner-only ACLs on Windows. This includes temporary files. Permissions are applied when files are created, replaced or opened for append; directory and project-file permissions are left alone.
+
+You can still edit settings and instructions in a text editor running as the same account. These permissions don't hide filenames, encrypt data or block administrators/root or other processes running as your account.
+
 | Path | Contents |
 |---|---|
 | `providers.json` | Providers and models |
@@ -179,6 +183,7 @@ Not built yet, and not promised:
 
 * Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits. A subagent would run the same loop at the same or a lower access level, and its approval requests would go to the parent chat's approver, never be granted on their own. A subagent starts without the parent's history, so it would need the to-do list passed in or a `get_todos` tool; a chat today needs neither, because the list is in its own history and in compaction summaries.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
+* Choose a branch or create a worktree for a folder with a Git repository.
 * Look into Blazor AI components, once they are stable on the target .NET version.
 
 ## Not goals

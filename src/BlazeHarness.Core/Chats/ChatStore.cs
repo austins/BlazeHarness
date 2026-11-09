@@ -321,7 +321,7 @@ public sealed partial class ChatStore : IDisposable
     private Task WriteAsync(ChatInfo info, CancellationToken cancellationToken)
     {
         var path = Path.Combine(_paths.ChatDirectory(info.Id), MetadataFile);
-        return AtomicFile.WriteAllTextAsync(path, JsonSerializer.Serialize(info, JsonDefaults.Options), cancellationToken);
+        return AtomicFile.WriteAllOwnerOnlyTextAsync(path, JsonSerializer.Serialize(info, JsonDefaults.Options), cancellationToken);
     }
 
     private void RemoveTrash(string directory)

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Secrets;
+using BlazeHarness.Core.Tests.Integration.Config;
 using BlazeHarness.Tests.Shared;
 using System.Runtime.Versioning;
 
@@ -41,5 +42,6 @@ public sealed class DpapiSecretStoreTests : IDisposable
         value.Should().Be("hunter2");
         (await File.ReadAllTextAsync(path, ct)).Should().NotContain("hunter2");
         _sut.IsSecure.Should().BeTrue();
+        new FileInfo(path).ShouldBeOwnerOnly();
     }
 }

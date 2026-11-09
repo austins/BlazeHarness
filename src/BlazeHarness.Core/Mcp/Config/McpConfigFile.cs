@@ -108,7 +108,7 @@ public sealed partial class McpConfigFile : IDisposable
         await _lock.WaitAsync(cancellationToken);
         try
         {
-            await AtomicFile.WriteAllTextAsync(_path, text, cancellationToken);
+            await AtomicFile.WriteAllOwnerOnlyTextAsync(_path, text, cancellationToken);
             Volatile.Write(ref _current, snapshot);
         }
         finally

@@ -83,7 +83,7 @@ public sealed partial class JsonFileStore<T> : IDisposable
         {
             var updated = mutate(_current);
             var json = JsonSerializer.Serialize(updated, JsonDefaults.Options);
-            await AtomicFile.WriteAllTextAsync(_path, json, cancellationToken);
+            await AtomicFile.WriteAllOwnerOnlyTextAsync(_path, json, cancellationToken);
 
             _lastWrittenJson = json;
             Volatile.Write(ref _current, updated);
