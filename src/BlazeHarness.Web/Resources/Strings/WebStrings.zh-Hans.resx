@@ -307,6 +307,9 @@
   <data name="McpPickerScopeNote" xml:space="preserve">
     <value>仅适用于此聊天，从下一条回复起生效。更改此项会重置模型的提示词缓存，因此该回复可能会更慢。</value>
   </data>
+  <data name="ChatViewToggleAll" xml:space="preserve">
+    <value>全部</value>
+  </data>
   <data name="McpPickerFailed" xml:space="preserve">
     <value>失败</value>
   </data>

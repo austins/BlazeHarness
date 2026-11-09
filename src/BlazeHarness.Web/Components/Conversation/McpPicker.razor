@@ -10,6 +10,12 @@
     <Popover Label="@WebStrings.McpPickerLabel" Title="@WebStrings.McpPickerTitle">
         <Trigger><Icon Name="plug" /> MCP <span class="badge">@_servers.Count(IsOn) / @_servers.Count</span></Trigger>
         <ChildContent>
+            <div class="panel-all">
+                <label class="panel-check">
+                    <input type="checkbox" checked="@_servers.All(IsOn)" @onchange="e => SetAllAsync((bool)e.Value!)" />
+                    <span class="panel-check-name">@WebStrings.ChatViewToggleAll</span>
+                </label>
+            </div>
             <ul class="panel-list">
                 @foreach (var status in _servers)
                 {
@@ -89,6 +95,14 @@
         else
         {
             await OnChoose.InvokeAsync((name, enabled));
+        }
+    }
+
+    private async Task SetAllAsync(bool enabled)
+    {
+        foreach (var status in _servers.Where(s => IsOn(s) != enabled).ToList())
+        {
+            await SetAsync(status.Config.Name, enabled);
         }
     }
 

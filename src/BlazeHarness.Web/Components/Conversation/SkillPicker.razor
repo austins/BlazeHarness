@@ -10,6 +10,12 @@
     <Popover Label="@WebStrings.SkillPickerLabel" Title="@WebStrings.SkillPickerTitle">
         <Trigger><Icon Name="book" /> @WebStrings.SkillPickerTrigger <span class="badge">@_available.Skills.Count(IsOn) / @_available.Skills.Count</span></Trigger>
         <ChildContent>
+            <div class="panel-all">
+                <label class="panel-check">
+                    <input type="checkbox" checked="@_available.Skills.All(IsOn)" @onchange="e => SetAllAsync((bool)e.Value!)" />
+                    <span class="panel-check-name">@WebStrings.ChatViewToggleAll</span>
+                </label>
+            </div>
             <ul class="panel-list">
                 @foreach (var skill in _available.Skills)
                 {
@@ -92,6 +98,14 @@
         else
         {
             await OnChoose.InvokeAsync((name, enabled));
+        }
+    }
+
+    private async Task SetAllAsync(bool enabled)
+    {
+        foreach (var skill in _available.Skills.Where(s => IsOn(s) != enabled).ToList())
+        {
+            await SetAsync(skill.Name, enabled);
         }
     }
 

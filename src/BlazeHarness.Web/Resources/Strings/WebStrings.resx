@@ -416,6 +416,10 @@
     <value>Applies to this chat only, from the next reply. Changing it resets the model's prompt cache, so that reply may be slower.</value>
     <comment>Info note at the bottom of the MCP picker popover: explains that turning servers on or off affects only the current chat. "Prompt cache" is the model provider's cache of the conversation prefix.</comment>
   </data>
+  <data name="ChatViewToggleAll" xml:space="preserve">
+    <value>All</value>
+    <comment>Checkbox above the list in the MCP and skill picker popovers that turns every entry on for this chat, or all off when they are all on already.</comment>
+  </data>
   <data name="McpPickerFailed" xml:space="preserve">
     <value>Failed</value>
     <comment>Short error badge next to an MCP server in the picker popover when its connection failed; the error text is shown as a tooltip.</comment>
