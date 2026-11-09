@@ -42,9 +42,10 @@ public sealed class SdkMcpConnectorTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         var script = Path.Combine(_temp.Root, "server.py");
         await File.WriteAllTextAsync(script, EchoServer, ct);
+        using var timeout = Timeout();
 
         // Act
-        await using var connection = await _sut.ConnectAsync(Config(["-u", script]), ct).Bounded();
+        await using var connection = await _sut.ConnectAsync(Config(["-u", script]), timeout.Token);
         var tools = await connection.ListToolsAsync(ct).Bounded();
         var result = await connection.CallToolAsync("echo", """{"text":"hi"}""", ct).Bounded();
 
@@ -59,9 +60,10 @@ public sealed class SdkMcpConnectorTests : IDisposable
     {
         // Arrange
         var env = new Dictionary<string, string> { ["API_KEY"] = "topsecret-value" };
+        using var timeout = Timeout();
 
         // Act
-        var act = async () => await _sut.ConnectAsync(Config(["-c", FailingServer], env), TestContext.Current.CancellationToken).Bounded();
+        var act = async () => await _sut.ConnectAsync(Config(["-c", FailingServer], env), timeout.Token);
 
         // Assert
         var thrown = await act.Should().ThrowAsync<McpConnectException>();
@@ -80,6 +82,21 @@ public sealed class SdkMcpConnectorTests : IDisposable
 
         // Assert
         await act.Should().ThrowAsync<McpConnectException>();
+    }
+
+    /// <summary>
+    /// Create a token that cancels after <see cref="TestTimeouts.Default"/>.
+    /// </summary>
+    /// <remarks>
+    /// A connect bounded with <c>Bounded</c> keeps running after the timeout, and its server process then holds the temp folder open.
+    /// Cancelling the connect makes the SDK stop the process.
+    /// </remarks>
+    /// <returns>The source of the token, for the test to dispose.</returns>
+    private static CancellationTokenSource Timeout()
+    {
+        var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        timeout.CancelAfter(TestTimeouts.Default);
+        return timeout;
     }
 
     private McpServerConfig Config(string[] args, Dictionary<string, string>? env = null)

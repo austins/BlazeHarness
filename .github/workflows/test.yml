@@ -12,14 +12,21 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
   # One browser folder on every OS, so the cache step has a single path.
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+  SANDBOX_TESTS: BlazeHarness.Core.Tests.Integration.Sandbox.MxcShellSandboxTests
 
 jobs:
   test:
-    name: Test (${{ matrix.os }})
+    name: Test (${{ matrix.os }}${{ matrix.part && format(', {0}', matrix.part) || '' }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        part: ['']
+        # Each Windows sandbox test starts a process container, which loads a 4-vCPU runner enough to push other tests past their timeouts,
+        # so they run on a runner of their own.
+        include:
+          - os: windows-latest
+            part: sandbox
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,18 +40,23 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq bubblewrap socat
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - if: matrix.part != 'sandbox'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
           # The E2E project declares the Playwright version, which decides the browser build.
           key: ${{ runner.os }}-playwright-${{ hashFiles('tests/BlazeHarness.Web.Tests.E2E/BlazeHarness.Web.Tests.E2E.csproj') }}
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - if: matrix.part != 'sandbox'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           # The Chrome headless shell the browser tests download into the app's browser folder (TestChrome).
           path: ~/.blazeharness/cache/browser
           # The Core project declares the PuppeteerSharp version, which decides the Chrome build.
           key: ${{ runner.os }}-puppeteer-${{ hashFiles('src/BlazeHarness.Core/BlazeHarness.Core.csproj') }}
-      - run: dotnet test --no-restore -c Release --results-directory ./test-results -- --report-xunit-ctrf
+      - if: matrix.part == 'sandbox'
+        run: dotnet test --no-restore -c Release --project tests/BlazeHarness.Core.Tests.Integration --results-directory ./test-results -- --report-xunit-ctrf --filter-class ${{ env.SANDBOX_TESTS }}
+      - if: matrix.part != 'sandbox'
+        run: dotnet test --no-restore -c Release --results-directory ./test-results -- --report-xunit-ctrf ${{ runner.os == 'Windows' && format('--filter-not-class {0}', env.SANDBOX_TESTS) || '' }}
       - uses: ctrf-io/github-test-reporter@dbb08957b5b2af918b39136ab2c5532002c7649b # v1.3.2
         if: always()
         with:
@@ -54,4 +66,4 @@ jobs:
           failed-folded-report: true
           skipped-report: true
           upload-artifact: true
-          artifact-name: ctrf-report-${{ runner.os }}
+          artifact-name: ctrf-report-${{ runner.os }}${{ matrix.part && format('-{0}', matrix.part) || '' }}
