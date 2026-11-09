@@ -34,7 +34,7 @@ public sealed class ConversationContext
     /// The target fraction of the context limit used after compaction.
     /// </summary>
     /// <remarks>Leave room for growth so the next call does not compact again.</remarks>
-    private const double TargetAfterFraction = 0.6;
+    private const double TargetAfterFraction = 0.5;
     private const double MinTailFraction = 0.05;
     private const double MinGrowthFraction = 0.1;
     private const string SummaryHeading =
