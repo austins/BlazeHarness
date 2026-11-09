@@ -134,10 +134,20 @@ public sealed class SkillSetTests
     [InlineData("/secret do it", true)]
     [InlineData("/secret\nmore", true)]
     [InlineData("/secrets", false)]
-    [InlineData("use /secret", false)]
+    [InlineData("use /secret now", true)]
+    [InlineData("hello, please use /secret.", true)]
+    [InlineData("tab\t/secret", true)]
+    [InlineData("see a/secret", false)]
+    [InlineData("/secret/file", false)]
+    [InlineData("/secret_x", false)]
+    [InlineData("/secretÉ", false)]
+    [InlineData("run `/secret` here", false)]
+    [InlineData("```\n/secret\n```", false)]
+    [InlineData("`` a ` /secret ``", false)]
+    [InlineData("an ` unclosed /secret", true)]
     [InlineData("/nothing", false)]
     [InlineData("/", false)]
-    public void StartedIn_Messages_FindsSkillsNamedAtTheStart(string message, bool expected)
+    public void StartedIn_Messages_FindsSkillsNamedAsAWord(string message, bool expected)
     {
         // Arrange
         var sut = new SkillSet([Hidden("secret")]);
@@ -147,6 +157,19 @@ public sealed class SkillSetTests
 
         // Assert
         started.Contains("secret").Should().Be(expected);
+    }
+
+    [Fact]
+    public void MentionedIn_SeveralSkills_ListsEachOnceInOrder()
+    {
+        // Arrange
+        var sut = new SkillSet([Skill("alpha", "A."), Skill("beta", "B.")]);
+
+        // Act
+        var mentioned = sut.MentionedIn("do /beta then /alpha and /beta again");
+
+        // Assert
+        mentioned.Should().Equal("beta", "alpha");
     }
 
     private static SkillInfo Hidden(string name) => new(name, "Hidden.", "/skills/" + name, SkillSource.App, ModelInvocable: false);

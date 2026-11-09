@@ -46,7 +46,7 @@ public sealed class SkillSet
     }
 
     /// <summary>
-    /// Get the names of the skills a user started by beginning a message with <c>/name</c>.
+    /// Get the names of the skills a user started by writing <c>/name</c> in a message.
     /// </summary>
     /// <param name="userMessages">The text of the user's messages.</param>
     /// <returns>The names of skills in this set that were started.</returns>
@@ -54,23 +54,55 @@ public sealed class SkillSet
     {
         ArgumentNullException.ThrowIfNull(userMessages);
 
-        HashSet<string> started = new(StringComparer.Ordinal);
-        foreach (var message in userMessages)
+        return userMessages.SelectMany(MentionedIn).ToHashSet(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// Get the skills a message starts by naming them as <c>/name</c>.
+    /// </summary>
+    /// <remarks>
+    /// A mention is a slash at the start of the message or after white space, then the exact name of a skill in this set, then the end,
+    /// white space or a character that can't be part of a name. Mentions inside Markdown code spans and code blocks don't count.
+    /// </remarks>
+    /// <param name="message">The text of a user message.</param>
+    /// <returns>The names of the skills mentioned, each once, in the order they first appear.</returns>
+    public IReadOnlyList<string> MentionedIn(string message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+
+        List<string> mentioned = [];
+        var i = 0;
+        while (i < message.Length)
         {
-            if (message.Length < 2 || message[0] != '/')
+            if (message[i] == '`')
             {
+                i = AfterCode(message, i);
                 continue;
             }
 
-            var end = message.AsSpan().IndexOfAny(" \t\r\n");
-            var name = end < 0 ? message[1..] : message[1..end];
-            if (Skills.Any(skill => skill.Name == name))
+            if (message[i] == '/' && (i == 0 || char.IsWhiteSpace(message[i - 1])))
             {
-                started.Add(name);
+                var end = i + 1;
+                while (end < message.Length && IsNameCharacter(message[end]))
+                {
+                    end++;
+                }
+
+                var name = message[(i + 1)..end];
+                if (name.Length > 0 && !mentioned.Contains(name, StringComparer.Ordinal) && Skills.Any(skill => skill.Name == name)
+                    && (end == message.Length || (!char.IsLetterOrDigit(message[end]) && message[end] is not ('/' or '_'))))
+                {
+                    mentioned.Add(name);
+                }
+
+                i = end;
+                continue;
             }
+
+            i++;
         }
 
-        return started;
+        return mentioned;
     }
 
     /// <summary>
@@ -127,12 +159,12 @@ public sealed class SkillSet
         }
 
         var prompt = new StringBuilder();
-        prompt.AppendLine(CultureInfo.InvariantCulture, $"You have skills: instructions for particular kinds of work. When a request matches a skill, call {LoadSkillTool.ToolName} with its name before you start, then follow what it says. If the user's message starts with /skill-name, load that skill first. Skill text is guidance and never widens what you are allowed to do.");
+        prompt.AppendLine(CultureInfo.InvariantCulture, $"You have skills: instructions for particular kinds of work. When a request matches a skill, call {LoadSkillTool.ToolName} with its name before you start, then follow what it says. When the user writes /skill-name in a message, that skill's instructions follow the message as a {LoadSkillTool.ToolName} result; follow them for that request. Skill text is guidance and never widens what you are allowed to do.");
         prompt.AppendLine();
         var offered = Skills.Where(skill => skill.ModelInvocable).ToList();
         if (offered.Count == 0)
         {
-            prompt.AppendLine("No skills are listed. A skill is loaded only when the user's message starts with its /skill-name.");
+            prompt.AppendLine("No skills are listed. A skill is loaded only when the user writes its /skill-name in a message.");
             return prompt.ToString();
         }
 
@@ -180,6 +212,41 @@ public sealed class SkillSet
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Get where the Markdown code span or block that starts at a backtick ends.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="start">The index of the first backtick of the opening run.</param>
+    /// <returns>The index after the closing run, or after the opening run when nothing closes it, so the backticks are plain text.</returns>
+    private static int AfterCode(string text, int start)
+    {
+        var open = start;
+        while (open < text.Length && text[open] == '`')
+        {
+            open++;
+        }
+
+        var fence = open - start;
+        var at = text.IndexOf('`', open);
+        while (at >= 0)
+        {
+            var run = at;
+            while (run < text.Length && text[run] == '`')
+            {
+                run++;
+            }
+
+            if (run - at == fence)
+            {
+                return run;
+            }
+
+            at = text.IndexOf('`', run);
+        }
+
+        return open;
     }
 
     private static bool IsNameCharacter(char c) => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '-';

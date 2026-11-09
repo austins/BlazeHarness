@@ -111,10 +111,10 @@ public sealed class ChatAttachmentTests : IDisposable
         restored.Restore(_log.Events);
 
         // Assert
-        var kept = first.Entries[1].ToolCalls.Single().Image;
-        kept.Should().NotBeNull();
+        var kept = first.Entries[1].ToolCalls.Single().Images.Should().ContainSingle().Subject;
         _attachments.Find(kept.Id).Should().NotBeNull();
-        _log.Events.OfType<ToolResultEvent>().Single().Image.Should().Be(kept);
+        _log.Events.OfType<ToolResultEvent>().Single().Images.Should().Equal(kept);
+        first.History[3].Text.Should().Contain($"attachment {kept.Id}");
         client.Requests[1][^1].Contents.OfType<DataContent>().Single().Data.ToArray().Should().Equal(PngBytes);
         var picture = restored.History[3];
         picture.Text.Should().Be(first.History[3].Text);
@@ -285,7 +285,7 @@ public sealed class ChatAttachmentTests : IDisposable
         tool.PathArguments.Returns([]);
         tool.Timeout.Returns(TestTimeouts.Default);
         tool.Summarize(default).ReturnsForAnyArgs("shot");
-        tool.ExecuteAsync(default!, default!, default).ReturnsForAnyArgs(ToolResult.Ok("saved") with { Image = new DataContent(PngBytes, "image/png") });
+        tool.ExecuteAsync(default!, default!, default).ReturnsForAnyArgs(ToolResult.WithImage("saved", new DataContent(PngBytes, "image/png")));
         return tool;
     }
 

@@ -331,6 +331,15 @@
   <data name="MessageViewInterruptedHint" xml:space="preserve">
     <value>此回复在应用停止时中断。请重试以重新生成。</value>
   </data>
+  <data name="MessageViewTruncatedWarning" xml:space="preserve">
+    <value>此回复达到了模型的输出上限，已被截断。请让模型继续，或在“设置 &gt; 提供商”中提高“最大输出”。</value>
+  </data>
+  <data name="MessageViewCompactionFailedWarning" xml:space="preserve">
+    <value>无法压缩对话，因此此回复使用了完整对话。请在“设置 &gt; 提供商”中检查模型的“上下文窗口”，或在“设置 &gt; 常规”中开启“不使用模型进行压缩（提取）”。</value>
+  </data>
+  <data name="MessageViewContextTooLargeWarning" xml:space="preserve">
+    <value>此回复已停止：对话已超出模型的上下文窗口，且无法压缩。请在“设置 &gt; 提供商”中检查模型的“上下文窗口”，在“设置 &gt; 常规”中开启“不使用模型进行压缩（提取）”，或开始新的聊天。</value>
+  </data>
   <data name="MessageViewStoppedHint" xml:space="preserve">
     <value>已停止。</value>
   </data>

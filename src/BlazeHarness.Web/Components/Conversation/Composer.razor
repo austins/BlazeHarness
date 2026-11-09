@@ -538,21 +538,42 @@ else
         return _suggestions = FindSuggestions();
     }
 
+    /// <summary>
+    /// Find the skills whose name starts with the <c>/partial</c> word the text ends with.
+    /// </summary>
+    /// <remarks>A skill can be named anywhere in a message, so the word being typed at the end is matched, not only a word at the start.</remarks>
     private List<SkillInfo>? FindSuggestions()
     {
-        if (_text.Length == 0 || _text[0] != '/' || _text.Any(char.IsWhiteSpace))
+        var start = SkillWordStart();
+        if (start < 0)
         {
             return null;
         }
 
-        var typed = _text[1..];
+        var typed = _text[(start + 1)..];
         var available = ChatId is null ? Catalog.For(FolderPath, null).Skills : ChatService.AvailableSkills(ChatId).Skills.Where(s => ChatService.IsSkillEnabled(ChatId, s.Name)).ToList();
         return [.. available.Where(skill => skill.Name.StartsWith(typed, StringComparison.Ordinal)).Take(MaxSuggestions)];
     }
 
+    /// <summary>
+    /// Get where the <c>/partial</c> word at the end of the text starts.
+    /// </summary>
+    /// <returns>The index of its slash, or -1 when the text doesn't end with such a word.</returns>
+    private int SkillWordStart()
+    {
+        var start = _text.Length;
+        while (start > 0 && !char.IsWhiteSpace(_text[start - 1]))
+        {
+            start--;
+        }
+
+        return start < _text.Length && _text[start] == '/' && _text.IndexOf('/', start + 1) < 0 ? start : -1;
+    }
+
     private async Task ChooseSkillAsync(SkillInfo skill)
     {
-        _text = $"/{skill.Name} ";
+        var start = Math.Max(SkillWordStart(), 0);
+        _text = $"{_text[..start]}/{skill.Name} ";
         _resize = true;
         await _input.FocusAsync();
     }

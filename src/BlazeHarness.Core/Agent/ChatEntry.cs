@@ -114,6 +114,11 @@ public sealed class ChatEntry
     public string? Error { get; set; }
 
     /// <summary>
+    /// Gets or sets the problems the chat shows next to the reply.
+    /// </summary>
+    public ReplyWarnings Warnings { get; set; }
+
+    /// <summary>
     /// Gets or sets a label for the provider, model and level that produced the reply.
     /// </summary>
     public string? Label { get; set; }

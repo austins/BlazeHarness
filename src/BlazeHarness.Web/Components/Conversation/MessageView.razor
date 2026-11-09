@@ -88,6 +88,20 @@
             <div class="hint">@WebStrings.MessageViewInterruptedHint</div>
         }
 
+        @if (Entry.Warnings.HasFlag(ReplyWarnings.ResponseTruncated))
+        {
+            <Alert Kind="AlertKind.Warning">@WebStrings.MessageViewTruncatedWarning</Alert>
+        }
+
+        @if (Entry.Warnings.HasFlag(ReplyWarnings.ContextTooLarge))
+        {
+            <Alert Kind="AlertKind.Warning">@WebStrings.MessageViewContextTooLargeWarning</Alert>
+        }
+        else if (Entry.Warnings.HasFlag(ReplyWarnings.CompactionFailed))
+        {
+            <Alert Kind="AlertKind.Warning">@WebStrings.MessageViewCompactionFailedWarning</Alert>
+        }
+
         @if (Entry.Error is not null)
         {
             <Alert>@Entry.Error</Alert>

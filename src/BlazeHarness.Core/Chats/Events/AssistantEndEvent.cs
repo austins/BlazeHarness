@@ -12,4 +12,5 @@ namespace BlazeHarness.Core.Chats.Events;
 /// <param name="Status">How it ended.</param>
 /// <param name="Error">The error message when it failed.</param>
 /// <param name="Usage">The token usage the server reported.</param>
-internal sealed record AssistantEndEvent(DateTimeOffset At, Guid EntryId, EntryStatus Status, string? Error, UsageReported? Usage) : ChatEvent(At);
+/// <param name="Warnings">The problems shown next to the reply.</param>
+internal sealed record AssistantEndEvent(DateTimeOffset At, Guid EntryId, EntryStatus Status, string? Error, UsageReported? Usage, ReplyWarnings Warnings = ReplyWarnings.None) : ChatEvent(At);

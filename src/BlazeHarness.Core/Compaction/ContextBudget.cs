@@ -23,6 +23,18 @@ internal static class ContextBudget
     /// <returns>The size in tokens, or 0 when the window is not known.</returns>
     public static int Limit(ModelConfig model)
     {
+        var input = InputLimit(model);
+        return input == 0 ? 0 : Math.Max(1, (int)(input * Threshold));
+    }
+
+    /// <summary>
+    /// Get the largest request the model can take while keeping room for the response.
+    /// </summary>
+    /// <remarks>It is the window minus the room kept for the response, with no margin.</remarks>
+    /// <param name="model">The model the next request goes to.</param>
+    /// <returns>The size in tokens, or 0 when the window is not known.</returns>
+    public static int InputLimit(ModelConfig model)
+    {
         ArgumentNullException.ThrowIfNull(model);
 
         if (model.ContextWindow <= 0)
@@ -32,6 +44,6 @@ internal static class ContextBudget
 
         // An output cap that leaves no room for a prompt is a configuration mistake, so half the window is kept instead.
         var output = model.MaxOutputTokens > 0 && model.MaxOutputTokens < model.ContextWindow / 2 ? model.MaxOutputTokens : model.ContextWindow / 2;
-        return Math.Max(1, (int)((model.ContextWindow - output) * Threshold));
+        return Math.Max(1, model.ContextWindow - output);
     }
 }

@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Tools;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.AI;
 
@@ -128,7 +129,7 @@ public sealed class AttachmentMessageTests : IDisposable
     public void ForToolImages_NoCallHasAnImage_ReturnsNull()
     {
         // Act
-        var message = AttachmentMessage.ForToolImages([("read", "c1", null)]);
+        var message = AttachmentMessage.ForToolImages([("read", "c1", [])]);
 
         // Assert
         message.Should().BeNull();
@@ -138,14 +139,74 @@ public sealed class AttachmentMessageTests : IDisposable
     public void ForToolImages_PictureNoLongerSaved_SaysSo()
     {
         // Arrange
-        var call = new ToolCallEntry("c1", "browser_screenshot", "{}", "x") { Image = new AttachmentInfo("0123abcd", "browser_screenshot.png", "image/png", 3, 0) };
+        var call = new ToolCallEntry("c1", "browser_screenshot", "{}", "x") { Images = [new AttachmentInfo("0123abcd", "browser_screenshot.png", "image/png", 3, 0)] };
 
         // Act
         var message = AttachmentMessage.ForToolImages([call], _store);
 
         // Assert
-        message!.Text.Should().Be("<tool_response>\n[The picture from browser_screenshot call c1 is no longer available.]\n</tool_response>");
+        message!.Text.Should().Be("<tool_response>\n[Picture from browser_screenshot call c1, attachment 0123abcd is no longer available.]\n</tool_response>");
         StepMessage.Is(message).Should().BeTrue();
         message.Contents.OfType<DataContent>().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ForToolImages_PicturesPastTheCallBudget_NamesThemWithTheirIds()
+    {
+        // Arrange
+        const long Size = 4L * 1024 * 1024;
+        var pictures = Enumerable.Range(0, 6)
+            .Select(i => new ToolImage(new DataContent(new byte[] { 1 }, "image/png"), new AttachmentInfo($"0000000{i}", "shot.png", "image/png", Size, 0)))
+            .ToList();
+
+        // Act
+        var message = AttachmentMessage.ForToolImages([("shot", "c1", pictures)]);
+
+        // Assert
+        message!.Contents.OfType<DataContent>().Should().HaveCount(5);
+        message.Text.Should().Contain("[Picture 1 of 6 from shot call c1, attachment 00000000:]")
+            .And.Contain("[Picture 6 of 6 from shot call c1, attachment 00000005 was not shown, to keep the pictures of one call under 20 MB. Read it with read_attachment and the id 00000005 if you need it.]");
+    }
+
+    [Fact]
+    public void ForToolImages_PictureTooLargeToView_IsNamedInstead()
+    {
+        // Arrange
+        var info = new AttachmentInfo("0123abcd", "shot.png", "image/png", ImageFiles.MaxViewableBytes + 1, 0);
+
+        // Act
+        var message = AttachmentMessage.ForToolImages([("shot", "c1", [new ToolImage(new DataContent(new byte[] { 1 }, "image/png"), info)])]);
+
+        // Assert
+        message!.Contents.OfType<DataContent>().Should().BeEmpty();
+        message.Text.Should().Contain("[Picture from shot call c1, attachment 0123abcd was not shown:").And.Contain("larger than the 5 MB a picture can be.]");
+    }
+
+    [Fact]
+    public void WithoutToolImages_PictureWithoutAnAttachment_KeepsTheLabelInANote()
+    {
+        // Arrange
+        var message = AttachmentMessage.ForToolImages([("shot", "c1", [new ToolImage(new DataContent(PngBytes, "image/png"))])])!;
+
+        // Act
+        var stripped = AttachmentMessage.WithoutToolImages(message);
+
+        // Assert
+        stripped!.Contents.OfType<DataContent>().Should().BeEmpty();
+        stripped.Text.Should().Be("<tool_response>\n[Picture from shot call c1 was removed to save context.]\n</tool_response>");
+        StepMessage.Is(stripped).Should().BeTrue();
+    }
+
+    [Fact]
+    public void WithoutToolImages_UserMessage_ReturnsNull()
+    {
+        // Arrange
+        var message = new ChatMessage(ChatRole.User, [new TextContent("look"), new DataContent(PngBytes, "image/png")]);
+
+        // Act
+        var stripped = AttachmentMessage.WithoutToolImages(message);
+
+        // Assert
+        stripped.Should().BeNull();
     }
 }

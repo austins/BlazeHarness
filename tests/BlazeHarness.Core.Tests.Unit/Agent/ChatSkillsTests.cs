@@ -90,6 +90,42 @@ public sealed class ChatSkillsTests
         client.Options[0]!.Tools!.Select(t => t.Name).Should().Contain("load_skill");
     }
 
+    [Fact]
+    public async Task SendAsync_MessageNamesASkill_StartsTheReplyWithItsLoadCall()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        using var sut = Create(client, tools: true);
+        sut.Skills = new SkillSet([new SkillInfo("report", "Reports.", "/skills/report", SkillSource.App)]);
+
+        // Act
+        await sut.SendAsync("hello, use /report for this", TestTargets.Create());
+
+        // Assert
+        var sent = client.Requests.Single();
+        sent[^3].Text.Should().Be("hello, use /report for this");
+        var call = sent[^2].Contents.Should().ContainSingle().Which.Should().BeOfType<FunctionCallContent>().Subject;
+        call.Name.Should().Be("load_skill");
+        call.Arguments!["name"].Should().Be("report");
+        sent[^1].Contents.Should().ContainSingle().Which.Should().BeOfType<FunctionResultContent>().Which.CallId.Should().Be(call.CallId);
+        sut.Entries.Where(e => e.Role == ChatRole.Assistant).SelectMany(e => e.ToolCalls).Should().ContainSingle(c => c.Name == "load_skill");
+    }
+
+    [Fact]
+    public async Task SendAsync_MessageWithoutASkillName_MakesNoLoadCall()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        using var sut = Create(client, tools: true);
+        sut.Skills = new SkillSet([new SkillInfo("report", "Reports.", "/skills/report", SkillSource.App)]);
+
+        // Act
+        await sut.SendAsync("write a report", TestTargets.Create());
+
+        // Assert
+        client.Requests.Single()[^1].Text.Should().Be("write a report");
+    }
+
     private static Chat Create(ScriptedChatClient client, bool tools)
     {
         return new Chat((_, _) => Task.FromResult<IChatClient>(client), TimeProvider.System)

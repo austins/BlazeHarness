@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Agent.Events;
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Tests.Shared;
@@ -41,7 +42,7 @@ public sealed class ChatRunnerToolTests
     {
         // Arrange
         var image = new DataContent(new byte[] { 1, 2, 3 }, "image/png");
-        var shot = new FakeTool("shot", isReadOnly: true, (_, _) => Task.FromResult(ToolResult.Ok("saved") with { Image = image }));
+        var shot = new FakeTool("shot", isReadOnly: true, (_, _) => Task.FromResult(ToolResult.WithImage("saved", image)));
         using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "shot")])
             .Enqueue([ScriptedChatClient.Text("Looks fine")]);
         var history = NewHistory();
@@ -50,12 +51,37 @@ public sealed class ChatRunnerToolTests
         var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(shot));
 
         // Assert
-        events.OfType<ToolCallFinished>().Single().Image.Should().BeSameAs(image);
+        events.OfType<ToolCallFinished>().Single().Images.Should().ContainSingle().Which.Content.Should().BeSameAs(image);
         history.Select(m => m.Role).Should().Equal(ChatRole.User, ChatRole.Assistant, ChatRole.Tool, ChatRole.User, ChatRole.Assistant);
         history[3].Contents.Should().HaveCount(4);
         history[3].Text.Should().Be("<tool_response>\n[Picture from shot call c1:]\n</tool_response>");
         history[3].Contents[2].Should().BeSameAs(image);
         client.Requests[1].Should().Contain(history[3]);
+    }
+
+    [Fact]
+    public async Task RunAsync_CallReturnsImages_KeepsOnlyTheOnesWithoutACopyAndLabelsThemWithTheirIds()
+    {
+        // Arrange
+        var fresh = new DataContent(new byte[] { 1, 2, 3 }, "image/png");
+        var saved = new AttachmentInfo("bbbbbbbb", "old.png", "image/png", 3, 0);
+        var shot = new FakeTool("shot", isReadOnly: true, (_, _) => Task.FromResult(ToolResult.Ok("saved") with
+        {
+            Images = [new ToolImage(fresh), new ToolImage(new DataContent(new byte[] { 4, 5, 6 }, "image/png"), saved)],
+        }));
+        var keeper = Substitute.For<IToolImageKeeper>();
+        keeper.KeepAsync("shot", fresh).Returns(new AttachmentInfo("aaaaaaaa", "shot.png", "image/png", 3, 0));
+        using var client = new ScriptedChatClient([ScriptedChatClient.Call("c1", "shot")])
+            .Enqueue([ScriptedChatClient.Text("Looks fine")]);
+        var history = NewHistory();
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(shot), images: keeper);
+
+        // Assert
+        await keeper.ReceivedWithAnyArgs(1).KeepAsync(default!, default!);
+        events.OfType<ToolCallFinished>().Single().Images!.Select(i => i.Attachment!.Id).Should().Equal("aaaaaaaa", "bbbbbbbb");
+        history[3].Text.Should().Contain("[Picture 1 of 2 from shot call c1, attachment aaaaaaaa:]").And.Contain("[Picture 2 of 2 from shot call c1, attachment bbbbbbbb:]");
     }
 
     [Fact]

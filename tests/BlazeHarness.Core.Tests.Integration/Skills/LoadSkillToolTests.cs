@@ -154,7 +154,33 @@ public sealed class LoadSkillToolTests : IDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsync_HugeInstructions_AreCutOff()
+    public async Task ExecuteAsync_LongInstructions_ComeInPagesThatFitTheOutputLimit()
+    {
+        // Arrange
+        var lines = Enumerable.Range(1, 2_000).Select(i => $"Line {i} of the long skill.");
+        var huge = _folders.Add("skills", "huge", "Big.", string.Join('\n', lines));
+        var sut = new LoadSkillTool(new SkillSet([new SkillInfo("huge", "Big.", huge, SkillSource.App)]));
+        var pages = new List<string>();
+        var offset = 1;
+
+        // Act
+        while (offset > 0 && pages.Count < 10)
+        {
+            var result = await sut.ExecuteAsync(TempRoot.Args(new { name = "huge", offset }), _context, TestContext.Current.CancellationToken);
+            pages.Add(result.Output);
+            var match = System.Text.RegularExpressions.Regex.Match(result.Output, @"and offset (\d+) to read the rest");
+            offset = match.Success ? int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : 0;
+        }
+
+        // Assert
+        pages.Should().HaveCountGreaterThan(1).And.OnlyContain(p => p.Length <= ToolSet.MaxOutputCharacters);
+        var text = string.Concat(pages);
+        lines.Should().OnlyContain(line => text.Contains(line + "\n", StringComparison.Ordinal));
+        pages[1].Should().StartWith("Skill: huge, instructions from line");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OneLineLongerThanAPage_IsCutWithANote()
     {
         // Arrange
         var huge = _folders.Add("skills", "huge", "Big.", new string('x', 100_000));
@@ -164,8 +190,20 @@ public sealed class LoadSkillToolTests : IDisposable
         var result = await sut.ExecuteAsync(TempRoot.Args(new { name = "huge" }), _context, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Output.Should().Contain("cut off after 65,536 characters");
-        result.Output.Length.Should().BeLessThan(66_500);
+        result.Output.Should().Contain("[rest of this line cut]");
+        result.Output.Length.Should().BeLessThanOrEqualTo(ToolSet.MaxOutputCharacters);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OffsetPastTheEnd_IsAnError()
+    {
+        // Arrange
+
+        // Act
+        var result = await RunAsync(new { name = "report", offset = 99 });
+
+        // Assert
+        result.IsError.Should().BeTrue();
     }
 
     [Fact]

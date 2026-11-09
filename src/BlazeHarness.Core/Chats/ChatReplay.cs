@@ -60,6 +60,7 @@ internal static class ChatReplay
                     target.Status = end.Status;
                     target.Error = end.Error;
                     target.Usage = end.Usage;
+                    target.Warnings = end.Warnings;
                     target.At = end.At;
                     break;
                 case ToolCallEvent call when byId.TryGetValue(call.EntryId, out var target):
@@ -68,7 +69,7 @@ internal static class ChatReplay
                 case ToolResultEvent result when byId.TryGetValue(result.EntryId, out var target) && target.ToolCalls.FirstOrDefault(c => c.CallId == result.CallId) is { } finished:
                     finished.Status = result.Status;
                     finished.Output = result.Output;
-                    finished.Image = result.Image;
+                    finished.Images = result.Images ?? [];
                     break;
                 case CompactionEvent compaction when entries.FindIndex(x => x.Id == compaction.FirstKeptEntryId) is var at and >= 0:
                     Add(NewMarker(compaction.EntryId, compaction.At, new CompactionInfo(compaction.Summary, compaction.TokensBefore, compaction.TokensAfter)), at);

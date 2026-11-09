@@ -179,7 +179,7 @@ public sealed partial class Chat
             }
         }
 
-        var context = NewContext(ContextBudget.Limit(target.Model), UsesExtractiveCompaction ? new ExtractiveSummarizer() : ModelSummarizer.For(client, target, _time), leadingMessages, state, toolTokens);
+        var context = NewContext(ContextBudget.Limit(target.Model), UsesExtractiveCompaction ? new ExtractiveSummarizer() : ModelSummarizer.For(client, target, _time), leadingMessages, state, toolTokens, ContextBudget.InputLimit(target.Model));
 
         // The size the server reported for the last request is more exact than an estimate, even at the start of a reply.
         if (usage is { } reported)
@@ -190,10 +190,11 @@ public sealed partial class Chat
         return context;
     }
 
-    private ConversationContext NewContext(int limit, ISummarizer summarizer, int leadingMessages, (string? Summary, int KeptFrom, int StubbedBefore)? state, long overheadTokens)
+    private ConversationContext NewContext(int limit, ISummarizer summarizer, int leadingMessages, (string? Summary, int KeptFrom, int StubbedBefore)? state, long overheadTokens, int inputLimit = 0)
     {
         return new ConversationContext(limit, summarizer, leadingMessages, state?.Summary, state?.KeptFrom ?? 0, overheadTokens, state?.StubbedBefore ?? 0)
         {
+            InputLimit = inputLimit,
             KeepsTodos = Volatile.Read(ref _setup).Tools?.Find(TodoList.ToolName) is not null,
         };
     }

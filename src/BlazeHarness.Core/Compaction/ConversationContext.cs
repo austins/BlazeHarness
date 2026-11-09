@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Agent.Events;
+using BlazeHarness.Core.Attachments;
 using Microsoft.Extensions.AI;
 
 namespace BlazeHarness.Core.Compaction;
@@ -14,8 +15,8 @@ namespace BlazeHarness.Core.Compaction;
 /// a user or assistant message.
 /// </para>
 /// <para>
-/// Compaction goes in steps. First <see cref="TrimOutput"/> replaces large tool results older than a cut with a short stub (see <see cref="OutputStub"/>)
-/// in the request, which keeps every message and call. Only when that is not enough does <see cref="CompactAsync"/> write a summary.
+/// Compaction goes in steps. First <see cref="TrimOutput"/> replaces large tool results older than a cut with a short stub (see <see cref="OutputStub"/>),
+/// and the pictures of older tool calls with a note naming their attachment, in the request, which keeps every message and call. Only when that is not enough does <see cref="CompactAsync"/> write a summary.
 /// Summarizers always get the full messages, never the stubs.
 /// </para>
 /// <para>
@@ -86,6 +87,12 @@ public sealed class ConversationContext
     /// Gets a value indicating whether a summary ends with the agent's to-do list; false when the model can't update the list.
     /// </summary>
     public bool KeepsTodos { get; init; } = true;
+
+    /// <summary>
+    /// Gets the largest request in tokens the model can take, or 0 when it is not known.
+    /// </summary>
+    /// <remarks>See <see cref="ExceedsInputLimit"/>.</remarks>
+    public int InputLimit { get; init; }
 
     /// <summary>
     /// Gets the summary that stands in for the older messages, or null before the first compaction.
@@ -160,6 +167,17 @@ public sealed class ConversationContext
     /// Stop compacting for the rest of this context, after a failure, so each model call doesn't repeat it.
     /// </summary>
     public void Suspend() => _suspended = true;
+
+    /// <summary>
+    /// Get whether compaction failed and the request has grown past what the model can take, so sending it would fail.
+    /// </summary>
+    /// <remarks>Only a suspended context is checked: otherwise compaction keeps the request below the limit, and the size is partly an estimate.</remarks>
+    /// <param name="messages">The full list.</param>
+    /// <returns>True when compaction is suspended and the size is over <see cref="InputLimit"/>.</returns>
+    public bool ExceedsInputLimit(IList<ChatMessage> messages)
+    {
+        return _suspended && InputLimit > 0 && Size(messages).Tokens > InputLimit;
+    }
 
     /// <summary>
     /// Replace large tool results older than the cut that <see cref="CompactAsync"/> would make with a stub in the request, instead of summarizing.
@@ -261,7 +279,7 @@ public sealed class ConversationContext
     }
 
     /// <summary>
-    /// Replace large tool results between the kept boundary and the requested boundary with stubs.
+    /// Replace large tool results between the kept boundary and the requested boundary with stubs, and tool pictures with notes.
     /// </summary>
     /// <param name="messages">The request messages, including the leading prefix.</param>
     /// <param name="boundary">The exclusive history boundary for replacements, after the leading messages.</param>
@@ -280,6 +298,13 @@ public sealed class ConversationContext
         for (var i = from; i < to; i++)
         {
             var message = messages[i];
+            if (AttachmentMessage.WithoutToolImages(message) is { } withoutImages)
+            {
+                copy ??= [.. messages];
+                copy[i] = withoutImages;
+                continue;
+            }
+
             if (message.Role != ChatRole.Tool)
             {
                 continue;
@@ -291,7 +316,7 @@ public sealed class ConversationContext
             {
                 if (message.Contents[c] is FunctionResultContent result
                     && names.TryGetValue(result.CallId, out var name)
-                    && OutputStub.For(name, result.Result?.ToString()) is { } stub)
+                    && OutputStub.For(name, result.CallId, result.Result?.ToString()) is { } stub)
                 {
                     contents ??= [.. message.Contents];
                     contents[c] = new FunctionResultContent(result.CallId, stub);

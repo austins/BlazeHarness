@@ -46,16 +46,22 @@ public sealed class ReadAttachmentToolTests : IDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsync_Image_IsAnError()
+    public async Task ExecuteAsync_Image_ReturnsThePictureWithItsAttachment()
     {
         // Arrange
-        var info = await _attachments.SaveAsync("pic.png", [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4]);
+        byte[] png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4];
+        var info = await _attachments.SaveAsync("pic.png", png);
 
         // Act
         var result = await RunAsync(new { id = info.Id });
 
         // Assert
-        result.Should().Be(ToolResult.Error("'pic.png' is an image, which can't be read as text."));
+        result.IsError.Should().BeFalse();
+        result.Output.Should().Contain("pic.png").And.Contain("follows the tool results");
+        var image = result.Images.Should().ContainSingle().Subject;
+        image.Attachment!.Id.Should().Be(info.Id);
+        image.Content.MediaType.Should().Be("image/png");
+        image.Content.Data.ToArray().Should().Equal(png);
     }
 
     [Theory]

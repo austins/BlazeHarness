@@ -51,9 +51,9 @@ public sealed class ExtractiveSummarizerTests
             "[Later asks]",
             "- fix the bug",
             "[Latest actions]",
-            "- read_file src/a.cs",
-            "- edit_file src/a.cs",
-            "- shell dotnet test (failed)",
+            "- read_file src/a.cs [ref c1]",
+            "- edit_file src/a.cs [ref c2]",
+            "- shell dotnet test (failed) [ref c3]",
             "- assistant: tests fail");
     }
 

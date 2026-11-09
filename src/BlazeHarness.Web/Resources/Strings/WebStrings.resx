@@ -448,6 +448,18 @@
     <value>This reply was cut off when the app stopped. Retry to generate it again.</value>
     <comment>Hint under an assistant reply that was interrupted because the app shut down while it was being generated.</comment>
   </data>
+  <data name="MessageViewTruncatedWarning" xml:space="preserve">
+    <value>This reply hit the model's output limit and was cut off. Ask the model to continue, or raise Max output under Settings &gt; Providers.</value>
+    <comment>Warning under an assistant reply that stopped because it reached the maximum number of output tokens. "Max output" and "Settings &gt; Providers" name a setting and settings sections; use their translated names.</comment>
+  </data>
+  <data name="MessageViewCompactionFailedWarning" xml:space="preserve">
+    <value>The conversation could not be compacted, so this reply used the full conversation. Check the model's Context window under Settings &gt; Providers, or turn on "Compact without the model (Extraction)" under Settings &gt; General.</value>
+    <comment>Warning under an assistant reply when shortening a long chat failed. "Context window", "Compact without the model (Extraction)" and the settings sections name UI elements; use their translated names.</comment>
+  </data>
+  <data name="MessageViewContextTooLargeWarning" xml:space="preserve">
+    <value>This reply was stopped because the conversation no longer fits the model's context window and could not be compacted. Check the model's Context window under Settings &gt; Providers, turn on "Compact without the model (Extraction)" under Settings &gt; General, or start a new chat.</value>
+    <comment>Warning under an assistant reply that was stopped before sending, because the chat is too long for the model and shortening it failed. "Context window", "Compact without the model (Extraction)" and the settings sections name UI elements; use their translated names.</comment>
+  </data>
   <data name="MessageViewStoppedHint" xml:space="preserve">
     <value>Stopped.</value>
     <comment>Hint under an assistant reply that the user stopped before it finished.</comment>

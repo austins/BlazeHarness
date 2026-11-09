@@ -1,4 +1,4 @@
-using Microsoft.Extensions.AI;
+using BlazeHarness.Core.Tools;
 
 namespace BlazeHarness.Core.Agent.Events;
 
@@ -9,5 +9,5 @@ namespace BlazeHarness.Core.Agent.Events;
 /// <param name="Name">The name of the tool that was called.</param>
 /// <param name="Output">The text of the result, or the reason the call did not run.</param>
 /// <param name="Status">How the call ended.</param>
-/// <param name="Image">A picture the call produced, or null.</param>
-internal sealed record ToolCallFinished(string CallId, string Name, string Output, ToolCallStatus Status, DataContent? Image = null) : AgentEvent;
+/// <param name="Images">The pictures the call produced, with the chat's copy of each when it was kept, or null.</param>
+internal sealed record ToolCallFinished(string CallId, string Name, string Output, ToolCallStatus Status, IReadOnlyList<ToolImage>? Images = null) : AgentEvent;

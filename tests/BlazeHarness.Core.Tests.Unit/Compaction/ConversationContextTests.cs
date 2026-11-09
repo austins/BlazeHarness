@@ -1,5 +1,7 @@
 using BlazeHarness.Core.Agent;
+using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Compaction;
+using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
 
 namespace BlazeHarness.Core.Tests.Unit.Compaction;
@@ -547,8 +549,8 @@ public sealed class ConversationContextTests
         view.Select(m => m.Role).Should().Equal(messages.Select(m => m.Role));
         view.SelectMany(m => m.Contents.OfType<FunctionCallContent>()).Select(c => c.CallId).Should().Equal("c0", "c1", "c2", "c3");
         view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Select(r => (r.CallId, r.Result)).Should().Equal(
-            ("c0", OutputStub.Text),
-            ("c1", OutputStub.Text),
+            ("c0", OutputStub.Text("c0")),
+            ("c1", OutputStub.Text("c1")),
             ("c2", Text(1_000)),
             ("c3", Text(1_000)));
     }
@@ -604,7 +606,7 @@ public sealed class ConversationContextTests
         var view = sut.View(messages);
 
         // Assert
-        view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Select(r => (r.CallId, Stubbed: (string?)r.Result == OutputStub.Text)).Should().Equal(
+        view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Select(r => (r.CallId, Stubbed: OutputStub.IsStub((string?)r.Result))).Should().Equal(
             ("id-update_todos", false),
             ("id-load_skill", false),
             ("id-ask_user", false),
@@ -626,7 +628,7 @@ public sealed class ConversationContextTests
         // Assert
         var results = view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).ToDictionary(r => r.CallId, r => (string?)r.Result);
         results["small"].Should().Be("ok");
-        results["failed"].Should().Be("Error: exit code 1\n" + OutputStub.Text);
+        results["failed"].Should().Be("Error: exit code 1\n" + OutputStub.Text("failed"));
         view[1].Should().BeSameAs(messages[1]);
     }
 
@@ -648,7 +650,7 @@ public sealed class ConversationContextTests
         // Assert
         view[0].Should().BeSameAs(messages[0]);
         view[1].Text.Should().Contain("the notes");
-        view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Select(r => (r.CallId, Stubbed: (string?)r.Result == OutputStub.Text)).Should().Equal(
+        view.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Select(r => (r.CallId, Stubbed: OutputStub.IsStub((string?)r.Result))).Should().Equal(
             ("c2", true),
             ("c3", true),
             ("c4", false),
@@ -670,10 +672,33 @@ public sealed class ConversationContextTests
         trimmed.Should().NotBeNull();
         trimmed.TrimmedBefore.Should().Be(11);
         trimmed.TokensAfter.Should().BeLessThan(trimmed.TokensBefore / 2);
-        sut.View(messages).SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Count(r => (string?)r.Result == OutputStub.Text).Should().Be(5);
+        sut.View(messages).SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Count(r => OutputStub.IsStub((string?)r.Result)).Should().Be(5);
         sut.Summary.Should().BeNull();
         sut.ShouldCompact(messages).Should().BeFalse();
         _summarizer.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void TrimOutput_OldToolPicture_IsReplacedByANoteAndANewOneStays()
+    {
+        // Arrange
+        var messages = Conversation(1);
+        AddPictureRound(messages, "s0", "0000aaaa");
+        AddToolRounds(messages, 6, 1_000);
+        AddPictureRound(messages, "s1", "0000bbbb");
+        var sut = new ConversationContext(5_000, _summarizer);
+
+        // Act
+        var trimmed = sut.TrimOutput(messages);
+
+        // Assert
+        trimmed.Should().NotBeNull();
+        var view = sut.View(messages);
+        view.SelectMany(m => m.Contents.OfType<DataContent>()).Should().ContainSingle();
+        string.Concat(TextOf(view)).Should()
+            .Contain("[Picture from browser_screenshot call s0, attachment 0000aaaa was removed to save context. Read it with read_attachment and the id 0000aaaa if you need it.]")
+            .And.Contain("[Picture from browser_screenshot call s1, attachment 0000bbbb:]");
+        messages.SelectMany(m => m.Contents.OfType<DataContent>()).Should().HaveCount(2);
     }
 
     [Fact]
@@ -841,6 +866,13 @@ public sealed class ConversationContextTests
             messages.Add(new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("c" + i, "read_file", new Dictionary<string, object?> { ["path"] = "a" })]));
             messages.Add(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("c" + i, Text(resultTokens))]));
         }
+    }
+
+    private static void AddPictureRound(List<ChatMessage> messages, string callId, string attachmentId)
+    {
+        var picture = new ToolImage(new DataContent(new byte[] { 1, 2, 3 }, "image/png"), new AttachmentInfo(attachmentId, "shot.png", "image/png", 3, 0));
+        messages.AddRange(ToolRound(callId, "browser_screenshot", "saved"));
+        messages.Add(AttachmentMessage.ForToolImages([("browser_screenshot", callId, [picture])])!);
     }
 
     private static string Text(int tokens) => new('x', tokens * TokenEstimate.CharactersPerToken);

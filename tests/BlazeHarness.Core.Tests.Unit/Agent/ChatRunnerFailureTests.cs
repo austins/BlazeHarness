@@ -50,7 +50,7 @@ public sealed class ChatRunnerFailureTests
                 .Append(ToolResult.Ok("fine"))
                 .Concat(Enumerable.Repeat(ToolResult.Error("no"), ChatRunner.MaxFailedRounds - 1)));
         var tool = new FakeTool("flaky", isReadOnly: true, (_, _) => Task.FromResult(results.Dequeue()));
-        using var client = FailingRounds((ChatRunner.MaxFailedRounds * 2) - 1, "flaky").Enqueue([ScriptedChatClient.Text("done")]);
+        using var client = FailingRounds((ChatRunner.MaxFailedRounds * 2) - 1, "flaky", distinct: true).Enqueue([ScriptedChatClient.Text("done")]);
         var history = NewHistory();
 
         // Act
@@ -77,12 +77,63 @@ public sealed class ChatRunnerFailureTests
         history[^2].Text.Should().Be("try this");
     }
 
-    private static ScriptedChatClient FailingRounds(int count, string tool = "fail")
+    [Fact]
+    public async Task RunAsync_SameCallFailsRepeatedly_RefusesItWithoutRunning()
     {
-        var client = new ScriptedChatClient([ScriptedChatClient.Call("c0", tool)]);
+        // Arrange
+        var fail = new FakeTool("fail", isReadOnly: true, (_, _) => Task.FromResult(ToolResult.Error("no")));
+        using var client = FailingRounds(RepeatedFailures.MaxFailures + 1).Enqueue([ScriptedChatClient.Text("done")]);
+        var history = NewHistory();
+
+        // Act
+        await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(fail));
+
+        // Assert
+        fail.Started.Should().Be(RepeatedFailures.MaxFailures);
+        history[^2].Contents.OfType<FunctionResultContent>().Single().Result.Should().BeOfType<string>()
+            .Which.Should().Contain(RepeatedFailures.RefusedError);
+    }
+
+    [Fact]
+    public async Task RunAsync_MessageQueuedAfterFailures_RunsTheCallAgain()
+    {
+        // Arrange
+        var fail = new FakeTool("fail", isReadOnly: true, (_, _) => Task.FromResult(ToolResult.Error("no")));
+        using var client = FailingRounds(RepeatedFailures.MaxFailures + 1).Enqueue([ScriptedChatClient.Text("done")]);
+        var history = NewHistory();
+        var inbox = new FakeRunInbox([.. new string?[RepeatedFailures.MaxFailures - 1], "try again"]);
+
+        // Act
+        await ChatRunnerCollector.CollectAsync(client, history, TestContext.Current.CancellationToken, tools: Tools(fail), inbox: inbox);
+
+        // Assert
+        fail.Started.Should().Be(RepeatedFailures.MaxFailures + 1);
+    }
+
+    [Fact]
+    public async Task RunAsync_MessageQueuedAtTheEndOfTheReplyAfterFailures_RunsTheCallAgain()
+    {
+        // Arrange
+        var fail = new FakeTool("fail", isReadOnly: true, (_, _) => Task.FromResult(ToolResult.Error("no")));
+        using var client = FailingRounds(RepeatedFailures.MaxFailures)
+            .Enqueue([ScriptedChatClient.Text("I give up")])
+            .Enqueue([ScriptedChatClient.Call("again", "fail", "{}")])
+            .Enqueue([ScriptedChatClient.Text("done")]);
+        var inbox = new FakeRunInbox([.. new string?[RepeatedFailures.MaxFailures], "I fixed it, try again"]);
+
+        // Act
+        await ChatRunnerCollector.CollectAsync(client, NewHistory(), TestContext.Current.CancellationToken, tools: Tools(fail), inbox: inbox);
+
+        // Assert
+        fail.Started.Should().Be(RepeatedFailures.MaxFailures + 1);
+    }
+
+    private static ScriptedChatClient FailingRounds(int count, string tool = "fail", bool distinct = false)
+    {
+        var client = new ScriptedChatClient([ScriptedChatClient.Call("c0", tool, distinct ? """{"n":0}""" : "{}")]);
         for (var i = 1; i < count; i++)
         {
-            client.Enqueue([ScriptedChatClient.Call($"c{i}", tool)]);
+            client.Enqueue([ScriptedChatClient.Call($"c{i}", tool, distinct ? $$"""{"n":{{i}}}""" : "{}")]);
         }
 
         return client;

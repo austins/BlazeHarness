@@ -119,13 +119,13 @@ Without the sandbox, leftover background processes are stopped when the command 
 
 * Persistent history in plain, human-readable files, with export and import of chats.
 * Context compaction for long conversations, in steps:
-  1. Old large tool results (file reads, command logs) are replaced in the request by a short stub. Every call and its result stay paired, and a marker shows where.
+  1. Old large tool results (file reads, command logs) are replaced in the request by a short stub, and old tool pictures by a note naming their attachment. Every call and its result stay paired, and a marker shows where.
   2. Only if that is not enough, the older messages are summarized.
 
   The full output stays in the chat and its log, and `search_chat` still finds it. To-do, skill and question results are never replaced. By default the model writes the summary. Automatic chat titles and model-written summaries use the chat's selected model. Settings > General can switch to deterministic extraction (no model request), which lists the requests, changed and read files, and commands, and relies on `search_chat` for detail.
-* A `search_chat` tool lets the agent look back through the full chat (including tool output) for something compaction summarized away, and optionally through the other chats of the same folder.
+* A `search_chat` tool lets the agent look back through the full chat (including tool output) for something compaction summarized away, and optionally through the other chats of the same folder. Matches are ranked by how many of the words they contain, and the search works in any language (Chinese, Japanese, Korean and Thai are matched by pairs of characters). Each match, stub and extracted summary step carries a ref, which `search_chat` reads back in full, page by page.
 * A `send_to_chat` tool lets the agent pass context to another chat and start a turn there, for example from a finished story to one that depends on it. To point it at a chat, right-click the chat, choose "Copy chat reference" and paste the `chat:<id>` into your message. The agent can also name a chat by its exact title, or start a new one. The receiving chat runs with its own permissions, shows which chat sent the message, and doesn't reply back. If it is busy, the message waits until its reply ends. A send to a chat in another folder, or from a Read only chat, asks you every time; a chat set to Never ask refuses it. A message that has passed through 3 chats without you is refused.
-* Attachments from the composer. Images go to the model as image input, and text files are added to the message, or read on demand with `read_attachment` when they are large. An image's path is in the message, and tools and sandboxed commands can read the chat's attachments without asking, so a text-only model can still inspect an image.
+* Attachments from the composer. Images go to the model as image input, and text files are added to the message, or read on demand with `read_attachment` when they are large. An image's path is in the message, and tools and sandboxed commands can read the chat's attachments without asking, so a text-only model can still inspect an image. `read_attachment` also shows a model that accepts images an attached or earlier tool picture again.
 
 ### Extensions
 
@@ -133,7 +133,8 @@ Without the sandbox, leftover background processes are stopped when the command 
   * A server's tools are found by search when needed (`find_tools`, then `use_tool`) so a pile of servers doesn't fill the context window. Tick "Always load all of its tools" for a small server, or set `"alwaysLoad"` in `mcp.json` to `true` or a list of tool name patterns.
   * List tool name patterns in `"excludeTools"` to keep a server's tools from the model entirely. The tool list in Settings > MCP has a checkbox per tool that edits this list (a tool kept out by a pattern can only be changed in the file).
   * The tool lists are remembered in `cache/mcp-tools.json`, which is safe to delete.
-* Skills, loaded on demand from `SKILL.md` folders in `~/.blazeharness/skills`, `~/.agents/skills`, and a folder's own `.agents/skills`.
+  * Pictures a tool returns (PNG, JPEG, GIF or WebP) are kept with the chat and shown to a model that accepts images, up to 5 MB each and 20 MB per call. A picture left out is named with its attachment ID, which `read_attachment` opens. Structured results are added as JSON unless the text already holds them.
+* Skills, loaded on demand from `SKILL.md` folders in `~/.blazeharness/skills`, `~/.agents/skills`, and a folder's own `.agents/skills`. Write `/skill-name` anywhere in a message to load that skill for it.
 * Custom instructions (Settings > Instructions): your own text, stored in `instructions.md` and added to every chat's system prompt after the built-in prompt. It does not replace the built-in prompt. A folder's `AGENTS.md` comes after it and takes priority if the two conflict. There is no length limit, but the text is sent with every message, so keep it short. Edits apply from the next message in each chat.
 
 ### Web access

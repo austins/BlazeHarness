@@ -17,8 +17,12 @@ internal sealed class LoadSkillTool : ITool
     /// </summary>
     public const string ToolName = "load_skill";
 
-    private const int MaxBodyCharacters = 64 * 1024;
     private const int MaxListedFiles = 50;
+
+    /// <summary>
+    /// The room kept under <see cref="ToolSet.MaxOutputCharacters"/> for the note that says how to read the next page.
+    /// </summary>
+    private const int FooterRoom = 300;
 
     private readonly SkillSet _skills;
     private readonly IReadOnlySet<string> _started;
@@ -41,7 +45,8 @@ internal sealed class LoadSkillTool : ITool
     /// <inheritdoc />
     public string Description =>
         "Load a skill by name. Returns its instructions and the list of files that come with it. " +
-        "To read one of those files, call again with the skill name and the file's path relative to the skill folder.";
+        "Long instructions come in pages; the result says which offset reads the next one. " +
+        "To read one of the skill's files, call again with the skill name and the file's path relative to the skill folder.";
 
     /// <inheritdoc />
     public string InputSchema => $$"""
@@ -50,7 +55,7 @@ internal sealed class LoadSkillTool : ITool
           "properties": {
             "name": { "type": "string", "description": "The skill's name, as listed in the system prompt." },
             "path": { "type": "string", "description": "A file inside the skill folder to read instead of the instructions." },
-            "offset": { "type": "integer", "minimum": 1, "description": "For a file: the first line to read, starting at 1." },
+            "offset": { "type": "integer", "minimum": 1, "description": "The first line to read, starting at 1: of the file when path is set, otherwise of the instructions." },
             "limit": { "type": "integer", "minimum": 1, "maximum": {{ReadFileTool.MaxLimit}}, "description": "For a file: the most lines to read." }
           },
           "required": ["name"]
@@ -90,7 +95,7 @@ internal sealed class LoadSkillTool : ITool
         try
         {
             return Task.FromResult(string.IsNullOrWhiteSpace(path)
-                ? LoadInstructions(skill)
+                ? Instructions(skill, offset)
                 : LoadFile(skill, path, offset, limit, cancellationToken));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -99,7 +104,19 @@ internal sealed class LoadSkillTool : ITool
         }
     }
 
-    private static ToolResult LoadInstructions(SkillInfo skill)
+    /// <summary>
+    /// Read a page of a skill's instructions, which fits the output limit of a tool result.
+    /// </summary>
+    /// <remarks>
+    /// The first page starts with the skill's folder and files. A page holds whole lines, except a single line too long for a page,
+    /// and ends with the offset of the next page when there is more.
+    /// </remarks>
+    /// <param name="skill">The skill.</param>
+    /// <param name="offset">The first line of the instructions to read, starting at 1.</param>
+    /// <returns>The page, or an error when the file can't be used.</returns>
+    /// <exception cref="IOException">The file could not be read.</exception>
+    /// <exception cref="UnauthorizedAccessException">The file may not be read.</exception>
+    internal static ToolResult Instructions(SkillInfo skill, int offset = 1)
     {
         // The file may have grown since it was scanned.
         if (new FileInfo(skill.FilePath).Length > SkillScanner.MaxFileBytes)
@@ -109,18 +126,34 @@ internal sealed class LoadSkillTool : ITool
 
         var text = File.ReadAllText(skill.FilePath);
         var parsed = SkillFrontmatter.Parse(text);
-        var body = parsed.Error is null ? parsed.Body : text;
-        var cut = body.Length > MaxBodyCharacters;
-        var result = new StringBuilder();
-        result.AppendLine(CultureInfo.InvariantCulture, $"Skill: {skill.Name}");
-        result.AppendLine(CultureInfo.InvariantCulture, $"Folder: {skill.Directory}");
-        result.AppendLine("Relative paths in the instructions are relative to that folder.");
-        AppendFiles(result, skill);
-        result.AppendLine();
-        result.AppendLine(cut ? body[..MaxBodyCharacters] : body);
-        if (cut)
+        var lines = (parsed.Error is null ? parsed.Body : text).ReplaceLineEndings("\n").Split('\n');
+        if (offset > lines.Length)
         {
-            result.AppendLine(CultureInfo.InvariantCulture, $"[The instructions were cut off after {MaxBodyCharacters:N0} characters.]");
+            return ToolResult.Error($"The instructions of '{skill.Name}' have {lines.Length} lines, so there is nothing at line {offset}.");
+        }
+
+        var result = new StringBuilder();
+        if (offset == 1)
+        {
+            result.AppendLine(CultureInfo.InvariantCulture, $"Skill: {skill.Name}");
+            result.AppendLine(CultureInfo.InvariantCulture, $"Folder: {skill.Directory}");
+            result.AppendLine("Relative paths in the instructions are relative to that folder.");
+            AppendFiles(result, skill);
+            result.AppendLine();
+        }
+        else
+        {
+            result.AppendLine(CultureInfo.InvariantCulture, $"Skill: {skill.Name}, instructions from line {offset}");
+            result.AppendLine();
+        }
+
+        var room = ToolSet.MaxOutputCharacters - FooterRoom - result.Length;
+        var next = LinePages.Append(result, lines, offset, room);
+
+        if (next < lines.Length)
+        {
+            result.AppendLine();
+            result.AppendLine(CultureInfo.InvariantCulture, $"[Lines {offset}-{next} of {lines.Length}. Call {ToolName} with name \"{skill.Name}\" and offset {next + 1} to read the rest.]");
         }
 
         return ToolResult.Ok(result.ToString());

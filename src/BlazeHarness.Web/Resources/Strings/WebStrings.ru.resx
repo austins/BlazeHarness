@@ -331,6 +331,15 @@
   <data name="MessageViewInterruptedHint" xml:space="preserve">
     <value>Этот ответ прервался при остановке приложения. Повторите попытку, чтобы сгенерировать его заново.</value>
   </data>
+  <data name="MessageViewTruncatedWarning" xml:space="preserve">
+    <value>Ответ достиг лимита вывода модели и был обрезан. Попросите модель продолжить или увеличьте «Макс. вывод» в разделе «Настройки &gt; Провайдеры».</value>
+  </data>
+  <data name="MessageViewCompactionFailedWarning" xml:space="preserve">
+    <value>Не удалось сжать разговор, поэтому этот ответ использовал весь разговор. Проверьте «Контекстное окно» модели в разделе «Настройки &gt; Провайдеры» или включите «Сжимать без участия модели (извлечение)» в разделе «Настройки &gt; Общие».</value>
+  </data>
+  <data name="MessageViewContextTooLargeWarning" xml:space="preserve">
+    <value>Ответ остановлен: разговор больше не помещается в контекстное окно модели, и его не удалось сжать. Проверьте «Контекстное окно» модели в разделе «Настройки &gt; Провайдеры», включите «Сжимать без участия модели (извлечение)» в разделе «Настройки &gt; Общие» или начните новый чат.</value>
+  </data>
   <data name="MessageViewStoppedHint" xml:space="preserve">
     <value>Остановлено.</value>
   </data>

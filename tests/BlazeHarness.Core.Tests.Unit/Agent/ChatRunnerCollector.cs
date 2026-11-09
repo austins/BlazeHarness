@@ -21,6 +21,7 @@ internal static class ChatRunnerCollector
     /// <param name="context">The compaction state, when the test needs it.</param>
     /// <param name="inbox">The messages the user wrote during the run, when the test needs them.</param>
     /// <param name="asker">Asks the user the questions the model puts, when the test needs it.</param>
+    /// <param name="images">Keeps copies of the pictures tools return, when the test needs it.</param>
     /// <returns>The events in the order they were emitted.</returns>
     public static async Task<List<AgentEvent>> CollectAsync(
         IChatClient client,
@@ -31,10 +32,11 @@ internal static class ChatRunnerCollector
         PermissionEngine? permissions = null,
         ConversationContext? context = null,
         IRunInbox? inbox = null,
-        IUserAsker? asker = null)
+        IUserAsker? asker = null,
+        IToolImageKeeper? images = null)
     {
         var events = new List<AgentEvent>();
-        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(), tools, approver, permissions, context, inbox, asker, cancellationToken))
+        await foreach (var e in ChatRunner.RunAsync(client, history, new ChatOptions(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(), tools, approver, permissions, context, inbox, asker, images, cancellationToken: cancellationToken))
         {
             events.Add(e);
         }

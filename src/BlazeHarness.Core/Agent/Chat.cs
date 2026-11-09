@@ -34,7 +34,7 @@ namespace BlazeHarness.Core.Agent;
 /// With a <see cref="ChatLog"/>, every message is saved as it arrives, in batches rather than per token.
 /// </para>
 /// </remarks>
-public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserAsker
+public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserAsker, IToolImageKeeper
 {
     /// <summary>
     /// How long a tool call waits for an answer before it is denied, so a turn nobody is watching ends by itself.
@@ -652,6 +652,27 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
                 return text;
             }
 
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>The copy lets a resumed chat show the model the same picture after the tool's own file changes.</remarks>
+    async Task<AttachmentInfo?> IToolImageKeeper.KeepAsync(string toolName, DataContent image)
+    {
+        if (Attachments is not { } store)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var content = new MemoryStream(image.Data.ToArray(), writable: false);
+            return await store.SaveAsync(toolName + ".png", content);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or AttachmentException)
+        {
+            LogImageNotKept(ex);
             return null;
         }
     }

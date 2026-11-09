@@ -10,9 +10,17 @@ namespace BlazeHarness.Core.Tools;
 public sealed record ToolResult(string Output, bool IsError = false)
 {
     /// <summary>
-    /// Gets a picture the call produced, or null. The chat keeps a copy and shows it to the model after the results, when the model accepts images.
+    /// Gets the pictures the call produced. The chat keeps a copy of each and shows them to the model after the results, when the model accepts images.
     /// </summary>
-    public DataContent? Image { get; init; }
+    public IReadOnlyList<ToolImage> Images { get; init; } = [];
+
+    /// <summary>
+    /// Create a successful result with one picture.
+    /// </summary>
+    /// <param name="output">The text sent back to the model.</param>
+    /// <param name="image">The picture.</param>
+    /// <returns>The result.</returns>
+    public static ToolResult WithImage(string output, DataContent image) => new(output) { Images = [new ToolImage(image)] };
 
     /// <summary>
     /// Create a successful result.

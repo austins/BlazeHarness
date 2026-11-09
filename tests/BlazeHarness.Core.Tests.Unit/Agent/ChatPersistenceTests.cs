@@ -320,6 +320,40 @@ public sealed class ChatPersistenceTests
     }
 
     [Fact]
+    public void Restore_ReplyWithWarnings_KeepsThem()
+    {
+        // Arrange
+        var at = DateTimeOffset.UnixEpoch;
+        var reply = Guid.NewGuid();
+        using var sut = new Chat((_, _) => throw new InvalidOperationException(), TimeProvider.System);
+
+        // Act
+        sut.Restore(
+        [
+            new UserMessageEvent(at, Guid.NewGuid(), "hi"),
+            new AssistantStartEvent(at, reply, null),
+            new AssistantEndEvent(at, reply, EntryStatus.Done, null, null, ReplyWarnings.ResponseTruncated | ReplyWarnings.CompactionFailed),
+        ]);
+
+        // Assert
+        sut.Entries[^1].Warnings.Should().Be(ReplyWarnings.ResponseTruncated | ReplyWarnings.CompactionFailed);
+    }
+
+    [Fact]
+    public async Task SendAsync_ReplyCutOff_MarksTheEntry()
+    {
+        // Arrange
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("part"), new ChatResponseUpdate { FinishReason = ChatFinishReason.Length }]);
+        using var sut = Create(client);
+
+        // Act
+        await sut.SendAsync("hi", TestTargets.Create());
+
+        // Assert
+        sut.Entries[^1].Warnings.Should().Be(ReplyWarnings.ResponseTruncated);
+    }
+
+    [Fact]
     public async Task Restore_ThenSend_ContinuesWithTheSavedHistory()
     {
         // Arrange

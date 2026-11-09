@@ -1,5 +1,7 @@
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Tools.Files;
+using Microsoft.Extensions.AI;
+using System.Globalization;
 using System.Text.Json;
 
 namespace BlazeHarness.Core.Tools;
@@ -26,8 +28,9 @@ internal sealed class ReadAttachmentTool : ITool
 
     /// <inheritdoc />
     public string Description =>
-        $"Read a text file the user attached to this chat, by its id. Returns up to {ReadFileTool.DefaultLimit} lines at a time; for a longer file, " +
-        "pass offset (the first line to read, starting at 1) and limit to read it in pieces.";
+        $"Read a file attached to this chat, by its id: a file the user attached, or a picture a tool produced. Returns up to {ReadFileTool.DefaultLimit} lines " +
+        "of a text file at a time; for a longer file, pass offset (the first line to read, starting at 1) and limit to read it in pieces. " +
+        $"A picture up to {ImageFiles.MaxViewableBytes / (1024 * 1024)} MB comes back for you to look at.";
 
     /// <inheritdoc />
     public string InputSchema => $$"""
@@ -69,7 +72,26 @@ internal sealed class ReadAttachmentTool : ITool
         }
 
         return Task.FromResult(file.MediaType.StartsWith("image/", StringComparison.Ordinal)
-            ? ToolResult.Error($"'{file.Name}' is an image, which can't be read as text.")
+            ? ReadImage(id, file)
             : ReadFileTool.ReadLines(file.Name, file.Path, offset, limit, cancellationToken));
+    }
+
+    /// <summary>
+    /// Return an attached picture for the model to look at.
+    /// </summary>
+    /// <remarks>The result names the attachment it came from, so the chat shows the picture without saving another copy.</remarks>
+    private static ToolResult ReadImage(string id, AttachmentFile file)
+    {
+        var size = new FileInfo(file.Path).Length;
+        if (size > ImageFiles.MaxViewableBytes)
+        {
+            return ToolResult.Error(string.Create(
+                CultureInfo.InvariantCulture,
+                $"'{file.Name}' is a picture of {FileSize.Format(size)}, larger than the {ImageFiles.MaxViewableBytes / (1024 * 1024)} MB a picture can be."));
+        }
+
+        var attachment = new AttachmentInfo(id, file.Name, file.MediaType, size, 0);
+        var output = string.Create(CultureInfo.InvariantCulture, $"[{file.Name} is a picture ({file.MediaType}, {FileSize.Format(size)}); it follows the tool results.]");
+        return ToolResult.Ok(output) with { Images = [new ToolImage(new DataContent(File.ReadAllBytes(file.Path), file.MediaType), attachment)] };
     }
 }

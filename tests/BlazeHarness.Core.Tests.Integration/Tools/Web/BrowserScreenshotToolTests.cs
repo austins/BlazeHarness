@@ -37,8 +37,9 @@ public sealed class BrowserScreenshotToolTests : IDisposable
         result.IsError.Should().BeFalse();
         result.Output.Should().Contain("shots/home.png");
         (await File.ReadAllBytesAsync(Path.Combine(_root.Root, "shots", "home.png"), TestContext.Current.CancellationToken)).Should().Equal(1, 2, 3);
-        result.Image!.MediaType.Should().Be("image/png");
-        result.Image.Data.ToArray().Should().Equal(1, 2, 3);
+        var image = result.Images.Should().ContainSingle().Subject.Content;
+        image.MediaType.Should().Be("image/png");
+        image.Data.ToArray().Should().Equal(1, 2, 3);
     }
 
     [Fact]
@@ -52,7 +53,7 @@ public sealed class BrowserScreenshotToolTests : IDisposable
 
         // Assert
         result.IsError.Should().BeFalse();
-        result.Image.Should().BeNull();
+        result.Images.Should().BeEmpty();
         result.Output.Should().Contain("too large to show you");
         File.Exists(Path.Combine(_root.Root, "big.png")).Should().BeTrue();
     }

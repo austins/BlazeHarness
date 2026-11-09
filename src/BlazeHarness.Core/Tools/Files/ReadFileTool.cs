@@ -188,7 +188,8 @@ internal sealed class ReadFileTool : ITool
                 $"'{display}' is an image of {FileSize.Format(size)}, larger than the {ImageFiles.MaxViewableBytes / (1024 * 1024)} MB a picture can be."));
         }
 
-        return ToolResult.Ok(string.Create(CultureInfo.InvariantCulture, $"[{display} is an image ({image.MediaType}, {FileSize.Format(size)}); the picture follows.]"))
-            with { Image = new DataContent(File.ReadAllBytes(full), image.MediaType) };
+        return ToolResult.WithImage(
+            string.Create(CultureInfo.InvariantCulture, $"[{display} is an image ({image.MediaType}, {FileSize.Format(size)}); the picture follows.]"),
+            new DataContent(File.ReadAllBytes(full), image.MediaType));
     }
 }

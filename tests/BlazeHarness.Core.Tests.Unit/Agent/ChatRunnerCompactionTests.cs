@@ -95,6 +95,38 @@ public sealed class ChatRunnerCompactionTests
     }
 
     [Fact]
+    public async Task RunAsync_SummarizingFailsAndTheHistoryIsOverTheInputLimit_StopsBeforeTheRequest()
+    {
+        // Arrange
+        _summarizer.SummarizeAsync(Arg.Any<string?>(), Arg.Any<IReadOnlyList<ChatMessage>>(), Arg.Any<CancellationToken>()).Returns<string>(_ => throw new InvalidOperationException("no summary"));
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        var context = new ConversationContext(1_000, _summarizer) { InputLimit = 1_000 };
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, Conversation(10), TestContext.Current.CancellationToken, context: context);
+
+        // Assert
+        events.Should().Equal(new ContextCompactionFailed("no summary"), new ContextTooLarge(), new Done(StopReason.Error));
+        client.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RunAsync_SummarizingFailsUnderTheInputLimit_CarriesOn()
+    {
+        // Arrange
+        _summarizer.SummarizeAsync(Arg.Any<string?>(), Arg.Any<IReadOnlyList<ChatMessage>>(), Arg.Any<CancellationToken>()).Returns<string>(_ => throw new InvalidOperationException("no summary"));
+        using var client = new ScriptedChatClient([ScriptedChatClient.Text("ok")]);
+        var context = new ConversationContext(1_000, _summarizer) { InputLimit = 1_000_000 };
+
+        // Act
+        var events = await ChatRunnerCollector.CollectAsync(client, Conversation(10), TestContext.Current.CancellationToken, context: context);
+
+        // Assert
+        events.OfType<ContextTooLarge>().Should().BeEmpty();
+        client.Requests.Should().ContainSingle();
+    }
+
+    [Fact]
     public async Task RunAsync_StoppedBeforeSummarizingFinishes_EndsAsCancelled()
     {
         // Arrange
@@ -132,8 +164,8 @@ public sealed class ChatRunnerCompactionTests
         await _summarizer.DidNotReceiveWithAnyArgs().SummarizeAsync(null, [], TestContext.Current.CancellationToken);
         var sent = client.Requests.Single();
         sent.Should().HaveCount(13);
-        sent.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Count(r => (string?)r.Result == OutputStub.Text).Should().Be(5);
-        history.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().OnlyContain(r => (string?)r.Result != OutputStub.Text);
+        sent.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Count(r => OutputStub.IsStub((string?)r.Result)).Should().Be(5);
+        history.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().OnlyContain(r => !OutputStub.IsStub((string?)r.Result));
     }
 
     [Fact]

@@ -1,5 +1,5 @@
+using BlazeHarness.Core.Tools;
 using System.Collections.Frozen;
-using System.Text;
 using System.Text.Json;
 
 namespace BlazeHarness.Core.Mcp.Tools;
@@ -8,8 +8,7 @@ namespace BlazeHarness.Core.Mcp.Tools;
 /// Ranks tools against a short query with BM25 over their names, servers, descriptions and parameters.
 /// </summary>
 /// <remarks>
-/// Matching is by word, so a query has to use the words the tools are described in. Text is split on anything that is not a letter or digit and on
-/// camelCase, and runs of Chinese, Japanese, Korean or Thai text are matched by pairs of characters because those scripts do not separate words.
+/// Matching is by word, so a query has to use the words the tools are described in; see <see cref="SearchWords"/> for how text is split.
 /// </remarks>
 internal static class McpToolRanker
 {
@@ -120,73 +119,7 @@ internal static class McpToolRanker
     /// </summary>
     /// <param name="text">The text.</param>
     /// <returns>The words, with common filler words left out.</returns>
-    internal static List<string> Tokenize(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-
-        List<string> words = [];
-        var current = new StringBuilder();
-        var currentIsPaired = false;
-
-        void Flush()
-        {
-            if (current.Length == 0)
-            {
-                return;
-            }
-
-            var word = current.ToString();
-            current.Clear();
-            if (currentIsPaired)
-            {
-                if (word.Length == 1)
-                {
-                    words.Add(word);
-                }
-                else
-                {
-                    for (var i = 0; i + 1 < word.Length; i++)
-                    {
-                        words.Add(word.Substring(i, 2));
-                    }
-                }
-
-                return;
-            }
-
-#pragma warning disable CA1308 // Words are compared in lower case, which is how the synonym table is written; the text is never shown.
-            word = Stem(word.ToLowerInvariant());
-#pragma warning restore CA1308
-            if (!StopWords.Contains(word) && (word.Length > 1 || char.IsDigit(word[0])))
-            {
-                words.Add(word);
-            }
-        }
-
-        var previous = '\0';
-        foreach (var c in text)
-        {
-            if (!char.IsLetterOrDigit(c))
-            {
-                Flush();
-                previous = '\0';
-                continue;
-            }
-
-            var paired = IsPairedScript(c);
-            if (paired != currentIsPaired || (!paired && char.IsUpper(c) && char.IsLower(previous)))
-            {
-                Flush();
-            }
-
-            currentIsPaired = paired;
-            current.Append(c);
-            previous = c;
-        }
-
-        Flush();
-        return words;
-    }
+    internal static List<string> Tokenize(string text) => SearchWords.Tokenize(text, StopWords);
 
     private static List<(string Term, double Weight)> QueryTerms(string query)
     {
@@ -205,7 +138,7 @@ internal static class McpToolRanker
 
             foreach (var synonym in related)
             {
-                terms.TryAdd(Stem(synonym), SynonymWeight);
+                terms.TryAdd(SearchWords.Stem(synonym), SynonymWeight);
             }
         }
 
@@ -279,21 +212,6 @@ internal static class McpToolRanker
         {
             Collect(items, words, depth + 1);
         }
-    }
-
-    private static string Stem(string word)
-    {
-        if (word.Length > 4 && word.EndsWith("ies", StringComparison.Ordinal))
-        {
-            return word[..^3] + "y";
-        }
-
-        return word.Length > 3 && word[^1] == 's' && word[^2] != 's' ? word[..^1] : word;
-    }
-
-    private static bool IsPairedScript(char c)
-    {
-        return c is (>= '\u3040' and <= '\u30FF') or (>= '\u3400' and <= '\u4DBF') or (>= '\u4E00' and <= '\u9FFF') or (>= '\uAC00' and <= '\uD7AF') or (>= '\u0E00' and <= '\u0E7F');
     }
 
     private sealed record Document(Dictionary<string, double> Terms, int Length);

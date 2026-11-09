@@ -147,9 +147,9 @@ public sealed class ReadFileToolTests : IDisposable
         // Assert
         result.IsError.Should().BeFalse();
         result.Output.Should().Contain("shot.png").And.Contain("image/png");
-        result.Image.Should().NotBeNull();
-        result.Image.MediaType.Should().Be("image/png");
-        result.Image.Data.ToArray().Should().Equal(png);
+        var image = result.Images.Should().ContainSingle().Subject.Content;
+        image.MediaType.Should().Be("image/png");
+        image.Data.ToArray().Should().Equal(png);
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public sealed class ReadFileToolTests : IDisposable
 
         // Assert
         result.IsError.Should().BeTrue();
-        result.Image.Should().BeNull();
+        result.Images.Should().BeEmpty();
         result.Output.Should().Contain("big.gif");
     }
 

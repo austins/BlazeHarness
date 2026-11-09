@@ -43,6 +43,17 @@ internal static class ChatRunner
     internal const string NoticePrefix = "[Harness notice] ";
 
     /// <summary>
+    /// The number of replies in a row cut off at the output limit whose tool calls are refused before the runner stops the run.
+    /// </summary>
+    internal const int MaxTruncatedRetries = 2;
+
+    /// <summary>
+    /// The result each tool call of a reply cut off at the output limit gets instead of running.
+    /// </summary>
+    internal const string TruncatedCallError =
+        "This call was not run: your reply hit the output token limit, so its arguments may be incomplete. Make the call again with complete arguments, splitting large content into smaller calls.";
+
+    /// <summary>
     /// The notice added to the last tool result after <see cref="MaxFailedRounds"/> rounds in a row in which every tool call failed. It has no chat entry of its own.
     /// </summary>
     internal static readonly string FailureNotice = string.Create(
@@ -85,6 +96,8 @@ internal static class ChatRunner
     /// <param name="context">Chooses what part of <paramref name="history"/> is sent and compacts it before a call when it has grown too large. Null sends all of it.</param>
     /// <param name="inbox">Where messages the user wrote during the run are taken from, or null for none.</param>
     /// <param name="asker">Asks the user the questions the model puts with <c>ask_user</c>. Null means such a call fails, because nobody can be asked.</param>
+    /// <param name="images">Keeps a copy of the pictures tool calls produce, which names them by attachment ID. Null means the pictures are shown once and not kept.</param>
+    /// <param name="openingCalls">Tool calls the harness makes before the model's first response, as if the model had made them, or null for none.</param>
     /// <param name="cancellationToken">A token that stops the run.</param>
     /// <returns>The events of the run.</returns>
     public static IAsyncEnumerable<AgentEvent> RunAsync(
@@ -98,12 +111,14 @@ internal static class ChatRunner
         ConversationContext? context = null,
         IRunInbox? inbox = null,
         IUserAsker? asker = null,
+        IToolImageKeeper? images = null,
+        IReadOnlyList<FunctionCallContent>? openingCalls = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(history);
         ArgumentNullException.ThrowIfNull(time);
-        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), context, inbox, asker, time, cancellationToken);
+        return RunCoreAsync(client, history, options, tools, approver, permissions ?? new PermissionEngine(), context, inbox, asker, images, openingCalls ?? [], time, cancellationToken);
     }
 
     /// <summary>
@@ -128,6 +143,8 @@ internal static class ChatRunner
         ConversationContext? context,
         IRunInbox? inbox,
         IUserAsker? asker,
+        IToolImageKeeper? images,
+        IReadOnlyList<FunctionCallContent> openingCalls,
         TimeProvider time,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -139,16 +156,36 @@ internal static class ChatRunner
         // There is no limit on rounds: the user can stop a run, and compaction keeps the context in bounds.
         var firstResponse = true;
         var textCallRetries = 0;
+        var truncatedRetries = 0;
         var failedRounds = 0;
+        var failures = new RepeatedFailures();
         var callsSinceTodos = 0;
         var tracksTodos = tools?.Find(TodoList.ToolName) is not null;
         var questions = new QuestionBudget();
+        string? compactionFailure = null;
+        if (openingCalls.Count > 0)
+        {
+            history.Add(new ChatMessage(ChatRole.Assistant, [.. openingCalls]));
+            var opening = new RoundOutcome();
+            await foreach (var e in ExecuteCallsAsync([.. openingCalls], tools, approver, asker, images, questions, permissions, failures, history, opening, cancellationToken))
+            {
+                yield return e;
+            }
+
+            if (opening.Cancelled)
+            {
+                yield return new Done(StopReason.Cancelled);
+                yield break;
+            }
+
+            firstResponse = false;
+        }
+
         while (true)
         {
             if (context is not null && context.ShouldCompact(history))
             {
                 AgentEvent? compacted = context.TrimOutput(history);
-                string? failure = null;
                 var stopped = false;
                 try
                 {
@@ -160,7 +197,7 @@ internal static class ChatRunner
                 }
                 catch (Exception ex) when (ex is not OutOfMemoryException)
                 {
-                    failure = ex.Message;
+                    compactionFailure = ex.Message;
                     context.Suspend();
                 }
 
@@ -180,10 +217,6 @@ internal static class ChatRunner
                 {
                     yield return compacted;
                 }
-                else if (failure is not null)
-                {
-                    yield return new ContextCompactionFailed(failure);
-                }
             }
 
             if (!firstResponse)
@@ -192,6 +225,20 @@ internal static class ChatRunner
             }
 
             firstResponse = false;
+
+            // Reported after the new response starts, so the warning is shown on the reply it affects.
+            if (compactionFailure is not null)
+            {
+                yield return new ContextCompactionFailed(compactionFailure);
+                compactionFailure = null;
+            }
+
+            if (context is not null && context.ExceedsInputLimit(history))
+            {
+                yield return new ContextTooLarge();
+                yield return new Done(StopReason.Error);
+                yield break;
+            }
 
             var requestMessages = context?.View(history) ?? history;
             var requestCount = history.Count;
@@ -277,7 +324,8 @@ internal static class ChatRunner
                     firstOutput is { } start ? Positive(time.GetElapsedTime(start, lastOutput)) : null);
             }
 
-            if (reason == StopReason.Completed && truncated)
+            // A cut-off reply's calls are refused below and the model asked again, so the warning waits until it gives up.
+            if (reason == StopReason.Completed && truncated && (calls.Count == 0 || truncatedRetries >= MaxTruncatedRetries))
             {
                 yield return new ResponseTruncated();
             }
@@ -317,6 +365,32 @@ internal static class ChatRunner
                 history.Add(new ChatMessage(ChatRole.Assistant, contents));
             }
 
+            if (truncated && calls.Count > 0)
+            {
+                foreach (var e in RefuseCalls(calls, TruncatedCallError, history))
+                {
+                    yield return e;
+                }
+
+                if (truncatedRetries < MaxTruncatedRetries)
+                {
+                    truncatedRetries++;
+                    continue;
+                }
+
+                if (AddQueuedMessages(inbox, history, true, false) is { } waiting)
+                {
+                    truncatedRetries = 0;
+                    failures.Clear();
+                    yield return waiting;
+                    continue;
+                }
+
+                yield return new Done(StopReason.Completed);
+                yield break;
+            }
+
+            truncatedRetries = 0;
             if (calls.Count == 0)
             {
                 // Some models write the call as text when the server's parser misses it; nothing ran, so tell the model.
@@ -332,6 +406,7 @@ internal static class ChatRunner
                 // End-of-run hook: a message the user queued during the run continues the loop instead of ending it.
                 if (AddQueuedMessages(inbox, history, true, contents.Count == 0) is { } queued)
                 {
+                    failures.Clear();
                     yield return queued;
                     continue;
                 }
@@ -343,7 +418,7 @@ internal static class ChatRunner
             textCallRetries = 0;
 
             var outcome = new RoundOutcome();
-            await foreach (var e in ExecuteCallsAsync(calls, tools, approver, asker, questions, permissions, history, outcome, cancellationToken))
+            await foreach (var e in ExecuteCallsAsync(calls, tools, approver, asker, images, questions, permissions, failures, history, outcome, cancellationToken))
             {
                 yield return e;
             }
@@ -364,6 +439,7 @@ internal static class ChatRunner
             if (AddQueuedMessages(inbox, history, false, false) is { } steering)
             {
                 failedRounds = 0;
+                failures.Clear();
                 yield return steering;
             }
             else if (failedRounds >= MaxFailedRounds)
@@ -380,6 +456,26 @@ internal static class ChatRunner
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Answer every call of a reply with an error result without running any of them.
+    /// </summary>
+    /// <param name="calls">The calls of the reply, which the history holds already.</param>
+    /// <param name="error">The result each call gets.</param>
+    /// <param name="history">The history of the run, which gets the results.</param>
+    /// <returns>The events that report the calls as failed.</returns>
+    private static IEnumerable<AgentEvent> RefuseCalls(List<FunctionCallContent> calls, string error, IList<ChatMessage> history)
+    {
+        List<AIContent> answers = [];
+        foreach (var call in calls)
+        {
+            yield return new ToolCallRequested(call.CallId, call.Name, ArgumentsJson(call), string.Empty);
+            yield return new ToolCallFinished(call.CallId, call.Name, error, ToolCallStatus.Failed);
+            answers.Add(new FunctionResultContent(call.CallId, ToolCallEntry.ForModel(ToolCallStatus.Failed, error)));
+        }
+
+        history.Add(new ChatMessage(ChatRole.Tool, answers));
     }
 
     /// <summary>
@@ -436,8 +532,10 @@ internal static class ChatRunner
         ToolSet? tools,
         IToolApprover? approver,
         IUserAsker? asker,
+        IToolImageKeeper? images,
         QuestionBudget questions,
         PermissionEngine permissions,
+        RepeatedFailures failures,
         IList<ChatMessage> history,
         RoundOutcome outcome,
         [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -474,6 +572,15 @@ internal static class ChatRunner
                 if (!p.CanRun)
                 {
                     results[index] = ToolResult.Error(p.Problem(tools));
+                    statuses[index] = ToolCallStatus.Failed;
+                    yield return Finished(p, results[index]!, statuses[index]);
+                    index++;
+                    continue;
+                }
+
+                if (failures.Refuses(p.Name, p.Json))
+                {
+                    results[index] = ToolResult.Error(RepeatedFailures.RefusedError);
                     statuses[index] = ToolCallStatus.Failed;
                     yield return Finished(p, results[index]!, statuses[index]);
                     index++;
@@ -530,6 +637,7 @@ internal static class ChatRunner
                     var contexts = new List<ToolContext> { ContextFor(tools, decision, permissions, paths) };
                     while (index + contexts.Count < planned.Count
                         && planned[index + contexts.Count] is { CanRun: true, Tool.IsReadOnly: true, Tool: not AskUserTool } next
+                        && !failures.Refuses(next.Name, next.Json)
                         && permissions.Evaluate(next.Tool, next.Json, tools.Context, out var nextPaths) is { Verdict: PermissionVerdict.Allow } nextDecision)
                     {
                         contexts.Add(ContextFor(tools, nextDecision, permissions, nextPaths));
@@ -551,9 +659,10 @@ internal static class ChatRunner
                             continue;
                         }
 
-                        results[i] = result;
+                        results[i] = await KeepImagesAsync(images, planned[i].Name, result);
                         statuses[i] = result.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
-                        yield return Finished(planned[i], result, statuses[i]);
+                        failures.Record(planned[i].Name, planned[i].Json, result.IsError, readOnly: true);
+                        yield return Finished(planned[i], results[i]!, statuses[i]);
                     }
 
                     index = end;
@@ -618,8 +727,10 @@ internal static class ChatRunner
                 yield return new ToolCallRunning(p.Call.CallId);
                 try
                 {
-                    results[index] = await RunAsync(tools, p, ContextFor(tools, decision, permissions, paths, p.Tool.RunsCommands ? new HostQuestions(approver as IHostApprover, p.Call.CallId) : null), cancellationToken);
+                    var ran = await RunAsync(tools, p, ContextFor(tools, decision, permissions, paths, p.Tool.RunsCommands ? new HostQuestions(approver as IHostApprover, p.Call.CallId) : null), cancellationToken);
+                    results[index] = await KeepImagesAsync(images, p.Name, ran);
                     statuses[index] = results[index]!.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
+                    failures.Record(p.Name, p.Json, results[index]!.IsError, p.Tool.IsReadOnly);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -653,7 +764,7 @@ internal static class ChatRunner
             }
 
             history.Add(new ChatMessage(ChatRole.Tool, answers));
-            if (AttachmentMessage.ForToolImages([.. calls.Select((c, i) => (c.Name, c.CallId, results[i]?.Image))]) is { } pictures)
+            if (AttachmentMessage.ForToolImages([.. calls.Select((c, i) => (c.Name, c.CallId, results[i]?.Images ?? []))]) is { } pictures)
             {
                 history.Add(pictures);
             }
@@ -726,7 +837,27 @@ internal static class ChatRunner
 
     private static ToolCallFinished Finished(PlannedCall call, ToolResult result, ToolCallStatus status)
     {
-        return new ToolCallFinished(call.Call.CallId, call.Call.Name, result.Output, status, result.Image);
+        return new ToolCallFinished(call.Call.CallId, call.Call.Name, result.Output, status, result.Images.Count > 0 ? result.Images : null);
+    }
+
+    /// <summary>
+    /// Keep a copy of each picture of a result that has none yet.
+    /// </summary>
+    /// <remarks>The copy is saved even when the reply is being stopped: it is quick, and a result whose pictures are half kept would be shown differently later.</remarks>
+    private static async Task<ToolResult> KeepImagesAsync(IToolImageKeeper? keeper, string toolName, ToolResult result)
+    {
+        if (keeper is null || result.Images.All(i => i.Attachment is not null))
+        {
+            return result;
+        }
+
+        var kept = new List<ToolImage>(result.Images.Count);
+        foreach (var image in result.Images)
+        {
+            kept.Add(image.Attachment is null ? image with { Attachment = await keeper.KeepAsync(toolName, image.Content) } : image);
+        }
+
+        return result with { Images = kept };
     }
 
     private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision, PermissionEngine permissions, IReadOnlyList<string>? paths, HostQuestions? hosts = null)

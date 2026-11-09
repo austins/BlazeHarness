@@ -388,7 +388,7 @@ public sealed class ChatCompactionTests
         _log.Events.OfType<CompactionEvent>().Should().BeEmpty();
         sut.Entries.SelectMany(e => e.ToolCalls).Should().OnlyContain(c => c.Output == BigRead);
         sut.History.SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().OnlyContain(r => (string?)r.Result == BigRead);
-        client.Requests[^1].SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().Contain(r => (string?)r.Result == OutputStub.Text);
+        client.Requests[^1].SelectMany(m => m.Contents.OfType<FunctionResultContent>()).Should().Contain(r => OutputStub.IsStub((string?)r.Result));
     }
 
     [Fact]

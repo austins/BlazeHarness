@@ -9,6 +9,7 @@ internal sealed class FakeTool : ITool
 {
     private readonly Func<ToolArguments, CancellationToken, Task<ToolResult>> _run;
     private int _running;
+    private int _maxConcurrent;
 
     public FakeTool(string name, bool isReadOnly, Func<ToolArguments, CancellationToken, Task<ToolResult>>? run = null, IReadOnlyList<string>? pathArguments = null)
     {
@@ -31,7 +32,7 @@ internal sealed class FakeTool : ITool
     public TimeSpan Timeout => TestTimeouts.Default;
 
     /// <summary>Gets the most calls that were running at once.</summary>
-    public int MaxConcurrent { get; private set; }
+    public int MaxConcurrent => Volatile.Read(ref _maxConcurrent);
 
     /// <summary>Gets how many calls started.</summary>
     public int Started { get; private set; }
@@ -41,7 +42,18 @@ internal sealed class FakeTool : ITool
     public async Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)
     {
         var now = Interlocked.Increment(ref _running);
-        MaxConcurrent = Math.Max(MaxConcurrent, now);
+        var seen = Volatile.Read(ref _maxConcurrent);
+        while (now > seen)
+        {
+            var found = Interlocked.CompareExchange(ref _maxConcurrent, now, seen);
+            if (found == seen)
+            {
+                break;
+            }
+
+            seen = found;
+        }
+
         Started++;
         try
         {

@@ -95,7 +95,7 @@ public sealed class BrowserScreenshotTool : ITool
             var saved = $"Saved {context.Relative(full)} ({FileSize.Format(png.Length)}) and showed it to the user.";
             return png.Length > ImageFiles.MaxViewableBytes
                 ? ToolResult.Ok(saved + " It is too large to show you; capture the window rather than the full page to see it.")
-                : ToolResult.Ok(saved) with { Image = new DataContent(png, "image/png") };
+                : ToolResult.WithImage(saved, new DataContent(png, "image/png"));
         }
         catch (BrowserException ex)
         {

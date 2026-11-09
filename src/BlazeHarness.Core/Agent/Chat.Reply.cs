@@ -52,7 +52,8 @@ public sealed partial class Chat
             Interlocked.Exchange(ref _toolTokens, toolTokens);
             EnsureToolsFit(target, prompt, toolTokens);
             var context = CreateContext(client, target, prompt.Length > 0 ? 1 : 0, toolTokens);
-            await foreach (var e in ChatRunner.RunAsync(client, working, options, _time, tools, this, Permissions, context: context, inbox: this, asker: this, cancellationToken: cancellation))
+            var opening = MentionedSkillCalls(tools);
+            await foreach (var e in ChatRunner.RunAsync(client, working, options, _time, tools, this, Permissions, context: context, inbox: this, asker: this, images: this, openingCalls: opening, cancellationToken: cancellation))
             {
                 await ApplyAsync(reply, e);
                 RaiseChanged();
@@ -108,6 +109,25 @@ public sealed partial class Chat
         return ExtraTools is { } extra ? tools.With(await extra(cancellation)) : tools;
     }
 
+    /// <summary>
+    /// Build a <c>load_skill</c> call for each skill the user's last message names as <c>/name</c>, so the reply starts with their instructions.
+    /// </summary>
+    /// <param name="tools">The tools of the reply.</param>
+    /// <returns>The calls, or none when the message names no skill or the reply can't load skills.</returns>
+    private List<FunctionCallContent> MentionedSkillCalls(ToolSet? tools)
+    {
+        if (tools?.Find(LoadSkillTool.ToolName) is null || Skills is not { } skills || Entries.LastOrDefault(e => e.Role == ChatRole.User) is not { } message)
+        {
+            return [];
+        }
+
+        // Some providers accept only short alphanumeric call IDs.
+        return [.. skills.MentionedIn(message.Text).Select(name => new FunctionCallContent(
+            Guid.NewGuid().ToString("N")[..9],
+            LoadSkillTool.ToolName,
+            new Dictionary<string, object?> { ["name"] = name }))];
+    }
+
     private async Task ApplyAsync(Reply reply, AgentEvent e)
     {
         var entry = reply.Entry;
@@ -151,7 +171,14 @@ public sealed partial class Chat
                 await ApplyTrimAsync(trimmed);
                 break;
             case ContextCompactionFailed:
+                entry.Warnings |= ReplyWarnings.CompactionFailed;
                 LogCompactionFailed();
+                break;
+            case ContextTooLarge:
+                entry.Warnings |= ReplyWarnings.ContextTooLarge;
+                break;
+            case ResponseTruncated:
+                entry.Warnings |= ReplyWarnings.ResponseTruncated;
                 break;
             case ToolCallRequested requested:
                 if (entry.Status == EntryStatus.Streaming)
@@ -200,35 +227,10 @@ public sealed partial class Chat
             return;
         }
 
-        call.Image = finished.Image is { } image ? await KeepImageAsync(finished.Name, image) : null;
+        call.Images = [.. (finished.Images ?? []).Select(i => i.Attachment).OfType<AttachmentInfo>()];
         call.Output = finished.Output;
         call.Status = finished.Status;
-        await SaveAsync([new ToolResultEvent(_time.GetUtcNow(), entry.Id, finished.CallId, finished.Status, finished.Output, Image: call.Image)]);
-    }
-
-    /// <summary>
-    /// Save a copy of a tool's image in the chat's attachments.
-    /// </summary>
-    /// <remarks>The copy lets a resumed chat show the model the same picture after the tool's own file changes.</remarks>
-    /// <param name="toolName">The tool that produced the image.</param>
-    /// <param name="image">The image to keep.</param>
-    private async Task<AttachmentInfo?> KeepImageAsync(string toolName, DataContent image)
-    {
-        if (Attachments is not { } store)
-        {
-            return null;
-        }
-
-        try
-        {
-            using var content = new MemoryStream(image.Data.ToArray(), writable: false);
-            return await store.SaveAsync(toolName + ".png", content);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or AttachmentException)
-        {
-            LogImageNotKept(ex);
-            return null;
-        }
+        await SaveAsync([new ToolResultEvent(_time.GetUtcNow(), entry.Id, finished.CallId, finished.Status, finished.Output, Images: call.Images.Count > 0 ? call.Images : null)]);
     }
 
     private async Task FlushIfDueAsync(Reply reply)
@@ -256,7 +258,7 @@ public sealed partial class Chat
             events.Add(TakeDelta(reply));
         }
 
-        events.Add(new AssistantEndEvent(entry.At, entry.Id, entry.Status, entry.Error, entry.Usage));
+        events.Add(new AssistantEndEvent(entry.At, entry.Id, entry.Status, entry.Error, entry.Usage, entry.Warnings));
         return SaveAsync(events);
     }
 
@@ -355,7 +357,7 @@ public sealed partial class Chat
         }
 
         entry.At = endedAt;
-        closing.Add(new AssistantEndEvent(endedAt, entry.Id, entry.Status, entry.Error, entry.Usage));
+        closing.Add(new AssistantEndEvent(endedAt, entry.Id, entry.Status, entry.Error, entry.Usage, entry.Warnings));
         return SaveAsync(closing);
     }
 

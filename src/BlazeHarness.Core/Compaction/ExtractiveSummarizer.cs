@@ -17,7 +17,7 @@ namespace BlazeHarness.Core.Compaction;
 /// </para>
 /// <para>
 /// The same messages always give the same summary, and the text is copied as written, so it works in any language.
-/// What is left out can be found again with the <c>search_chat</c> tool.
+/// What is left out can be found again with the <c>search_chat</c> tool, and each tool call in the latest actions carries its call ID as a ref to read it in full.
 /// </para>
 /// </remarks>
 internal sealed class ExtractiveSummarizer : ISummarizer
@@ -27,7 +27,7 @@ internal sealed class ExtractiveSummarizer : ISummarizer
     private const string Commands = "Shell runs";
     private const string UserMessages = "Later asks";
     private const string Steps = "Latest actions";
-    private const string Footer = "Details left out of these notes can be looked up with the search_chat tool, when it is available.";
+    private const string Footer = "Details left out of these notes can be looked up with the search_chat tool, when it is available; pass an action's ref to read that call in full.";
     private const int MaxRequests = 2;
     private const int MaxFiles = 25;
     private const int MaxCommands = 12;
@@ -151,7 +151,8 @@ internal sealed class ExtractiveSummarizer : ISummarizer
         }
 
         var target = command ?? path;
-        sections[Steps].Add(target is null ? $"- {call.Name}{note}" : $"- {call.Name} {Flatten(target, StepCharacters)}{note}");
+        var reference = $" [ref {Flatten(call.CallId, StepCharacters)}]";
+        sections[Steps].Add(target is null ? $"- {call.Name}{note}{reference}" : $"- {call.Name} {Flatten(target, StepCharacters)}{note}{reference}");
     }
 
     private static void AddFile(List<string> files, string prefix, string path)

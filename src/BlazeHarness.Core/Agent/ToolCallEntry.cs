@@ -63,9 +63,9 @@ public sealed class ToolCallEntry
     public string Output { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the copy, in the chat's attachments, of a picture the call produced, or null.
+    /// Gets or sets the copies, in the chat's attachments, of the pictures the call produced.
     /// </summary>
-    public AttachmentInfo? Image { get; set; }
+    public IReadOnlyList<AttachmentInfo> Images { get; set; } = [];
 
     /// <summary>
     /// Gets or sets what the user is asked to allow while <see cref="Status"/> is <see cref="ToolCallStatus.AwaitingApproval"/>. It is not saved.
