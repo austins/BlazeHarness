@@ -120,7 +120,7 @@ public sealed class GitChangesReaderTests : IDisposable
     public async Task GetStatusAsync_RepositoryWithoutCommits_ListsStagedAndUntracked()
     {
         // Arrange
-        await TestGit.RunAsync(_folder.Root, "init", "-q");
+        await TestGit.InitEmptyAsync(_folder.Root);
         await File.WriteAllTextAsync(_folder.Combine("a.txt"), "a\n", TestContext.Current.CancellationToken);
         await TestGit.RunAsync(_folder.Root, "add", "a.txt");
         await File.WriteAllTextAsync(_folder.Combine("b.txt"), "b\n", TestContext.Current.CancellationToken);

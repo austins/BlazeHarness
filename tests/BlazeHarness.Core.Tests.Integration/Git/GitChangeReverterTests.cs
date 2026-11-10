@@ -144,7 +144,7 @@ public sealed class GitChangeReverterTests : IDisposable
     public async Task RevertFileAsync_StagedNewFileInRepositoryWithoutCommits_RemovesIt()
     {
         // Arrange
-        await TestGit.RunAsync(_folder.Root, "init", "-q");
+        await TestGit.InitEmptyAsync(_folder.Root);
         await WriteAsync("new.txt", "x\n");
         await TestGit.RunAsync(_folder.Root, "add", "new.txt");
         var (status, file) = await StatusOfAsync("new.txt");
@@ -547,7 +547,7 @@ public sealed class GitChangeReverterTests : IDisposable
 
     private async Task CommitLinesAsync(string ending, bool finalNewline = true)
     {
-        await TestGit.RunAsync(_folder.Root, "init", "-q");
+        await TestGit.InitEmptyAsync(_folder.Root);
         await WriteAsync("a.txt", Lines(ending, finalNewline));
         await TestGit.RunAsync(_folder.Root, "add", "-A");
         await TestGit.RunAsync(_folder.Root, "commit", "-q", "-m", "lines");
