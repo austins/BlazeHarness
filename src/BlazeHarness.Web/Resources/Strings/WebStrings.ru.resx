@@ -835,6 +835,15 @@
   <data name="GeneralSettingsTodosDescription" xml:space="preserve">
     <value>Агент может записывать шаги большой задачи и отмечать их по мере выполнения, а также получает напоминания, если забывает обновлять список. Отключите эту опцию, если модель плохо справляется со списком. Применяется со следующего сообщения в каждом чате.</value>
   </data>
+  <data name="GeneralSettingsEditorHeading" xml:space="preserve">
+    <value>Текстовый редактор</value>
+  </data>
+  <data name="GeneralSettingsEditorLabel" xml:space="preserve">
+    <value>Команда редактора</value>
+  </data>
+  <data name="GeneralSettingsEditorHint" xml:space="preserve">
+    <value>Команда, которая открывает файл из панели «Изменения», например [code]kate[/code] или [code]code -g[/code]. Путь к файлу добавляется в конец. Оставьте поле пустым, чтобы использовать системный текстовый редактор.</value>
+  </data>
   <data name="GeneralSettingsSaveFailure" xml:space="preserve">
     <value>Не удалось сохранить настройку: ошибка записи файла настроек.</value>
   </data>
@@ -2241,6 +2250,132 @@
   </data>
   <data name="ChangesWrapLines" xml:space="preserve">
     <value>Переносить длинные строки</value>
+  </data>
+  <data name="ChangesFilterLabel" xml:space="preserve">
+    <value>Фильтр изменённых файлов</value>
+  </data>
+  <data name="ChangesFilterPlaceholder" xml:space="preserve">
+    <value>Фильтр файлов…</value>
+  </data>
+  <data name="ChangesNoMatches" xml:space="preserve">
+    <value>Нет подходящих изменённых файлов.</value>
+  </data>
+  <data name="ChangesRootFolder" xml:space="preserve">
+    <value>Корень проекта</value>
+  </data>
+  <data name="ChangesPreviousFile" xml:space="preserve">
+    <value>Предыдущий файл</value>
+  </data>
+  <data name="ChangesNextFile" xml:space="preserve">
+    <value>Следующий файл</value>
+  </data>
+  <data name="ChangesPosition" xml:space="preserve">
+    <value>{index} из {total}</value>
+  </data>
+  <data name="ChangesViewed" xml:space="preserve">
+    <value>Просмотрено</value>
+  </data>
+  <data name="ChangesWholeFile" xml:space="preserve">
+    <value>Весь файл</value>
+  </data>
+  <data name="ChangesCopyPath" xml:space="preserve">
+    <value>Копировать относительный путь</value>
+  </data>
+  <data name="ChangesCopyMenuLabel" xml:space="preserve">
+    <value>Другие способы копирования пути</value>
+  </data>
+  <data name="ChangesCopyFullPath" xml:space="preserve">
+    <value>Копировать полный путь</value>
+  </data>
+  <data name="ChangesOpenInEditor" xml:space="preserve">
+    <value>Открыть в текстовом редакторе</value>
+  </data>
+  <data name="ChangesNoEditor" xml:space="preserve">
+    <value>Текстовый редактор не найден. Укажите его в разделе «Общие» настроек.</value>
+  </data>
+  <data name="ChangesOpenEditorFailed" xml:space="preserve">
+    <value>Не удалось запустить текстовый редактор. Проверьте команду редактора в разделе «Общие» настроек.</value>
+  </data>
+  <data name="ChangesEditorFileMissing" xml:space="preserve">
+    <value>Файл больше не существует.</value>
+  </data>
+  <data name="ChangesDiscardFile" xml:space="preserve">
+    <value>Отменить изменения в этом файле</value>
+  </data>
+  <data name="ChangesUpdated" xml:space="preserve">
+    <value>Изменён</value>
+  </data>
+  <data name="ChangesStaged" xml:space="preserve">
+    <value>В индексе</value>
+  </data>
+  <data name="ChangesPartlyStaged" xml:space="preserve">
+    <value>Частично в индексе</value>
+  </data>
+  <data name="ChangesCommentInserted" xml:space="preserve">
+    <value>Комментарий добавлен в ваше сообщение.</value>
+  </data>
+  <data name="ChangesShowMoreLines" xml:space="preserve">
+    <value>Показать больше строк</value>
+  </data>
+  <data name="ChangesRevertHunk" xml:space="preserve">
+    <value>Отменить это изменение</value>
+  </data>
+  <data name="ChangesCommentOnLine" xml:space="preserve">
+    <value>Прокомментировать эту строку</value>
+  </data>
+  <data name="ChangesCommentOnLineHint" xml:space="preserve">
+    <value>Прокомментировать эту строку. Чтобы выбрать несколько строк, протяните по номерам строк или щёлкните другую строку, удерживая Shift.</value>
+  </data>
+  <data name="ChangesCommentOnLines" xml:space="preserve">
+    <value>Прокомментировать строки {first}–{last}</value>
+  </data>
+  <data name="ChangesCommentRange" xml:space="preserve">
+    <value>Строки {first}–{last}</value>
+  </data>
+  <data name="ChangesCommentLabel" xml:space="preserve">
+    <value>Комментарий к строке</value>
+  </data>
+  <data name="ChangesCommentPlaceholder" xml:space="preserve">
+    <value>Напишите комментарий для ассистента</value>
+  </data>
+  <data name="ChangesCommentCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="ChangesCommentAdd" xml:space="preserve">
+    <value>Добавить в сообщение</value>
+  </data>
+  <data name="ChangesRevertHunkTitle" xml:space="preserve">
+    <value>Отменить это изменение?</value>
+  </data>
+  <data name="ChangesRevertHunkBody" xml:space="preserve">
+    <value>Эти строки в файле [code]{path}[/code] вернутся к состоянию до изменения. Это нельзя отменить.</value>
+  </data>
+  <data name="ChangesRevertHunkConfirm" xml:space="preserve">
+    <value>Отменить изменения</value>
+  </data>
+  <data name="ChangesDiscardFileTitle" xml:space="preserve">
+    <value>Отменить все изменения в этом файле?</value>
+  </data>
+  <data name="ChangesDiscardFileBody" xml:space="preserve">
+    <value>Изменения в файле [code]{path}[/code] будут удалены из папки. Это нельзя отменить.</value>
+  </data>
+  <data name="ChangesDiscardUntrackedBody" xml:space="preserve">
+    <value>[code]{path}[/code] — новый файл, который git ещё не отслеживает. Он будет удалён из папки, и это нельзя отменить.</value>
+  </data>
+  <data name="ChangesDiscardConfirm" xml:space="preserve">
+    <value>Отменить изменения</value>
+  </data>
+  <data name="ChangesRevertDone" xml:space="preserve">
+    <value>Изменения отменены.</value>
+  </data>
+  <data name="ChangesRevertChanged" xml:space="preserve">
+    <value>Файл тем временем изменился, поэтому ничего не отменено. Список обновлён.</value>
+  </data>
+  <data name="ChangesRevertNotAllowed" xml:space="preserve">
+    <value>Эти изменения нельзя отменить отсюда.</value>
+  </data>
+  <data name="ChangesRevertFailed" xml:space="preserve">
+    <value>Не удалось отменить изменения.</value>
   </data>
   <data name="ChangesFilesLabel" xml:space="preserve">
     <value>Изменённые файлы</value>

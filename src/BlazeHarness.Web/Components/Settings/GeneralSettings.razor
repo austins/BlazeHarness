@@ -38,6 +38,15 @@
         <p class="hint">@WebStrings.GeneralSettingsTodosDescription</p>
     </section>
 
+    <section class="card stack" aria-labelledby="editor-heading">
+        <h2 id="editor-heading">@WebStrings.GeneralSettingsEditorHeading</h2>
+        <div class="field">
+            <label for="editor-command">@WebStrings.GeneralSettingsEditorLabel</label>
+            <input id="editor-command" class="input mono" spellcheck="false" autocomplete="off" placeholder="kate" value="@Config.Current.EditorCommand" @onchange="OnEditorChangedAsync" aria-describedby="editor-hint" />
+        </div>
+        <p class="hint" id="editor-hint">@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.GeneralSettingsEditorHint))</p>
+    </section>
+
     <section class="card stack" aria-labelledby="chat-width-heading">
         <h2 id="chat-width-heading">@WebStrings.GeneralSettingsChatWidthHeading</h2>
         <label class="check">
@@ -169,6 +178,13 @@ var reversed = new string(chars);</code></pre>
     {
         var enabled = e.Value is true;
         return Toasts.TrySaveAsync(() => Config.UpdateAsync(config => config with { TodosEnabled = enabled }), WebStrings.GeneralSettingsSaveFailure);
+    }
+
+    private Task OnEditorChangedAsync(ChangeEventArgs e)
+    {
+        var command = (e.Value as string)?.Trim();
+        command = string.IsNullOrEmpty(command) ? null : command;
+        return Toasts.TrySaveAsync(() => Config.UpdateAsync(config => config with { EditorCommand = command }), WebStrings.GeneralSettingsSaveFailure);
     }
 
     private async Task OnLanguageChangedAsync(ChangeEventArgs e)

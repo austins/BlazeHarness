@@ -188,3 +188,165 @@ document.addEventListener("keydown", (event) => {
         next.focus();
     }
 });
+
+window.bhChanges = {
+    resetScroll: () => document.querySelector(".changes-diff")?.scrollTo(0, 0),
+};
+
+// Dragging down the line numbers of a diff block picks the lines for one comment. The drag ends as two clicks the
+// diff view already understands: a click on the first line, then a Shift-click on the last. A click or tap on one line
+// number comments on that line, so touch screens, which have no hover to show the button, can start a comment too.
+(() => {
+    let start = null;
+    let end = null;
+    let onButton = false;
+
+    const lineAt = (target) => target instanceof Element ? target.closest(".gdiff-line") : null;
+    const rowsOf = (line) => [...line.parentElement.querySelectorAll(`.gdiff-line[data-hunk="${line.dataset.hunk}"]`)];
+    const mark = () => {
+        const rows = rowsOf(start);
+        const [from, to] = [rows.indexOf(start), rows.indexOf(end)].sort((a, b) => a - b);
+        rows.forEach((row, i) => row.toggleAttribute("data-dragging", i >= from && i <= to));
+    };
+    const clear = () => {
+        document.querySelectorAll(".gdiff-line[data-dragging]").forEach((row) => row.removeAttribute("data-dragging"));
+        start = end = null;
+    };
+
+    document.addEventListener("mousedown", (event) => {
+        const line = lineAt(event.target);
+        if (event.button !== 0 || event.shiftKey || !line || !event.target.closest(".gdiff-num, .gdiff-gutter")) {
+            return;
+        }
+
+        // Keep the browser from selecting text while the pointer moves.
+        event.preventDefault();
+        start = end = line;
+        onButton = !!event.target.closest(".gdiff-add");
+    });
+
+    document.addEventListener("mouseover", (event) => {
+        const line = start && lineAt(event.target);
+        if (line && line !== end && line.dataset.hunk === start.dataset.hunk && line.parentElement === start.parentElement) {
+            end = line;
+            mark();
+        }
+    });
+
+    document.addEventListener("mouseup", () => {
+        if (start && end && start !== end) {
+            start.querySelector(".gdiff-add")?.click();
+            end.querySelector(".gdiff-add")?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, shiftKey: true }));
+        } else if (start && !onButton) {
+            start.querySelector(".gdiff-add")?.click();
+        }
+
+        if (start) {
+            clear();
+        }
+    });
+
+    // Selecting text across lines of one block picks them too. A labeled button floats under the selection; it is
+    // separate from the per-line buttons so it is clear that it comments on every selected line.
+    let picked = null;
+    let pill = null;
+
+    const nodeLine = (node) => lineAt(node instanceof Element ? node : node?.parentElement);
+    const numberOf = (row, column) => Number(row.querySelectorAll(".gdiff-num")[column]?.textContent) || null;
+
+    /** Gets the numbers the server-side range label would show: old numbers for removed lines only, else new ones. */
+    const span = (rows) => {
+        const removedOnly = rows.every((row) => row.dataset.kind === "removed");
+        const numbers = rows
+            .filter((row) => removedOnly || row.dataset.kind !== "removed")
+            .map((row) => numberOf(row, removedOnly ? 0 : 1))
+            .filter((n) => n !== null);
+        return numbers.length ? [numbers[0], numbers[numbers.length - 1]] : null;
+    };
+
+    const unpick = () => {
+        document.querySelectorAll(".gdiff-line[data-picked]").forEach((row) => row.removeAttribute("data-picked"));
+        pill?.remove();
+        pill = picked = null;
+    };
+
+    const place = () => {
+        if (!pill || !picked) {
+            return;
+        }
+
+        const row = picked[picked.length - 1].getBoundingClientRect();
+        const code = picked[picked.length - 1].querySelector(".gdiff-code")?.getBoundingClientRect() ?? row;
+        pill.style.left = `${Math.max(code.left, 8)}px`;
+        pill.style.top = `${row.bottom + 4}px`;
+    };
+
+    document.addEventListener("selectionchange", () => {
+        const selection = document.getSelection();
+        const a = selection && !selection.isCollapsed && !start ? nodeLine(selection.anchorNode) : null;
+        const b = a ? nodeLine(selection.focusNode) : null;
+        if (!a || !b || a === b || a.dataset.hunk !== b.dataset.hunk || a.parentElement !== b.parentElement) {
+            unpick();
+            return;
+        }
+
+        const rows = rowsOf(a);
+        const [from, to] = [rows.indexOf(a), rows.indexOf(b)].sort((x, y) => x - y);
+        const next = rows.slice(from, to + 1);
+        const numbers = span(next);
+        const diff = a.closest(".gdiff");
+        const pattern = diff?.dataset.pickLabel;
+        const template = diff?.querySelector(".gdiff-pick-template");
+        if (!numbers || !pattern || !template) {
+            unpick();
+            return;
+        }
+
+        if (picked && picked.length === next.length && picked.every((row, i) => row === next[i])) {
+            return;
+        }
+
+        unpick();
+        picked = next;
+        picked.forEach((row) => row.setAttribute("data-picked", ""));
+        pill = template.firstElementChild.cloneNode(true);
+        pill.querySelector("span").textContent = pattern.replace("{first}", numbers[0]).replace("{last}", numbers[1]);
+        // Keep the text selection alive while the button is pressed.
+        pill.addEventListener("mousedown", (event) => event.preventDefault());
+        pill.addEventListener("click", () => {
+            const rows = picked;
+            document.getSelection()?.removeAllRanges();
+            rows[0].querySelector(".gdiff-add")?.click();
+            rows[rows.length - 1].querySelector(".gdiff-add")?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, shiftKey: true }));
+        });
+        document.body.append(pill);
+        place();
+    });
+
+    document.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+})();
+
+// j and k move through the changed files of the open Changes panel, like the arrow keys of a list.
+document.addEventListener("keydown", (event) => {
+    if ((event.key !== "j" && event.key !== "k") || event.ctrlKey || event.metaKey || event.altKey || !(event.target instanceof Element)) {
+        return;
+    }
+
+    const typing = event.target.closest("input, textarea, select, [contenteditable]");
+    if (typing || !event.target.closest(".side-panel")) {
+        return;
+    }
+
+    const files = [...document.querySelectorAll(".side-panel .changes-file")];
+    const at = files.findIndex((file) => file.getAttribute("aria-current") === "true");
+    const next = files[at + (event.key === "j" ? 1 : -1)];
+    if (next) {
+        event.preventDefault();
+        next.click();
+        next.scrollIntoView({ block: "nearest" });
+        if (event.target.classList.contains("changes-file")) {
+            next.focus();
+        }
+    }
+});

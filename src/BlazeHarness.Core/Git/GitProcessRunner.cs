@@ -21,7 +21,7 @@ internal sealed class GitProcessRunner(TimeProvider time) : IGitRunner
         ArgumentException.ThrowIfNullOrEmpty(workingDirectory);
         ArgumentNullException.ThrowIfNull(arguments);
 
-        var filters = await RunCoreAsync(workingDirectory, ["config", "--null", "--name-only", "--get-regexp", @"^filter\..*\.(clean|process|required)$"], cancellationToken);
+        var filters = await RunCoreAsync(workingDirectory, ["config", "--null", "--name-only", "--get-regexp", @"^filter\..*\.(clean|smudge|process|required)$"], cancellationToken);
         if (filters.Truncated || (filters.ExitCode != 0 && filters.ExitCode != 1))
         {
             return GitResult.Unavailable;
@@ -31,7 +31,7 @@ internal sealed class GitProcessRunner(TimeProvider time) : IGitRunner
         foreach (var driver in filters.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries)
             .Select(key => key[..key.LastIndexOf('.')]).Distinct(StringComparer.Ordinal))
         {
-            foreach (var setting in (string[])["clean=", "process=", "required=false"])
+            foreach (var setting in (string[])["clean=", "smudge=", "process=", "required=false"])
             {
                 safeArguments.Add("-c");
                 safeArguments.Add(driver + "." + setting);

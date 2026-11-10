@@ -66,7 +66,13 @@ public sealed record ShellInfo(string Name, string Executable, bool IsPowerShell
         return IsPowerShell ? ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command] : ["-c", command];
     }
 
-    internal static string? FindOnPath(string fileName, string? pathVariable)
+    /// <summary>
+    /// Find an executable in the folders of a <c>PATH</c> value.
+    /// </summary>
+    /// <param name="fileName">The executable's file name, such as <c>git</c>.</param>
+    /// <param name="pathVariable">The <c>PATH</c> value.</param>
+    /// <returns>The full path of the first match, or null.</returns>
+    public static string? FindOnPath(string fileName, string? pathVariable)
     {
         return (pathVariable ?? string.Empty)
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)

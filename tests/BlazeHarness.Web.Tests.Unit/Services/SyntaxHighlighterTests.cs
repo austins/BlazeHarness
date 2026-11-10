@@ -82,4 +82,47 @@ public sealed class SyntaxHighlighterTests
         System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(html, "<[^>]+>", string.Empty))
             .Should().Be(Code);
     }
+
+    [Fact]
+    public void TryHighlightLines_BlockCommentAcrossLines_ColorsEveryLineAndClosesTheSpans()
+    {
+        // Arrange
+        const string Code = "int a; /* first\nsecond\nthird */ int b;";
+
+        // Act
+        var lines = SyntaxHighlighter.TryHighlightLines(Code, "cs");
+
+        // Assert
+        lines.Should().NotBeNull();
+        lines.Should().HaveCount(3);
+        lines[1].Should().StartWith("<span class=\"tok-comment\">").And.EndWith("</span>");
+        foreach (var line in lines)
+        {
+            System.Text.RegularExpressions.Regex.Count(line, "<span").Should().Be(System.Text.RegularExpressions.Regex.Count(line, "</span>"));
+        }
+    }
+
+    [Fact]
+    public void TryHighlightLines_Lines_KeepTheTextOfEachLine()
+    {
+        // Arrange
+        const string Code = "a < b\n\nreturn \"x\";";
+
+        // Act
+        var lines = SyntaxHighlighter.TryHighlightLines(Code, "cs");
+
+        // Assert
+        lines.Should().NotBeNull();
+        lines.Select(DiffHtml.TextOf).Should().Equal("a < b", string.Empty, "return \"x\";");
+    }
+
+    [Fact]
+    public void TryHighlightLines_UnknownLanguage_ReturnsNull()
+    {
+        // Act
+        var lines = SyntaxHighlighter.TryHighlightLines("x", "brainfuck");
+
+        // Assert
+        lines.Should().BeNull();
+    }
 }

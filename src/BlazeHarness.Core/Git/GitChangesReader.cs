@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Diff;
+using System.Globalization;
 using System.Text;
 
 namespace BlazeHarness.Core.Git;
@@ -8,12 +9,18 @@ namespace BlazeHarness.Core.Git;
 /// </summary>
 /// <remarks>
 /// Nothing is remembered between calls, so a repository created or emptied while a chat runs shows up on the next call.
-/// It only reads: no file or repository is changed.
+/// It only reads: no file or repository is changed. <see cref="GitChangeReverter"/> is what changes files.
 /// </remarks>
 public sealed class GitChangesReader
 {
+    /// <summary>
+    /// The number of context lines that shows a whole file in a diff.
+    /// </summary>
+    public const int WholeFileContext = 100000;
+
     private const int MaxUntrackedBytes = 512 * 1024;
     private const int BinarySniffBytes = 8000;
+    private const int MaxImageBytes = 1024 * 1024;
 
     private readonly IGitRunner _git;
 
@@ -68,14 +75,16 @@ public sealed class GitChangesReader
             .Select(entry =>
             {
                 counts.TryGetValue(entry.Path, out var count);
+                var kind = KindOf(entry, scope);
                 return new GitChangedFile(
                     entry.Path,
-                    KindOf(entry, scope),
+                    kind,
                     entry.IsStaged,
                     entry.IsUnstaged,
                     count.Added,
                     count.Removed,
-                    IsBinary: counts.ContainsKey(entry.Path) && count.Added is null);
+                    IsBinary: counts.ContainsKey(entry.Path) && count.Added is null,
+                    StampOf(root, entry, kind, count));
             })
             .OrderBy(file => file.Path, StringComparer.Ordinal)
             .ToList();
@@ -94,9 +103,10 @@ public sealed class GitChangesReader
     /// <param name="root">The repository root, from <see cref="GitStatus.Root"/>.</param>
     /// <param name="scope">Which changes to show.</param>
     /// <param name="file">A file from <see cref="GitStatus.Files"/>.</param>
+    /// <param name="contextLines">How many unchanged lines to show around each change; use <see cref="WholeFileContext"/> for the whole file. Values outside 0 to <see cref="WholeFileContext"/> are brought into that range. Untracked files are always shown whole.</param>
     /// <param name="cancellationToken">A token that stops the work.</param>
     /// <returns>The diff, or null when the file has no changes to show any more.</returns>
-    public async Task<GitFileDiff?> GetDiffAsync(string root, GitChangeScope scope, GitChangedFile file, CancellationToken cancellationToken = default)
+    public async Task<GitFileDiff?> GetDiffAsync(string root, GitChangeScope scope, GitChangedFile file, int contextLines = 3, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(root);
         ArgumentNullException.ThrowIfNull(file);
@@ -107,11 +117,91 @@ public sealed class GitChangesReader
         }
 
         var hasHead = await HasHeadAsync(root, cancellationToken);
+        var context = Math.Clamp(contextLines, 0, WholeFileContext);
         var result = await _git.RunAsync(
             root,
-            [.. DiffBase(scope, hasHead), "-U3", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", "--", file.Path],
+            [.. DiffBase(scope, hasHead), $"-U{context.ToString(CultureInfo.InvariantCulture)}", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", "--", file.Path],
             cancellationToken);
         return result.Succeeded ? GitDiffParser.Parse(file.Path, result.Output, result.Truncated) : null;
+    }
+
+#pragma warning disable CA1822, S2325 // An instance method like its siblings, so callers use the one object (and can substitute it) for all of its operations.
+    /// <summary>
+    /// Get the picture a changed file holds in the working tree.
+    /// </summary>
+    /// <remarks>
+    /// Only the current file is read, never an earlier version. The kind of picture is decided from the file's first bytes, not its name,
+    /// and only PNG, JPEG, GIF and WebP are served: a vector format such as SVG can hold script, so it is never returned.
+    /// </remarks>
+    /// <param name="root">The repository root, from <see cref="GitStatus.Root"/>.</param>
+    /// <param name="file">A file from <see cref="GitStatus.Files"/>.</param>
+    /// <param name="cancellationToken">A token that stops the work.</param>
+    /// <returns>The picture, or null when the file is deleted, in conflict, outside the root, behind a symbolic link, larger than 1 MiB, missing or not one of those picture formats.</returns>
+    public async Task<GitImage?> GetImageAsync(string root, GitChangedFile file, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(root);
+        ArgumentNullException.ThrowIfNull(file);
+
+        if (file.Kind is GitChangeKind.Deleted or GitChangeKind.Conflicted || !GitPathGuard.TryResolve(root, file.Path, out var full))
+        {
+            return null;
+        }
+
+        try
+        {
+            await using var stream = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, useAsync: true);
+            var buffer = new byte[MaxImageBytes + 1];
+            var read = await stream.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken);
+            if (read > MaxImageBytes || MediaTypeOf(buffer.AsSpan(0, read)) is not { } mediaType)
+            {
+                return null;
+            }
+
+            return new GitImage(mediaType, buffer.AsSpan(0, read).ToArray());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+#pragma warning restore CA1822, S2325
+
+    private static string? MediaTypeOf(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.StartsWith((ReadOnlySpan<byte>)[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))
+        {
+            return "image/png";
+        }
+
+        if (bytes.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8, 0xFF]))
+        {
+            return "image/jpeg";
+        }
+
+        if (bytes.StartsWith("GIF87a"u8) || bytes.StartsWith("GIF89a"u8))
+        {
+            return "image/gif";
+        }
+
+        return bytes.Length >= 12 && bytes[..4].SequenceEqual("RIFF"u8) && bytes.Slice(8, 4).SequenceEqual("WEBP"u8) ? "image/webp" : null;
+    }
+
+    private static string StampOf(string root, GitStatusEntry entry, GitChangeKind kind, (int? Added, int? Removed) count)
+    {
+        string state;
+        try
+        {
+            var info = new FileInfo(Path.Combine(root, entry.Path));
+            state = info.Exists || info.LinkTarget is not null
+                ? $"{info.LastWriteTimeUtc.Ticks.ToString(CultureInfo.InvariantCulture)}:{info.Length.ToString(CultureInfo.InvariantCulture)}"
+                : "deleted";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            state = "unknown";
+        }
+
+        return $"{state}:{kind}:{entry.IsStaged}:{entry.IsUnstaged}:{count.Added}:{count.Removed}";
     }
 
     private static string[] DiffBase(GitChangeScope scope, bool hasHead) => scope switch

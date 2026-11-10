@@ -18,6 +18,7 @@ namespace BlazeHarness.Web.Services;
 public static class SyntaxHighlighter
 {
     private const int MaxLength = 20_000;
+    private const int MaxLinesLength = 100_000;
 
     private static readonly FrozenDictionary<string, string> LanguageIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
@@ -78,7 +79,28 @@ public static class SyntaxHighlighter
     public static string? TryHighlight(string code, string? info)
     {
         ArgumentNullException.ThrowIfNull(code);
-        if (code.Length == 0 || code.Length > MaxLength || info is null)
+        return Highlight(code, info, MaxLength);
+    }
+
+    /// <summary>
+    /// Color a piece of code that spans several lines and return the colored HTML of each line.
+    /// </summary>
+    /// <remarks>
+    /// A token that spans lines, such as a block comment, is closed at the end of each line and opened again on the next,
+    /// so every line is well-formed HTML on its own.
+    /// </remarks>
+    /// <param name="code">The lines of code, separated by <c>\n</c>.</param>
+    /// <param name="info">The language name or file extension.</param>
+    /// <returns>One HTML string per line of <paramref name="code"/>, or null when the language is unknown, the code is too long or it can't be parsed.</returns>
+    public static IReadOnlyList<string>? TryHighlightLines(string code, string? info)
+    {
+        ArgumentNullException.ThrowIfNull(code);
+        return Highlight(code, info, MaxLinesLength) is { } html ? SplitLines(html) : null;
+    }
+
+    private static string? Highlight(string code, string? info, int maxLength)
+    {
+        if (code.Length == 0 || code.Length > maxLength || info is null)
         {
             return null;
         }
@@ -111,6 +133,50 @@ public static class SyntaxHighlighter
         }
 
         return builder.ToString();
+    }
+
+    private static List<string> SplitLines(string html)
+    {
+        var lines = new List<string>();
+        var line = new StringBuilder();
+        var open = new List<string>();
+        var i = 0;
+        while (i < html.Length)
+        {
+            switch (html[i])
+            {
+                // Text never contains a raw '<': the highlighter encodes it, so this is always a tag.
+                case '<':
+                    var end = html.IndexOf('>', i);
+                    var tag = html[i..(end + 1)];
+                    if (tag.StartsWith("</", StringComparison.Ordinal))
+                    {
+                        open.RemoveAt(open.Count - 1);
+                    }
+                    else
+                    {
+                        open.Add(tag);
+                    }
+
+                    line.Append(tag);
+                    i = end + 1;
+                    break;
+                case '\n':
+                    line.Insert(line.Length, "</span>", open.Count);
+                    lines.Add(line.ToString());
+                    line.Clear();
+                    open.ForEach(openTag => line.Append(openTag));
+                    i++;
+                    break;
+                default:
+                    line.Append(html[i]);
+                    i++;
+                    break;
+            }
+        }
+
+        lines.Add(line.ToString());
+        return lines;
     }
 
     private static void Write(StringBuilder builder, string text, IList<Scope> scopes, ref int position, int end)

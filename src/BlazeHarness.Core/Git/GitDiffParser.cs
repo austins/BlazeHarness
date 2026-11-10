@@ -1,5 +1,4 @@
 using BlazeHarness.Core.Diff;
-using System.Globalization;
 
 namespace BlazeHarness.Core.Git;
 
@@ -43,11 +42,14 @@ internal static class GitDiffParser
                     hunks.Add(new GitDiffHunk(header, lines));
                 }
 
-                if (!TryParseHeader(line, out oldNumber, out newNumber))
+                if (!GitHunkHeader.TryParse(line, out var range))
                 {
                     lines = null;
                     continue;
                 }
+
+                oldNumber = range.OldStart;
+                newNumber = range.NewStart;
 
                 header = line;
                 lines = [];
@@ -94,37 +96,5 @@ internal static class GitDiffParser
         }
 
         return new GitFileDiff(path, binary, truncated, hunks);
-    }
-
-    /// <summary>
-    /// Parse the starting line numbers from a unified diff hunk header.
-    /// </summary>
-    /// <remarks>A header reads "@@ -12,5 +12,6 @@ optional text"; counts are omitted when they are one.</remarks>
-    /// <param name="line">The hunk header.</param>
-    /// <param name="oldStart">The starting line in the original file.</param>
-    /// <param name="newStart">The starting line in the changed file.</param>
-    private static bool TryParseHeader(string line, out int oldStart, out int newStart)
-    {
-        oldStart = 0;
-        newStart = 0;
-        var end = line.IndexOf(" @@", 3, StringComparison.Ordinal);
-        if (end < 0)
-        {
-            return false;
-        }
-
-        var ranges = line[3..end].Split(' ');
-        return ranges.Length == 2
-            && ranges[0].StartsWith('-')
-            && ranges[1].StartsWith('+')
-            && TryStart(ranges[0], out oldStart)
-            && TryStart(ranges[1], out newStart);
-    }
-
-    private static bool TryStart(string range, out int start)
-    {
-        var comma = range.IndexOf(',', StringComparison.Ordinal);
-        var digits = comma < 0 ? range[1..] : range[1..comma];
-        return int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out start);
     }
 }

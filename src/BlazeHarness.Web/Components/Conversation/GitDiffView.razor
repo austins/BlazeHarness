@@ -2,13 +2,42 @@
 @using BlazeHarness.Core.Git
 @using System.Globalization
 
-<div class="gdiff" role="table" data-wrap="@(Wrap ? "true" : null)" aria-label="@WebStrings.ChangesDiffLabel">
-    @foreach (var hunk in _rows)
+<div class="gdiff" role="table" aria-label="@WebStrings.ChangesDiffLabel" data-pick-label="@PickLabel">
+    @* ui.js copies this under a text selection that spans several lines. *@
+    <div class="gdiff-pick-template" hidden>
+        <button type="button" class="btn btn-sm gdiff-pick"><Icon Name="chat" /><span></span></button>
+    </div>
+    @for (var h = 0; h < _rows.Count; h++)
     {
-        <div class="gdiff-hunk" role="row"><span role="cell">@hunk.Header</span></div>
-        @foreach (var row in hunk.Lines)
+        var hunkIndex = h;
+        var hunk = _rows[h];
+        <div class="gdiff-hunk" role="row">
+            <span class="gdiff-hunk-bar" role="cell">
+                <span class="gdiff-hunk-header">@hunk.Header</span>
+                @if (CanExpand && ChangesReview.CanShowMore(hunk.Source, Review.ContextLines))
+                {
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.ChangesShowMoreLines" title="@WebStrings.ChangesShowMoreLines" @onclick="OnExpand"><Icon Name="expand" /></button>
+                }
+
+            </span>
+        </div>
+        @for (var l = 0; l < hunk.Lines.Count; l++)
         {
-            <div class="gdiff-line" role="row" data-kind="@row.Kind">
+            var lineIndex = l;
+            var row = hunk.Lines[l];
+            <div class="gdiff-line" role="row" data-kind="@row.Kind" data-hunk="@hunkIndex" data-selected="@(IsSelected(hunkIndex, lineIndex) ? "true" : null)">
+                @if (CanRevert)
+                {
+                    <span class="gdiff-revert" role="cell">
+                        @if (row.Revert is { } change)
+                        {
+                            <button type="button" class="btn btn-ghost btn-icon" aria-label="@WebStrings.ChangesRevertHunk" title="@WebStrings.ChangesRevertHunk" @onclick="() => OnRevertHunk.InvokeAsync(change)"><Icon Name="undo" /></button>
+                        }
+                    </span>
+                }
+                <span class="gdiff-gutter" role="cell">
+                    <button type="button" class="gdiff-add" aria-label="@WebStrings.ChangesCommentOnLine" title="@WebStrings.ChangesCommentOnLineHint" @onclick="e => OnLineClick(e, hunkIndex, lineIndex)"><Icon Name="plus" /></button>
+                </span>
                 <span class="gdiff-num" role="cell" aria-hidden="true">@row.Old</span>
                 <span class="gdiff-num" role="cell" aria-hidden="true">@row.New</span>
                 <span class="gdiff-sign" role="cell" aria-hidden="true">@row.Sign</span>
@@ -18,17 +47,41 @@
                     <span class="visually-hidden">@hidden</span>
                 }
             </div>
+            @if (_editHunk == hunkIndex && lineIndex == Math.Max(_anchorLine, _editLine))
+            {
+                var draft = DraftComment();
+                <div class="gdiff-note" role="row">
+                    <div class="gdiff-note-box gdiff-note-form" role="cell">
+                        @if (draft.First != draft.End)
+                        {
+                            <span class="gdiff-note-range">@RangeLabel(draft)</span>
+                        }
+
+                        <textarea @ref="_input" class="input gdiff-note-input" rows="3" aria-label="@WebStrings.ChangesCommentLabel" placeholder="@WebStrings.ChangesCommentPlaceholder" @bind="_draft" @bind:event="oninput" @bind:after="RememberDraft" @onkeydown="OnDraftKeyAsync" @onkeydown:stopPropagation></textarea>
+                        <div class="gdiff-note-actions">
+                            <button type="button" class="btn btn-sm" @onclick="CancelComment">@WebStrings.ChangesCommentCancel</button>
+                            <button type="button" class="btn btn-sm btn-primary" disabled="@string.IsNullOrWhiteSpace(_draft)" @onclick="SaveCommentAsync">@WebStrings.ChangesCommentAdd</button>
+                        </div>
+                    </div>
+                </div>
+            }
         }
     }
 </div>
 
 @code {
-    private sealed record Row(string Kind, string Old, string New, string Sign, MarkupString Code, string? Hidden);
+    private sealed record Row(string Kind, string Old, string New, string Sign, MarkupString Code, string? Hidden, GitDiffLine Source, GitDiffHunk? Revert);
 
-    private sealed record HunkRows(string Header, List<Row> Lines);
+    private sealed record HunkRows(string Header, GitDiffHunk Source, List<Row> Lines);
 
     private GitFileDiff? _seen;
     private List<HunkRows> _rows = [];
+    private int _editHunk = -1;
+    private int _editLine = -1;
+    private int _anchorLine = -1;
+    private string _draft = string.Empty;
+    private ElementReference _input;
+    private bool _focusInput;
 
     /// <summary>
     /// Gets or sets the diff to show.
@@ -37,10 +90,40 @@
     public GitFileDiff Diff { get; set; } = default!;
 
     /// <summary>
-    /// Gets or sets a value indicating whether long lines wrap instead of scrolling sideways.
+    /// Gets or sets the review of the chat's changes, which keeps the remark being written and how much context to show.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public ChangesReview Review { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether each hunk offers to show more lines around it.
     /// </summary>
     [Parameter]
-    public bool Wrap { get; set; }
+    public bool CanExpand { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether each change offers to be reverted, by an arrow beside its first line.
+    /// </summary>
+    [Parameter]
+    public bool CanRevert { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user asking to see more lines around the changes.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnExpand { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user asking to revert one change, given as a hunk without context.
+    /// </summary>
+    [Parameter]
+    public EventCallback<GitDiffHunk> OnRevertHunk { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for a finished remark, which goes into the message being written.
+    /// </summary>
+    [Parameter]
+    public EventCallback<DiffComment> OnComment { get; set; }
 
     /// <inheritdoc />
     protected override void OnParametersSet()
@@ -51,21 +134,228 @@
         }
 
         _seen = Diff;
-
-        // Each line is colored alone, so a block comment that spans lines is not recognized; the cost is one small parse per line.
         var language = Path.GetExtension(Diff.Path).TrimStart('.');
-        _rows = [.. Diff.Hunks.Select(hunk => new HunkRows(hunk.Header, [.. hunk.Lines.Select(line => ToRow(line, language))]))];
+        _rows = [.. Diff.Hunks.Select(hunk => new HunkRows(hunk.Header, hunk, ToRows(hunk, language)))];
+        RestoreDraft();
     }
 
-    private static Row ToRow(GitDiffLine line, string language)
+    /// <summary>
+    /// Open the remark the user was writing on this file again, if its lines are still in the diff.
+    /// </summary>
+    /// <remarks>
+    /// The diff is replaced when the changes are read again, the context grows or the panel opens, and none of those
+    /// should lose what the user typed. A draft on another file stays in the review for when that file is shown.
+    /// </remarks>
+    private void RestoreDraft()
     {
-        var html = SyntaxHighlighter.TryHighlight(line.Text, language);
-        return new Row(
-            line.Kind.ToString().ToLowerInvariant(),
-            line.OldNumber?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
-            line.NewNumber?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
-            line.Kind switch { DiffKind.Added => "+", DiffKind.Removed => "−", _ => " " },
-            new MarkupString(html ?? System.Net.WebUtility.HtmlEncode(line.Text)),
-            line.Kind switch { DiffKind.Added => WebStrings.DiffViewAdded, DiffKind.Removed => WebStrings.DiffViewRemoved, _ => null });
+        _editHunk = _anchorLine = _editLine = -1;
+        _draft = string.Empty;
+        if (Review.Draft is not { } draft || draft.Path != Diff.Path)
+        {
+            return;
+        }
+
+        for (var h = 0; h < _rows.Count; h++)
+        {
+            var lines = _rows[h].Lines;
+            var first = lines.FindIndex(r => r.Source == draft.Lines[0]);
+            var last = lines.FindIndex(r => r.Source == draft.Lines[^1]);
+            if (first >= 0 && last >= first)
+            {
+                (_editHunk, _anchorLine, _editLine, _draft) = (h, first, last, draft.Text);
+                return;
+            }
+        }
+
+        Review.Draft = null;
+    }
+
+    private void RememberDraft() => Review.Draft = _editHunk < 0 ? null : DraftComment() with { Text = _draft };
+
+    private static List<Row> ToRows(GitDiffHunk hunk, string language)
+    {
+        var lines = hunk.Lines;
+        var html = Highlight(lines, language);
+        MarkWords(lines, html);
+        var changes = hunk.SplitChanges().ToDictionary(c => c.Start, c => c.Change);
+        return
+        [
+            .. lines.Select((line, i) => new Row(
+                line.Kind.ToString().ToLowerInvariant(),
+                line.OldNumber?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                line.NewNumber?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                line.Kind switch { DiffKind.Added => "+", DiffKind.Removed => "−", _ => " " },
+                new MarkupString(html[i]),
+                line.Kind switch { DiffKind.Added => WebStrings.DiffViewAdded, DiffKind.Removed => WebStrings.DiffViewRemoved, _ => null },
+                line,
+                changes.GetValueOrDefault(i))),
+        ];
+    }
+
+    /// <summary>
+    /// Color the old and new side of a hunk each as one piece of code, so a token that spans lines keeps its color.
+    /// </summary>
+    private static string[] Highlight(IReadOnlyList<GitDiffLine> lines, string language)
+    {
+        var oldSide = lines.Where(l => l.Kind != DiffKind.Added).ToList();
+        var newSide = lines.Where(l => l.Kind != DiffKind.Removed).ToList();
+        var oldHtml = HighlightSide(oldSide, language);
+        var newHtml = HighlightSide(newSide, language);
+        var result = new string[lines.Count];
+        int oldAt = 0, newAt = 0;
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var line = lines[i];
+            var html = line.Kind == DiffKind.Removed ? oldHtml?[oldAt] : newHtml?[newAt];
+            result[i] = html ?? System.Net.WebUtility.HtmlEncode(line.Text);
+            if (line.Kind != DiffKind.Added)
+            {
+                oldAt++;
+            }
+
+            if (line.Kind != DiffKind.Removed)
+            {
+                newAt++;
+            }
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyList<string>? HighlightSide(List<GitDiffLine> side, string language)
+    {
+        if (side.Count == 0)
+        {
+            return null;
+        }
+
+        var html = SyntaxHighlighter.TryHighlightLines(string.Join('\n', side.Select(l => l.Text)), language);
+        return html is not null && html.Count == side.Count ? html : null;
+    }
+
+    /// <summary>
+    /// Mark the words that differ between a removed line and the added line that replaces it.
+    /// </summary>
+    private static void MarkWords(IReadOnlyList<GitDiffLine> lines, string[] html)
+    {
+        var i = 0;
+        while (i < lines.Count)
+        {
+            if (lines[i].Kind != DiffKind.Removed)
+            {
+                i++;
+                continue;
+            }
+
+            var removedEnd = i;
+            while (removedEnd < lines.Count && lines[removedEnd].Kind == DiffKind.Removed)
+            {
+                removedEnd++;
+            }
+
+            var addedEnd = removedEnd;
+            while (addedEnd < lines.Count && lines[addedEnd].Kind == DiffKind.Added)
+            {
+                addedEnd++;
+            }
+
+            var pairs = Math.Min(removedEnd - i, addedEnd - removedEnd);
+            for (var p = 0; p < pairs; p++)
+            {
+                var removedAt = i + p;
+                var addedAt = removedEnd + p;
+                var (removed, added) = WordDiff.Compare(lines[removedAt].Text, lines[addedAt].Text);
+                html[removedAt] = DiffHtml.Mark(html[removedAt], removed, "gdiff-word");
+                html[addedAt] = DiffHtml.Mark(html[addedAt], added, "gdiff-word");
+            }
+
+            i = addedEnd;
+        }
+    }
+
+    /// <summary>Gets the label of the button under a multi-line text selection, with placeholders the page fills in.</summary>
+    private static string PickLabel =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.ChangesCommentOnLines), new Dictionary<string, object?> { ["first"] = "{first}", ["last"] = "{last}" });
+
+    private static string RangeLabel(DiffComment comment) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.ChangesCommentRange), new Dictionary<string, object?> { ["first"] = comment.First, ["last"] = comment.End });
+
+    private bool IsSelected(int hunk, int line) =>
+        _editHunk == hunk && line >= Math.Min(_anchorLine, _editLine) && line <= Math.Max(_anchorLine, _editLine);
+
+    /// <summary>
+    /// Start a remark on a line, or with Shift held stretch the open remark of the same block to reach it.
+    /// </summary>
+    /// <remarks>
+    /// Dragging across the line numbers ends here too: <c>ui.js</c> clicks the first line, then Shift-clicks the last.
+    /// </remarks>
+    private void OnLineClick(MouseEventArgs e, int hunk, int line)
+    {
+        if (e.ShiftKey && _editHunk == hunk)
+        {
+            _editLine = line;
+            RememberDraft();
+            _focusInput = true;
+            return;
+        }
+
+        _editHunk = hunk;
+        _anchorLine = line;
+        _editLine = line;
+        _draft = string.Empty;
+        RememberDraft();
+        _focusInput = true;
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // The comment box opens from the line buttons, which keep focus off themselves so a drag selects no text.
+        if (_focusInput && _editHunk >= 0)
+        {
+            _focusInput = false;
+            await _input.FocusAsync();
+        }
+    }
+
+    private void CancelComment()
+    {
+        _editHunk = -1;
+        _editLine = -1;
+        _anchorLine = -1;
+        _draft = string.Empty;
+        Review.Draft = null;
+    }
+
+    private DiffComment DraftComment()
+    {
+        var first = Math.Min(_anchorLine, _editLine);
+        var last = Math.Max(_anchorLine, _editLine);
+        var lines = _rows[_editHunk].Lines.Skip(first).Take(last - first + 1).Select(r => r.Source).ToList();
+        return new DiffComment(Diff.Path, lines, _draft.Trim());
+    }
+
+    private async Task SaveCommentAsync()
+    {
+        if (_editHunk < 0 || string.IsNullOrWhiteSpace(_draft))
+        {
+            return;
+        }
+
+        var comment = DraftComment();
+        CancelComment();
+        await OnComment.InvokeAsync(comment);
+    }
+
+    private async Task OnDraftKeyAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            CancelComment();
+        }
+        else if (e.Key == "Enter" && (e.CtrlKey || e.MetaKey))
+        {
+            await SaveCommentAsync();
+        }
     }
 }

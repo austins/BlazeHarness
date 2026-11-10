@@ -4,26 +4,26 @@
 @implements IDisposable
 @inject WebServices Web
 @inject GitChangesReader Git
+@inject TimeProvider Time
 @inject SidePanelState State
+@inject SidePanelMemory Memory
 @inject ILogger<SidePanel> Logger
 
 @if (State.IsVisible && State.Current is { } tab)
 {
     <aside class="side-panel" aria-label="@WebStrings.SidePanelLabel">
         <div class="resizer" data-resizer="panel" role="separator" aria-orientation="vertical" tabindex="0" aria-label="@WebStrings.SidePanelResize"></div>
-        <div class="side-panel-bar">
-            <div class="side-tabs" role="group" aria-label="@WebStrings.SidePanelTabsLabel">
-                @if (State.HasBrowser)
-                {
+        @* With one tab the bar would only repeat the button that opened the panel. *@
+        @if (State.HasBrowser && State.HasChanges)
+        {
+            <div class="side-panel-bar">
+                <div class="side-tabs" role="group" aria-label="@WebStrings.SidePanelTabsLabel">
                     <button type="button" class="btn btn-ghost btn-sm" aria-pressed="@(tab == SidePanelTab.Browser ? "true" : "false")" @onclick="() => State.Open(SidePanelTab.Browser)"><Icon Name="globe" /> @WebStrings.SidePanelTabPreview</button>
-                }
-
-                @if (State.HasChanges)
-                {
                     <button type="button" class="btn btn-ghost btn-sm" aria-pressed="@(tab == SidePanelTab.Changes ? "true" : "false")" @onclick="() => State.Open(SidePanelTab.Changes)"><Icon Name="diff" /> @WebStrings.SidePanelTabChanges <span class="badge">@State.ChangeCount</span></button>
-                }
+                </div>
             </div>
-        </div>
+        }
+
         <div class="side-panel-body">
             @if (tab == SidePanelTab.Browser && _frame is not null && _chatId is not null)
             {
@@ -31,13 +31,15 @@
             }
             else if (tab == SidePanelTab.Changes && _status is not null)
             {
-                <ChangesPanel Status="_status" Scope="_scope" Refreshing="_refreshing" WrapLines="_wrapLines" OnWrapLinesChange="wrap => _wrapLines = wrap" OnScopeChange="ChangeScopeAsync" OnRefresh="RefreshAsync" />
+                <ChangesPanel Status="_status" Scope="_scope" Refreshing="_refreshing" Running="Running" Review="_memory.Review" OnScopeChange="ChangeScopeAsync" OnRefresh="RefreshAsync" OnComment="OnComment" />
             }
         </div>
     </aside>
 }
 
 @code {
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(3);
+
     private readonly CancellationTokenSource _stop = new();
 
     private bool _initialized;
@@ -49,8 +51,11 @@
     private GitStatus? _status;
     private GitChangeScope _scope;
     private bool _refreshing;
-    private bool _wrapLines;
     private int _refreshVersion;
+    private ChatPanelMemory _memory = new();
+    private bool _restoring;
+    private ITimer? _poll;
+    private bool _polling;
 
     /// <summary>
     /// Gets or sets the id of the open chat, or null while a new chat has none yet.
@@ -70,9 +75,16 @@
     [Parameter]
     public bool Running { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback that puts a remark on the changes into the message being written.
+    /// </summary>
+    [Parameter]
+    public EventCallback<string> OnComment { get; set; }
+
     /// <inheritdoc />
     public void Dispose()
     {
+        _poll?.Dispose();
         Web.BrowserFrameChanged -= OnFrameChanged;
         State.Changed -= OnStateChanged;
         State.Reset();
@@ -91,22 +103,23 @@
     protected override void OnParametersSet()
     {
         var refresh = false;
-        if (!_initialized || ChatId != _chatId)
+        if (_initialized && _chatId is null && ChatId is not null && FolderPath == _folder)
+        {
+            // A new chat got its id with its first message; it is still the same chat, so the panel stays as it is.
+            _chatId = ChatId;
+            Memory.Adopt(ChatId, _memory);
+        }
+        else if (!_initialized || ChatId != _chatId)
         {
             _initialized = true;
             _chatId = ChatId;
             _folder = FolderPath;
             _status = null;
-            _scope = GitChangeScope.All;
+            _memory = ChatId is null ? new ChatPanelMemory() : Memory.For(ChatId);
+            _scope = _memory.Scope;
             _shown = null;
-            State.Reset();
             _frame = ChatId is null ? null : Web.LatestBrowserFrame(ChatId);
-            State.SetBrowser(_frame is not null);
-            if (_frame is not null)
-            {
-                State.Open(SidePanelTab.Browser);
-            }
-
+            Restore();
             refresh = true;
         }
         else if (FolderPath != _folder)
@@ -121,10 +134,98 @@
         }
 
         _wasRunning = Running;
+        UpdatePoll();
         if (refresh)
         {
             _ = RefreshAsync();
         }
+    }
+
+    /// <summary>
+    /// Open the panel the way the user left it in this chat, or on the browser preview for a chat that has one and no remembered state.
+    /// </summary>
+    /// <remarks>
+    /// The Changes tab has nothing to show until the changes are read, so until the first refresh ends the state changes
+    /// this causes are not taken for the user's choice.
+    /// </remarks>
+    private void Restore()
+    {
+        SidePanelTab? tab = _frame is not null ? SidePanelTab.Browser : null;
+        if (_memory.IsKnown)
+        {
+            tab = _memory.OpenTab;
+        }
+
+        // Resetting raises the state change too, which must not overwrite what is being restored.
+        _restoring = true;
+        State.Reset();
+        State.SetBrowser(_frame is not null);
+        if (tab is { } open)
+        {
+            State.Open(open);
+        }
+        else
+        {
+            _restoring = false;
+        }
+    }
+
+    /// <summary>
+    /// Look at the changes now and then while the assistant works, so the count and the list follow its edits.
+    /// </summary>
+    private void UpdatePoll()
+    {
+        var wanted = Running && _folder is not null;
+        if (wanted && _poll is null)
+        {
+            _poll = Time.CreateTimer(_ => InvokeAsync(PollAsync), null, PollInterval, PollInterval);
+        }
+        else if (!wanted && _poll is not null)
+        {
+            _poll.Dispose();
+            _poll = null;
+        }
+    }
+
+    private async Task PollAsync()
+    {
+        if (_refreshing || _polling || _folder is not { } folder || _stop.IsCancellationRequested)
+        {
+            return;
+        }
+
+        _polling = true;
+        var version = _refreshVersion;
+        var scope = _scope;
+        var chatId = _chatId;
+        GitStatus? status;
+        try
+        {
+            status = await Git.GetStatusAsync(folder, scope, _stop.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Logger.LogWarning(ex, "Reading the changes of chat {ChatId} failed.", chatId);
+            return;
+        }
+        finally
+        {
+            _polling = false;
+        }
+
+        // A refresh the user asked for while this one ran has newer data.
+        if (version != _refreshVersion || _stop.IsCancellationRequested || status is null || status.IsSameAs(_status))
+        {
+            return;
+        }
+
+        _status = status;
+        State.SetChangeCount(status.AllCount);
+        StateHasChanged();
     }
 
     /// <summary>
@@ -163,12 +264,24 @@
         _refreshing = false;
         _status = status;
         State.SetChangeCount(status?.AllCount ?? 0);
+        if (_restoring)
+        {
+            _restoring = false;
+
+            // Opened on a tab with nothing to show; leave it closed rather than have it appear later on its own.
+            if (!State.IsVisible)
+            {
+                State.Close();
+            }
+        }
+
         StateHasChanged();
     }
 
     private Task ChangeScopeAsync(GitChangeScope scope)
     {
         _scope = scope;
+        _memory.Scope = scope;
         return RefreshAsync();
     }
 
@@ -182,6 +295,12 @@
             }
 
             var shown = State.IsVisible ? State.Current : null;
+            if (!_restoring)
+            {
+                _memory.IsKnown = true;
+                _memory.OpenTab = shown;
+            }
+
             var opened = shown == SidePanelTab.Changes && _shown != SidePanelTab.Changes;
             _shown = shown;
             if (opened)

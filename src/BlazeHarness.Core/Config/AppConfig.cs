@@ -81,6 +81,11 @@ public sealed record AppConfig
     public bool TodosEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets the command that opens a file in a text editor, such as <c>kate</c>, split like a command line with the file's path added as the last argument; null uses the system's text editor.
+    /// </summary>
+    public string? EditorCommand { get; init; }
+
+    /// <summary>
     /// Gets the switches and search providers of the web search and web fetch tools.
     /// </summary>
     public WebSettings Web { get; init; } = new();

@@ -345,6 +345,17 @@ else
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Add text after what the user has typed, such as remarks on the changes that they want to send.
+    /// </summary>
+    /// <param name="text">The text to add.</param>
+    public void Append(string text)
+    {
+        _text = string.IsNullOrWhiteSpace(_text) ? text : $"{_text.TrimEnd()}\n\n{text}";
+        _resize = true;
+        StateHasChanged();
+    }
+
     protected override void OnInitialized()
     {
         LoadModels();

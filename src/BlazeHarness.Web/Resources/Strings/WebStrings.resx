@@ -1120,6 +1120,18 @@
     <value>The agent can write down the steps of a longer task and tick them off, and is reminded when it forgets to update the list. Turn this off if a model handles the list poorly. Applies from the next message in each chat.</value>
     <comment>Explains the todo list option on the General page.</comment>
   </data>
+  <data name="GeneralSettingsEditorHeading" xml:space="preserve">
+    <value>Text editor</value>
+    <comment>Heading of the card on the General page for choosing the program that opens files from the Changes panel.</comment>
+  </data>
+  <data name="GeneralSettingsEditorLabel" xml:space="preserve">
+    <value>Editor command</value>
+    <comment>Label of the text box on the General page that holds the command starting the text editor, such as "kate".</comment>
+  </data>
+  <data name="GeneralSettingsEditorHint" xml:space="preserve">
+    <value>The command that opens a file from the Changes panel, such as [code]kate[/code] or [code]code -g[/code]. The file's path is added at the end. Leave it empty to use the system's text editor.</value>
+    <comment>Explains the editor command box on the General page. [code]…[/code] marks a command; keep the commands as they are. "Changes" is the name of the panel that lists changed files.</comment>
+  </data>
   <data name="GeneralSettingsSaveFailure" xml:space="preserve">
     <value>The setting could not be saved because the settings file could not be written.</value>
     <comment>Toast shown when saving the general setting fails.</comment>
@@ -2239,6 +2251,174 @@
   <data name="ChangesWrapLines" xml:space="preserve">
     <value>Wrap long lines</value>
     <comment>Tooltip and accessible name of the toggle button in the Changes panel that wraps long lines of the code view instead of scrolling sideways. It is off by default.</comment>
+  </data>
+  <data name="ChangesFilterLabel" xml:space="preserve">
+    <value>Filter changed files</value>
+    <comment>Accessible name of the text box above the file list in the Changes panel that narrows the list to files whose path contains the typed text.</comment>
+  </data>
+  <data name="ChangesFilterPlaceholder" xml:space="preserve">
+    <value>Filter files…</value>
+    <comment>Placeholder of the text box above the file list in the Changes panel. Typing narrows the list to files whose path contains the text.</comment>
+  </data>
+  <data name="ChangesNoMatches" xml:space="preserve">
+    <value>No changed file matches.</value>
+    <comment>Shown in the Changes panel when the text typed in the file filter matches no changed file.</comment>
+  </data>
+  <data name="ChangesRootFolder" xml:space="preserve">
+    <value>Project root</value>
+    <comment>Heading of the group in the Changes file list for files that sit directly in the chat's folder rather than in a sub-folder.</comment>
+  </data>
+  <data name="ChangesPreviousFile" xml:space="preserve">
+    <value>Previous file</value>
+    <comment>Tooltip and accessible name of the button in the Changes panel that shows the previous file in the list. The j and k keys do the same.</comment>
+  </data>
+  <data name="ChangesNextFile" xml:space="preserve">
+    <value>Next file</value>
+    <comment>Tooltip and accessible name of the button in the Changes panel that shows the next file in the list. The j and k keys do the same.</comment>
+  </data>
+  <data name="ChangesPosition" xml:space="preserve">
+    <value>{index} of {total}</value>
+    <comment>Position of the selected file in the Changes file list, for example 2 of 7. {index} is the position and {total} is the number of files in the list.</comment>
+  </data>
+  <data name="ChangesViewed" xml:space="preserve">
+    <value>Viewed</value>
+    <comment>Label of the toggle in the Changes panel with which the user marks a file as reviewed. It also names the check mark shown on viewed files in the list. The mark is dropped when the file changes again.</comment>
+  </data>
+  <data name="ChangesWholeFile" xml:space="preserve">
+    <value>Whole file</value>
+    <comment>Label of the toggle in the Changes panel that shows every line of the file around the changes instead of a few lines of context.</comment>
+  </data>
+  <data name="ChangesCopyPath" xml:space="preserve">
+    <value>Copy relative path</value>
+    <comment>Tooltip and accessible name of the button in the Changes panel that copies the path of the selected file, relative to the folder, to the clipboard.</comment>
+  </data>
+  <data name="ChangesCopyMenuLabel" xml:space="preserve">
+    <value>More ways to copy the path</value>
+    <comment>Tooltip and accessible name of the small arrow button next to the copy button in the Changes panel. It opens a menu with other ways to copy the selected file's path.</comment>
+  </data>
+  <data name="ChangesCopyFullPath" xml:space="preserve">
+    <value>Copy full path</value>
+    <comment>Menu item in the Changes panel that copies the full path of the selected file, starting from the root of the disk, to the clipboard.</comment>
+  </data>
+  <data name="ChangesOpenInEditor" xml:space="preserve">
+    <value>Open in text editor</value>
+    <comment>Tooltip and accessible name of the button in the Changes panel that opens the selected file in a text editor on the user's computer. Shown only when the browser runs on the computer that runs the app.</comment>
+  </data>
+  <data name="ChangesNoEditor" xml:space="preserve">
+    <value>No text editor was found. Set one in Settings, under General.</value>
+    <comment>Toast shown when the user tries to open a file from the Changes panel but no editor is set and the system has no text editor the app can find. "Settings" and "General" are the names of the settings dialog and its page.</comment>
+  </data>
+  <data name="ChangesOpenEditorFailed" xml:space="preserve">
+    <value>The text editor could not be started. Check the editor command in Settings, under General.</value>
+    <comment>Toast shown when the editor command set in Settings could not be started. "Settings" and "General" are the names of the settings dialog and its page.</comment>
+  </data>
+  <data name="ChangesEditorFileMissing" xml:space="preserve">
+    <value>The file no longer exists.</value>
+    <comment>Toast shown when the user tries to open a file from the Changes panel in a text editor, but the file has been deleted or moved.</comment>
+  </data>
+  <data name="ChangesDiscardFile" xml:space="preserve">
+    <value>Discard changes to this file</value>
+    <comment>Tooltip and accessible name of the button in the Changes panel that throws away all changes of the selected file after a confirmation.</comment>
+  </data>
+  <data name="ChangesUpdated" xml:space="preserve">
+    <value>Updated</value>
+    <comment>Small label on a file in the Changes list that changed since the user last looked at it, which happens when the assistant edits it again.</comment>
+  </data>
+  <data name="ChangesStaged" xml:space="preserve">
+    <value>Staged</value>
+    <comment>Small label on a file in the Changes list whose changes are all added to the git index. Do not translate the word git.</comment>
+  </data>
+  <data name="ChangesPartlyStaged" xml:space="preserve">
+    <value>Partly staged</value>
+    <comment>Small label on a file in the Changes list that has changes both added to the git index and not added. Do not translate the word git.</comment>
+  </data>
+  <data name="ChangesCommentInserted" xml:space="preserve">
+    <value>The comment was added to your message.</value>
+    <comment>Toast shown after a remark about lines of code was put into the message box of the chat.</comment>
+  </data>
+  <data name="ChangesShowMoreLines" xml:space="preserve">
+    <value>Show more lines</value>
+    <comment>Tooltip and accessible name of the button on a block of changes in the Changes panel that shows 20 more unchanged lines around the changes.</comment>
+  </data>
+  <data name="ChangesRevertHunk" xml:space="preserve">
+    <value>Revert this change</value>
+    <comment>Tooltip and accessible name of the arrow button beside the first line of each change in the Changes panel. It puts the lines of that one change back as they were, after a confirmation.</comment>
+  </data>
+  <data name="ChangesCommentOnLine" xml:space="preserve">
+    <value>Comment on this line</value>
+    <comment>Tooltip and accessible name of the button next to a line of code in the Changes panel that opens a box to write a remark about the line.</comment>
+  </data>
+  <data name="ChangesCommentOnLineHint" xml:space="preserve">
+    <value>Comment on this line. To comment on several lines, drag down the line numbers, or Shift-click another line.</value>
+    <comment>Tooltip of the button beside each line of a diff in the Changes panel that opens a comment form. Its accessible name is ChangesCommentOnLine; this adds how to choose several lines.</comment>
+  </data>
+  <data name="ChangesCommentOnLines" xml:space="preserve">
+    <value>Comment on lines {first}–{last}</value>
+    <comment>Button that appears under a text selection spanning several lines of a diff in the Changes panel; it opens one comment for all of them. {first} and {last} are line numbers. The page fills them in.</comment>
+  </data>
+  <data name="ChangesCommentRange" xml:space="preserve">
+    <value>Lines {first}–{last}</value>
+    <comment>Shown above the box for writing a comment in the Changes panel when the comment is about several lines. {first} and {last} are line numbers.</comment>
+  </data>
+  <data name="ChangesCommentLabel" xml:space="preserve">
+    <value>Comment on the line</value>
+    <comment>Accessible name of the text box in which the user writes a remark about a line of code in the Changes panel.</comment>
+  </data>
+  <data name="ChangesCommentPlaceholder" xml:space="preserve">
+    <value>Write a comment for the assistant</value>
+    <comment>Placeholder of the text box in which the user writes a remark about a line of code in the Changes panel. The remark goes into the message box of the chat.</comment>
+  </data>
+  <data name="ChangesCommentCancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Button that closes the box for writing a remark about a line of code in the Changes panel without keeping the text.</comment>
+  </data>
+  <data name="ChangesCommentAdd" xml:space="preserve">
+    <value>Add to message</value>
+    <comment>Button under the box for writing a remark about lines of code in the Changes panel; it puts the remark into the message box of the chat so it can be sent to the assistant.</comment>
+  </data>
+  <data name="ChangesRevertHunkTitle" xml:space="preserve">
+    <value>Revert this change?</value>
+    <comment>Heading of the dialog that asks for confirmation before one change in a file is undone in the Changes panel.</comment>
+  </data>
+  <data name="ChangesRevertHunkBody" xml:space="preserve">
+    <value>These lines in [code]{path}[/code] go back to how they were before the change. This can't be undone.</value>
+    <comment>Body of the dialog that asks for confirmation before one change in a file is undone. {path} is the file path. Keep the [code] tags around it; they set it in a code font.</comment>
+  </data>
+  <data name="ChangesRevertHunkConfirm" xml:space="preserve">
+    <value>Revert</value>
+    <comment>Button that confirms undoing one block of changes in the Changes panel.</comment>
+  </data>
+  <data name="ChangesDiscardFileTitle" xml:space="preserve">
+    <value>Discard the changes to this file?</value>
+    <comment>Heading of the dialog that asks for confirmation before all changes of a file are thrown away in the Changes panel.</comment>
+  </data>
+  <data name="ChangesDiscardFileBody" xml:space="preserve">
+    <value>The changes to [code]{path}[/code] are removed from the folder. This can't be undone.</value>
+    <comment>Body of the dialog that asks for confirmation before all changes of a file are thrown away. {path} is the file path. Keep the [code] tags around it; they set it in a code font.</comment>
+  </data>
+  <data name="ChangesDiscardUntrackedBody" xml:space="preserve">
+    <value>[code]{path}[/code] is a new file that git doesn't track yet. It is deleted from the folder, and this can't be undone.</value>
+    <comment>Body of the dialog that asks for confirmation before discarding a new file in the Changes panel. {path} is the file path. Keep the [code] tags around it; they set it in a code font. Do not translate the word git.</comment>
+  </data>
+  <data name="ChangesDiscardConfirm" xml:space="preserve">
+    <value>Discard</value>
+    <comment>Button that confirms throwing away all changes of a file in the Changes panel.</comment>
+  </data>
+  <data name="ChangesRevertDone" xml:space="preserve">
+    <value>The changes were undone.</value>
+    <comment>Toast shown after the Changes panel undid a block of changes or all changes of a file.</comment>
+  </data>
+  <data name="ChangesRevertChanged" xml:space="preserve">
+    <value>The file changed in the meantime, so nothing was undone. The list is up to date now.</value>
+    <comment>Toast shown when a file was edited after the Changes panel read it, so the undo was not done to avoid overwriting newer work.</comment>
+  </data>
+  <data name="ChangesRevertNotAllowed" xml:space="preserve">
+    <value>These changes can't be undone from here.</value>
+    <comment>Toast shown when the Changes panel can't undo a change, for example for a conflicted file or one that is too long to be read completely.</comment>
+  </data>
+  <data name="ChangesRevertFailed" xml:space="preserve">
+    <value>Couldn't undo the changes.</value>
+    <comment>Toast shown when undoing a change in the Changes panel failed.</comment>
   </data>
   <data name="ChangesFilesLabel" xml:space="preserve">
     <value>Changed files</value>

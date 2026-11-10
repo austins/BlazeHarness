@@ -58,6 +58,22 @@
         },
     };
 
+    const diffWrapKey = "blazeharness.diff-wrap";
+    const applyDiffWrap = (wrap) => document.documentElement.toggleAttribute("data-diff-wrap", wrap);
+    applyDiffWrap(localStorage.getItem(diffWrapKey) === "on");
+
+    window.bhDiffWrap = {
+        get: () => localStorage.getItem(diffWrapKey) === "on",
+        set: (wrap) => {
+            if (wrap) {
+                localStorage.setItem(diffWrapKey, "on");
+            } else {
+                localStorage.removeItem(diffWrapKey);
+            }
+            applyDiffWrap(wrap);
+        },
+    };
+
     window.bhTheme = {
         get: () => localStorage.getItem(key) || "system",
         isDark: () => {

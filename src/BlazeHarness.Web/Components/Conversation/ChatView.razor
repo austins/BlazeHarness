@@ -154,7 +154,7 @@ else
 
             <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
         </section>
-        <SidePanel ChatId="@_openId" FolderPath="@ContextPath" Running="_chat?.IsRunning ?? false" />
+        <SidePanel ChatId="@_openId" FolderPath="@ContextPath" Running="_chat?.IsRunning ?? false" OnComment="InsertComment" />
     </div>
 }
 
@@ -439,6 +439,8 @@ else
             _composer.Restore(string.Join("\n\n", returned));
         }
     }
+
+    private void InsertComment(string text) => _composer?.Append(text);
 
     private bool Queue(string text, QueueMode mode) => _chat?.Queue(text, mode) ?? false;
 

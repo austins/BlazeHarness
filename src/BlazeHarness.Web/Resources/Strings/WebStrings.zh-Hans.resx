@@ -835,6 +835,15 @@
   <data name="GeneralSettingsTodosDescription" xml:space="preserve">
     <value>智能体可以记录较长任务的步骤并逐项勾选，忘记更新列表时还会收到提醒。如果某个模型对列表处理不佳，请关闭此项。从每个聊天的下一条消息起生效。</value>
   </data>
+  <data name="GeneralSettingsEditorHeading" xml:space="preserve">
+    <value>文本编辑器</value>
+  </data>
+  <data name="GeneralSettingsEditorLabel" xml:space="preserve">
+    <value>编辑器命令</value>
+  </data>
+  <data name="GeneralSettingsEditorHint" xml:space="preserve">
+    <value>用于从“更改”面板打开文件的命令，例如 [code]kate[/code] 或 [code]code -g[/code]。文件路径会添加到末尾。留空则使用系统的文本编辑器。</value>
+  </data>
   <data name="GeneralSettingsSaveFailure" xml:space="preserve">
     <value>无法写入设置文件，因此未能保存设置。</value>
   </data>
@@ -2241,6 +2250,132 @@
   </data>
   <data name="ChangesWrapLines" xml:space="preserve">
     <value>自动换行</value>
+  </data>
+  <data name="ChangesFilterLabel" xml:space="preserve">
+    <value>筛选已更改的文件</value>
+  </data>
+  <data name="ChangesFilterPlaceholder" xml:space="preserve">
+    <value>筛选文件…</value>
+  </data>
+  <data name="ChangesNoMatches" xml:space="preserve">
+    <value>没有匹配的已更改文件。</value>
+  </data>
+  <data name="ChangesRootFolder" xml:space="preserve">
+    <value>项目根目录</value>
+  </data>
+  <data name="ChangesPreviousFile" xml:space="preserve">
+    <value>上一个文件</value>
+  </data>
+  <data name="ChangesNextFile" xml:space="preserve">
+    <value>下一个文件</value>
+  </data>
+  <data name="ChangesPosition" xml:space="preserve">
+    <value>第 {index} 个，共 {total} 个</value>
+  </data>
+  <data name="ChangesViewed" xml:space="preserve">
+    <value>已查看</value>
+  </data>
+  <data name="ChangesWholeFile" xml:space="preserve">
+    <value>整个文件</value>
+  </data>
+  <data name="ChangesCopyPath" xml:space="preserve">
+    <value>复制相对路径</value>
+  </data>
+  <data name="ChangesCopyMenuLabel" xml:space="preserve">
+    <value>复制路径的其他方式</value>
+  </data>
+  <data name="ChangesCopyFullPath" xml:space="preserve">
+    <value>复制完整路径</value>
+  </data>
+  <data name="ChangesOpenInEditor" xml:space="preserve">
+    <value>在文本编辑器中打开</value>
+  </data>
+  <data name="ChangesNoEditor" xml:space="preserve">
+    <value>未找到文本编辑器。请在“设置”的“常规”页中指定一个。</value>
+  </data>
+  <data name="ChangesOpenEditorFailed" xml:space="preserve">
+    <value>无法启动文本编辑器。请检查“设置”的“常规”页中的编辑器命令。</value>
+  </data>
+  <data name="ChangesEditorFileMissing" xml:space="preserve">
+    <value>该文件已不存在。</value>
+  </data>
+  <data name="ChangesDiscardFile" xml:space="preserve">
+    <value>放弃对此文件的更改</value>
+  </data>
+  <data name="ChangesUpdated" xml:space="preserve">
+    <value>已更新</value>
+  </data>
+  <data name="ChangesStaged" xml:space="preserve">
+    <value>已暂存</value>
+  </data>
+  <data name="ChangesPartlyStaged" xml:space="preserve">
+    <value>部分暂存</value>
+  </data>
+  <data name="ChangesCommentInserted" xml:space="preserve">
+    <value>评论已添加到你的消息中。</value>
+  </data>
+  <data name="ChangesShowMoreLines" xml:space="preserve">
+    <value>显示更多行</value>
+  </data>
+  <data name="ChangesRevertHunk" xml:space="preserve">
+    <value>还原此更改</value>
+  </data>
+  <data name="ChangesCommentOnLine" xml:space="preserve">
+    <value>评论这一行</value>
+  </data>
+  <data name="ChangesCommentOnLineHint" xml:space="preserve">
+    <value>评论此行。要评论多行，请在行号上拖动，或按住 Shift 单击另一行。</value>
+  </data>
+  <data name="ChangesCommentOnLines" xml:space="preserve">
+    <value>评论第 {first}–{last} 行</value>
+  </data>
+  <data name="ChangesCommentRange" xml:space="preserve">
+    <value>第 {first}–{last} 行</value>
+  </data>
+  <data name="ChangesCommentLabel" xml:space="preserve">
+    <value>对该行的评论</value>
+  </data>
+  <data name="ChangesCommentPlaceholder" xml:space="preserve">
+    <value>为助手写一条评论</value>
+  </data>
+  <data name="ChangesCommentCancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="ChangesCommentAdd" xml:space="preserve">
+    <value>添加到消息</value>
+  </data>
+  <data name="ChangesRevertHunkTitle" xml:space="preserve">
+    <value>要还原此更改吗？</value>
+  </data>
+  <data name="ChangesRevertHunkBody" xml:space="preserve">
+    <value>[code]{path}[/code] 中的这些行将恢复到更改之前的样子。此操作无法撤销。</value>
+  </data>
+  <data name="ChangesRevertHunkConfirm" xml:space="preserve">
+    <value>还原</value>
+  </data>
+  <data name="ChangesDiscardFileTitle" xml:space="preserve">
+    <value>要放弃对此文件的更改吗？</value>
+  </data>
+  <data name="ChangesDiscardFileBody" xml:space="preserve">
+    <value>对 [code]{path}[/code] 的更改将从文件夹中移除。此操作无法撤销。</value>
+  </data>
+  <data name="ChangesDiscardUntrackedBody" xml:space="preserve">
+    <value>[code]{path}[/code] 是 git 尚未跟踪的新文件。它将从文件夹中删除，此操作无法撤销。</value>
+  </data>
+  <data name="ChangesDiscardConfirm" xml:space="preserve">
+    <value>放弃</value>
+  </data>
+  <data name="ChangesRevertDone" xml:space="preserve">
+    <value>更改已撤销。</value>
+  </data>
+  <data name="ChangesRevertChanged" xml:space="preserve">
+    <value>文件在此期间已更改，因此没有撤销任何内容。列表已更新。</value>
+  </data>
+  <data name="ChangesRevertNotAllowed" xml:space="preserve">
+    <value>无法在此处撤销这些更改。</value>
+  </data>
+  <data name="ChangesRevertFailed" xml:space="preserve">
+    <value>无法撤销这些更改。</value>
   </data>
   <data name="ChangesFilesLabel" xml:space="preserve">
     <value>已更改的文件</value>

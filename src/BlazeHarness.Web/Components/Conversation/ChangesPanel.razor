@@ -1,5 +1,11 @@
 @using BlazeHarness.Core.Git
+@using BlazeHarness.Web.Hosting
 @inject GitChangesReader Git
+@inject GitChangeReverter Reverter
+@inject EditorLauncher Editor
+@inject ToastService Toasts
+@inject IJSRuntime JS
+@inject SidePanelState State
 @inject ILogger<ChangesPanel> Logger
 
 <div class="changes-bar">
@@ -10,7 +16,7 @@
         <option value="@GitChangeScope.Unstaged" selected="@(Scope == GitChangeScope.Unstaged)">@Format(nameof(WebStrings.ChangesScopeUnstaged), Status.UnstagedCount)</option>
     </select>
     <button type="button" class="btn btn-icon" aria-label="@WebStrings.ChangesRefresh" title="@WebStrings.ChangesRefresh" disabled="@Refreshing" @onclick="OnRefresh"><Icon Name="retry" Spin="Refreshing" /></button>
-    <button type="button" class="btn btn-icon" aria-pressed="@(WrapLines ? "true" : "false")" aria-label="@WebStrings.ChangesWrapLines" title="@WebStrings.ChangesWrapLines" @onclick="() => OnWrapLinesChange.InvokeAsync(!WrapLines)"><Icon Name="wrap" /></button>
+    <button type="button" class="btn btn-icon" aria-pressed="@(_wrap ? "true" : "false")" aria-label="@WebStrings.ChangesWrapLines" title="@WebStrings.ChangesWrapLines" @onclick="ToggleWrapAsync"><Icon Name="wrap" /></button>
 </div>
 
 @if (Status.Files.Count == 0)
@@ -19,22 +25,94 @@
 }
 else
 {
-    <ul class="changes-files" aria-label="@WebStrings.ChangesFilesLabel">
-        @foreach (var file in Status.Files)
+    @if (Status.Files.Count > FilterThreshold || Review.Filter.Length > 0)
+    {
+        <div class="changes-filter">
+            <input type="search" class="input input-sm" aria-label="@WebStrings.ChangesFilterLabel" placeholder="@WebStrings.ChangesFilterPlaceholder" value="@Review.Filter" @oninput="OnFilterChanged" />
+        </div>
+    }
+
+    <div class="changes-files" aria-label="@WebStrings.ChangesFilesLabel" role="group">
+        @if (_groups.Count == 0)
         {
-            <li>
-                <button type="button" class="changes-file" aria-current="@(file.Path == _selected?.Path ? "true" : null)" title="@file.Path" @onclick="() => SelectAsync(file)">
-                    <span class="changes-kind" data-kind="@file.Kind.ToString().ToLowerInvariant()" aria-hidden="true">@file.Kind.ToString()[0]</span>
-                    <span class="visually-hidden">@KindLabel(file.Kind)</span>
-                    <span class="changes-path"><bdi>@FileName(file.Path)</bdi><span class="changes-dir">@DirectoryOf(file.Path)</span></span>
-                    @if (file.Added is { } added && file.Removed is { } removed)
-                    {
-                        <span class="changes-counts"><span class="changes-added">+@added</span> <span class="changes-removed">−@removed</span></span>
-                    }
-                </button>
-            </li>
+            <p class="changes-empty">@WebStrings.ChangesNoMatches</p>
         }
-    </ul>
+        else if (_groups.Count == 1)
+        {
+            <ul class="changes-list">
+                @foreach (var file in _groups[0].Files)
+                {
+                    <li>@FileRow(file, showFolder: true)</li>
+                }
+            </ul>
+        }
+        else
+        {
+            @foreach (var group in _groups)
+            {
+                var collapsed = Review.CollapsedFolders.Contains(group.Folder);
+                <div class="changes-group">
+                    <button type="button" class="changes-folder" aria-expanded="@(collapsed ? "false" : "true")" @onclick="() => ToggleFolder(group.Folder)">
+                        <Icon Name="@(collapsed ? "chevron-right" : "chevron-down")" />
+                        <bdi class="changes-folder-name">@(group.Folder.Length == 0 ? WebStrings.ChangesRootFolder : group.Folder)</bdi>
+                        <span class="badge">@group.Files.Count</span>
+                    </button>
+                    @if (!collapsed)
+                    {
+                        <ul class="changes-list">
+                            @foreach (var file in group.Files)
+                            {
+                                <li>@FileRow(file, showFolder: false)</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    @if (_selected is { } current)
+    {
+        var position = _visible.FindIndex(f => f.Path == current.Path);
+        <div class="changes-head">
+            <div class="changes-head-nav">
+                <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.ChangesPreviousFile" title="@WebStrings.ChangesPreviousFile" disabled="@(_visible.Count == 0 || position == 0)" @onclick="() => StepAsync(-1)"><Icon Name="chevron-up" /></button>
+                <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.ChangesNextFile" title="@WebStrings.ChangesNextFile" disabled="@(_visible.Count == 0 || position == _visible.Count - 1)" @onclick="() => StepAsync(1)"><Icon Name="chevron-down" /></button>
+                @if (position >= 0)
+                {
+                    <span class="changes-position">@Position(position + 1, _visible.Count)</span>
+                }
+            </div>
+            <bdi class="changes-head-path" title="@current.Path">@current.Path</bdi>
+            <div class="changes-head-actions">
+                <button type="button" class="btn btn-ghost btn-sm changes-viewed" aria-pressed="@(Review.IsViewed(current) ? "true" : "false")" @onclick="() => ToggleViewed(current)"><Icon Name="check" /> @WebStrings.ChangesViewed</button>
+                @if (CanExpand(current) && _diff is not null && (ShowsWholeFile || ChangesReview.CanShowMore(_diff, Review.ContextLines)))
+                {
+                    <button type="button" class="btn btn-ghost btn-sm" aria-pressed="@(ShowsWholeFile ? "true" : "false")" @onclick="ToggleWholeFileAsync"><Icon Name="file" /> @WebStrings.ChangesWholeFile</button>
+                }
+
+                <span class="copy-split">
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.ChangesCopyPath" title="@WebStrings.ChangesCopyPath" @onclick="() => CopyAsync(current.Path)"><Icon Name="copy" /></button>
+                    <Menu Label="@WebStrings.ChangesCopyMenuLabel" Title="@WebStrings.ChangesCopyMenuLabel" IconOnly="true">
+                        <Trigger><Icon Name="chevron-down" /></Trigger>
+                        <ChildContent>
+                            <MenuItem Label="@WebStrings.ChangesCopyFullPath" IsAction="true" OnSelect="() => CopyAsync(FullPath(current))" />
+                        </ChildContent>
+                    </Menu>
+                </span>
+                @if (Client?.IsLocal == true && current.Kind != GitChangeKind.Deleted)
+                {
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.ChangesOpenInEditor" title="@WebStrings.ChangesOpenInEditor" @onclick="() => OpenInEditorAsync(current)"><Icon Name="external" /></button>
+                }
+
+                @if (CanRevertFile(current))
+                {
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon btn-danger" aria-label="@WebStrings.ChangesDiscardFile" title="@WebStrings.ChangesDiscardFile" @onclick="() => _pending = new Pending(current, null)"><Icon Name="trash" /></button>
+                }
+            </div>
+        </div>
+    }
+
     <div class="changes-diff" role="region" aria-label="@WebStrings.ChangesDiffLabel" tabindex="0">
         @if (_failed)
         {
@@ -46,7 +124,14 @@ else
         }
         else if (_diff.IsBinary)
         {
-            <p class="changes-empty">@WebStrings.ChangesBinary</p>
+            @if (_image is not null)
+            {
+                <img class="changes-image" src="@_image" alt="@_diff.Path" />
+            }
+            else
+            {
+                <p class="changes-empty">@WebStrings.ChangesBinary</p>
+            }
         }
         else if (_diff.Hunks.Count == 0)
         {
@@ -54,7 +139,7 @@ else
         }
         else
         {
-            <GitDiffView Diff="_diff" Wrap="WrapLines" />
+            <GitDiffView Diff="_diff" Review="Review" CanExpand="_selected is not null && CanExpand(_selected)" CanRevert="_selected is not null && CanRevertHunk(_selected)" OnExpand="ExpandAsync" OnRevertHunk="hunk => _pending = new Pending(_selected!, hunk)" OnComment="InsertCommentAsync" />
             @if (_diff.IsTruncated)
             {
                 <p class="changes-note">@WebStrings.ChangesTruncated</p>
@@ -63,13 +148,30 @@ else
     </div>
 }
 
+<ConfirmDialog Title="@PendingTitle" Open="_pending is not null" ConfirmText="@PendingConfirm" OnConfirm="ConfirmRevertAsync" OnCancel="() => _pending = null">
+    <p>@PendingBody</p>
+</ConfirmDialog>
+
 @code {
+    private const int FilterThreshold = 6;
+
+    private sealed record Group(string Folder, List<GitChangedFile> Files);
+
+    private sealed record Pending(GitChangedFile File, GitDiffHunk? Hunk);
+
     private GitStatus? _seen;
     private GitChangedFile? _selected;
     private GitFileDiff? _diff;
+    private string? _image;
     private bool _loading;
     private bool _failed;
+    private bool _wrap;
+    private bool _reverting;
+    private bool _resetScroll;
     private int _loadVersion;
+    private List<Group> _groups = [];
+    private List<GitChangedFile> _visible = [];
+    private Pending? _pending;
 
     /// <summary>
     /// Gets or sets the changes to list.
@@ -90,16 +192,22 @@ else
     public bool Refreshing { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether long lines of the diff wrap instead of scrolling sideways.
+    /// Gets or sets the machine the browser runs on, which decides whether a file can be opened in an editor there.
     /// </summary>
-    [Parameter]
-    public bool WrapLines { get; set; }
+    [CascadingParameter]
+    private ClientMachine? Client { get; set; }
 
     /// <summary>
-    /// Gets or sets the callback for the user turning line wrapping on or off.
+    /// Gets or sets a value indicating whether the assistant is replying, which keeps the files from being reverted under it.
     /// </summary>
     [Parameter]
-    public EventCallback<bool> OnWrapLinesChange { get; set; }
+    public bool Running { get; set; }
+
+    /// <summary>
+    /// Gets or sets what the user did while reading the changes.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public ChangesReview Review { get; set; } = default!;
 
     /// <summary>
     /// Gets or sets the callback for the user choosing which changes to list.
@@ -113,6 +221,55 @@ else
     [Parameter]
     public EventCallback OnRefresh { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback for a remark the user finished, as text for the message being written.
+    /// </summary>
+    [Parameter]
+    public EventCallback<string> OnComment { get; set; }
+
+    private string PendingTitle => _pending is { Hunk: not null } ? WebStrings.ChangesRevertHunkTitle : WebStrings.ChangesDiscardFileTitle;
+
+    private string PendingConfirm => _pending is { Hunk: not null } ? WebStrings.ChangesRevertHunkConfirm : WebStrings.ChangesDiscardConfirm;
+
+    private MarkupString PendingBody
+    {
+        get
+        {
+            if (_pending is not { } pending)
+            {
+                return default;
+            }
+
+            var key = nameof(WebStrings.ChangesDiscardFileBody);
+            if (pending.Hunk is not null)
+            {
+                key = nameof(WebStrings.ChangesRevertHunkBody);
+            }
+            else if (pending.File.Kind == GitChangeKind.Untracked)
+            {
+                key = nameof(WebStrings.ChangesDiscardUntrackedBody);
+            }
+
+            return ResourceMessageFormatter.Web.FormatMarkup(key, new Dictionary<string, object?> { ["path"] = pending.File.Path });
+        }
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _wrap = await JS.InvokeAsync<bool>("bhDiffWrap.get");
+            StateHasChanged();
+        }
+
+        if (_resetScroll)
+        {
+            _resetScroll = false;
+            await JS.InvokeVoidAsync("bhChanges.resetScroll");
+        }
+    }
+
     /// <inheritdoc />
     protected override Task OnParametersSetAsync()
     {
@@ -122,9 +279,40 @@ else
         }
 
         _seen = Status;
-        var file = Status.Files.FirstOrDefault(f => f.Path == _selected?.Path) ?? Status.Files.FirstOrDefault();
-        return SelectAsync(file);
+        Rebuild();
+        var selected = _selected?.Path ?? Review.SelectedPath;
+        var file = Status.Files.FirstOrDefault(f => f.Path == selected) ?? _visible.FirstOrDefault() ?? Status.Files.FirstOrDefault();
+        return SelectAsync(file, look: file?.Path != _selected?.Path);
     }
+
+    private RenderFragment FileRow(GitChangedFile file, bool showFolder) => __builder =>
+    {
+        var viewed = Review.IsViewed(file);
+        <button type="button" class="changes-file" data-viewed="@(viewed ? "true" : null)" aria-current="@(file.Path == _selected?.Path ? "true" : null)" title="@file.Path" @onclick="() => SelectAsync(file)">
+            <span class="changes-kind" data-kind="@file.Kind.ToString().ToLowerInvariant()" aria-hidden="true">@file.Kind.ToString()[0]</span>
+            <span class="visually-hidden">@KindLabel(file.Kind)</span>
+            <span class="changes-path"><bdi>@FileName(file.Path)</bdi>@if (showFolder) { <span class="changes-dir">@DirectoryOf(file.Path)</span> }</span>
+            @if (Review.IsUpdated(file))
+            {
+                <span class="changes-flag changes-flag-updated">@WebStrings.ChangesUpdated</span>
+            }
+
+            @if (Scope == GitChangeScope.All && file.Staged)
+            {
+                <span class="changes-flag">@(file.Unstaged ? WebStrings.ChangesPartlyStaged : WebStrings.ChangesStaged)</span>
+            }
+
+            @if (viewed)
+            {
+                <span class="changes-viewed"><Icon Name="check" /><span class="visually-hidden">@WebStrings.ChangesViewed</span></span>
+            }
+
+            @if (file.Added is { } added && file.Removed is { } removed)
+            {
+                <span class="changes-counts"><span class="changes-added">+@added</span> <span class="changes-removed">−@removed</span></span>
+            }
+        </button>
+    };
 
     private static string DirectoryOf(string path)
     {
@@ -132,10 +320,19 @@ else
         return slash < 0 ? string.Empty : " " + path[..slash];
     }
 
+    private static string FolderOf(string path)
+    {
+        var slash = path.LastIndexOf('/');
+        return slash < 0 ? string.Empty : path[..slash];
+    }
+
     private static string FileName(string path) => path[(path.LastIndexOf('/') + 1)..];
 
     private static string Format(string key, int count) =>
         ResourceMessageFormatter.Web.Format(key, new Dictionary<string, object?> { ["count"] = count });
+
+    private static string Position(int index, int total) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.ChangesPosition), new Dictionary<string, object?> { ["index"] = index, ["total"] = total });
 
     private static string KindLabel(GitChangeKind kind) => kind switch
     {
@@ -147,27 +344,199 @@ else
         _ => WebStrings.ChangesKindModified,
     };
 
+    private static bool CanExpand(GitChangedFile file) => file.Kind is GitChangeKind.Modified or GitChangeKind.TypeChanged;
+
+    private bool CanRevertFile(GitChangedFile file) =>
+        Scope != GitChangeScope.Staged && file.Kind != GitChangeKind.Conflicted && !Running && !_reverting;
+
+    private bool CanRevertHunk(GitChangedFile file) =>
+        CanRevertFile(file) && file.Kind is GitChangeKind.Modified or GitChangeKind.Added && _diff is { IsTruncated: false };
+
+    private void Rebuild()
+    {
+        var filter = Review.Filter.Trim();
+        var matching = Status.Files.Where(f => filter.Length == 0 || f.Path.Contains(filter, StringComparison.OrdinalIgnoreCase));
+        _groups = [];
+        foreach (var byFolder in matching.GroupBy(f => FolderOf(f.Path)))
+        {
+            _groups.Add(new Group(byFolder.Key, [.. byFolder]));
+        }
+
+        _visible = [.. _groups.Where(g => _groups.Count == 1 || !Review.CollapsedFolders.Contains(g.Folder)).SelectMany(g => g.Files)];
+    }
+
     private Task OnScopeChanged(ChangeEventArgs e) =>
         Enum.TryParse<GitChangeScope>(e.Value?.ToString(), out var scope) ? OnScopeChange.InvokeAsync(scope) : Task.CompletedTask;
 
-    private async Task SelectAsync(GitChangedFile? file)
+    private void OnFilterChanged(ChangeEventArgs e)
+    {
+        Review.Filter = e.Value?.ToString() ?? string.Empty;
+        Rebuild();
+    }
+
+    private void ToggleFolder(string folder)
+    {
+        if (!Review.CollapsedFolders.Remove(folder))
+        {
+            Review.CollapsedFolders.Add(folder);
+        }
+
+        Rebuild();
+    }
+
+    private async Task ToggleWrapAsync()
+    {
+        _wrap = !_wrap;
+        await JS.InvokeVoidAsync("bhDiffWrap.set", _wrap);
+    }
+
+    private void ToggleViewed(GitChangedFile file) => Review.SetViewed(file, !Review.IsViewed(file));
+
+    private Task StepAsync(int step)
+    {
+        var position = _selected is null ? -1 : _visible.FindIndex(f => f.Path == _selected.Path);
+        var target = position + step;
+        if (position < 0)
+        {
+            target = step > 0 ? 0 : _visible.Count - 1;
+        }
+
+        return target >= 0 && target < _visible.Count ? SelectAsync(_visible[target]) : Task.CompletedTask;
+    }
+
+    private async Task OpenInEditorAsync(GitChangedFile file)
+    {
+        var result = await Editor.OpenAsync(Status.Root, file.Path);
+        switch (result)
+        {
+            case EditorOpenResult.NoEditor:
+                Toasts.Show(WebStrings.ChangesNoEditor, ToastKind.Error);
+                break;
+            case EditorOpenResult.NotFound:
+                Toasts.Show(WebStrings.ChangesEditorFileMissing, ToastKind.Error);
+                break;
+            case EditorOpenResult.Failed:
+                Toasts.Show(WebStrings.ChangesOpenEditorFailed, ToastKind.Error);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private async Task CopyAsync(string text)
+    {
+        var copied = await JS.InvokeAsync<bool>("bhChat.copyText", text);
+        Toasts.Show(copied ? WebStrings.UiCopied : WebStrings.UiCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
+    }
+
+    private string FullPath(GitChangedFile file) =>
+        Path.GetFullPath(Path.Combine(Status.Root, file.Path.Replace('/', Path.DirectorySeparatorChar)));
+
+    private Task ExpandAsync()
+    {
+        Review.Context += ChangesReview.ContextStep;
+        return SelectAsync(_selected, look: false);
+    }
+
+    private Task ToggleWholeFileAsync()
+    {
+        if (ShowsWholeFile)
+        {
+            Review.ResetContext();
+        }
+        else
+        {
+            Review.WholeFile = true;
+        }
+
+        return SelectAsync(_selected, look: false);
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the diff shows the whole file, by the toggle or by showing more lines until nothing was left.
+    /// </summary>
+    private bool ShowsWholeFile => Review.WholeFile || (Review.Context > ChangesReview.DefaultContext && _diff is not null && !ChangesReview.CanShowMore(_diff, Review.ContextLines));
+
+    private async Task InsertCommentAsync(DiffComment comment)
+    {
+        await OnComment.InvokeAsync(comment.ToMessage());
+        Toasts.Show(WebStrings.ChangesCommentInserted, ToastKind.Success);
+        if (await JS.InvokeAsync<bool>("bhUi.isNarrow"))
+        {
+            State.Close();
+        }
+    }
+
+    private async Task ConfirmRevertAsync()
+    {
+        if (_pending is not { } pending)
+        {
+            return;
+        }
+
+        _pending = null;
+        _reverting = true;
+        GitRevertResult result;
+        try
+        {
+            result = pending.Hunk is null
+                ? await Reverter.RevertFileAsync(Status.Root, Scope, pending.File)
+                : await Reverter.RevertHunkAsync(Status.Root, Scope, pending.File, pending.Hunk);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Logger.LogWarning(ex, "Reverting a changed file failed.");
+            result = GitRevertResult.Failed;
+        }
+
+        _reverting = false;
+        var (message, kind) = result switch
+        {
+            GitRevertResult.Reverted => (WebStrings.ChangesRevertDone, ToastKind.Success),
+            GitRevertResult.Changed => (WebStrings.ChangesRevertChanged, ToastKind.Info),
+            GitRevertResult.NotAllowed => (WebStrings.ChangesRevertNotAllowed, ToastKind.Error),
+            _ => (WebStrings.ChangesRevertFailed, ToastKind.Error),
+        };
+        Toasts.Show(message, kind);
+        await OnRefresh.InvokeAsync();
+    }
+
+    private async Task SelectAsync(GitChangedFile? file, bool look = true)
     {
         var version = ++_loadVersion;
+        var switched = file?.Path != _selected?.Path;
         _selected = file;
         _failed = false;
         if (file is null)
         {
             _diff = null;
+            _image = null;
             _loading = false;
             return;
         }
 
+        if (switched)
+        {
+            Review.ResetContext();
+            Review.SelectedPath = file.Path;
+        }
+
+        if (look)
+        {
+            Review.Look(file);
+        }
+
         _loading = true;
         GitFileDiff? diff = null;
+        string? image = null;
         var failed = false;
         try
         {
-            diff = await Git.GetDiffAsync(Status.Root, Scope, file);
+            diff = await Git.GetDiffAsync(Status.Root, Scope, file, Review.ContextLines);
+            if (diff?.IsBinary == true && await Git.GetImageAsync(Status.Root, file) is { } picture)
+            {
+                image = $"data:{picture.MediaType};base64,{Convert.ToBase64String(picture.Content)}";
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
@@ -183,5 +552,7 @@ else
         _loading = false;
         _failed = failed;
         _diff = diff;
+        _image = image;
+        _resetScroll = switched;
     }
 }
