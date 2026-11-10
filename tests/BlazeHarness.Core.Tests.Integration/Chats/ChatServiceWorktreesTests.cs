@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Git;
 using BlazeHarness.Core.Tests.Integration.Git;
+using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Tests.Shared;
 using ChatService = BlazeHarness.Core.Chats.ChatService;
 
@@ -100,7 +101,7 @@ public sealed class ChatServiceWorktreesTests : IDisposable
         // Assert
         var worktree = Sut.Store.Find(info.Id)!.Worktree!;
         worktree.RepositoryPath.Should().Be(moved);
-        worktree.GitDirectory.Should().Be(Path.Combine(Path.GetFullPath(moved), ".git"));
+        worktree.GitDirectory.Should().Be(Path.Combine(RootedPath.CanonicalRoot(moved), ".git"));
         (await Sut.InspectWorktreeAsync(info.Id, ct).Bounded()).Should().Be(new GitWorktreeState(0, 0));
     }
 

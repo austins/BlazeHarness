@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Git;
+using BlazeHarness.Core.Tools.Files;
 using BlazeHarness.Tests.Shared;
 
 namespace BlazeHarness.Core.Tests.Integration.Git;
@@ -145,7 +146,7 @@ public sealed class GitWorktreesTests : IDisposable
         var gitDirectory = await _sut.RepairAsync(moved, _path, TestContext.Current.CancellationToken).Bounded();
 
         // Assert
-        gitDirectory.Should().Be(Path.Combine(Path.GetFullPath(moved), ".git"));
+        gitDirectory.Should().Be(Path.Combine(RootedPath.CanonicalRoot(moved), ".git"));
         (await _sut.InspectAsync(_path, "feature", TestContext.Current.CancellationToken).Bounded()).Should().Be(new GitWorktreeState(0, 0));
     }
 
