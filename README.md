@@ -172,9 +172,11 @@ A browser the agent can use without any extra MCP server (Settings > Web, on by 
 * A live view of the page next to the chat. Show or hide it with the panel button at the right end of the top bar. It also opens by itself when the agent opens another address.
   * You can click, hover, type and scroll in it, or save a full-page screenshot.
   * It is a stream of screenshots (up to about 30 frames a second as high-quality JPEG over its own WebSocket, so animations stay smooth; only the visible viewport, and nothing is sent while the page is still). The page is not embedded, so you see the viewport as the agent's Chrome renders it, and native controls such as file pickers or right-click menus don't appear.
-* A read-only Changes tab for folder chats in a git repository (git must be installed).
-  * It lists the files changed since the last commit, with a scope menu (all, staged or unstaged) and a scrollable, syntax-highlighted diff for the selected file.
-  * Nothing is cached: it checks again when you open the chat, when a reply finishes, when the panel opens and when you press Refresh, so a repository created mid-chat shows up. The tab is hidden when the folder is not in a repository or has no changes.
+* A Changes tab for folder chats in a git repository (git must be installed), opened from the Changes button next to the folder name. It is hidden when there are no changes.
+  * It shows the files changed since the last commit (all, staged or unstaged) with a highlighted diff, and updates while the agent works.
+  * Comment on lines to quote them in your next message.
+  * Revert a single change or a whole file, after confirming. This is off while the agent is replying.
+  * Open a file in the system text editor, or set your own editor command in Settings > General. This works only when the browser runs on the same machine.
 * Both sidebars are resizable by dragging the divider or with the arrow keys (double-click resets), and the width is remembered.
 
 ## Planned and ideas
