@@ -36,6 +36,7 @@ public sealed class GitWorktreesTests : IDisposable
 
         // Assert
         result.Should().Be(GitBranchResult.Done);
+        worktree.Should().NotBeNull();
         File.Exists(Path.Combine(worktree.FolderPath, "b.txt")).Should().BeTrue();
         Path.GetFileName(worktree.FolderPath).Should().Be("sub");
         Directory.Exists(Path.Combine(worktree.GitDirectory, "worktrees")).Should().BeTrue();
@@ -126,6 +127,7 @@ public sealed class GitWorktreesTests : IDisposable
 
         // Assert
         result.Should().Be(GitBranchResult.Done);
+        worktree.Should().NotBeNull();
         File.Exists(Path.Combine(worktree.FolderPath, "a.txt")).Should().BeTrue();
         File.Exists(marker).Should().BeFalse();
     }
@@ -173,6 +175,7 @@ public sealed class GitWorktreesTests : IDisposable
         // Arrange
         await InitAsync();
         var (_, worktree) = await _sut.AddAsync(_repo, _path, "feature", "main", TestContext.Current.CancellationToken).Bounded();
+        worktree.Should().NotBeNull();
         Directory.Delete(_path, recursive: true);
 
         // Act
