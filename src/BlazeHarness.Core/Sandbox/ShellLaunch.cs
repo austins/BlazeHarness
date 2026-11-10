@@ -15,6 +15,7 @@ namespace BlazeHarness.Core.Sandbox;
 /// <param name="ReadFolders">Folders outside the working folder that the command may also read, because the user approved them.</param>
 /// <param name="DeniedPaths">Files and folders inside the folders the command may reach that it must not read or change, because a rule of the user's refuses them.</param>
 /// <param name="Network">Decides which hosts the command may connect to, or null to leave the network open. A command that runs unconfined ignores it.</param>
+/// <param name="GitDirectory">The repository's shared git folder when the working folder is a git worktree, which git needs to reach with the same access as the working folder; otherwise null.</param>
 public sealed record ShellLaunch(
     ShellInfo Shell,
     string Command,
@@ -24,4 +25,5 @@ public sealed record ShellLaunch(
     TimeSpan Timeout,
     IReadOnlyList<string>? ReadFolders = null,
     IReadOnlyList<string>? DeniedPaths = null,
-    INetworkGate? Network = null);
+    INetworkGate? Network = null,
+    string? GitDirectory = null);

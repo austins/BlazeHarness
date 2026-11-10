@@ -38,9 +38,11 @@ else
                 {
                     <span class="chat-context-where" title="@folderPath">
                         <Icon Name="folder" />
-                        <span class="chat-context-name">@(Folders.Find(folderPath)?.Name ?? FolderPaths.DisplayName(folderPath))</span>
-                        <span class="chat-context-path mono"><bdi>@folderPath</bdi></span>
+                        @{ var homeFolder = _info?.HomeFolder ?? folderPath; }
+                        <span class="chat-context-name">@(Folders.Find(homeFolder)?.Name ?? FolderPaths.DisplayName(homeFolder))</span>
+                        <span class="chat-context-path mono"><bdi>@homeFolder</bdi></span>
                     </span>
+                    <BranchMenu ChatId="@_openId" FolderPath="@folderPath" />
                     @if (Project is { Files.Count: > 0 } project)
                     {
                         <Popover Label="@WebStrings.ChatViewInstructionsLabel" Title="@WebStrings.ChatViewInstructionsTooltip">
@@ -81,7 +83,7 @@ else
                 {
                     <ExportMenu ChatId="@mcpId" />
                 }
-                @if (_info is not null)
+                @if (_info is { Worktree: null })
                 {
                     <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _moving = _info"><Icon Name="arrow-right" /> @WebStrings.ChatViewMoveButton</button>
                 }

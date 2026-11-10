@@ -94,14 +94,13 @@ internal sealed class SandboxPolicy
 
         List<string> readWrite = [scratch];
         List<string> readOnly = [];
-        if (launch.Mode == ShellMode.ReadOnly)
+        List<string> work = [workDirectory];
+        if (launch.GitDirectory is { } gitDirectory && Directory.Exists(gitDirectory))
         {
-            readOnly.Add(workDirectory);
+            work.Add(RootedPath.CanonicalRoot(gitDirectory));
         }
-        else
-        {
-            readWrite.Add(workDirectory);
-        }
+
+        (launch.Mode == ShellMode.ReadOnly ? readOnly : readWrite).AddRange(work);
 
         var approved = (launch.ReadFolders ?? []).Where(Directory.Exists).Select(RootedPath.CanonicalRoot);
         foreach (var path in approved.Concat(RuntimeFolders(platform, host)).Append(Path.GetDirectoryName(launch.Shell.Executable) ?? string.Empty).Concat(PathFolders(platform, host)))
@@ -117,7 +116,7 @@ internal sealed class SandboxPolicy
             .Concat(launch.DeniedPaths ?? [])
             .Where(Path.Exists)
             .Select(RootedPath.CanonicalRoot)
-            .Where(path => RootedPath.IsInside(workDirectory, path) || readOnly.Exists(allowed => RootedPath.IsInside(allowed, path)))
+            .Where(path => work.Exists(allowed => RootedPath.IsInside(allowed, path)) || readOnly.Exists(allowed => RootedPath.IsInside(allowed, path)))
             .ToList();
 
         return new SandboxPolicy(readWrite, readOnly, denied, BuildEnvironment(platform, host, home, temp, launch.Command), QuotedCommandLine(launch.Shell, platform));

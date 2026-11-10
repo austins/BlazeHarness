@@ -1,0 +1,173 @@
+@using BlazeHarness.Core.Git
+@inject GitBranches Branches
+@inject ChatService ChatService
+@inject ToastService Toasts
+@inject ILogger<BranchMenu> Logger
+
+@* Shows the folder's branch in the chat header; lets the user switch or create a branch, or move the chat into a worktree and back. *@
+@if (_list is { } list)
+{
+    var info = ChatId is null ? null : ChatService.Store.Find(ChatId);
+    <span class="branch-menu" @onclick="RefreshAsync">
+        <Menu Label="@WebStrings.BranchMenuLabel" Title="@WebStrings.BranchMenuTitle">
+            <Trigger>
+                <Icon Name="branch" /><span class="menu-trigger-text">@(list.Current ?? Format(nameof(WebStrings.BranchMenuDetached), "commit", list.DetachedAt))</span>
+                @if (info?.Worktree is not null)
+                {
+                    <span class="badge">@WebStrings.BranchMenuWorktreeBadge</span>
+                }
+            </Trigger>
+            <ChildContent>
+                @if (info?.Worktree is not null)
+                {
+                    <div class="menu-note"><Icon Name="info" /><span>@WebStrings.BranchMenuWorktreeNote</span></div>
+                    <div class="menu-sep" role="separator"></div>
+                    <MenuItem IsAction="true" Label="@WebStrings.BranchMenuLeaveWorktree" Description="@WebStrings.BranchMenuLeaveWorktreeDescription" OnSelect="() => _leaving = info" />
+                }
+                else
+                {
+                    <div class="menu-heading">@WebStrings.BranchMenuSwitchHeading</div>
+                    @foreach (var branch in list.Branches)
+                    {
+                        var elsewhere = branch.WorktreePath is not null && branch.Name != list.Current;
+                        <MenuItem Label="@branch.Name" Checked="branch.Name == list.Current" Description="@(elsewhere ? WebStrings.BranchMenuInOtherWorktree : null)" OnSelect="() => SwitchAsync(list, branch)" />
+                    }
+                    @if (list.HasChanges)
+                    {
+                        <div class="menu-note"><Icon Name="info" /><span>@WebStrings.BranchMenuHasChanges</span></div>
+                    }
+                    <div class="menu-sep" role="separator"></div>
+                    <MenuItem IsAction="true" Label="@WebStrings.BranchMenuNewBranch" Description="@WebStrings.BranchMenuNewBranchDescription" OnSelect="() => Open(worktree: false)" />
+                    @if (info is not null && list.Branches.Count > 0)
+                    {
+                        <MenuItem IsAction="true" Label="@WebStrings.BranchMenuNewWorktree" Description="@WebStrings.BranchMenuNewWorktreeDescription" OnSelect="() => Open(worktree: true)" />
+                    }
+                }
+            </ChildContent>
+        </Menu>
+    </span>
+
+    <NewBranchDialog Open="_creating is not null" Worktree="_creating == true" Folder="@FolderPath" ChatId="@ChatId" Branches="list" OnClose="CloseAsync" />
+    <RemoveWorktreeDialog Chat="_leaving" OnClose="() => _leaving = null" OnConfirm="LeaveAsync" />
+}
+
+@code {
+    private GitBranchList? _list;
+    private string? _loadedFor;
+    private bool? _creating;
+    private ChatInfo? _leaving;
+    private bool _busy;
+
+    /// <summary>
+    /// Gets or sets the chat id, or null before the first message.
+    /// </summary>
+    [Parameter]
+    public string? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the folder the chat works in; nothing is shown unless it is in a git repository.
+    /// </summary>
+    [Parameter]
+    public string? FolderPath { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (FolderPath != _loadedFor)
+        {
+            _loadedFor = FolderPath;
+            _list = null;
+            await RefreshAsync();
+        }
+    }
+
+    private static string Format(string key, string name, object? value) =>
+        ResourceMessageFormatter.Web.Format(key, new Dictionary<string, object?> { [name] = value });
+
+    private async Task RefreshAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _list = FolderPath is { } folder ? await Branches.ListAsync(folder) : null;
+    }
+
+    private void Open(bool worktree)
+    {
+        _creating = worktree;
+    }
+
+    private async Task CloseAsync()
+    {
+        _creating = null;
+        await RefreshAsync();
+    }
+
+    private async Task SwitchAsync(GitBranchList list, GitBranch branch)
+    {
+        if (branch.Name == list.Current || FolderPath is not { } folder)
+        {
+            return;
+        }
+
+        if (branch.WorktreePath is not null)
+        {
+            Toasts.Show(Format(nameof(WebStrings.BranchMenuInUse), "branch", branch.Name), ToastKind.Error);
+            return;
+        }
+
+        if (list.HasChanges)
+        {
+            Toasts.Show(WebStrings.BranchMenuHasChanges, ToastKind.Error);
+            return;
+        }
+
+        // Switching changes the files under every chat that works in this folder, so none may be mid-reply.
+        if (ChatService.Store.List().Any(c => c.FolderPath is { } path && FolderPaths.Comparer.Equals(path, folder) && ChatService.IsRunning(c.Id)))
+        {
+            Toasts.Show(WebStrings.BranchMenuBusy, ToastKind.Error);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Branches.SwitchAsync(folder, branch.Name);
+            if (result != GitBranchResult.Done)
+            {
+                Toasts.Show(result == GitBranchResult.NotAllowed ? WebStrings.BranchMenuHasChanges : Format(nameof(WebStrings.BranchMenuSwitchFailed), "branch", branch.Name), ToastKind.Error);
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        await RefreshAsync();
+    }
+
+    private async Task LeaveAsync(bool deleteBranch)
+    {
+        var chat = _leaving;
+        _leaving = null;
+        if (chat is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (await ChatService.LeaveWorktreeAsync(chat.Id, deleteBranch))
+            {
+                return;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Logger.LogWarning(ex, "Could not leave the worktree of chat {ChatId}.", chat.Id);
+        }
+
+        Toasts.Show(WebStrings.BranchMenuLeaveFailed, ToastKind.Error);
+    }
+}

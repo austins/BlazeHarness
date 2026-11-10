@@ -209,7 +209,7 @@ public sealed class ChatServiceTests : IDisposable
             "permissions" => async () => { await sut.SetPermissionsAsync(info.Id, new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.NeverAsk), token); },
             "mcp" => async () => { await sut.SetMcpServerAsync(info.Id, "server", true, token); },
             "skill" => async () => { await sut.SetSkillAsync(info.Id, "skill", false, token); },
-            "delete" => async () => { await sut.DeleteAsync(info.Id, token); },
+            "delete" => async () => { await sut.DeleteAsync(info.Id, cancellationToken: token); },
             "send" => async () => { await sut.SendAsync(info.Id, "hello", target, token); },
             "edit" => async () => { await sut.EditAsync(info.Id, Guid.NewGuid(), "hello", target, token); },
             "retry" => async () => { await sut.RetryAsync(info.Id, target, token); },

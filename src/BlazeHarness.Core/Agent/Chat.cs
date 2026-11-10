@@ -70,6 +70,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     private Action? _stop;
     private bool _replying;
     private bool _closed;
+    private bool _held;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Chat"/> class.
@@ -775,12 +776,12 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     /// <summary>
     /// Close the chat to new replies unless one is running; the check and the close happen together.
     /// </summary>
-    /// <returns>False when a reply is running and the chat was left open.</returns>
+    /// <returns>False when a reply is running or the chat is held, and the chat was left open.</returns>
     internal bool TryClose()
     {
         lock (_gate)
         {
-            if (_stop is not null)
+            if (_stop is not null || _held)
             {
                 return false;
             }
@@ -790,12 +791,44 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         }
     }
 
+    /// <summary>
+    /// Keep new replies from starting until <see cref="Release"/>, unless one is running or the chat is closed or held already.
+    /// </summary>
+    /// <remarks>
+    /// For a change to the chat's folder that must not overlap a reply; the check and the hold happen together.
+    /// </remarks>
+    /// <returns>False when the chat could not be held.</returns>
+    internal bool TryHold()
+    {
+        lock (_gate)
+        {
+            if (_stop is not null || _closed || _held)
+            {
+                return false;
+            }
+
+            _held = true;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Let replies start again after <see cref="TryHold"/>.
+    /// </summary>
+    internal void Release()
+    {
+        lock (_gate)
+        {
+            _held = false;
+        }
+    }
+
     private async Task TurnAsync(ChatTarget target, Func<bool> change, Func<IReadOnlyList<ChatEvent>> leading)
     {
         using var run = new CancellationTokenSource();
         lock (_gate)
         {
-            if (_stop is not null || _closed || !change())
+            if (_stop is not null || _closed || _held || !change())
             {
                 return;
             }

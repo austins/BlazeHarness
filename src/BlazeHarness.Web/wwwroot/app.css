@@ -206,6 +206,11 @@ kbd {
 .chat-context > .btn:hover:not(:disabled) { color: var(--fg); }
 .chat-context .btn .icon { width: 0.9rem; height: 0.9rem; }
 .chat-context .popover-trigger > .icon:last-child { width: 0.75rem; height: 0.75rem; opacity: 0.7; }
+.branch-menu { display: contents; }
+.branch-menu .menu { position-area: block-end span-inline-end; }
+.branch-menu .menu-trigger { max-width: min(20rem, 100%); }
+.branch-menu .menu-trigger > .icon:last-child { rotate: 180deg; }
+.branch-menu .badge { font-size: var(--text-xs); }
 .chat-context .popover-trigger:has(+ .popover-panel:popover-open) { background: var(--bg-hover); color: var(--fg); }
 .chat-context-warning { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--danger); white-space: nowrap; }
 .folder-path-row .input { flex: 1; }

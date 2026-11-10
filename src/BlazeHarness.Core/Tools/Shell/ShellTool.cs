@@ -33,6 +33,7 @@ internal sealed class ShellTool : ITool
     private readonly string _scratchDirectory;
     private readonly BackgroundShells _background;
     private readonly TimeProvider _time;
+    private readonly string? _gitDirectory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ShellTool"/> class.
@@ -42,7 +43,8 @@ internal sealed class ShellTool : ITool
     /// <param name="scratchDirectory">A folder confined commands may always write to, for their home and temporary files.</param>
     /// <param name="background">Keeps the commands the model starts with <c>background</c>.</param>
     /// <param name="time">Times the command's time limit and the wait for its output.</param>
-    public ShellTool(ShellInfo shell, IShellSandbox sandbox, string scratchDirectory, BackgroundShells background, TimeProvider time)
+    /// <param name="gitDirectory">The repository's shared git folder when the working folder is a git worktree, or null.</param>
+    public ShellTool(ShellInfo shell, IShellSandbox sandbox, string scratchDirectory, BackgroundShells background, TimeProvider time, string? gitDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(shell);
         ArgumentNullException.ThrowIfNull(sandbox);
@@ -54,6 +56,7 @@ internal sealed class ShellTool : ITool
         _scratchDirectory = scratchDirectory;
         _background = background;
         _time = time;
+        _gitDirectory = gitDirectory;
     }
 
     /// <inheritdoc />
@@ -136,7 +139,7 @@ internal sealed class ShellTool : ITool
             refused = found;
         }
 
-        var launch = new ShellLaunch(_shell, command, context.Root, context.Shell, _scratchDirectory, TimeSpan.FromSeconds(seconds), context.ShellReadFolders, refused, context.Shell == ShellMode.Unconfined ? null : context.Network);
+        var launch = new ShellLaunch(_shell, command, context.Root, context.Shell, _scratchDirectory, TimeSpan.FromSeconds(seconds), context.ShellReadFolders, refused, context.Shell == ShellMode.Unconfined ? null : context.Network, _gitDirectory);
         var ports = _background.Ports?.Prepare(launch, publishes: background);
         IShellProcess process;
         try

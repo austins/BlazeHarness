@@ -1,0 +1,164 @@
+@using BlazeHarness.Core.Git
+@inject GitBranches Git
+@inject ChatService ChatService
+
+@* Asks for a branch name, then creates the branch in the folder, or creates it in a new worktree for the chat. *@
+<Dialog Title="@(Worktree ? WebStrings.NewBranchDialogWorktreeTitle : WebStrings.NewBranchDialogTitle)" Open="Open" OnClose="CloseAsync">
+    <ChildContent>
+        <form id="@_formId" class="stack" @onsubmit="CreateAsync" @onsubmit:preventDefault>
+            <div class="field">
+                <label for="@($"{_formId}-name")">@WebStrings.NewBranchDialogNameLabel</label>
+                <input id="@($"{_formId}-name")" class="input mono" spellcheck="false" autocomplete="off" autofocus
+                       @bind="_name" @bind:event="oninput" aria-describedby="@($"{_formId}-error")" />
+            </div>
+            @if (Worktree)
+            {
+                <div class="field">
+                    <label for="@($"{_formId}-base")">@WebStrings.NewBranchDialogBaseLabel</label>
+                    <select id="@($"{_formId}-base")" class="select" @bind="_base">
+                        @foreach (var name in (Branches?.Branches ?? []).Select(branch => branch.Name))
+                        {
+                            <option value="@name">@name</option>
+                        }
+                    </select>
+                </div>
+                <p class="hint">@WebStrings.NewBranchDialogWorktreeHint <bdi class="mono">@WorktreePath</bdi></p>
+            }
+            else
+            {
+                <p class="hint">@WebStrings.NewBranchDialogHint</p>
+            }
+            <p class="error-text" id="@($"{_formId}-error")" role="alert">@_error</p>
+        </form>
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn" @onclick="CloseAsync">@WebStrings.NewBranchDialogCancel</button>
+        <button type="submit" form="@_formId" class="btn btn-primary" disabled="@(_busy || string.IsNullOrWhiteSpace(_name))">
+            @if (_busy)
+            {
+                <Icon Name="spinner" /> @WebStrings.NewBranchDialogCreating
+            }
+            else
+            {
+                @WebStrings.NewBranchDialogCreate
+            }
+        </button>
+    </Footer>
+</Dialog>
+
+@code {
+    private readonly string _formId = $"new-branch-{Guid.NewGuid():N}";
+    private bool _wasOpen;
+    private string _name = string.Empty;
+    private string _base = string.Empty;
+    private string? _error;
+    private bool _busy;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the dialog is shown.
+    /// </summary>
+    [Parameter]
+    public bool Open { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the branch goes into a new worktree for the chat rather than the folder.
+    /// </summary>
+    [Parameter]
+    public bool Worktree { get; set; }
+
+    /// <summary>
+    /// Gets or sets the folder whose repository gets the branch.
+    /// </summary>
+    [Parameter]
+    public string? Folder { get; set; }
+
+    /// <summary>
+    /// Gets or sets the chat id, which a worktree needs, or null.
+    /// </summary>
+    [Parameter]
+    public string? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the repository's branches, offered as the base of a worktree.
+    /// </summary>
+    [Parameter]
+    public GitBranchList? Branches { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for when the dialog is dismissed or the branch was created.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private string? WorktreePath => ChatId is { } id ? ChatService.Store.Paths.ChatWorktreeDirectory(id) : null;
+
+    protected override void OnParametersSet()
+    {
+        if (Open && !_wasOpen)
+        {
+            var info = ChatId is { } id ? ChatService.Store.Find(id) : null;
+            _name = info is null ? string.Empty : GitBranchName.Suggest(info.Title, "chat-" + info.Id[..Math.Min(8, info.Id.Length)]);
+            // Case-insensitive because branch refs are files, which collide by case on Windows and macOS.
+            var taken = (Branches?.Branches ?? []).Select(branch => branch.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var suggested = _name;
+            var n = 1;
+            while (_name.Length > 0 && taken.Contains(_name))
+            {
+                _name = $"{suggested}-{++n}";
+            }
+
+            _base = Branches?.Current ?? Branches?.Branches.FirstOrDefault()?.Name ?? string.Empty;
+            _error = null;
+        }
+
+        _wasOpen = Open;
+    }
+
+    private async Task CreateAsync()
+    {
+        var name = _name.Trim();
+        if (_busy || Folder is not { } folder || name.Length == 0)
+        {
+            return;
+        }
+
+        if (!GitBranchName.IsValid(name))
+        {
+            _error = WebStrings.NewBranchDialogInvalidName;
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        GitBranchResult result;
+        try
+        {
+            result = Worktree && ChatId is { } id
+                ? await ChatService.MoveToWorktreeAsync(id, name, _base)
+                : await Git.CreateAsync(folder, name);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            result = GitBranchResult.Failed;
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        _error = result switch
+        {
+            GitBranchResult.Done => null,
+            GitBranchResult.InvalidName => WebStrings.NewBranchDialogInvalidName,
+            GitBranchResult.Exists => WebStrings.NewBranchDialogExists,
+            GitBranchResult.NotAllowed when Worktree && ChatId is { } running && ChatService.IsRunning(running) => WebStrings.NewBranchDialogBusy,
+            _ => WebStrings.NewBranchDialogFailed,
+        };
+        if (_error is null)
+        {
+            await CloseAsync();
+        }
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+}

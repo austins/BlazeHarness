@@ -13,12 +13,12 @@ public sealed class SensitivePaths
     /// Initializes a new instance of the <see cref="SensitivePaths"/> class.
     /// </summary>
     /// <param name="folders">The full paths of the protected folders.</param>
-    /// <param name="exempt">A folder inside a protected one that may still be used, such as the current chat's own directory, or null.</param>
-    public SensitivePaths(IEnumerable<string> folders, string? exempt = null)
+    /// <param name="exempt">Folders inside a protected one that may still be used, such as the current chat's work folders, or null.</param>
+    public SensitivePaths(IEnumerable<string> folders, IEnumerable<string>? exempt = null)
     {
         ArgumentNullException.ThrowIfNull(folders);
         _folders = [.. folders.Select(Normalize)];
-        Exempt = exempt is null ? null : Normalize(exempt);
+        Exempt = [.. (exempt ?? []).Select(Normalize)];
     }
 
     /// <summary>
@@ -32,9 +32,9 @@ public sealed class SensitivePaths
     public IReadOnlyList<string> Folders => _folders;
 
     /// <summary>
-    /// Gets the folder that is allowed even though it is inside a protected one, or null.
+    /// Gets the folders that are allowed even though they are inside a protected one.
     /// </summary>
-    public string? Exempt { get; }
+    public IReadOnlyList<string> Exempt { get; }
 
     /// <summary>
     /// Get the folders and files that are protected unless the user changes the list: credential stores and browser profiles.
@@ -92,26 +92,26 @@ public sealed class SensitivePaths
     /// Build the list: the folders the user chose or the defaults, and the app's own folder.
     /// </summary>
     /// <param name="paths">The app's folders.</param>
-    /// <param name="currentChat">The id of the chat that is running, whose own directory stays usable, or null.</param>
+    /// <param name="currentChat">The id of the chat that is running, whose work folders stay usable, or null.</param>
     /// <param name="chosen">The folders the user chose to protect, or null for <see cref="DefaultFolders"/>.</param>
     /// <returns>The protected folders.</returns>
     public static SensitivePaths Default(AppPaths paths, string? currentChat = null, IEnumerable<string>? chosen = null)
     {
         ArgumentNullException.ThrowIfNull(paths);
         List<string> folders = [.. chosen ?? DefaultFolders(paths), paths.Home];
-        return new SensitivePaths(folders, currentChat is null ? null : paths.ChatDirectory(currentChat));
+        return new SensitivePaths(folders, currentChat is null ? null : paths.ChatWorkDirectories(currentChat));
     }
 
     /// <summary>
     /// Get whether a path may not be used.
     /// </summary>
     /// <param name="fullPath">The real full path a call would touch.</param>
-    /// <returns>True when the path is inside a protected folder and not inside the exempt one.</returns>
+    /// <returns>True when the path is inside a protected folder and not inside an exempt one.</returns>
     public bool IsProtected(string fullPath)
     {
         ArgumentNullException.ThrowIfNull(fullPath);
         var path = Normalize(fullPath);
-        if (Exempt is not null && RootedPath.IsInside(Exempt, path))
+        if (Exempt.Any(folder => RootedPath.IsInside(folder, path)))
         {
             return false;
         }

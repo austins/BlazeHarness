@@ -63,6 +63,7 @@ builder.Services.AddScoped<SidePanelState>();
 builder.Services.AddSingleton<SidePanelMemory>();
 builder.Services.AddSingleton(sp => new GitChangesReader(sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton(sp => new GitChangeReverter(sp.GetRequiredService<TimeProvider>()));
+builder.Services.AddSingleton(sp => new GitBranches(sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddSingleton<EditorLauncher>();
 builder.Services.AddSingleton<ChatClientSource>();
 builder.Services.AddSingleton(sp => new ChatStore(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));

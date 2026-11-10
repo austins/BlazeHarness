@@ -24,7 +24,6 @@ public sealed partial class ChatStore : IDisposable
 {
     private const string MetadataFile = "chat.json";
     private const string LogFile = "messages.jsonl";
-    private const string AttachmentsFolder = "attachments";
     private const string TrashPrefix = ".trash-";
 
     private readonly AppPaths _paths;
@@ -95,21 +94,21 @@ public sealed partial class ChatStore : IDisposable
     /// </summary>
     /// <param name="id">The chat id.</param>
     /// <returns>The folder path, which may not exist yet.</returns>
-    public string ShellDirectory(string id) => Path.Combine(_paths.ChatDirectory(id), "shell");
+    public string ShellDirectory(string id) => _paths.ChatShellDirectory(id);
 
     /// <summary>
     /// Get the folder where a chat without a folder works: the model's working directory and the only place it may write there.
     /// </summary>
     /// <param name="id">The chat id.</param>
     /// <returns>The folder path, which may not exist yet.</returns>
-    public string OutputsDirectory(string id) => Path.Combine(_paths.ChatDirectory(id), "outputs");
+    public string OutputsDirectory(string id) => _paths.ChatOutputsDirectory(id);
 
     /// <summary>
     /// Get the folder a chat keeps its attached files in.
     /// </summary>
     /// <param name="id">The chat id.</param>
     /// <returns>The full path.</returns>
-    public string AttachmentsDirectory(string id) => Path.Combine(_paths.ChatDirectory(id), AttachmentsFolder);
+    public string AttachmentsDirectory(string id) => _paths.ChatAttachmentsDirectory(id);
 
     /// <summary>
     /// Get the message log of a chat.
@@ -206,10 +205,11 @@ public sealed partial class ChatStore : IDisposable
     {
         cancellationToken.ThrowIfCancellationRequested();
         var moved = 0;
-        var ids = _index.Values.Where(s => s.FolderPath is { } path && FolderPaths.Comparer.Equals(path, oldPath)).Select(s => s.Id).ToList();
+        var ids = _index.Values.Where(s => s.HomeFolder is { } path && FolderPaths.Comparer.Equals(path, oldPath)).Select(s => s.Id).ToList();
         foreach (var id in ids)
         {
-            var updated = await UpdateAsync(id, s => s with { FolderPath = newPath }, cancellationToken: CancellationToken.None);
+            // A worktree chat keeps working in its worktree, which stays valid while the repository moves or leaves the list.
+            var updated = await UpdateAsync(id, s => s.Worktree is { } worktree ? s with { Worktree = worktree with { RepositoryPath = newPath ?? worktree.RepositoryPath } } : s with { FolderPath = newPath }, cancellationToken: CancellationToken.None);
             moved += updated is null ? 0 : 1;
         }
 

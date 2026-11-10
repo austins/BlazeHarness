@@ -13,15 +13,15 @@ internal sealed class GitProcessRunner(TimeProvider time) : IGitRunner
 {
     private const int MaxOutputBytes = 4 * 1024 * 1024;
 
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(20);
 
     /// <inheritdoc />
-    public async Task<GitResult> RunAsync(string workingDirectory, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    public async Task<GitResult> RunAsync(string workingDirectory, IReadOnlyList<string> arguments, CancellationToken cancellationToken, TimeSpan? timeout = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(workingDirectory);
         ArgumentNullException.ThrowIfNull(arguments);
 
-        var filters = await RunCoreAsync(workingDirectory, ["config", "--null", "--name-only", "--get-regexp", @"^filter\..*\.(clean|smudge|process|required)$"], cancellationToken);
+        var filters = await RunCoreAsync(workingDirectory, ["config", "--null", "--name-only", "--get-regexp", @"^filter\..*\.(clean|smudge|process|required)$"], DefaultTimeout, cancellationToken);
         if (filters.Truncated || (filters.ExitCode != 0 && filters.ExitCode != 1))
         {
             return GitResult.Unavailable;
@@ -38,10 +38,10 @@ internal sealed class GitProcessRunner(TimeProvider time) : IGitRunner
             }
         }
 
-        return await RunCoreAsync(workingDirectory, [.. safeArguments, .. arguments], cancellationToken);
+        return await RunCoreAsync(workingDirectory, [.. safeArguments, .. arguments], timeout ?? DefaultTimeout, cancellationToken);
     }
 
-    private async Task<GitResult> RunCoreAsync(string workingDirectory, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    private async Task<GitResult> RunCoreAsync(string workingDirectory, IReadOnlyList<string> arguments, TimeSpan limit, CancellationToken cancellationToken)
     {
         // Only a fully qualified entry of the path counts, so a program in the repository can't pose as git.
         if (ShellInfo.FindOnPath(OperatingSystem.IsWindows() ? "git.exe" : "git", Environment.GetEnvironmentVariable("PATH")) is not { } git)
@@ -67,6 +67,10 @@ internal sealed class GitProcessRunner(TimeProvider time) : IGitRunner
             start.ArgumentList.Add(argument);
         }
 
+        // Hooks are programs in the repository, which the agent can write. Pointing the hooks folder at a file means none is found.
+        start.ArgumentList.Add("-c");
+        start.ArgumentList.Add("core.hooksPath=" + git);
+
         foreach (var argument in arguments)
         {
             start.ArgumentList.Add(argument);
@@ -75,7 +79,7 @@ internal sealed class GitProcessRunner(TimeProvider time) : IGitRunner
         start.Environment["GIT_TERMINAL_PROMPT"] = "0";
         start.Environment["LC_ALL"] = "C";
 
-        using var timeout = new CancellationTokenSource(Timeout, time);
+        using var timeout = new CancellationTokenSource(limit, time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         Process process;
         try

@@ -41,6 +41,17 @@ public sealed record ChatInfo
     public string? FolderPath { get; init; }
 
     /// <summary>
+    /// Gets the git worktree the chat works in, or null; when set, <see cref="FolderPath"/> is inside it.
+    /// </summary>
+    public ChatWorktree? Worktree { get; init; }
+
+    /// <summary>
+    /// Gets the registered folder the chat belongs to: the one its worktree was made from, or else <see cref="FolderPath"/>.
+    /// </summary>
+    [JsonIgnore]
+    public string? HomeFolder => Worktree?.RepositoryPath ?? FolderPath;
+
+    /// <summary>
     /// Gets the id of the provider the chat last used.
     /// </summary>
     public string? ProviderId { get; init; }

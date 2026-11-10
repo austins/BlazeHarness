@@ -124,6 +124,43 @@ public sealed class AppPaths
         return Path.Combine(ChatsDirectory, ValidateId(chatId));
     }
 
+    /// <summary>
+    /// Get the folder a chat's confined shell commands keep their home and temporary files in.
+    /// </summary>
+    /// <param name="chatId">The chat identifier.</param>
+    /// <returns>The folder path, which may not exist yet.</returns>
+    public string ChatShellDirectory(string chatId) => Path.Combine(ChatDirectory(chatId), "shell");
+
+    /// <summary>
+    /// Get the folder where a chat without a folder works: the model's working directory and the only place it may write there.
+    /// </summary>
+    /// <param name="chatId">The chat identifier.</param>
+    /// <returns>The folder path, which may not exist yet.</returns>
+    public string ChatOutputsDirectory(string chatId) => Path.Combine(ChatDirectory(chatId), "outputs");
+
+    /// <summary>
+    /// Get the folder a chat keeps its attached files in.
+    /// </summary>
+    /// <param name="chatId">The chat identifier.</param>
+    /// <returns>The folder path, which may not exist yet.</returns>
+    public string ChatAttachmentsDirectory(string chatId) => Path.Combine(ChatDirectory(chatId), "attachments");
+
+    /// <summary>
+    /// Get the folder of a chat's own git worktree.
+    /// </summary>
+    /// <param name="chatId">The chat identifier.</param>
+    /// <returns>The folder path, which may not exist yet.</returns>
+    public string ChatWorktreeDirectory(string chatId) => Path.Combine(ChatDirectory(chatId), "worktree");
+
+    /// <summary>
+    /// Get the folders inside a chat's directory that its own tools may use.
+    /// </summary>
+    /// <remarks>The chat's metadata, message log and saved tool outputs stay out, so a chat can't change its own access level or history.</remarks>
+    /// <param name="chatId">The chat identifier.</param>
+    /// <returns>The folder paths.</returns>
+    public IReadOnlyList<string> ChatWorkDirectories(string chatId) =>
+        [ChatShellDirectory(chatId), ChatOutputsDirectory(chatId), ChatAttachmentsDirectory(chatId), ChatWorktreeDirectory(chatId)];
+
     private static string ValidateId(string id)
     {
         if (string.IsNullOrEmpty(id) || id.AsSpan().IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || id is "." or "..")

@@ -4,6 +4,7 @@ using BlazeHarness.Core.Chats.Export;
 using BlazeHarness.Core.Chats.Titles;
 using BlazeHarness.Core.Compaction;
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Git;
 using BlazeHarness.Core.Mcp;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
@@ -52,6 +53,7 @@ public sealed partial class ChatService : IDisposable
     private readonly Func<string?>? _customInstructions;
     private readonly ProviderService? _providers;
     private readonly FolderRegistry? _folders;
+    private readonly GitWorktrees _worktrees;
     private readonly ILogger _log;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
@@ -113,6 +115,7 @@ public sealed partial class ChatService : IDisposable
         _customInstructions = customInstructions;
         _providers = providers;
         _folders = folders;
+        _worktrees = new GitWorktrees(time);
         _log = loggers.CreateLogger<ChatService>();
     }
 
@@ -559,12 +562,13 @@ public sealed partial class ChatService : IDisposable
     }
 
     /// <summary>
-    /// Delete a chat and everything stored for it, unless it is producing a reply.
+    /// Delete a chat and everything stored for it, including its git worktree, unless it is producing a reply.
     /// </summary>
     /// <param name="id">The chat id.</param>
+    /// <param name="deleteBranch">Whether to delete the branch of the chat's worktree too.</param>
     /// <param name="cancellationToken">A token to cancel before deletion begins; once begun, deletion finishes.</param>
     /// <returns>False when the chat is running and was left alone; true otherwise.</returns>
-    public async Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(string id, bool deleteBranch = false, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (_live.TryGetValue(id, out var chat))
@@ -582,6 +586,11 @@ public sealed partial class ChatService : IDisposable
         using (await _opening.EnterAsync(id, CancellationToken.None))
         {
             _web?.Forget(id);
+            if (_store.Find(id)?.Worktree is { } worktree)
+            {
+                await RemoveWorktreeAsync(id, worktree, deleteBranch);
+            }
+
             await _store.DeleteAsync(id, CancellationToken.None);
             _titleFailures.TryRemove(id, out _);
 
@@ -698,7 +707,7 @@ public sealed partial class ChatService : IDisposable
             }
 
             var shell = ShellInfo.DetectCurrent();
-            var tools = BuiltInTools.Create(root, _time, shell, chat.Attachments, _sandbox, _store.ShellDirectory(id), ChatSearchFor(id, chat, folderPath), chat.BackgroundShells, todos, SendToChatFor(id, chat));
+            var tools = BuiltInTools.Create(root, _time, shell, chat.Attachments, _sandbox, _store.ShellDirectory(id), ChatSearchFor(id, chat, folderPath), chat.BackgroundShells, todos, SendToChatFor(id, chat), _store.Find(id)?.Worktree?.GitDirectory);
             chat.UseTools(tools, SystemPrompt.Build(RuntimeInformation.OSDescription, shell?.Name, tools.Context.Root));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)

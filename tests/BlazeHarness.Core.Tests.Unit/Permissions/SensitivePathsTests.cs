@@ -44,18 +44,38 @@ public sealed class SensitivePathsTests
     }
 
     [Fact]
-    public void IsProtected_CurrentChatDirectory_IsFalse()
+    public void IsProtected_CurrentChatWorkFolders_IsFalse()
     {
         // Arrange
         var sut = SensitivePaths.Default(_paths, "s1");
 
         // Act
-        var own = sut.IsProtected(Path.Combine(_paths.ChatDirectory("s1"), "outputs", "a.txt"));
-        var other = sut.IsProtected(Path.Combine(_paths.ChatDirectory("s2"), "messages.jsonl"));
+        var outputs = sut.IsProtected(Path.Combine(_paths.ChatOutputsDirectory("s1"), "a.txt"));
+        var attachment = sut.IsProtected(Path.Combine(_paths.ChatAttachmentsDirectory("s1"), "a.png"));
+        var worktree = sut.IsProtected(Path.Combine(_paths.ChatWorktreeDirectory("s1"), "src", "a.cs"));
+        var other = sut.IsProtected(Path.Combine(_paths.ChatOutputsDirectory("s2"), "a.txt"));
 
         // Assert
-        own.Should().BeFalse();
+        outputs.Should().BeFalse();
+        attachment.Should().BeFalse();
+        worktree.Should().BeFalse();
         other.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("chat.json")]
+    [InlineData("messages.jsonl")]
+    [InlineData("tool-outputs")]
+    public void IsProtected_CurrentChatOwnState_IsTrue(string name)
+    {
+        // Arrange
+        var sut = SensitivePaths.Default(_paths, "s1");
+
+        // Act
+        var result = sut.IsProtected(Path.Combine(_paths.ChatDirectory("s1"), name));
+
+        // Assert
+        result.Should().BeTrue();
     }
 
     [Fact]

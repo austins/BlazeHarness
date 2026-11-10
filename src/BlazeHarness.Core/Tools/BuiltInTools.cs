@@ -23,6 +23,7 @@ internal static class BuiltInTools
     /// <param name="background">Keeps the commands started in the background. Required when <paramref name="shell"/> is set.</param>
     /// <param name="todos">False to leave out the <c>update_todos</c> tool.</param>
     /// <param name="sendToChat">The <c>send_to_chat</c> tool, or null to leave it out.</param>
+    /// <param name="gitDirectory">The repository's shared git folder when <paramref name="folder"/> is in a git worktree, or null.</param>
     /// <returns>The tool set.</returns>
     public static ToolSet Create(
         string folder,
@@ -34,7 +35,8 @@ internal static class BuiltInTools
         ITool? chatSearch = null,
         BackgroundShells? background = null,
         bool todos = true,
-        ITool? sendToChat = null)
+        ITool? sendToChat = null,
+        string? gitDirectory = null)
     {
         List<ITool> tools = [new ReadFileTool(), new ListFilesTool(), new SearchFilesTool(), new WriteFileTool(), new EditFileTool(), new ShowImageTool()];
         if (todos)
@@ -58,7 +60,7 @@ internal static class BuiltInTools
             ArgumentNullException.ThrowIfNull(sandbox);
             ArgumentException.ThrowIfNullOrWhiteSpace(scratchDirectory);
             ArgumentNullException.ThrowIfNull(background);
-            tools.Add(new ShellTool(shell, sandbox, scratchDirectory, background, time));
+            tools.Add(new ShellTool(shell, sandbox, scratchDirectory, background, time, gitDirectory));
             tools.Add(new ShellJobsTool(background, time));
         }
 

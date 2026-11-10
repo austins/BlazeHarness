@@ -2696,4 +2696,172 @@
     <value>Notifications</value>
     <comment>Accessible label (aria-label) of the region that holds toast notifications; not shown on screen.</comment>
   </data>
+  <data name="BranchMenuLabel" xml:space="preserve">
+    <value>Branch</value>
+    <comment>Screen-reader name of the branch menu in the chat header.</comment>
+  </data>
+  <data name="BranchMenuTitle" xml:space="preserve">
+    <value>Switch branches, or give this chat a worktree of its own</value>
+    <comment>Tooltip of the branch menu in the chat header. A worktree is a git worktree: a separate checkout of the repository.</comment>
+  </data>
+  <data name="BranchMenuDetached" xml:space="preserve">
+    <value>detached at {commit}</value>
+    <comment>Shown in the branch menu when git HEAD is detached. {commit} is a short commit id.</comment>
+  </data>
+  <data name="BranchMenuWorktreeBadge" xml:space="preserve">
+    <value>worktree</value>
+    <comment>Small badge beside the branch name when the chat works in its own git worktree.</comment>
+  </data>
+  <data name="BranchMenuSwitchHeading" xml:space="preserve">
+    <value>Switch branch</value>
+    <comment>Heading above the list of branches in the branch menu.</comment>
+  </data>
+  <data name="BranchMenuInOtherWorktree" xml:space="preserve">
+    <value>Checked out in another worktree</value>
+    <comment>Note under a branch in the branch menu that another git worktree has checked out, so it can't be switched to here.</comment>
+  </data>
+  <data name="BranchMenuHasChanges" xml:space="preserve">
+    <value>Commit or stash your changes to switch branches.</value>
+    <comment>Note in the branch menu, and an error message, when the folder has uncommitted changes. Keep the git terms commit and stash recognizable.</comment>
+  </data>
+  <data name="BranchMenuNewBranch" xml:space="preserve">
+    <value>New branch…</value>
+    <comment>Branch menu item that opens a dialog to create a git branch in the folder.</comment>
+  </data>
+  <data name="BranchMenuNewBranchDescription" xml:space="preserve">
+    <value>From the current commit, keeping your changes</value>
+    <comment>Description under the New branch item in the branch menu.</comment>
+  </data>
+  <data name="BranchMenuNewWorktree" xml:space="preserve">
+    <value>New worktree for this chat…</value>
+    <comment>Branch menu item that opens a dialog to create a git worktree that only this chat works in.</comment>
+  </data>
+  <data name="BranchMenuNewWorktreeDescription" xml:space="preserve">
+    <value>A separate checkout, so the folder's files stay as they are</value>
+    <comment>Description under the New worktree item in the branch menu.</comment>
+  </data>
+  <data name="BranchMenuWorktreeNote" xml:space="preserve">
+    <value>This chat works in a worktree on its own branch. Other chats in the folder don't see its changes.</value>
+    <comment>Note in the branch menu of a chat that works in its own git worktree.</comment>
+  </data>
+  <data name="BranchMenuLeaveWorktree" xml:space="preserve">
+    <value>Leave worktree…</value>
+    <comment>Branch menu item that opens a dialog to remove the chat's git worktree and move the chat back to the folder.</comment>
+  </data>
+  <data name="BranchMenuLeaveWorktreeDescription" xml:space="preserve">
+    <value>Remove the worktree and go back to the folder</value>
+    <comment>Description under the Leave worktree item in the branch menu.</comment>
+  </data>
+  <data name="BranchMenuBusy" xml:space="preserve">
+    <value>Wait for the chats in this folder to finish replying.</value>
+    <comment>Error message when switching branches while a chat in the folder is replying.</comment>
+  </data>
+  <data name="BranchMenuInUse" xml:space="preserve">
+    <value>{branch} is checked out in another worktree.</value>
+    <comment>Error message when switching to a branch another git worktree has checked out. {branch} is the branch name.</comment>
+  </data>
+  <data name="BranchMenuSwitchFailed" xml:space="preserve">
+    <value>Git couldn't switch to {branch}.</value>
+    <comment>Error message when git fails to switch branches. {branch} is the branch name.</comment>
+  </data>
+  <data name="BranchMenuLeaveFailed" xml:space="preserve">
+    <value>Couldn't remove the worktree. Wait for the reply to finish, or close programs that use its files.</value>
+    <comment>Error message when leaving a git worktree fails.</comment>
+  </data>
+  <data name="NewBranchDialogTitle" xml:space="preserve">
+    <value>New branch</value>
+    <comment>Title of the dialog that creates a git branch in the folder.</comment>
+  </data>
+  <data name="NewBranchDialogWorktreeTitle" xml:space="preserve">
+    <value>New worktree</value>
+    <comment>Title of the dialog that creates a git worktree for the chat.</comment>
+  </data>
+  <data name="NewBranchDialogNameLabel" xml:space="preserve">
+    <value>Branch name</value>
+    <comment>Label of the branch name field in the new branch dialog.</comment>
+  </data>
+  <data name="NewBranchDialogBaseLabel" xml:space="preserve">
+    <value>Based on</value>
+    <comment>Label of the field that picks the branch a new worktree starts from.</comment>
+  </data>
+  <data name="NewBranchDialogHint" xml:space="preserve">
+    <value>Creates the branch from the current commit and switches the folder to it. Uncommitted changes come along.</value>
+    <comment>Hint in the new branch dialog.</comment>
+  </data>
+  <data name="NewBranchDialogWorktreeHint" xml:space="preserve">
+    <value>This chat gets its own checkout of a new branch, so you can keep using the folder meanwhile. It's removed when you leave it or delete the chat. It lives in:</value>
+    <comment>Hint in the new worktree dialog, followed by the folder path of the worktree.</comment>
+  </data>
+  <data name="NewBranchDialogCreate" xml:space="preserve">
+    <value>Create</value>
+    <comment>Button that creates the branch or worktree.</comment>
+  </data>
+  <data name="NewBranchDialogCreating" xml:space="preserve">
+    <value>Creating…</value>
+    <comment>Label of the create button while git creates the branch or worktree.</comment>
+  </data>
+  <data name="NewBranchDialogCancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Button that closes the new branch dialog.</comment>
+  </data>
+  <data name="NewBranchDialogInvalidName" xml:space="preserve">
+    <value>That isn't a valid branch name.</value>
+    <comment>Error in the new branch dialog when git would refuse the name.</comment>
+  </data>
+  <data name="NewBranchDialogExists" xml:space="preserve">
+    <value>A branch with that name already exists.</value>
+    <comment>Error in the new branch dialog when the branch exists.</comment>
+  </data>
+  <data name="NewBranchDialogFailed" xml:space="preserve">
+    <value>Git couldn't create it. Check that the base branch still exists.</value>
+    <comment>Error in the new branch dialog when git fails.</comment>
+  </data>
+  <data name="NewBranchDialogBusy" xml:space="preserve">
+    <value>Wait for the reply to finish, then try again.</value>
+    <comment>Error in the new worktree dialog when the chat is replying.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogTitle" xml:space="preserve">
+    <value>Leave the worktree?</value>
+    <comment>Title of the dialog that confirms removing a chat's git worktree.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogLeaveHint" xml:space="preserve">
+    <value>The worktree is removed and the chat goes back to working in [strong]{folder}[/strong].</value>
+    <comment>Body of the leave worktree dialog. {folder} is the folder name. Keep the [strong] tags around it; they make it bold.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogDeleteHint" xml:space="preserve">
+    <value>Its worktree is removed too.</value>
+    <comment>Line in the delete chat dialog when the chat has its own git worktree.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogChecking" xml:space="preserve">
+    <value>Checking the worktree…</value>
+    <comment>Shown while the dialog reads the state of the git worktree.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogUnreadable" xml:space="preserve">
+    <value>Couldn't read the worktree. Anything uncommitted in it will be lost.</value>
+    <comment>Warning when git can't read the worktree's state.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogChanges" xml:space="preserve">
+    <value>{count, plural, one {# file has uncommitted changes that will be lost.} other {# files have uncommitted changes that will be lost.}}</value>
+    <comment>Warning in the worktree removal dialog. count is the number of changed or new files.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogUnshared" xml:space="preserve">
+    <value>{count, plural, one {# commit is only on this branch.} other {# commits are only on this branch.}}</value>
+    <comment>Line in the worktree removal dialog. count is the number of commits no other branch or remote has; deleting the branch loses them.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogClean" xml:space="preserve">
+    <value>No uncommitted changes, and every commit is on another branch too.</value>
+    <comment>Line in the worktree removal dialog when nothing would be lost.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogDeleteBranch" xml:space="preserve">
+    <value>Also delete the branch [code]{branch}[/code]</value>
+    <comment>Checkbox in the worktree removal dialog. {branch} is the branch name. Keep the [code] tags around it.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogLeave" xml:space="preserve">
+    <value>Leave worktree</value>
+    <comment>Button that confirms leaving the worktree.</comment>
+  </data>
+  <data name="RemoveWorktreeDialogCancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Button that closes the worktree removal dialog.</comment>
+  </data>
 </root>

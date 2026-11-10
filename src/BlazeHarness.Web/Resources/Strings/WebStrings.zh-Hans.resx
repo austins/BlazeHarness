@@ -2584,4 +2584,130 @@
   <data name="ToastHostLabel" xml:space="preserve">
     <value>通知</value>
   </data>
+  <data name="BranchMenuLabel" xml:space="preserve">
+    <value>分支</value>
+  </data>
+  <data name="BranchMenuTitle" xml:space="preserve">
+    <value>切换分支，或为此聊天创建独立的工作树</value>
+  </data>
+  <data name="BranchMenuDetached" xml:space="preserve">
+    <value>分离于 {commit}</value>
+  </data>
+  <data name="BranchMenuWorktreeBadge" xml:space="preserve">
+    <value>工作树</value>
+  </data>
+  <data name="BranchMenuSwitchHeading" xml:space="preserve">
+    <value>切换分支</value>
+  </data>
+  <data name="BranchMenuInOtherWorktree" xml:space="preserve">
+    <value>已在另一个工作树中检出</value>
+  </data>
+  <data name="BranchMenuHasChanges" xml:space="preserve">
+    <value>请先提交或暂存（stash）更改，再切换分支。</value>
+  </data>
+  <data name="BranchMenuNewBranch" xml:space="preserve">
+    <value>新建分支…</value>
+  </data>
+  <data name="BranchMenuNewBranchDescription" xml:space="preserve">
+    <value>基于当前提交，保留你的更改</value>
+  </data>
+  <data name="BranchMenuNewWorktree" xml:space="preserve">
+    <value>为此聊天新建工作树…</value>
+  </data>
+  <data name="BranchMenuNewWorktreeDescription" xml:space="preserve">
+    <value>独立的检出，文件夹中的文件保持不变</value>
+  </data>
+  <data name="BranchMenuWorktreeNote" xml:space="preserve">
+    <value>此聊天在独立分支的工作树中工作。该文件夹中的其他聊天看不到它的更改。</value>
+  </data>
+  <data name="BranchMenuLeaveWorktree" xml:space="preserve">
+    <value>离开工作树…</value>
+  </data>
+  <data name="BranchMenuLeaveWorktreeDescription" xml:space="preserve">
+    <value>删除工作树并回到文件夹</value>
+  </data>
+  <data name="BranchMenuBusy" xml:space="preserve">
+    <value>请等待此文件夹中的聊天完成回复。</value>
+  </data>
+  <data name="BranchMenuInUse" xml:space="preserve">
+    <value>{branch} 已在另一个工作树中检出。</value>
+  </data>
+  <data name="BranchMenuSwitchFailed" xml:space="preserve">
+    <value>Git 无法切换到 {branch}。</value>
+  </data>
+  <data name="BranchMenuLeaveFailed" xml:space="preserve">
+    <value>无法删除工作树。请等待回复完成，或关闭正在使用其文件的程序。</value>
+  </data>
+  <data name="NewBranchDialogTitle" xml:space="preserve">
+    <value>新建分支</value>
+  </data>
+  <data name="NewBranchDialogWorktreeTitle" xml:space="preserve">
+    <value>新建工作树</value>
+  </data>
+  <data name="NewBranchDialogNameLabel" xml:space="preserve">
+    <value>分支名称</value>
+  </data>
+  <data name="NewBranchDialogBaseLabel" xml:space="preserve">
+    <value>基于</value>
+  </data>
+  <data name="NewBranchDialogHint" xml:space="preserve">
+    <value>从当前提交创建分支并将文件夹切换到该分支。未提交的更改会一并带过去。</value>
+  </data>
+  <data name="NewBranchDialogWorktreeHint" xml:space="preserve">
+    <value>此聊天会获得新分支的独立检出，你可以同时继续使用该文件夹。离开工作树或删除聊天时会将其删除。位置：</value>
+  </data>
+  <data name="NewBranchDialogCreate" xml:space="preserve">
+    <value>创建</value>
+  </data>
+  <data name="NewBranchDialogCreating" xml:space="preserve">
+    <value>正在创建…</value>
+  </data>
+  <data name="NewBranchDialogCancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="NewBranchDialogInvalidName" xml:space="preserve">
+    <value>这不是有效的分支名称。</value>
+  </data>
+  <data name="NewBranchDialogExists" xml:space="preserve">
+    <value>已存在同名分支。</value>
+  </data>
+  <data name="NewBranchDialogFailed" xml:space="preserve">
+    <value>Git 无法创建。请检查基础分支是否仍然存在。</value>
+  </data>
+  <data name="NewBranchDialogBusy" xml:space="preserve">
+    <value>请等待回复完成后重试。</value>
+  </data>
+  <data name="RemoveWorktreeDialogTitle" xml:space="preserve">
+    <value>离开工作树？</value>
+  </data>
+  <data name="RemoveWorktreeDialogLeaveHint" xml:space="preserve">
+    <value>工作树将被删除，聊天将回到 [strong]{folder}[/strong] 中工作。</value>
+  </data>
+  <data name="RemoveWorktreeDialogDeleteHint" xml:space="preserve">
+    <value>其工作树也会被删除。</value>
+  </data>
+  <data name="RemoveWorktreeDialogChecking" xml:space="preserve">
+    <value>正在检查工作树…</value>
+  </data>
+  <data name="RemoveWorktreeDialogUnreadable" xml:space="preserve">
+    <value>无法读取工作树。其中所有未提交的内容都将丢失。</value>
+  </data>
+  <data name="RemoveWorktreeDialogChanges" xml:space="preserve">
+    <value>{count, plural, other {# 个文件有未提交的更改，这些更改将丢失。}}</value>
+  </data>
+  <data name="RemoveWorktreeDialogUnshared" xml:space="preserve">
+    <value>{count, plural, other {# 个提交仅存在于此分支。}}</value>
+  </data>
+  <data name="RemoveWorktreeDialogClean" xml:space="preserve">
+    <value>没有未提交的更改，所有提交也都存在于其他分支。</value>
+  </data>
+  <data name="RemoveWorktreeDialogDeleteBranch" xml:space="preserve">
+    <value>同时删除分支 [code]{branch}[/code]</value>
+  </data>
+  <data name="RemoveWorktreeDialogLeave" xml:space="preserve">
+    <value>离开工作树</value>
+  </data>
+  <data name="RemoveWorktreeDialogCancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
 </root>

@@ -29,7 +29,7 @@
         var chats = new List<ChatInfo>();
         foreach (var chat in all)
         {
-            if (chat.FolderPath is { } path && inFolder.TryGetValue(path, out var group))
+            if (chat.HomeFolder is { } path && inFolder.TryGetValue(path, out var group))
             {
                 group.Add(chat);
             }
@@ -389,8 +389,7 @@
                 return;
             }
 
-            await ChatService.Store.RepointFolderAsync(old.Path, result.Folder.Path);
-            await ChatService.RefreshProjectsAsync();
+            await ChatService.RelocateFolderAsync(old.Path, result.Folder.Path);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

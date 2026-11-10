@@ -40,8 +40,11 @@
     {
         <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
                 @onclick="() => StartRename(target)"><Icon Name="pencil" />@WebStrings.ChatListRenameMenuItem</button>
-        <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                @onclick="() => _moving = target"><Icon Name="arrow-right" />@WebStrings.ChatListMoveMenuItem</button>
+        @if (target.Worktree is null)
+        {
+            <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                    @onclick="() => _moving = target"><Icon Name="arrow-right" />@WebStrings.ChatListMoveMenuItem</button>
+        }
         <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
                 @onclick="() => OpenChatData(target)"><Icon Name="folder" />@WebStrings.ChatListOpenDataMenuItem</button>
         <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
@@ -54,7 +57,9 @@
 
 <MoveChatDialog Chat="_moving" OnClose="() => _moving = null" />
 
-<ConfirmDialog Title="@WebStrings.ChatListDeleteTitle" Open="_deleting is not null" ConfirmText="@WebStrings.ChatListDeleteConfirm" OnConfirm="DeleteAsync" OnCancel="() => _deleting = null">
+<RemoveWorktreeDialog Chat="_deleting?.Worktree is null ? null : _deleting" Deleting="true" OnClose="() => _deleting = null" OnConfirm="DeleteAsync" />
+
+<ConfirmDialog Title="@WebStrings.ChatListDeleteTitle" Open="_deleting is { Worktree: null }" ConfirmText="@WebStrings.ChatListDeleteConfirm" OnConfirm="() => DeleteAsync(false)" OnCancel="() => _deleting = null">
     <p>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.ChatListDeleteWarning), new Dictionary<string, object?> { ["title"] = _deleting is null ? string.Empty : DisplayTitle(_deleting) })</p>
 </ConfirmDialog>
 
@@ -178,7 +183,7 @@
         }
     }
 
-    private async Task DeleteAsync()
+    private async Task DeleteAsync(bool deleteBranch)
     {
         var chat = _deleting;
         _deleting = null;
@@ -189,7 +194,7 @@
 
         try
         {
-            if (!await ChatService.DeleteAsync(chat.Id))
+            if (!await ChatService.DeleteAsync(chat.Id, deleteBranch))
             {
                 Toasts.Show(WebStrings.ChatListStillReplying, ToastKind.Error);
                 return;

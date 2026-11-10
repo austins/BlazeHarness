@@ -24,7 +24,7 @@ public sealed partial class ChatService
             string? path;
             if (string.IsNullOrWhiteSpace(folder))
             {
-                path = source.FolderPath;
+                path = source.HomeFolder;
             }
             else if (string.Equals(folder.Trim(), SendToChatTool.NoFolder, StringComparison.OrdinalIgnoreCase))
             {

@@ -1,0 +1,122 @@
+@using BlazeHarness.Core.Git
+@inject ChatService ChatService
+@inject FolderRegistry Folders
+
+@* Confirms removing a chat's worktree, when leaving it or deleting the chat, and shows what would be lost. *@
+<Dialog Title="@(Deleting ? WebStrings.ChatListDeleteTitle : WebStrings.RemoveWorktreeDialogTitle)" Open="Chat is not null" OnClose="CloseAsync">
+    <ChildContent>
+        @if (Chat is { Worktree: { } worktree } chat)
+        {
+            <div class="stack">
+                @if (Deleting)
+                {
+                    <p>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.ChatListDeleteWarning), new Dictionary<string, object?> { ["title"] = ChatList.DisplayTitle(chat) })</p>
+                    <p>@WebStrings.RemoveWorktreeDialogDeleteHint</p>
+                }
+                else
+                {
+                    <p>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.RemoveWorktreeDialogLeaveHint), new Dictionary<string, object?> { ["folder"] = Folders.Find(worktree.RepositoryPath)?.Name ?? FolderPaths.DisplayName(worktree.RepositoryPath) })</p>
+                }
+
+                @if (_checking)
+                {
+                    <p class="hint"><Icon Name="spinner" /> @WebStrings.RemoveWorktreeDialogChecking</p>
+                }
+                else if (_state is null)
+                {
+                    <Alert Kind="AlertKind.Warning">@WebStrings.RemoveWorktreeDialogUnreadable</Alert>
+                }
+                else
+                {
+                    @if (_state.ChangedFiles > 0)
+                    {
+                        <Alert Kind="AlertKind.Warning">@Count(nameof(WebStrings.RemoveWorktreeDialogChanges), _state.ChangedFiles)</Alert>
+                    }
+                    @if (_state.UnsharedCommits > 0)
+                    {
+                        <p>@Count(nameof(WebStrings.RemoveWorktreeDialogUnshared), _state.UnsharedCommits)</p>
+                    }
+                    @if (_state.IsClean)
+                    {
+                        <p class="hint">@WebStrings.RemoveWorktreeDialogClean</p>
+                    }
+                }
+
+                <label class="check">
+                    <input type="checkbox" @bind="_deleteBranch" />
+                    <span>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.RemoveWorktreeDialogDeleteBranch), new Dictionary<string, object?> { ["branch"] = worktree.Branch })</span>
+                </label>
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn" @onclick="CloseAsync">@WebStrings.RemoveWorktreeDialogCancel</button>
+        <button type="button" class="btn btn-primary" disabled="@_checking" @onclick="ConfirmAsync">@(Deleting ? WebStrings.ChatListDeleteConfirm : WebStrings.RemoveWorktreeDialogLeave)</button>
+    </Footer>
+</Dialog>
+
+@code {
+    private ChatInfo? _shownFor;
+    private GitWorktreeState? _state;
+    private bool _checking;
+    private bool _deleteBranch;
+
+    /// <summary>
+    /// Gets or sets the chat whose worktree would be removed, or null while the dialog is closed.
+    /// </summary>
+    [Parameter]
+    public ChatInfo? Chat { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the chat is being deleted, rather than leaving its worktree.
+    /// </summary>
+    [Parameter]
+    public bool Deleting { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for when the dialog is dismissed.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback for the user confirming, with whether to delete the worktree's branch too.
+    /// </summary>
+    [Parameter]
+    public EventCallback<bool> OnConfirm { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Chat == _shownFor)
+        {
+            return;
+        }
+
+        _shownFor = Chat;
+        _state = null;
+        if (Chat is null)
+        {
+            return;
+        }
+
+        var inspected = Chat;
+        _checking = true;
+        _deleteBranch = false;
+        var state = await ChatService.InspectWorktreeAsync(inspected.Id);
+
+        // Another chat's dialog may have opened while this one was checked; its own check sets its state.
+        if (ReferenceEquals(_shownFor, inspected))
+        {
+            _state = state;
+            _deleteBranch = state is { UnsharedCommits: 0 };
+            _checking = false;
+        }
+    }
+
+    private static string Count(string key, int count) =>
+        ResourceMessageFormatter.Web.Format(key, new Dictionary<string, object?> { ["count"] = count });
+
+    private Task ConfirmAsync() => OnConfirm.InvokeAsync(_deleteBranch);
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+}

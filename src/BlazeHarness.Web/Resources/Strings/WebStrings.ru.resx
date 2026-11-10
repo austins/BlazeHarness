@@ -2584,4 +2584,130 @@
   <data name="ToastHostLabel" xml:space="preserve">
     <value>Уведомления</value>
   </data>
+  <data name="BranchMenuLabel" xml:space="preserve">
+    <value>Ветка</value>
+  </data>
+  <data name="BranchMenuTitle" xml:space="preserve">
+    <value>Переключить ветку или дать этому чату собственный рабочий каталог (worktree)</value>
+  </data>
+  <data name="BranchMenuDetached" xml:space="preserve">
+    <value>отсоединено на {commit}</value>
+  </data>
+  <data name="BranchMenuWorktreeBadge" xml:space="preserve">
+    <value>worktree</value>
+  </data>
+  <data name="BranchMenuSwitchHeading" xml:space="preserve">
+    <value>Переключить ветку</value>
+  </data>
+  <data name="BranchMenuInOtherWorktree" xml:space="preserve">
+    <value>Извлечена в другом worktree</value>
+  </data>
+  <data name="BranchMenuHasChanges" xml:space="preserve">
+    <value>Чтобы переключить ветку, зафиксируйте или спрячьте (stash) изменения.</value>
+  </data>
+  <data name="BranchMenuNewBranch" xml:space="preserve">
+    <value>Новая ветка…</value>
+  </data>
+  <data name="BranchMenuNewBranchDescription" xml:space="preserve">
+    <value>От текущего коммита, с сохранением изменений</value>
+  </data>
+  <data name="BranchMenuNewWorktree" xml:space="preserve">
+    <value>Новый worktree для этого чата…</value>
+  </data>
+  <data name="BranchMenuNewWorktreeDescription" xml:space="preserve">
+    <value>Отдельная копия, файлы папки остаются как есть</value>
+  </data>
+  <data name="BranchMenuWorktreeNote" xml:space="preserve">
+    <value>Этот чат работает в worktree на своей ветке. Другие чаты в папке не видят его изменений.</value>
+  </data>
+  <data name="BranchMenuLeaveWorktree" xml:space="preserve">
+    <value>Покинуть worktree…</value>
+  </data>
+  <data name="BranchMenuLeaveWorktreeDescription" xml:space="preserve">
+    <value>Удалить worktree и вернуться в папку</value>
+  </data>
+  <data name="BranchMenuBusy" xml:space="preserve">
+    <value>Дождитесь, пока чаты в этой папке закончат ответ.</value>
+  </data>
+  <data name="BranchMenuInUse" xml:space="preserve">
+    <value>Ветка {branch} извлечена в другом worktree.</value>
+  </data>
+  <data name="BranchMenuSwitchFailed" xml:space="preserve">
+    <value>Git не смог переключиться на {branch}.</value>
+  </data>
+  <data name="BranchMenuLeaveFailed" xml:space="preserve">
+    <value>Не удалось удалить worktree. Дождитесь окончания ответа или закройте программы, которые используют его файлы.</value>
+  </data>
+  <data name="NewBranchDialogTitle" xml:space="preserve">
+    <value>Новая ветка</value>
+  </data>
+  <data name="NewBranchDialogWorktreeTitle" xml:space="preserve">
+    <value>Новый worktree</value>
+  </data>
+  <data name="NewBranchDialogNameLabel" xml:space="preserve">
+    <value>Имя ветки</value>
+  </data>
+  <data name="NewBranchDialogBaseLabel" xml:space="preserve">
+    <value>На основе</value>
+  </data>
+  <data name="NewBranchDialogHint" xml:space="preserve">
+    <value>Создаёт ветку от текущего коммита и переключает на неё папку. Незафиксированные изменения переносятся.</value>
+  </data>
+  <data name="NewBranchDialogWorktreeHint" xml:space="preserve">
+    <value>Этот чат получит собственную копию новой ветки, а вы сможете пользоваться папкой. Копия удаляется, когда вы покидаете worktree или удаляете чат. Расположение:</value>
+  </data>
+  <data name="NewBranchDialogCreate" xml:space="preserve">
+    <value>Создать</value>
+  </data>
+  <data name="NewBranchDialogCreating" xml:space="preserve">
+    <value>Создание…</value>
+  </data>
+  <data name="NewBranchDialogCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="NewBranchDialogInvalidName" xml:space="preserve">
+    <value>Это недопустимое имя ветки.</value>
+  </data>
+  <data name="NewBranchDialogExists" xml:space="preserve">
+    <value>Ветка с таким именем уже существует.</value>
+  </data>
+  <data name="NewBranchDialogFailed" xml:space="preserve">
+    <value>Git не смог её создать. Проверьте, что базовая ветка ещё существует.</value>
+  </data>
+  <data name="NewBranchDialogBusy" xml:space="preserve">
+    <value>Дождитесь окончания ответа и попробуйте снова.</value>
+  </data>
+  <data name="RemoveWorktreeDialogTitle" xml:space="preserve">
+    <value>Покинуть worktree?</value>
+  </data>
+  <data name="RemoveWorktreeDialogLeaveHint" xml:space="preserve">
+    <value>Worktree будет удалён, и чат вернётся к работе в [strong]{folder}[/strong].</value>
+  </data>
+  <data name="RemoveWorktreeDialogDeleteHint" xml:space="preserve">
+    <value>Его worktree тоже будет удалён.</value>
+  </data>
+  <data name="RemoveWorktreeDialogChecking" xml:space="preserve">
+    <value>Проверка worktree…</value>
+  </data>
+  <data name="RemoveWorktreeDialogUnreadable" xml:space="preserve">
+    <value>Не удалось прочитать worktree. Всё незафиксированное в нём будет потеряно.</value>
+  </data>
+  <data name="RemoveWorktreeDialogChanges" xml:space="preserve">
+    <value>{count, plural, one {# файл содержит незафиксированные изменения, они будут потеряны.} few {# файла содержат незафиксированные изменения, они будут потеряны.} many {# файлов содержат незафиксированные изменения, они будут потеряны.} other {# файла содержат незафиксированные изменения, они будут потеряны.}}</value>
+  </data>
+  <data name="RemoveWorktreeDialogUnshared" xml:space="preserve">
+    <value>{count, plural, one {# коммит есть только в этой ветке.} few {# коммита есть только в этой ветке.} many {# коммитов есть только в этой ветке.} other {# коммита есть только в этой ветке.}}</value>
+  </data>
+  <data name="RemoveWorktreeDialogClean" xml:space="preserve">
+    <value>Незафиксированных изменений нет, и все коммиты есть в других ветках.</value>
+  </data>
+  <data name="RemoveWorktreeDialogDeleteBranch" xml:space="preserve">
+    <value>Также удалить ветку [code]{branch}[/code]</value>
+  </data>
+  <data name="RemoveWorktreeDialogLeave" xml:space="preserve">
+    <value>Покинуть worktree</value>
+  </data>
+  <data name="RemoveWorktreeDialogCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
 </root>
