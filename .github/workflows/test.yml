@@ -35,7 +35,8 @@ jobs:
       - uses: ./.github/actions/setup-dotnet-environment
       - run: dotnet restore
       # The Linux sandbox tests need bubblewrap and, for port forwarding, socat. They come from Homebrew, which downloads from GitHub rather than the runner's Azure apt mirror, whose DNS sometimes fails. The Ubuntu runner also blocks the unprivileged user namespaces bubblewrap uses.
-      - if: runner.os == 'Linux'
+      - name: Install bubblewrap and socat
+        if: runner.os == 'Linux'
         run: |
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install bubblewrap socat
