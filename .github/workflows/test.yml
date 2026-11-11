@@ -34,11 +34,12 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-dotnet-environment
       - run: dotnet restore
-      # The Linux sandbox tests need bubblewrap and, for port forwarding, socat. The Ubuntu runner also blocks the unprivileged user namespaces bubblewrap uses.
+      # The Linux sandbox tests need bubblewrap and, for port forwarding, socat. They come from Homebrew, which downloads from GitHub rather than the runner's Azure apt mirror, whose DNS sometimes fails. The Ubuntu runner also blocks the unprivileged user namespaces bubblewrap uses.
       - if: runner.os == 'Linux'
         run: |
-          sudo apt-get update -qq -o Acquire::Retries=3
-          sudo apt-get install -y -qq -o Acquire::Retries=3 bubblewrap socat
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install bubblewrap socat
+          echo "$HOMEBREW_PREFIX/bin" >> "$GITHUB_PATH"
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - if: matrix.part != 'sandbox'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
