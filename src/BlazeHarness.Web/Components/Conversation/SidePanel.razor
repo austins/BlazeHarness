@@ -137,7 +137,7 @@
         UpdatePoll();
         if (refresh)
         {
-            _ = RefreshAsync();
+            StartRefresh();
         }
     }
 
@@ -229,10 +229,37 @@
     }
 
     /// <summary>
-    /// Refresh the folder's changes and the chat's side panel content.
+    /// Refresh the changes for a handler Blazor awaits, which draws the panel again once it completes.
+    /// </summary>
+    private Task RefreshAsync() => LoadChangesAsync();
+
+    /// <summary>
+    /// Refresh the changes without waiting, then draw the panel again, since nothing else renders when the refresh ends.
+    /// </summary>
+    private void StartRefresh() => _ = RefreshInBackgroundAsync();
+
+    private async Task RefreshInBackgroundAsync()
+    {
+        try
+        {
+            if (await LoadChangesAsync())
+            {
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Nothing awaits this task, so an exception would be lost.
+            Logger.LogWarning(ex, "Refreshing the changes of chat {ChatId} failed.", _chatId);
+        }
+    }
+
+    /// <summary>
+    /// Read the folder's changes into the chat's side panel.
     /// </summary>
     /// <remarks>Reading the changes costs a few git runs, so it only happens when the panel opens, a turn ends or the user asks.</remarks>
-    private async Task RefreshAsync()
+    /// <returns><see langword="true"/> if the panel took the result; <see langword="false"/> if a newer refresh or the panel closing replaced it.</returns>
+    private async Task<bool> LoadChangesAsync()
     {
         var version = ++_refreshVersion;
         var folder = _folder;
@@ -247,7 +274,7 @@
             }
             catch (OperationCanceledException)
             {
-                return;
+                return false;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
             {
@@ -257,7 +284,7 @@
 
         if (version != _refreshVersion || _stop.IsCancellationRequested)
         {
-            return;
+            return false;
         }
 
         _refreshing = false;
@@ -274,16 +301,14 @@
             }
         }
 
-#pragma warning disable BL0012 // Needed when RefreshAsync runs unawaited (_ = RefreshAsync()), where nothing renders after it completes.
-        StateHasChanged();
-#pragma warning restore BL0012
+        return true;
     }
 
     private Task ChangeScopeAsync(GitChangeScope scope)
     {
         _scope = scope;
         _memory.Scope = scope;
-        return RefreshAsync();
+        return LoadChangesAsync();
     }
 
     private void OnStateChanged(object? sender, EventArgs e)
@@ -306,7 +331,7 @@
             _shown = shown;
             if (opened)
             {
-                _ = RefreshAsync();
+                StartRefresh();
             }
 
             StateHasChanged();
