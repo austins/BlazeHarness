@@ -25,6 +25,29 @@ public sealed class TokenFormatTests
         text.Should().Be(expected);
     }
 
+    [Fact]
+    public void Elapsed_UnderAMinute_ShowsWholeSeconds()
+    {
+        // Arrange
+        using var _ = new InvariantCulture();
+
+        // Act
+        var text = TokenFormat.Elapsed(TimeSpan.FromSeconds(7.9));
+
+        // Assert
+        text.Should().Be("7 s");
+    }
+
+    [Fact]
+    public void Elapsed_AMinuteOrMore_UsesTheDurationFormat()
+    {
+        // Act
+        var text = TokenFormat.Elapsed(TimeSpan.FromSeconds(90));
+
+        // Assert
+        text.Should().Be(TokenFormat.Duration(TimeSpan.FromSeconds(90)));
+    }
+
     private sealed class InvariantCulture : IDisposable
     {
         private readonly CultureInfo _previous = CultureInfo.CurrentCulture;

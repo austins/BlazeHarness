@@ -802,7 +802,16 @@ html[data-chat-full-width] .chat { --chat-width: 100%; }
 .diff-sign { flex: none; width: 1ch; color: var(--fg-muted); user-select: none; }
 .diff-line[data-kind="added"] .diff-sign { color: var(--success); }
 .diff-line[data-kind="removed"] .diff-sign { color: var(--danger); }
+.diff-gap { color: var(--fg-muted); font-style: italic; }
 .tool-pre { margin: 0; width: 100%; max-height: 16rem; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: var(--text-xs); white-space: pre-wrap; overflow-wrap: anywhere; }
+.tool-pre code { font-size: inherit; }
+.tool-elapsed { font-variant-numeric: tabular-nums; }
+.tool-live { padding: var(--space-2) var(--space-3); border-block-start: 1px solid var(--border); }
+.tool-live .tool-pre { max-height: 12rem; }
+.tool-links { margin: 0; padding-inline-start: 1.5rem; display: flex; flex-direction: column; gap: var(--space-2); width: 100%; min-width: 0; }
+.tool-links li { overflow-wrap: anywhere; }
+.tool-link-url, .tool-link-snippet { display: block; font-size: var(--text-xs); color: var(--fg-muted); }
+.tool-output-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 
 .question { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-subtle); font-size: var(--text-sm); padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .question[data-state="waiting"] { border-color: var(--accent); }

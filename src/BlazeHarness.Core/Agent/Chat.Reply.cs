@@ -200,10 +200,22 @@ public sealed partial class Chat
 
                 SetStatus(entry, awaiting.CallId, ToolCallStatus.AwaitingApproval);
                 break;
+            case ToolChangePreview preview:
+                if (entry.ToolCalls.FirstOrDefault(c => c.CallId == preview.CallId) is { } previewed)
+                {
+                    previewed.ChangePreview = preview.Lines;
+                }
+
+                break;
             case ToolAwaitingAnswer answering:
                 SetStatus(entry, answering.CallId, ToolCallStatus.AwaitingAnswer);
                 break;
             case ToolCallRunning running:
+                if (entry.ToolCalls.FirstOrDefault(c => c.CallId == running.CallId) is { } started)
+                {
+                    started.StartedAt = _time.GetUtcNow();
+                }
+
                 SetStatus(entry, running.CallId, ToolCallStatus.Running);
                 break;
             case ToolCallFinished finished:
@@ -232,6 +244,7 @@ public sealed partial class Chat
         call.Images = [.. (finished.Images ?? []).Select(i => i.Attachment).OfType<AttachmentInfo>()];
         call.Output = finished.Output;
         call.Status = finished.Status;
+        call.EndLiveOutput();
         await SaveAsync([new ToolResultEvent(_time.GetUtcNow(), entry.Id, finished.CallId, finished.Status, finished.Output, Images: call.Images.Count > 0 ? call.Images : null)]);
     }
 

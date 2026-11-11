@@ -1,25 +1,113 @@
+@using System.Globalization
 @using BlazeHarness.Core.Diff
 
 <div class="diff" role="group" aria-label="@WebStrings.DiffViewLabel">
-    @foreach (var line in Lines)
+    @foreach (var row in _rows)
     {
-        <div class="diff-line" data-kind="@Kind(line)">
-            <span class="diff-sign" aria-hidden="true">@Sign(line)</span>
-            <span class="diff-text">@line.Text</span>
-            @if (line.Kind != DiffKind.Same)
-            {
-                <span class="visually-hidden">@(line.Kind == DiffKind.Added ? WebStrings.DiffViewAdded : WebStrings.DiffViewRemoved)</span>
-            }
-        </div>
+        if (row.Line is { } line)
+        {
+            <div class="diff-line" data-kind="@Kind(line)">
+                <span class="diff-sign" aria-hidden="true">@Sign(line)</span>
+                <span class="diff-text">@line.Text</span>
+                @if (line.Kind != DiffKind.Same)
+                {
+                    <span class="visually-hidden">@(line.Kind == DiffKind.Added ? WebStrings.DiffViewAdded : WebStrings.DiffViewRemoved)</span>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="diff-line diff-gap">
+                <span class="diff-sign" aria-hidden="true">⋯</span>
+                <span class="diff-text">@UnchangedLabel(row.Skipped)</span>
+            </div>
+        }
     }
 </div>
 
 @code {
+    private IReadOnlyList<DiffLine>? _shownFor;
+    private int? _contextFor;
+    private List<Row> _rows = [];
+
     /// <summary>
     /// Gets or sets the lines to show.
     /// </summary>
     [Parameter, EditorRequired]
     public IReadOnlyList<DiffLine> Lines { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets how many unchanged lines to keep around each change, or null to show every line.
+    /// </summary>
+    /// <remarks>Longer runs of unchanged lines are folded into one row that gives their count.</remarks>
+    [Parameter]
+    public int? Context { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(Lines, _shownFor) && Context == _contextFor)
+        {
+            return;
+        }
+
+        _shownFor = Lines;
+        _contextFor = Context;
+        _rows = Fold(Lines, Context);
+    }
+
+    /// <summary>
+    /// Fold the runs of unchanged lines that are further than <paramref name="context"/> lines from a change.
+    /// </summary>
+    private static List<Row> Fold(IReadOnlyList<DiffLine> lines, int? context)
+    {
+        if (context is not { } keep)
+        {
+            return [.. lines.Select(line => new Row(line, 0))];
+        }
+
+        var rows = new List<Row>();
+        var start = 0;
+        while (start < lines.Count)
+        {
+            if (lines[start].Kind != DiffKind.Same)
+            {
+                rows.Add(new Row(lines[start++], 0));
+                continue;
+            }
+
+            var end = start;
+            while (end < lines.Count && lines[end].Kind == DiffKind.Same)
+            {
+                end++;
+            }
+
+            var head = start == 0 ? 0 : keep;
+            var tail = end == lines.Count ? 0 : keep;
+            if (end - start <= head + tail + 1)
+            {
+                rows.AddRange(Enumerable.Range(start, end - start).Select(i => new Row(lines[i], 0)));
+            }
+            else
+            {
+                rows.AddRange(Enumerable.Range(start, head).Select(i => new Row(lines[i], 0)));
+                rows.Add(new Row(null, end - start - head - tail));
+                rows.AddRange(Enumerable.Range(end - tail, tail).Select(i => new Row(lines[i], 0)));
+            }
+
+            start = end;
+        }
+
+        return rows;
+    }
+
+    private static string UnchangedLabel(int count) =>
+        ResourceMessageFormatter.Web.Format(
+            nameof(WebStrings.DiffViewUnchangedLines),
+            new Dictionary<string, object?>
+            {
+                ["count"] = count,
+                ["formattedCount"] = count.ToString("N0", CultureInfo.CurrentCulture),
+            });
 
     private static string Kind(DiffLine line) => line.Kind.ToString().ToLowerInvariant();
 
@@ -29,4 +117,9 @@
         DiffKind.Removed => "−",
         _ => " ",
     };
+
+    /// <summary>
+    /// One row of the view: a line, or a count of folded unchanged lines when <paramref name="Line"/> is null.
+    /// </summary>
+    private sealed record Row(DiffLine? Line, int Skipped);
 }

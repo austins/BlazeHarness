@@ -1,6 +1,5 @@
 using BlazeHarness.Core.Web;
 using BlazeHarness.Core.Web.Search;
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
@@ -20,7 +19,7 @@ internal sealed class WebSearchTool : IWebTool
         _settings = settings;
     }
 
-    public string Name => "web_search";
+    public string Name => WebSearchOutput.ToolName;
 
     public string Description =>
         "Search the web and return a list of results (title, address and a short snippet). Use web_fetch to read a result. " +
@@ -53,7 +52,7 @@ internal sealed class WebSearchTool : IWebTool
         var settings = _settings();
         var names = string.Join(", ", settings.ResolveProviders().Where(p => p.Enabled).Select(p => WebProviders.NameOf(p.Id)));
         var how = settings.SearchMode == WebSearchMode.Parallel ? "to all of" : "to one at a time of";
-        return new WebRequest("web_search", "web:search", $"Sends the search text outside this computer {how}: {names}.");
+        return new WebRequest(WebSearchOutput.ToolName, "web:search", $"Sends the search text outside this computer {how}: {names}.");
     }
 
     public async Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)
@@ -85,11 +84,7 @@ internal sealed class WebSearchTool : IWebTool
         var number = 1;
         foreach (var result in outcome.Results.Select(merged => merged.Result))
         {
-            builder.Append(CultureInfo.InvariantCulture, $"\n{number++}. {result.Title}\n   {result.Url}\n");
-            if (result.Snippet.Length > 0)
-            {
-                builder.Append("   ").Append(result.Snippet).Append('\n');
-            }
+            WebSearchOutput.AppendResult(builder, number++, result.Title, result.Url, result.Snippet);
         }
 
         AppendFailures(builder, failed);

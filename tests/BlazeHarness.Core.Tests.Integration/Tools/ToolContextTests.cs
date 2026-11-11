@@ -42,6 +42,20 @@ public sealed class ToolContextTests : IDisposable
     }
 
     [Fact]
+    public void WithOutputLine_ThenWithCheckedPaths_KeepsBoth()
+    {
+        // Arrange
+        List<string> seen = [];
+
+        // Act
+        var context = new ToolContext(_temp.Root).WithOutputLine(seen.Add).WithCheckedPaths([_temp.Combine("approved.txt")]);
+
+        // Assert
+        context.OutputLine.Should().NotBeNull();
+        context.TryResolve("other.txt", out _, out _).Should().BeFalse();
+    }
+
+    [Fact]
     public void TryResolve_TargetOutsideCheckedPaths_IsRefused()
     {
         // Arrange

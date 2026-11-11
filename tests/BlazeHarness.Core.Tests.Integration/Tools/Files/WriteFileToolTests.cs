@@ -1,3 +1,5 @@
+using BlazeHarness.Core.Diff;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools;
 using BlazeHarness.Core.Tools.Files;
 using System.Runtime.Versioning;
@@ -151,6 +153,74 @@ public sealed class WriteFileToolTests : IDisposable
         // Assert
         await act.Should().ThrowAsync<ToolArgumentException>();
     }
+
+    [Fact]
+    public void PreviewChange_ExistingFile_ComparesItWithTheNewContentWithoutWriting()
+    {
+        // Arrange
+        _root.Write("notes.txt", "first\r\nsecond\r\nthird");
+
+        // Act
+        var lines = Preview(new { path = "notes.txt", content = "first\nchanged\nthird" });
+
+        // Assert
+        lines.Should().Equal(
+            new DiffLine(DiffKind.Same, "first"),
+            new DiffLine(DiffKind.Removed, "second"),
+            new DiffLine(DiffKind.Added, "changed"),
+            new DiffLine(DiffKind.Same, "third"));
+        _root.Read("notes.txt").Should().Be("first\r\nsecond\r\nthird");
+    }
+
+    [Fact]
+    public void PreviewChange_NewFile_ShowsEveryLineAsAdded()
+    {
+        // Act
+        var lines = Preview(new { path = "sub/new.txt", content = "one\ntwo" });
+
+        // Assert
+        lines.Should().Equal(new DiffLine(DiffKind.Added, "one"), new DiffLine(DiffKind.Added, "two"));
+        File.Exists(Path.Combine(_root.Root, "sub", "new.txt")).Should().BeFalse();
+    }
+
+    [Fact]
+    public void PreviewChange_BinaryFile_HasNoPreview()
+    {
+        // Arrange
+        _root.Write("data.bin", [1, 0, 2, 0]);
+
+        // Act
+        var lines = Preview(new { path = "data.bin", content = "text" });
+
+        // Assert
+        lines.Should().BeNull();
+    }
+
+    [Fact]
+    public void PreviewChange_ProtectedFile_HasNoPreview()
+    {
+        // Arrange
+        var secret = _root.Write("secret.txt", "private");
+        var context = _root.Context.WithSensitive(new SensitivePaths([secret]));
+
+        // Act
+        var lines = ((IPreviewsChange)_sut).PreviewChange(TempRoot.Args(new { path = "secret.txt", content = "x" }), context);
+
+        // Assert
+        lines.Should().BeNull();
+    }
+
+    [Fact]
+    public void PreviewChange_ContentOverTheLimit_HasNoPreview()
+    {
+        // Act
+        var lines = Preview(new { path = "big.txt", content = new string('x', WriteFileTool.MaxPreviewCharacters + 1) });
+
+        // Assert
+        lines.Should().BeNull();
+    }
+
+    private IReadOnlyList<DiffLine>? Preview(object args) => ((IPreviewsChange)_sut).PreviewChange(TempRoot.Args(args), _root.Context);
 
     private Task<ToolResult> RunAsync(object args) => _sut.ExecuteAsync(TempRoot.Args(args), _root.Context, TestContext.Current.CancellationToken);
 }

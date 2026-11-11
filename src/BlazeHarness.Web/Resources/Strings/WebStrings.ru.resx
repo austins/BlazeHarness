@@ -2710,4 +2710,25 @@
   <data name="RemoveWorktreeDialogCancel" xml:space="preserve">
     <value>Отмена</value>
   </data>
+  <data name="ToolCallViewLiveOutputLabel" xml:space="preserve">
+    <value>Последний вывод</value>
+  </data>
+  <data name="ToolCallViewChangesLabel" xml:space="preserve">
+    <value>Изменения</value>
+  </data>
+  <data name="ToolCallViewNewFileLabel" xml:space="preserve">
+    <value>Новый файл</value>
+  </data>
+  <data name="ToolCallViewResultsLabel" xml:space="preserve">
+    <value>Результаты</value>
+  </data>
+  <data name="ToolCallViewShowRaw" xml:space="preserve">
+    <value>Показать исходный вывод</value>
+  </data>
+  <data name="ToolCallViewShowFormatted" xml:space="preserve">
+    <value>Показать в оформленном виде</value>
+  </data>
+  <data name="DiffViewUnchangedLines" xml:space="preserve">
+    <value>{count, plural, one {{formattedCount} неизменённая строка} few {{formattedCount} неизменённые строки} many {{formattedCount} неизменённых строк} other {{formattedCount} неизменённой строки}}</value>
+  </data>
 </root>

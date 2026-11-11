@@ -2864,4 +2864,32 @@
     <value>Cancel</value>
     <comment>Button that closes the worktree removal dialog.</comment>
   </data>
+  <data name="ToolCallViewLiveOutputLabel" xml:space="preserve">
+    <value>Latest output</value>
+    <comment>Label of the box under a running shell command that shows the last lines it printed, updated as it runs.</comment>
+  </data>
+  <data name="ToolCallViewChangesLabel" xml:space="preserve">
+    <value>Changes</value>
+    <comment>Label above the line-by-line comparison of how a write_file call changes an existing file.</comment>
+  </data>
+  <data name="ToolCallViewNewFileLabel" xml:space="preserve">
+    <value>New file</value>
+    <comment>Label above the lines a write_file call puts in a file that does not exist yet.</comment>
+  </data>
+  <data name="ToolCallViewResultsLabel" xml:space="preserve">
+    <value>Results</value>
+    <comment>Label above the list of links a web_search call found.</comment>
+  </data>
+  <data name="ToolCallViewShowRaw" xml:space="preserve">
+    <value>Show raw output</value>
+    <comment>Button under a tool call shown as links or highlighted code; shows the plain text the model received instead.</comment>
+  </data>
+  <data name="ToolCallViewShowFormatted" xml:space="preserve">
+    <value>Show formatted</value>
+    <comment>Button under a tool call shown as plain text; switches back to the links or highlighted code.</comment>
+  </data>
+  <data name="DiffViewUnchangedLines" xml:space="preserve">
+    <value>{count, plural, one {{formattedCount} unchanged line} other {{formattedCount} unchanged lines}}</value>
+    <comment>Row in a file comparison that stands for unchanged lines that are not shown. count selects singular or plural; formattedCount is the displayed number.</comment>
+  </data>
 </root>

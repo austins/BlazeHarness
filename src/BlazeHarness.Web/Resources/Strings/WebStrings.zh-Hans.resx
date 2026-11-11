@@ -2710,4 +2710,25 @@
   <data name="RemoveWorktreeDialogCancel" xml:space="preserve">
     <value>取消</value>
   </data>
+  <data name="ToolCallViewLiveOutputLabel" xml:space="preserve">
+    <value>最新输出</value>
+  </data>
+  <data name="ToolCallViewChangesLabel" xml:space="preserve">
+    <value>更改</value>
+  </data>
+  <data name="ToolCallViewNewFileLabel" xml:space="preserve">
+    <value>新文件</value>
+  </data>
+  <data name="ToolCallViewResultsLabel" xml:space="preserve">
+    <value>结果</value>
+  </data>
+  <data name="ToolCallViewShowRaw" xml:space="preserve">
+    <value>显示原始输出</value>
+  </data>
+  <data name="ToolCallViewShowFormatted" xml:space="preserve">
+    <value>显示格式化视图</value>
+  </data>
+  <data name="DiffViewUnchangedLines" xml:space="preserve">
+    <value>{count, plural, other {{formattedCount} 行未更改}}</value>
+  </data>
 </root>

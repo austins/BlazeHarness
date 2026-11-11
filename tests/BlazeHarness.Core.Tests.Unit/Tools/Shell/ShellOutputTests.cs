@@ -19,6 +19,22 @@ public sealed class ShellOutputTests
     }
 
     [Fact]
+    public void AppendLine_WithLineReceiver_PassesEachLineOn()
+    {
+        // Arrange
+        List<string> seen = [];
+        var sut = new ShellOutput(seen.Add);
+
+        // Act
+        sut.AppendLine("a");
+        sut.AppendLine("b");
+
+        // Assert
+        seen.Should().Equal("a", "b");
+        sut.ToString().Should().Be("a\nb\n");
+    }
+
+    [Fact]
     public void ToString_OutputOverTheLimits_KeepsTheStartAndTheEndAndCountsWhatWasLeftOut()
     {
         // Arrange

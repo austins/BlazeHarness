@@ -170,7 +170,7 @@ internal sealed class ShellTool : ITool
         using (ports)
         using (process)
         {
-            var output = new ShellOutput();
+            var output = new ShellOutput(context.OutputLine);
             var readers = Task.WhenAll(PumpAsync(process.Output, output), PumpAsync(process.Error, output));
             using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(seconds), _time);
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, limit.Token);

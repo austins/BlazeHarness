@@ -9,8 +9,23 @@ namespace BlazeHarness.Core.Tools.Files;
 /// <summary>
 /// Reads a text file, a range of lines at a time, or hands an image file to the model as a picture.
 /// </summary>
-internal sealed class ReadFileTool : ITool
+public sealed class ReadFileTool : ITool
 {
+    /// <summary>
+    /// The name of the tool.
+    /// </summary>
+    public const string ToolName = "read_file";
+
+    /// <summary>
+    /// The argument that names the file.
+    /// </summary>
+    public const string PathArgument = "path";
+
+    /// <summary>
+    /// The text that starts the note after the lines when a call shows only part of the file.
+    /// </summary>
+    public const string RangeNoteStart = "\n[Showing lines ";
+
     /// <summary>
     /// The number of lines a call reads when it gives no limit.
     /// </summary>
@@ -25,7 +40,7 @@ internal sealed class ReadFileTool : ITool
     private const int CharacterBudget = ToolSet.MaxOutputCharacters - 500;
 
     /// <inheritdoc />
-    public string Name => "read_file";
+    public string Name => ToolName;
 
     /// <inheritdoc />
     public string Description =>
@@ -50,13 +65,13 @@ internal sealed class ReadFileTool : ITool
     public bool IsReadOnly => true;
 
     /// <inheritdoc />
-    public IReadOnlyList<string> PathArguments { get; } = ["path"];
+    public IReadOnlyList<string> PathArguments { get; } = [PathArgument];
 
     /// <inheritdoc />
     public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(30);
 
     /// <inheritdoc />
-    public string Summarize(JsonElement arguments) => ToolSupport.Text(arguments, "path");
+    public string Summarize(JsonElement arguments) => ToolSupport.Text(arguments, PathArgument);
 
     /// <inheritdoc />
     public Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)
@@ -66,7 +81,7 @@ internal sealed class ReadFileTool : ITool
 
         var offset = arguments.OptionalInt("offset", minimum: 1) ?? 1;
         var limit = arguments.OptionalInt("limit", minimum: 1, maximum: MaxLimit) ?? DefaultLimit;
-        if (!context.TryResolve(arguments.RequiredString("path"), out var full, out var error))
+        if (!context.TryResolve(arguments.RequiredString(PathArgument), out var full, out var error))
         {
             return Task.FromResult(ToolResult.Error(error));
         }
@@ -153,7 +168,7 @@ internal sealed class ReadFileTool : ITool
 
         if (firstShown > 1 || hasMore)
         {
-            shown.Append(string.Create(CultureInfo.InvariantCulture, $"\n[Showing lines {firstShown}-{lastShown}"));
+            shown.Append(RangeNoteStart).Append(CultureInfo.InvariantCulture, $"{firstShown}-{lastShown}");
             if (!hasMore)
             {
                 shown.Append(string.Create(CultureInfo.InvariantCulture, $" of {total}"));

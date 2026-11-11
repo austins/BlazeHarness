@@ -3,6 +3,7 @@ using BlazeHarness.Core.Tools;
 using BlazeHarness.Core.Tools.Shell;
 using BlazeHarness.Tests.Shared;
 using Microsoft.Extensions.Time.Testing;
+using System.Collections.Concurrent;
 using System.Text.Json;
 
 namespace BlazeHarness.Core.Tests.Integration.Tools.Shell;
@@ -163,6 +164,21 @@ public sealed class ShellToolTests : IDisposable
         _sut.Description.Should().Contain(Sh.Name);
         using var schema = JsonDocument.Parse(_sut.InputSchema);
         schema.RootElement.GetProperty("required")[0].GetString().Should().Be("command");
+    }
+
+    [Fact(Skip = "These tests use POSIX shell syntax.", SkipWhen = nameof(IsWindows))]
+    public async Task ExecuteAsync_ContextWithLineReceiver_ReportsEachLineAsItIsPrinted()
+    {
+        // Arrange
+        ConcurrentQueue<string> seen = new();
+        var context = Context.WithOutputLine(seen.Enqueue);
+
+        // Act
+        var result = await _sut.ExecuteAsync(TempRoot.Args(new { command = "echo one; echo two" }), context, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        seen.Should().Equal("one", "two");
     }
 
     private static async Task WaitForFileAsync(string path)

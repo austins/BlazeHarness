@@ -76,6 +76,9 @@ API keys are kept in your OS secret store (Windows Credential Manager, macOS Key
   * File reads stop after the requested page and one lookahead line. Continuation results include the next offset; the total line count is included only when the read reaches the end.
 * Folders and chats. Open a folder and run chats inside it, grouped by folder. A chat can also exist without a folder, as a general chat.
 * Diffs, syntax highlighting, and find in the chat, with smooth scrolling in very long chats.
+  * A running shell command shows its elapsed time and its latest output lines as they are printed.
+  * A file write shows its diff against the current file before you approve it.
+  * Search results show as links, and file reads are highlighted by file type, with a toggle back to the raw output.
 * Plain-CSS motion for new messages, opening panels, tool results and hover or press feedback. It is off when your system asks for reduced motion.
 
 ### Approvals and sandboxing
@@ -188,7 +191,6 @@ Not built yet, and not promised:
 
 * Subagents that work in their own context and return a summary, and can run in parallel (for example independent checks) while the main agent waits. A subagent would run the same loop at the same or a lower access level, and its approval requests would go to the parent chat's approver, never be granted on their own. A subagent starts without the parent's history, so it would need the to-do list passed in or a `get_todos` tool; a chat today needs neither, because the list is in its own history and in compaction summaries.
 * Plugin support, where the agent can write a plugin for itself through a skill, mode, or tool.
-* Look into Blazor AI components, once they are stable on the target .NET version.
 
 ## Not goals
 
@@ -201,10 +203,13 @@ Not built yet, and not promised:
 Blaze Harness builds on `Microsoft.Extensions.AI` (`IChatClient`, `AIFunction`) and keeps its own agent loop rather than using Microsoft Agent Framework (AF).
 
 * The loop, approvals, access levels and chat persistence are the security-critical parts, and they depend on exact behavior: every tool call gets a result in the saved chat, approvals are checked per call, and the request prefix stays stable and append-only. AF's `ToolApprovalAgent`, context providers and history handling don't guarantee these.
-* The pieces we would need from AF are not settled. Its shell tool is preview, its MCP package is alpha, and it has no `AGENTS.md` support.
+* AF's `HarnessAgent` (stable since 1.28) bundles much of what this app builds: compaction, to-dos, skills, tool approval and background agents. It does so through the same `ToolApprovalAgent` and history handling, so the point above still applies.
+* The pieces we would need from AF are not all settled. Its shell tool is preview, its MCP package is alpha, and it has no `AGENTS.md` support.
 * An app that runs shell commands and fetches web pages needs a command sandbox, a web client that only reaches public addresses, and Host and Origin checks on its local server. AF offers an optional Docker shell executor and neither of the other two, so we would write most of this ourselves and still take on a large dependency tree.
 
-Worth another look once AF stabilizes (for example per-tool approvals, no history loss when a call is terminated, and MCP GA).
+The Blazor AI components (`Microsoft.AspNetCore.Components.AI`) don't fit either. They are experimental throughout .NET 11, and their `UIAgent` runs the conversation from the component and keeps its state there. Here the loop runs in `BlazeHarness.Core`, keeps going when the browser disconnects, and the UI only renders its events.
+
+Worth another look once AF stabilizes (for example per-tool approvals, no history loss when a call is terminated, and MCP GA), or once the Blazor AI components ship stable and can render events from our own loop.
 
 ## Contributing
 

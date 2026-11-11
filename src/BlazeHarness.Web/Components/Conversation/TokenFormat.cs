@@ -60,6 +60,18 @@ public static class TokenFormat
         };
     }
 
+    /// <summary>
+    /// Format how long something has been running, in whole seconds, such as <c>12 s</c> or <c>2m 05s</c>.
+    /// </summary>
+    /// <param name="elapsed">The time so far.</param>
+    /// <returns>The text to show.</returns>
+    public static string Elapsed(TimeSpan elapsed)
+    {
+        return elapsed.TotalSeconds < 60
+            ? Unit(nameof(WebStrings.TokenFormatSeconds), Math.Max(0, (int)elapsed.TotalSeconds).ToString(CultureInfo.CurrentCulture))
+            : Duration(elapsed);
+    }
+
     private static string Unit(string key, string value) =>
         ResourceMessageFormatter.Web.Format(key, new Dictionary<string, object?> { ["value"] = value });
 }

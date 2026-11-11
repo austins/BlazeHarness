@@ -17,6 +17,7 @@ internal sealed class ShellOutput
     internal const int MaxLineCharacters = TailLimit;
 
     private readonly Lock _gate = new();
+    private readonly Action<string>? _onLine;
     private readonly StringBuilder _head = new();
 
     /// <summary>
@@ -28,8 +29,18 @@ internal sealed class ShellOutput
     private int _firstLineOffset;
     private long _omitted;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ShellOutput"/> class.
+    /// </summary>
+    /// <param name="onLine">What also receives each line as it comes, or null.</param>
+    public ShellOutput(Action<string>? onLine = null)
+    {
+        _onLine = onLine;
+    }
+
     public void AppendLine(string line)
     {
+        _onLine?.Invoke(line);
         lock (_gate)
         {
             var room = HeadLimit - _head.Length;

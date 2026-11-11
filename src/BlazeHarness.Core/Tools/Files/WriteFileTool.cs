@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Config;
+using BlazeHarness.Core.Diff;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -8,14 +9,39 @@ namespace BlazeHarness.Core.Tools.Files;
 /// <summary>
 /// Creates a file or replaces its whole content.
 /// </summary>
-internal sealed class WriteFileTool : ITool
+public sealed class WriteFileTool : ITool, IPreviewsChange
 {
+    /// <summary>
+    /// The name of the tool.
+    /// </summary>
+    public const string ToolName = "write_file";
+
+    /// <summary>
+    /// The argument that names the file.
+    /// </summary>
+    public const string PathArgument = "path";
+
+    /// <summary>
+    /// The argument that holds the new content of the file.
+    /// </summary>
+    public const string ContentArgument = "content";
+
+    /// <summary>
+    /// The largest file, and the longest new content, that a preview compares.
+    /// </summary>
+    internal const int MaxPreviewCharacters = 1024 * 1024;
+
+    /// <summary>
+    /// The most lines a preview may have; a larger change is shown as the new content instead.
+    /// </summary>
+    internal const int MaxPreviewLines = 5000;
+
     private const int SampleBytes = 8192;
 
     private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
 
     /// <inheritdoc />
-    public string Name => "write_file";
+    public string Name => ToolName;
 
     /// <inheritdoc />
     public string Description =>
@@ -39,13 +65,13 @@ internal sealed class WriteFileTool : ITool
     public bool IsReadOnly => false;
 
     /// <inheritdoc />
-    public IReadOnlyList<string> PathArguments { get; } = ["path"];
+    public IReadOnlyList<string> PathArguments { get; } = [PathArgument];
 
     /// <inheritdoc />
     public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(30);
 
     /// <inheritdoc />
-    public string Summarize(JsonElement arguments) => ToolSupport.Text(arguments, "path");
+    public string Summarize(JsonElement arguments) => ToolSupport.Text(arguments, PathArgument);
 
     /// <inheritdoc />
     public Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken)
@@ -53,8 +79,8 @@ internal sealed class WriteFileTool : ITool
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(context);
 
-        var content = arguments.RequiredString("content");
-        if (!context.TryResolve(arguments.RequiredString("path"), out var full, out var error))
+        var content = arguments.RequiredString(ContentArgument);
+        if (!context.TryResolve(arguments.RequiredString(PathArgument), out var full, out var error))
         {
             return Task.FromResult(ToolResult.Error(error));
         }
@@ -80,6 +106,35 @@ internal sealed class WriteFileTool : ITool
         return Task.FromResult(ToolResult.Ok(string.Create(
             CultureInfo.InvariantCulture,
             $"{(existed ? "Replaced" : "Created")} {context.Relative(full)} ({lines} lines, {bytes.Length} bytes).")));
+    }
+
+    /// <inheritdoc />
+    IReadOnlyList<DiffLine>? IPreviewsChange.PreviewChange(ToolArguments arguments, ToolContext context)
+    {
+        ArgumentNullException.ThrowIfNull(arguments);
+        ArgumentNullException.ThrowIfNull(context);
+
+        var content = arguments.RequiredString(ContentArgument);
+        if (content.Length > MaxPreviewCharacters
+            || !context.TryResolve(arguments.RequiredString(PathArgument), out var full, out _)
+            || Directory.Exists(full))
+        {
+            return null;
+        }
+
+        var old = string.Empty;
+        if (File.Exists(full))
+        {
+            if (new FileInfo(full).Length > MaxPreviewCharacters || ToolSupport.LooksBinary(full))
+            {
+                return null;
+            }
+
+            old = File.ReadAllText(full, Encoding.UTF8);
+        }
+
+        var lines = LineDiff.Compare(old, content);
+        return lines.Count > MaxPreviewLines ? null : lines;
     }
 
     private static bool UsesCrlf(string path)

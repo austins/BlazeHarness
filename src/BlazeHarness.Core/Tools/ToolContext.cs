@@ -71,6 +71,11 @@ public sealed class ToolContext
     /// </summary>
     public INetworkGate? Network { get; }
 
+    /// <summary>
+    /// Gets what receives each line a command of this call prints while it runs, or null when nothing follows it.
+    /// </summary>
+    internal Action<string>? OutputLine { get; private init; }
+
     private IReadOnlyList<string>? CheckedPaths { get; init; }
 
     /// <summary>
@@ -170,5 +175,13 @@ public sealed class ToolContext
     public string Relative(string fullPath) => RootedPath.Relative(Root, fullPath);
 
     internal ToolContext WithCheckedPaths(IReadOnlyList<string>? paths) =>
-        new(Root, AllowsOutside, Shell, ShellReadFolders, Sensitive, Refused, Network) { CheckedPaths = paths };
+        new(Root, AllowsOutside, Shell, ShellReadFolders, Sensitive, Refused, Network) { CheckedPaths = paths, OutputLine = OutputLine };
+
+    /// <summary>
+    /// Get a copy of this context that reports each line a command prints while it runs.
+    /// </summary>
+    /// <param name="outputLine">What receives each line.</param>
+    /// <returns>A context with the same root, path rules and checked paths.</returns>
+    internal ToolContext WithOutputLine(Action<string> outputLine) =>
+        new(Root, AllowsOutside, Shell, ShellReadFolders, Sensitive, Refused, Network) { CheckedPaths = CheckedPaths, OutputLine = outputLine };
 }

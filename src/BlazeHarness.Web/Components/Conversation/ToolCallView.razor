@@ -10,6 +10,8 @@
 @using BlazeHarness.Core.Tools.Files
 @using BlazeHarness.Core.Tools.Web
 @using BlazeHarness.Web.Hosting
+@implements IDisposable
+@inject TimeProvider Time
 
 @if (Call.Question is not null)
 {
@@ -56,6 +58,10 @@
             }
 
             @StatusText
+            @if (Elapsed is { } elapsed)
+            {
+                <span class="tool-elapsed">@elapsed</span>
+            }
         </span>
     </button>
 
@@ -88,6 +94,13 @@
         </div>
     }
 
+    @if (Call.Status == ToolCallStatus.Running && Call.LiveOutput is { Length: > 0 } live)
+    {
+        <div class="tool-live">
+            <pre class="tool-pre" tabindex="0" aria-label="@WebStrings.ToolCallViewLiveOutputLabel">@live</pre>
+        </div>
+    }
+
     @if (_imageAddress is { } address)
     {
         <a class="tool-image" href="@address" target="_blank" rel="noopener"><img class="msg-image" src="@address" alt="@Call.Summary" loading="lazy" /></a>
@@ -100,7 +113,14 @@
                 ShowDetails();
             }
 
-            @if (_diff is not null)
+            @if (Call.ChangePreview is { } preview)
+            {
+                <div class="tool-arg">
+                    <span class="tool-arg-name">@(preview.All(line => line.Kind == DiffKind.Added) ? WebStrings.ToolCallViewNewFileLabel : WebStrings.ToolCallViewChangesLabel)</span>
+                    <DiffView Lines="preview" Context="PreviewContext" />
+                </div>
+            }
+            else if (_diff is not null)
             {
                 <DiffView Lines="_diff" />
             }
@@ -120,12 +140,54 @@
 
             @if (Call.Output.Length > 0 && !(_todos is not null && Call.Status == ToolCallStatus.Succeeded))
             {
+                var formatted = _raw ? null : Formatted();
                 <div class="tool-arg">
-                    <span class="tool-arg-name">@WebStrings.ToolCallViewOutputLabel</span>
-                    <pre class="tool-pre">@(_showAll ? Call.Output : TextShortener.Shorten(Call.Output, OutputPreviewLength))</pre>
-                    @if (!_showAll && Call.Output.Length > OutputPreviewLength)
+                    @if (formatted is { Hits: { } hits })
                     {
-                        <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _showAll = true">@ShowAllLabel</button>
+                        <span class="tool-arg-name">@WebStrings.ToolCallViewResultsLabel</span>
+                        <ol class="tool-links">
+                            @foreach (var hit in hits)
+                            {
+                                <li>
+                                    <a href="@hit.Url" target="_blank" rel="noopener noreferrer">@hit.Title</a>
+                                    <span class="tool-link-url mono">@hit.Url.Host</span>
+                                    @if (hit.Snippet.Length > 0)
+                                    {
+                                        <span class="tool-link-snippet">@hit.Snippet</span>
+                                    }
+                                </li>
+                            }
+                        </ol>
+                    }
+                    else if (formatted is { Code: { } highlighted })
+                    {
+                        <span class="tool-arg-name">@WebStrings.ToolCallViewOutputLabel</span>
+                        <pre class="tool-pre"><code>@highlighted</code>@formatted.Note</pre>
+                    }
+                    else
+                    {
+                        <span class="tool-arg-name">@WebStrings.ToolCallViewOutputLabel</span>
+                        <pre class="tool-pre">@ShownOutput</pre>
+                    }
+
+                    @{
+                        var canShowAll = !_showAll && OutputCut && formatted?.Hits is null;
+                        var canSwitch = _raw || formatted is not null;
+                    }
+
+                    @if (canShowAll || canSwitch)
+                    {
+                        <div class="tool-output-actions">
+                            @if (canShowAll)
+                            {
+                                <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _showAll = true">@ShowAllLabel</button>
+                            }
+
+                            @if (canSwitch)
+                            {
+                                <button type="button" class="btn btn-ghost btn-sm" @onclick="() => _raw = !_raw">@(_raw ? WebStrings.ToolCallViewShowFormatted : WebStrings.ToolCallViewShowRaw)</button>
+                            }
+                        </div>
                     }
                 </div>
             }
@@ -137,13 +199,28 @@
     private const int OutputPreviewLength = 4000;
     private const int ArgumentPreviewLength = 2000;
 
+    /// <summary>
+    /// The unchanged lines kept around each change in a file preview.
+    /// </summary>
+    private const int PreviewContext = 3;
+
+    /// <summary>
+    /// How often the time a call has been running is updated.
+    /// </summary>
+    private static readonly TimeSpan TickInterval = TimeSpan.FromSeconds(1);
+
     private readonly string _bodyId = "tool-" + Guid.NewGuid().ToString("N");
     private bool _expanded;
     private bool _showAll;
+    private bool _raw;
+    private ITimer? _tick;
+    private (string Output, bool ShowAll)? _formattedFor;
+    private FormattedOutput? _formatted;
     private ToolCallEntry? _parsedFor;
     private (string? ChatId, ToolCallStatus Status)? _imageFor;
     private string? _imageAddress;
     private bool _detailsReady;
+    private bool _previewShown;
     private IReadOnlyList<DiffLine>? _diff;
     private TodoList? _todos;
     private List<(string Name, string Value)> _arguments = [];
@@ -200,6 +277,97 @@
         {
             _imageFor = (ChatId, Call.Status);
             _imageAddress = FindImageAddress();
+        }
+
+        var ticking = Call.Status == ToolCallStatus.Running && Call.StartedAt is not null;
+        if (ticking && _tick is null)
+        {
+            _tick = Time.CreateTimer(_ => InvokeAsync(StateHasChanged), null, TickInterval, TickInterval);
+        }
+        else if (!ticking && _tick is not null)
+        {
+            _tick.Dispose();
+            _tick = null;
+        }
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _tick?.Dispose();
+    }
+
+    /// <summary>
+    /// Gets how long a running call has been running, or null when it is not running.
+    /// </summary>
+    private string? Elapsed => Call.Status == ToolCallStatus.Running && Call.StartedAt is { } started
+        ? TokenFormat.Elapsed(Time.GetUtcNow() - started)
+        : null;
+
+    private bool OutputCut => Call.Output.Length > OutputPreviewLength;
+
+    private string ShownOutput => _showAll ? Call.Output : TextShortener.Shorten(Call.Output, OutputPreviewLength);
+
+    /// <summary>
+    /// Get the output as links or highlighted code, or null when this call's output is shown as plain text.
+    /// </summary>
+    /// <remarks>Highlighting is slow enough to keep, so it runs again only when the output or the shown length changes.</remarks>
+    private FormattedOutput? Formatted()
+    {
+        if (Call.Status != ToolCallStatus.Succeeded)
+        {
+            return null;
+        }
+
+        if (_formattedFor is { } key && ReferenceEquals(key.Output, Call.Output) && key.ShowAll == _showAll)
+        {
+            return _formatted;
+        }
+
+        _formattedFor = (Call.Output, _showAll);
+        _formatted = Call.Name switch
+        {
+            WebSearchOutput.ToolName => WebSearchOutput.Parse(Call.Output) is { Count: > 0 } hits ? new FormattedOutput(hits, null, null) : null,
+            ReadFileTool.ToolName => HighlightFile(),
+            _ => null,
+        };
+        return _formatted;
+    }
+
+    private FormattedOutput? HighlightFile()
+    {
+        if (Call.Images.Count > 0 || Argument(ReadFileTool.PathArgument) is not { } path)
+        {
+            return null;
+        }
+
+        var output = Call.Output;
+        var noteAt = output.LastIndexOf(ReadFileTool.RangeNoteStart, StringComparison.Ordinal);
+        var code = noteAt >= 0 ? output[..noteAt] : output;
+        var note = noteAt >= 0 ? output[noteAt..] : null;
+        if (!_showAll && code.Length > OutputPreviewLength)
+        {
+            code = TextShortener.Shorten(code, OutputPreviewLength);
+        }
+
+        return SyntaxHighlighter.TryHighlightLines(code, Path.GetExtension(path).TrimStart('.')) is { } lines
+            ? new FormattedOutput(null, new MarkupString(string.Join('\n', lines)), note)
+            : null;
+    }
+
+    private string? Argument(string name)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(Call.ArgumentsJson);
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+                    ? value.GetString()
+                    : null;
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 
@@ -269,7 +437,7 @@
     /// <remarks>The arguments of a call never change, so they only need to be parsed once.</remarks>
     private void ShowDetails()
     {
-        if (_detailsReady)
+        if (_detailsReady && _previewShown == Call.ChangePreview is not null)
         {
             return;
         }
@@ -277,7 +445,8 @@
         _detailsReady = true;
         _diff = Call.Name == EditFileTool.ToolName ? EditDiff() : null;
         _todos = Call.Name == TodoList.ToolName ? TodoList.TryParse(Call.ArgumentsJson) : null;
-        _arguments = _todos is null ? Arguments(_diff is not null) : [];
+        _previewShown = Call.ChangePreview is not null;
+        _arguments = _todos is null ? Arguments(Hidden()) : [];
     }
 
     private IReadOnlyList<DiffLine>? EditDiff()
@@ -298,7 +467,20 @@
         }
     }
 
-    private List<(string Name, string Value)> Arguments(bool hideEditText)
+    /// <summary>
+    /// Get the arguments that are shown another way, as a diff, and are left out of the list.
+    /// </summary>
+    private string[] Hidden()
+    {
+        if (_diff is not null)
+        {
+            return [EditFileTool.OldStringArgument, EditFileTool.NewStringArgument];
+        }
+
+        return Call.ChangePreview is not null && Call.Name == WriteFileTool.ToolName ? [WriteFileTool.ContentArgument] : [];
+    }
+
+    private List<(string Name, string Value)> Arguments(string[] hidden)
     {
         var list = new List<(string, string)>();
         try
@@ -311,7 +493,7 @@
 
             foreach (var property in document.RootElement.EnumerateObject())
             {
-                if (hideEditText && property.Name is EditFileTool.OldStringArgument or EditFileTool.NewStringArgument)
+                if (hidden.Contains(property.Name))
                 {
                     continue;
                 }
@@ -327,4 +509,12 @@
 
         return list;
     }
+
+    /// <summary>
+    /// Output shown as links or as highlighted code.
+    /// </summary>
+    /// <param name="Hits">The links of a web search, or null.</param>
+    /// <param name="Code">The highlighted lines of a file, or null.</param>
+    /// <param name="Note">The note after the lines of a file that was read in part, or null.</param>
+    private sealed record FormattedOutput(IReadOnlyList<WebSearchHit>? Hits, MarkupString? Code, string? Note);
 }

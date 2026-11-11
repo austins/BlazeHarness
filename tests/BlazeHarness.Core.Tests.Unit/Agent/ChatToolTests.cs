@@ -151,7 +151,7 @@ public sealed class ChatToolTests
 
         // Assert
         sut.Entries.Select(e => (e.Text, e.Status)).Should().Equal(original.Entries.Select(e => (e.Text, e.Status)));
-        sut.Entries[1].ToolCalls.Single().Should().BeEquivalentTo(original.Entries[1].ToolCalls.Single());
+        sut.Entries[1].ToolCalls.Single().Should().BeEquivalentTo(original.Entries[1].ToolCalls.Single(), o => o.Excluding(c => c.StartedAt));
         sut.History.Select(m => m.Role).Should().Equal(original.History.Select(m => m.Role));
         sut.History[1].Contents.OfType<FunctionCallContent>().Single().CallId.Should().Be("c1");
         sut.History[2].Contents.OfType<FunctionResultContent>().Single().Result.Should().Be("read done");

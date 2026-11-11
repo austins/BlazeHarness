@@ -1,5 +1,6 @@
 using BlazeHarness.Core.Agent.Questions;
 using BlazeHarness.Core.Attachments;
+using BlazeHarness.Core.Diff;
 using BlazeHarness.Core.Tools;
 
 namespace BlazeHarness.Core.Agent;
@@ -16,6 +17,8 @@ public sealed class ToolCallEntry
     /// The text that starts the result of a failed call in what the model is given, as written by <see cref="ForModel"/>.
     /// </summary>
     public const string ErrorPrefix = "Error: ";
+
+    private OutputTail? _live;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ToolCallEntry"/> class.
@@ -83,6 +86,24 @@ public sealed class ToolCallEntry
     public IReadOnlyList<PendingHost> PendingHosts { get; set; } = [];
 
     /// <summary>
+    /// Gets or sets when the call started running, or null when it has not run in this session. It is not saved.
+    /// </summary>
+    public DateTimeOffset? StartedAt { get; set; }
+
+    /// <summary>
+    /// Gets the last lines a running command printed, separated by <c>\n</c>, or an empty string. It is not saved.
+    /// </summary>
+    /// <remarks>
+    /// The whole output is in <see cref="Output"/> once the call ends, and this is cleared then.
+    /// </remarks>
+    public string LiveOutput => Volatile.Read(ref _live)?.Text ?? string.Empty;
+
+    /// <summary>
+    /// Gets or sets how a file call would change the file, worked out before the call ran, or null when there is none. It is not saved.
+    /// </summary>
+    public IReadOnlyList<DiffLine>? ChangePreview { get; set; }
+
+    /// <summary>
     /// Gets the question of an <c>ask_user</c> call, read from its arguments, or null for any other call or when the arguments are not a valid question.
     /// </summary>
     public UserQuestion? Question => Name == UserQuestion.ToolName ? AskUserTool.TryParse(ArgumentsJson) : null;
@@ -121,4 +142,15 @@ public sealed class ToolCallEntry
             ? "The app stopped before this call finished, so it may or may not have run. Check the current state before doing it again."
             : "The user stopped the run before this call finished, so it may or may not have run. Check the current state before doing it again.";
     }
+
+    /// <summary>
+    /// Add a line a running command printed to <see cref="LiveOutput"/>.
+    /// </summary>
+    /// <param name="line">The line.</param>
+    internal void AppendLiveLine(string line) => LazyInitializer.EnsureInitialized(ref _live).Append(line);
+
+    /// <summary>
+    /// Clear <see cref="LiveOutput"/> once the call has ended.
+    /// </summary>
+    internal void EndLiveOutput() => Volatile.Write(ref _live, null);
 }

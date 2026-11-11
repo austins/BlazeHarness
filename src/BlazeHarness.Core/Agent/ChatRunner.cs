@@ -2,6 +2,7 @@ using BlazeHarness.Core.Agent.Events;
 using BlazeHarness.Core.Agent.Questions;
 using BlazeHarness.Core.Attachments;
 using BlazeHarness.Core.Compaction;
+using BlazeHarness.Core.Diff;
 using BlazeHarness.Core.Mcp.Tools;
 using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Sandbox;
@@ -671,6 +672,11 @@ internal static class ChatRunner
 
                 var allowed = decision.Verdict == PermissionVerdict.Allow;
                 string? refusal = null;
+                if (Preview(p, ContextFor(tools, decision, permissions, paths)) is { } preview)
+                {
+                    yield return new ToolChangePreview(p.Call.CallId, preview);
+                }
+
                 if (!allowed && approver is not null)
                 {
                     var request = new ApprovalRequest(p.Call.CallId, p.Name, p.Json, decision.Reason, decision.GrantKey is not null);
@@ -727,7 +733,7 @@ internal static class ChatRunner
                 yield return new ToolCallRunning(p.Call.CallId);
                 try
                 {
-                    var ran = await RunAsync(tools, p, ContextFor(tools, decision, permissions, paths, p.Tool.RunsCommands ? new HostQuestions(approver as IHostApprover, p.Call.CallId) : null), cancellationToken);
+                    var ran = await RunAsync(tools, p, ContextFor(tools, decision, permissions, paths, p.Tool.RunsCommands ? new CommandCall(approver as IHostApprover, approver as IToolProgress, p.Call.CallId) : null), cancellationToken);
                     results[index] = await KeepImagesAsync(images, p.Name, ran);
                     statuses[index] = results[index]!.IsError ? ToolCallStatus.Failed : ToolCallStatus.Succeeded;
                     failures.Record(p.Name, p.Json, results[index]!.IsError, p.Tool.IsReadOnly);
@@ -860,7 +866,7 @@ internal static class ChatRunner
         return result with { Images = kept };
     }
 
-    private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision, PermissionEngine permissions, IReadOnlyList<string>? paths, HostQuestions? hosts = null)
+    private static ToolContext ContextFor(ToolSet tools, PermissionDecision decision, PermissionEngine permissions, IReadOnlyList<string>? paths, CommandCall? command = null)
     {
         var context = (decision.AllowOutside ? tools.Context.WithOutsideAllowed() : tools.Context).WithSensitive(permissions.Sensitive()).WithRefused(permissions.Refused(tools.Context.Root));
         if (decision.ShellReadFolders is { Count: > 0 } folders)
@@ -871,13 +877,45 @@ internal static class ChatRunner
         context = decision.Shell == context.Shell ? context : context.WithShell(decision.Shell);
 
         // A command that runs unconfined is not inside the sandbox that enforces the filter.
-        context = hosts is not null && permissions.NetworkFilter() && context.Shell != ShellMode.Unconfined
-            ? context.WithNetwork(new NetworkHostGate(permissions, hosts.Approver, hosts.CallId))
+        context = command is not null && permissions.NetworkFilter() && context.Shell != ShellMode.Unconfined
+            ? context.WithNetwork(new NetworkHostGate(permissions, command.Hosts, command.CallId))
             : context;
-        return context.WithCheckedPaths(paths);
+        context = context.WithCheckedPaths(paths);
+        return command?.Progress is { } progress
+            ? context.WithOutputLine(line => progress.ReportLine(command.CallId, line))
+            : context;
     }
 
-    private sealed record HostQuestions(IHostApprover? Approver, string CallId);
+    /// <summary>
+    /// What a call that runs commands reports to while it runs.
+    /// </summary>
+    /// <param name="Hosts">What asks the user about a host the command wants to reach, or null when nothing can.</param>
+    /// <param name="Progress">What shows the lines the command prints, or null when nothing does.</param>
+    /// <param name="CallId">The provider's identifier for the call.</param>
+    private sealed record CommandCall(IHostApprover? Hosts, IToolProgress? Progress, string CallId);
+
+    /// <summary>
+    /// Work out how a call would change its file, for the user to see before it runs.
+    /// </summary>
+    /// <remarks>
+    /// The preview only reads, through the same path checks the call runs with, and a failure leaves the call without one.
+    /// </remarks>
+    private static IReadOnlyList<DiffLine>? Preview(PlannedCall call, ToolContext context)
+    {
+        if (call.Tool is not IPreviewsChange previews)
+        {
+            return null;
+        }
+
+        try
+        {
+            return previews.PreviewChange(ToolArguments.Parse(call.Json), context);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ToolArgumentException)
+        {
+            return null;
+        }
+    }
 
     private static async Task<ToolResult> RunAsync(ToolSet tools, PlannedCall call, ToolContext context, CancellationToken cancellationToken)
     {
