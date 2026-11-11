@@ -51,7 +51,7 @@ internal sealed partial class EditorLauncher(JsonFileStore<AppConfig> config, IL
 
         try
         {
-            using var process = Process.Start(startInfo);
+            Process.StartAndForget(startInfo);
             return EditorOpenResult.Opened;
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
@@ -145,7 +145,7 @@ internal sealed partial class EditorLauncher(JsonFileStore<AppConfig> config, IL
 
             try
             {
-                var output = await process.StandardOutput.ReadToEndAsync(timeout.Token);
+                var (output, _) = await process.ReadAllTextAsync(timeout.Token);
                 await process.WaitForExitAsync(timeout.Token);
                 var id = output.Trim();
                 return process.ExitCode == 0 && id.EndsWith(".desktop", StringComparison.Ordinal) && Path.GetFileName(id) == id ? id : null;

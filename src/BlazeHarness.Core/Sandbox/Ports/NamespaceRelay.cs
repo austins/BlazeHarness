@@ -29,13 +29,20 @@ internal sealed class NamespaceRelay : IDisposable
     /// <returns>The relay, or null when it could not start.</returns>
     public static NamespaceRelay? Start(ForwardingTools tools, int pid, string listen, string connect)
     {
+        using var nullHandle = File.OpenNullHandle();
         var info = new ProcessStartInfo(tools.Nsenter)
         {
             UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            StandardInputHandle = nullHandle,
+            StandardOutputHandle = nullHandle,
+            StandardErrorHandle = nullHandle,
         };
+
+        // A relay left behind by a crash would keep its socket and port; the parent-death signal survives nsenter.
+        if (OperatingSystem.IsLinux())
+        {
+            info.KillOnParentExit = true;
+        }
 
         // Entering the user namespace too is what lets an unprivileged process join the network one.
         foreach (var argument in (string[])["-t", pid.ToString(CultureInfo.InvariantCulture), "-U", "-n", "--preserve-credentials", tools.Socat, listen, connect])
@@ -52,11 +59,6 @@ internal sealed class NamespaceRelay : IDisposable
                 return null;
             }
 
-            process.StandardInput.Close();
-            process.OutputDataReceived += (_, _) => { };
-            process.ErrorDataReceived += (_, _) => { };
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
             var relay = new NamespaceRelay(process);
 #pragma warning disable IDISP003 // The relay now owns the process; clearing the local keeps the finally from disposing it.
             process = null;

@@ -49,12 +49,13 @@ internal sealed class GitProcessRunner(TimeProvider time) : IGitRunner
             return GitResult.Unavailable;
         }
 
+        using var nullHandle = File.OpenNullHandle();
         var start = new ProcessStartInfo(git)
         {
             WorkingDirectory = workingDirectory,
             RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            RedirectStandardInput = true,
+            StandardInputHandle = nullHandle,
+            StandardErrorHandle = nullHandle,
             UseShellExecute = false,
             CreateNoWindow = true,
             StandardOutputEncoding = Encoding.UTF8,
@@ -95,10 +96,7 @@ internal sealed class GitProcessRunner(TimeProvider time) : IGitRunner
         {
             try
             {
-                process.StandardInput.Close();
-                var errors = process.StandardError.BaseStream.CopyToAsync(Stream.Null, linked.Token);
                 var (output, truncated) = await ReadAsync(process.StandardOutput.BaseStream, linked.Token);
-                await errors;
                 await process.WaitForExitAsync(linked.Token);
                 return new GitResult(process.ExitCode, output, truncated);
             }

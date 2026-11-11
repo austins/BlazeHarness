@@ -39,16 +39,16 @@ internal static class ProcessRunner
         process.Start();
         try
         {
-            var stdout = process.StandardOutput.ReadToEndAsync(cancellationToken);
-            var stderr = process.StandardError.ReadToEndAsync(cancellationToken);
+            var output = process.ReadAllTextAsync(cancellationToken);
             if (stdin is not null)
             {
                 await process.StandardInput.WriteAsync(stdin.AsMemory(), cancellationToken);
             }
 
             process.StandardInput.Close();
+            var (stdout, stderr) = await output;
             await process.WaitForExitAsync(cancellationToken);
-            return new ProcessResult(process.ExitCode, await stdout, await stderr);
+            return new ProcessResult(process.ExitCode, stdout, stderr);
         }
         catch
         {
