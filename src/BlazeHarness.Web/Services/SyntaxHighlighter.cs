@@ -144,6 +144,13 @@ public static class SyntaxHighlighter
         return lines;
     }
 
+    /// <summary>
+    /// Gets the grammar for a scope name, loading it on first use.
+    /// </summary>
+    /// <remarks>
+    /// A new grammar tokenizes one empty line before it is returned, which compiles its top-level patterns.
+    /// That one-time cost doesn't depend on the code and can take seconds on a busy machine, so it stays outside <see cref="TimeLimit"/>.
+    /// </remarks>
     private static IGrammar? GrammarFor(string scopeName)
     {
         lock (GrammarsLock)
@@ -151,6 +158,7 @@ public static class SyntaxHighlighter
             if (!Grammars.TryGetValue(scopeName, out var grammar))
             {
                 grammar = Registry.LoadGrammar(scopeName);
+                grammar?.TokenizeLine(string.Empty);
                 Grammars[scopeName] = grammar;
             }
 
