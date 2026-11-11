@@ -204,10 +204,10 @@ public sealed class MarkdownRendererTests
     public void ToHtml_FencedCodeInUnknownLanguage_IsShownAsPlainText()
     {
         // Act
-        var html = _sut.ToHtml("```rust\nfn main() { 1 < 2 }\n```");
+        var html = _sut.ToHtml("```cobol\nIF A < B STOP RUN.\n```");
 
         // Assert
-        html.Should().Contain("fn main() { 1 &lt; 2 }").And.NotContain("tok-");
+        html.Should().Contain("IF A &lt; B STOP RUN.").And.NotContain("tok-");
     }
 
     [Fact]

@@ -20,9 +20,6 @@ using BlazeHarness.Web.Services;
 using Microsoft.AspNetCore.Hosting.Server;
 using System.Globalization;
 
-// Code colors are matched with patterns from a library, against text a model wrote, so a slow match must give up.
-AppContext.SetData("REGEX_DEFAULT_MATCH_TIMEOUT", TimeSpan.FromSeconds(2));
-
 const int MaxHubMessageBytes = 4 * 1024 * 1024;
 const string WebSearchClientName = "web-search";
 

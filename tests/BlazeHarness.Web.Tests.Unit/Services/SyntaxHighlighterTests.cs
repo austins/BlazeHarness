@@ -34,8 +34,8 @@ public sealed class SyntaxHighlighterTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData("brainfuck")]
-    [InlineData("rust")]
+    [InlineData("not-a-language")]
+    [InlineData("cobol")]
     public void TryHighlight_UnknownOrMissingLanguage_ReturnsNull(string? info)
     {
         // Act
@@ -116,11 +116,40 @@ public sealed class SyntaxHighlighterTests
         lines.Select(DiffHtml.TextOf).Should().Equal("a < b", string.Empty, "return \"x\";");
     }
 
+    [Theory]
+    [InlineData("rust", "fn main() { let x = 1; }")]
+    [InlineData("py", "def main(): return 1")]
+    [InlineData("bash", "if true; then echo hi; fi")]
+    public void TryHighlight_OtherLanguages_AreColored(string info, string code)
+    {
+        // Act
+        var html = SyntaxHighlighter.TryHighlight(code, info);
+
+        // Assert
+        html.Should().Contain("tok-keyword");
+    }
+
+    [Fact]
+    public void TryHighlightLines_MarkdownStartingInsideCodeFence_ReturnsEveryLine()
+    {
+        // Arrange
+        // A diff hunk can start on the closing fence of a code block, so the fence looks unclosed and is followed by prose.
+        var prose = string.Join(' ', Enumerable.Repeat("The quick brown fox jumps over the lazy dog.", 40));
+        string[] expected = ["```", prose, string.Empty, "## Next steps", "- Run the   tests  again   later."];
+
+        // Act
+        var lines = SyntaxHighlighter.TryHighlightLines(string.Join('\n', expected), "md");
+
+        // Assert
+        lines.Should().NotBeNull();
+        lines.Select(DiffHtml.TextOf).Should().Equal(expected);
+    }
+
     [Fact]
     public void TryHighlightLines_UnknownLanguage_ReturnsNull()
     {
         // Act
-        var lines = SyntaxHighlighter.TryHighlightLines("x", "brainfuck");
+        var lines = SyntaxHighlighter.TryHighlightLines("x", "not-a-language");
 
         // Assert
         lines.Should().BeNull();

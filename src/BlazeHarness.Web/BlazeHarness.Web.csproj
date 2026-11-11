@@ -19,9 +19,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="ColorCode.Core" Version="2.0.15" />
         <PackageReference Include="Markdig" Version="1.6.0" />
         <PackageReference Include="MessageFormat" Version="8.0.0" />
+        <PackageReference Include="TextMateSharp.Grammars" Version="2.0.5" />
     </ItemGroup>
 
     <ItemGroup>
@@ -49,19 +49,19 @@
     <!-- Single-file publish bundles the satellite assemblies, so UiLanguages reads the translated cultures from these attributes. -->
     <Target Name="AddUiCultureMetadata" DependsOnTargets="SplitResourcesByCulture" BeforeTargets="GetAssemblyAttributes">
         <ItemGroup>
-            <AssemblyMetadata Include="UiCulture" Value="%(EmbeddedResource.Culture)" Condition="'%(EmbeddedResource.WithCulture)' == 'true'"/>
+            <AssemblyMetadata Include="UiCulture" Value="%(EmbeddedResource.Culture)" Condition="'%(EmbeddedResource.WithCulture)' == 'true'" />
         </ItemGroup>
     </Target>
 
     <!-- The app loads blazor.web.js; the framework also adds the older blazor.server.js. -->
     <Target Name="RemoveBlazorServerScript" AfterTargets="_AddBlazorFrameworkStaticWebAssets">
         <ItemGroup>
-            <StaticWebAsset Remove="@(StaticWebAsset)" Condition="'%(Filename)%(Extension)' == 'blazor.server.js'"/>
-            <StaticWebAssetEndpoint Remove="@(StaticWebAssetEndpoint)" Condition="$([System.IO.Path]::GetFileName('%(AssetFile)')) == 'blazor.server.js'"/>
+            <StaticWebAsset Remove="@(StaticWebAsset)" Condition="'%(Filename)%(Extension)' == 'blazor.server.js'" />
+            <StaticWebAssetEndpoint Remove="@(StaticWebAssetEndpoint)" Condition="$([System.IO.Path]::GetFileName('%(AssetFile)')) == 'blazor.server.js'" />
         </ItemGroup>
     </Target>
 
     <ItemGroup>
-        <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never"/>
+        <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
     </ItemGroup>
 </Project>
