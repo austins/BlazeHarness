@@ -246,7 +246,7 @@ public sealed class GitChangeReverter
         var position = 0;
         while (position < text.Length)
         {
-            var newline = text.IndexOf('\n', position);
+            var newline = text.IndexOf('\n', position, StringComparison.Ordinal);
             if (newline < 0)
             {
                 lines.Add(new Line(text[position..], string.Empty));

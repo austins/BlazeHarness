@@ -10,5 +10,5 @@ internal interface IRunInbox
     /// </summary>
     /// <param name="replyEnded">True when the model has finished its reply, which takes every message; false between two steps, which takes only <see cref="QueueMode.Steer"/> messages.</param>
     /// <returns>The messages taken merged into one text, or null when there are none.</returns>
-    string? TakeMessages(bool replyEnded);
+    public string? TakeMessages(bool replyEnded);
 }

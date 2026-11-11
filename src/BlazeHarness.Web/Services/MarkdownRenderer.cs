@@ -33,7 +33,7 @@ public sealed partial class MarkdownRenderer
 
     private readonly Dictionary<(string? ChatId, string Markdown), LinkedListNode<KeyValuePair<(string? ChatId, string Markdown), string>>> _cache = [];
     private readonly LinkedList<KeyValuePair<(string? ChatId, string Markdown), string>> _recent = new();
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
 
     /// <summary>
     /// Convert markdown to HTML.

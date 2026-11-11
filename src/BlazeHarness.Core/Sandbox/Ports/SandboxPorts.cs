@@ -412,7 +412,8 @@ internal sealed partial class SandboxPorts : IDisposable
         List<NamespaceRelay> relays = [];
         foreach (var listen in (string[])[
             string.Create(CultureInfo.InvariantCulture, $"TCP4-LISTEN:{route.Port},bind=127.0.0.1,fork,reuseaddr"),
-            string.Create(CultureInfo.InvariantCulture, $"TCP6-LISTEN:{route.Port},bind=[::1],ipv6only=1,fork,reuseaddr")])
+            string.Create(CultureInfo.InvariantCulture, $"TCP6-LISTEN:{route.Port},bind=[::1],ipv6only=1,fork,reuseaddr")
+        ])
         {
 #pragma warning disable CA2000 // The relay goes into the member's Inbound, which CloseInbound and CloseRoute dispose.
             if (NamespaceRelay.Start(_tools, pid, listen, connect) is { } relay)

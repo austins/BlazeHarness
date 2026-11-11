@@ -12,5 +12,5 @@ internal interface ISendToChatTool : ITool
     /// </summary>
     /// <param name="arguments">The call arguments.</param>
     /// <returns>The plan, or the reason the call can go nowhere.</returns>
-    SendToChatResolution Plan(JsonElement arguments);
+    public SendToChatResolution Plan(JsonElement arguments);
 }

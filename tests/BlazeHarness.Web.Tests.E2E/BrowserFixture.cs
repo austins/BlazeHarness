@@ -22,10 +22,12 @@ public sealed class BrowserFixture : IAsyncLifetime
     /// so this repeats Playwright 1.64.1's list from <c>chromiumSwitches.ts</c>. Recheck it when Playwright is updated.
     /// </remarks>
     private static string[] WindowsArgs => OperatingSystem.IsWindows()
-        ? ["--disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,"
+        ? [
+            "--disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,"
             + "HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,"
             + "AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,"
-            + "msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion,TcpPortRandomizationWin"]
+            + "msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion,TcpPortRandomizationWin"
+          ]
         : [];
 
     public async ValueTask InitializeAsync()

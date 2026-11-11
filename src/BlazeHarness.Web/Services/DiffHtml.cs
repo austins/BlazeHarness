@@ -48,7 +48,7 @@ internal static class DiffHtml
         {
             if (html[i] == '<')
             {
-                var end = html.IndexOf('>', i);
+                var end = html.IndexOf('>', i, StringComparison.Ordinal);
                 if (marking)
                 {
                     result.Append("</mark>");
@@ -78,7 +78,7 @@ internal static class DiffHtml
             }
 
             // An entity such as &amp; is one character of text, or two when it stands for a character outside the basic plane.
-            var length = html[i] == '&' && html.IndexOf(';', i) is var semicolon and > 0 ? semicolon + 1 - i : 1;
+            var length = html[i] == '&' && html.IndexOf(';', i, StringComparison.Ordinal) is var semicolon and > 0 ? semicolon + 1 - i : 1;
             result.Append(html, i, length);
             position += length > 1 && int.TryParse(html.AsSpan(i + 2, length - 3), out var code) && html[i + 1] == '#' && code > 0xFFFF ? 2 : 1;
             i += length;
@@ -100,7 +100,7 @@ internal static class DiffHtml
         {
             if (html[i] == '<')
             {
-                i = html.IndexOf('>', i) + 1;
+                i = html.IndexOf('>', i, StringComparison.Ordinal) + 1;
             }
             else
             {

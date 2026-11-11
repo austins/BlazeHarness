@@ -38,7 +38,7 @@ internal sealed record ProxyRequestHead(string Method, string Host, int Port, bo
     {
         string host;
         string port;
-        if (authority.StartsWith('['))
+        if (authority.StartsWith('[', StringComparison.Ordinal))
         {
             var close = authority.IndexOf("]:", StringComparison.Ordinal);
             if (close < 0)
@@ -51,7 +51,7 @@ internal sealed record ProxyRequestHead(string Method, string Host, int Port, bo
         }
         else
         {
-            var colon = authority.LastIndexOf(':');
+            var colon = authority.LastIndexOf(':', StringComparison.Ordinal);
             if (colon <= 0)
             {
                 return null;

@@ -299,7 +299,14 @@
 
     private async Task CopyAsync()
     {
-        var copied = await JS.InvokeAsync<bool>("bhChat.copyText", Entry.Text);
-        Toasts.Show(copied ? WebStrings.MessageViewCopied : WebStrings.MessageViewCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
+        try
+        {
+            var copied = await JS.InvokeAsync<bool>("bhChat.copyText", Entry.Text);
+            Toasts.Show(copied ? WebStrings.MessageViewCopied : WebStrings.MessageViewCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 }

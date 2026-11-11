@@ -17,5 +17,5 @@ public interface IToolApprover
     /// <param name="request">The call and what the user is asked to allow.</param>
     /// <param name="cancellationToken">A token that is cancelled when the run stops.</param>
     /// <returns>How the user answered.</returns>
-    Task<ApprovalChoice> RequestAsync(ApprovalRequest request, CancellationToken cancellationToken);
+    public Task<ApprovalChoice> RequestAsync(ApprovalRequest request, CancellationToken cancellationToken);
 }

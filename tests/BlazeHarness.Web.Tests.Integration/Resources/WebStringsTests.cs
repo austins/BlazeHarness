@@ -146,7 +146,7 @@ public sealed partial class WebStringsTests
     }
 
     private static bool ExactCasesComeFirst(IEnumerable<KeyedBlock> blocks) =>
-        !blocks.SkipWhile(block => block.Key.StartsWith('=')).Any(block => block.Key.StartsWith('='));
+        !blocks.SkipWhile(block => block.Key.StartsWith('=', StringComparison.Ordinal)).Any(block => block.Key.StartsWith('=', StringComparison.Ordinal));
 
     private static string[] SourceFiles(string project) =>
         Directory.EnumerateFiles(project, "*", SearchOption.AllDirectories).Where(IsSourceFile).Select(File.ReadAllText).ToArray();

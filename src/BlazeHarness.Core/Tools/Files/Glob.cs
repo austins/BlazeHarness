@@ -63,7 +63,7 @@ internal static class Glob
                     regex.Append("[^/]");
                     break;
                 case '[':
-                    var end = i < pattern.Length ? pattern.IndexOf(']', i) : -1;
+                    var end = i < pattern.Length ? pattern.IndexOf(']', i, StringComparison.Ordinal) : -1;
                     if (end <= i)
                     {
                         regex.Append(@"\[");
@@ -71,7 +71,7 @@ internal static class Glob
                     }
 
                     var set = pattern[i..end];
-                    regex.Append('[').Append(set.StartsWith('!') ? "^" + Regex.Escape(set[1..]) : Regex.Escape(set)).Append(']');
+                    regex.Append('[').Append(set.StartsWith('!', StringComparison.Ordinal) ? "^" + Regex.Escape(set[1..]) : Regex.Escape(set)).Append(']');
                     i = end + 1;
                     break;
                 case '\\' when i < pattern.Length:

@@ -163,7 +163,7 @@ public sealed class EditFileTool : ITool
 
     private static bool HasBareLineFeed(string text)
     {
-        for (var index = text.IndexOf('\n', StringComparison.Ordinal); index >= 0; index = text.IndexOf('\n', index + 1))
+        for (var index = text.IndexOf('\n', StringComparison.Ordinal); index >= 0; index = text.IndexOf('\n', index + 1, StringComparison.Ordinal))
         {
             if (index == 0 || text[index - 1] != '\r')
             {

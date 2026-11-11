@@ -8,7 +8,7 @@ public interface IShellSandbox
     /// <summary>
     /// Gets whether commands can be confined on this computer.
     /// </summary>
-    SandboxStatus Status { get; }
+    public SandboxStatus Status { get; }
 
     /// <summary>
     /// Start a command.
@@ -18,5 +18,5 @@ public interface IShellSandbox
     /// <returns>The running command.</returns>
     /// <exception cref="InvalidOperationException">The call needs a sandbox and <see cref="Status"/> says there is none.</exception>
     /// <exception cref="IOException">The command could not be started.</exception>
-    Task<IShellProcess> StartAsync(ShellLaunch launch, CancellationToken cancellationToken);
+    public Task<IShellProcess> StartAsync(ShellLaunch launch, CancellationToken cancellationToken);
 }

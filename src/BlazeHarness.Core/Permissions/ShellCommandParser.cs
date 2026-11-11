@@ -190,7 +190,7 @@ internal static partial class ShellCommandParser
                 Rescan(arguments[index + 1], depth, output);
             }
         }
-        else if (fromPipe || arguments.Exists(a => a.StartsWith('<') || a == "-s"))
+        else if (fromPipe || arguments.Exists(a => a.StartsWith('<', StringComparison.Ordinal) || a == "-s"))
         {
             output.Add(new CommandSegment(program, arguments, PipedText));
         }
@@ -293,7 +293,7 @@ internal static partial class ShellCommandParser
                 case '|':
                     return Pipe(i);
                 case '#' when !_inToken:
-                    var newline = text.IndexOf('\n', i);
+                    var newline = text.IndexOf('\n', i, StringComparison.Ordinal);
                     return newline < 0 ? text.Length : newline;
                 case ' ' or '\t' or '\r':
                     EndToken();
@@ -387,7 +387,7 @@ internal static partial class ShellCommandParser
 
         private int ReadSingleQuoted(int i)
         {
-            var end = text.IndexOf('\'', i + 1);
+            var end = text.IndexOf('\'', i + 1, StringComparison.Ordinal);
             var stop = end < 0 ? text.Length : end;
             Append(text[(i + 1)..stop]);
             return end < 0 ? text.Length : end + 1;
@@ -438,7 +438,7 @@ internal static partial class ShellCommandParser
                 case '\'':
                     return ReadAnsiCQuoted(i);
                 case '{':
-                    var close = text.IndexOf('}', i);
+                    var close = text.IndexOf('}', i, StringComparison.Ordinal);
                     var stop = close < 0 ? text.Length : close + 1;
                     Append(text[i..stop]);
                     return stop;
@@ -497,10 +497,10 @@ internal static partial class ShellCommandParser
                         next = j + 2;
                         break;
                     case '\'' when !quoted:
-                        next = After(text.IndexOf('\'', j + 1));
+                        next = After(text.IndexOf('\'', j + 1, StringComparison.Ordinal));
                         break;
                     case '`':
-                        next = After(text.IndexOf('`', j + 1));
+                        next = After(text.IndexOf('`', j + 1, StringComparison.Ordinal));
                         break;
                     case '"':
                         quoted = !quoted;
@@ -533,7 +533,7 @@ internal static partial class ShellCommandParser
 
         private int ReadBacktick(int i)
         {
-            var end = text.IndexOf('`', i + 1);
+            var end = text.IndexOf('`', i + 1, StringComparison.Ordinal);
             var stop = end < 0 ? text.Length : end;
             Rescan(text[(i + 1)..stop], depth, output);
             Append(text[i..Math.Min(stop + 1, text.Length)]);

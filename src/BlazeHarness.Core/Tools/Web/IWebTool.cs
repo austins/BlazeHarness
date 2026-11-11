@@ -12,5 +12,5 @@ internal interface IWebTool : ITool
     /// </summary>
     /// <param name="arguments">The call arguments.</param>
     /// <returns>The request, or null when the arguments are malformed and the tool will refuse them.</returns>
-    WebRequest? Describe(JsonElement arguments);
+    public WebRequest? Describe(JsonElement arguments);
 }

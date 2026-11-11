@@ -18,5 +18,5 @@ internal interface IHostApprover
     /// <param name="canRemember">True when <see cref="ApprovalChoice.AllowForChat"/> is offered.</param>
     /// <param name="cancellationToken">A token that is cancelled when the call ends.</param>
     /// <returns>How the user answered.</returns>
-    Task<ApprovalChoice> RequestHostAsync(string callId, string host, bool canRemember, CancellationToken cancellationToken);
+    public Task<ApprovalChoice> RequestHostAsync(string callId, string host, bool canRemember, CancellationToken cancellationToken);
 }

@@ -8,7 +8,7 @@ public interface INetworkGate
     /// <summary>
     /// Gets the hosts the gate has refused so far, each with the reason, so the command's output can say why a connection failed.
     /// </summary>
-    IReadOnlyList<string> Refusals { get; }
+    public IReadOnlyList<string> Refusals { get; }
 
     /// <summary>
     /// Decide whether the command may connect to a host.
@@ -16,5 +16,5 @@ public interface INetworkGate
     /// <param name="host">The host name or address the command asked for, without a port.</param>
     /// <param name="cancellationToken">A token that is cancelled when the command ends.</param>
     /// <returns>Whether to let the connection go ahead.</returns>
-    Task<NetworkAccess> RequestAsync(string host, CancellationToken cancellationToken);
+    public Task<NetworkAccess> RequestAsync(string host, CancellationToken cancellationToken);
 }

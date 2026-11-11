@@ -28,7 +28,7 @@ internal static class McpVariables
         var i = 0;
         while (i < text.Length)
         {
-            if (text[i] == '$' && i + 1 < text.Length && text[i + 1] == '{' && text.IndexOf('}', i + 2) is var end and > 0
+            if (text[i] == '$' && i + 1 < text.Length && text[i + 1] == '{' && text.IndexOf('}', i + 2, StringComparison.Ordinal) is var end and > 0
                 && Parse(text.AsSpan(i + 2, end - i - 2), out var name, out var fallback))
             {
                 var value = lookup(name);

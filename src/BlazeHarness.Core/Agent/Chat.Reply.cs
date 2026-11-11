@@ -122,10 +122,12 @@ public sealed partial class Chat
         }
 
         // Some providers accept only short alphanumeric call IDs.
-        return [.. skills.MentionedIn(message.Text).Select(name => new FunctionCallContent(
-            Guid.NewGuid().ToString("N")[..9],
-            LoadSkillTool.ToolName,
-            new Dictionary<string, object?> { ["name"] = name }))];
+        return [
+            .. skills.MentionedIn(message.Text).Select(name => new FunctionCallContent(
+                Guid.NewGuid().ToString("N")[..9],
+                LoadSkillTool.ToolName,
+                new Dictionary<string, object?> { ["name"] = name }))
+        ];
     }
 
     private async Task ApplyAsync(Reply reply, AgentEvent e)

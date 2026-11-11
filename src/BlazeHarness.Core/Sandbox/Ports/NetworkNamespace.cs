@@ -49,7 +49,7 @@ internal static class NetworkNamespace
         try
         {
             var stat = File.ReadAllText(string.Create(CultureInfo.InvariantCulture, $"/proc/{pid}/stat"));
-            var end = stat.LastIndexOf(')');
+            var end = stat.LastIndexOf(')', StringComparison.Ordinal);
             return end < 0 || end + 2 >= stat.Length || stat[end + 2] is 'Z' or 'X';
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

@@ -14,5 +14,5 @@ internal interface IToolImageKeeper
     /// <param name="toolName">The tool that produced the picture.</param>
     /// <param name="image">The picture.</param>
     /// <returns>The saved copy, or null when it could not be kept.</returns>
-    Task<AttachmentInfo?> KeepAsync(string toolName, DataContent image);
+    public Task<AttachmentInfo?> KeepAsync(string toolName, DataContent image);
 }

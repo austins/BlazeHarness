@@ -28,7 +28,7 @@ public sealed class SamplingEditModelTests
         {
             Temperature = 0.6,
             TopK = 20,
-            Extra = new Dictionary<string, JsonElement> { ["mirostat"] = JsonDocument.Parse("2").RootElement.Clone() },
+            Extra = new Dictionary<string, JsonElement> { ["mirostat"] = JsonElement.Parse("2") },
         };
 
         // Act

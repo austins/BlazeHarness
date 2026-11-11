@@ -104,7 +104,7 @@ public sealed class ForbiddenCommands
 
     private static bool ProgramMatches(string pattern, string program)
     {
-        return pattern.EndsWith('*')
+        return pattern.EndsWith('*', StringComparison.Ordinal)
             ? program.StartsWith(pattern[..^1], StringComparison.OrdinalIgnoreCase)
             : string.Equals(pattern, program, StringComparison.OrdinalIgnoreCase);
     }
@@ -120,7 +120,7 @@ public sealed class ForbiddenCommands
         switch (style)
         {
             case FlagStyle.Windows:
-                return argument.StartsWith('/') && argument[1..].Split('/').Any(part => string.Equals(part, flag[1..], StringComparison.OrdinalIgnoreCase));
+                return argument.StartsWith('/', StringComparison.Ordinal) && argument[1..].Split('/').Any(part => string.Equals(part, flag[1..], StringComparison.OrdinalIgnoreCase));
             case FlagStyle.PowerShell:
                 var name = argument.Split(':')[0];
                 return name.Length >= 2 && name[0] == '-' && flag.StartsWith(name, StringComparison.OrdinalIgnoreCase);

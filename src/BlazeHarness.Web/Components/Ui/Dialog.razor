@@ -69,12 +69,26 @@
         if (Open && !_shown)
         {
             _shown = true;
-            await JS.InvokeVoidAsync("bhUi.showModal", _dialog);
+            try
+            {
+                await JS.InvokeVoidAsync("bhUi.showModal", _dialog);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
         else if (!Open && _shown)
         {
             _shown = false;
-            await JS.InvokeVoidAsync("bhUi.restoreFocus");
+            try
+            {
+                await JS.InvokeVoidAsync("bhUi.restoreFocus");
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
     }
 

@@ -100,13 +100,15 @@ internal sealed class WebSearchTool : IWebTool
     {
         foreach (var report in failed)
         {
-            var why = report.Paused ? "paused after repeated failures" : report.Failure switch
-            {
-                SearchFailure.RateLimited => "rate limited",
-                SearchFailure.Blocked => "refused the request",
-                SearchFailure.BadResponse => "gave an unreadable answer",
-                _ => "unavailable",
-            };
+            var why = report.Paused
+                ? "paused after repeated failures"
+                : report.Failure switch
+                {
+                    SearchFailure.RateLimited => "rate limited",
+                    SearchFailure.Blocked => "refused the request",
+                    SearchFailure.BadResponse => "gave an unreadable answer",
+                    _ => "unavailable",
+                };
             builder.Append("\n(").Append(WebProviders.NameOf(report.Id)).Append(": ").Append(why).Append(')');
         }
     }

@@ -436,13 +436,27 @@ else
         if (!_wired)
         {
             _wired = true;
-            await JS.InvokeVoidAsync("bhChat.initComposer", _input, _form);
+            try
+            {
+                await JS.InvokeVoidAsync("bhChat.initComposer", _input, _form);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
 
         if (_resize)
         {
             _resize = false;
-            await JS.InvokeVoidAsync("bhChat.resize", _input);
+            try
+            {
+                await JS.InvokeVoidAsync("bhChat.resize", _input);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
     }
 
@@ -704,7 +718,14 @@ else
 
         if (_picker is not null)
         {
-            await JS.InvokeVoidAsync("bhChat.clearPicker", _picker.Element);
+            try
+            {
+                await JS.InvokeVoidAsync("bhChat.clearPicker", _picker.Element);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
     }
 

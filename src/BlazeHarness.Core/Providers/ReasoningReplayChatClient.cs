@@ -77,7 +77,7 @@ internal sealed class ReasoningReplayChatClient(IChatClient inner) : DelegatingC
             .Select(call => ChatToolCall.CreateFunctionToolCall(
                 call.CallId,
                 call.Name,
-                new BinaryData(JsonSerializer.SerializeToUtf8Bytes(call.Arguments, AIJsonUtilities.DefaultOptions.GetTypeInfo(typeof(IDictionary<string, object?>))))))
+                new BinaryData(JsonSerializer.SerializeToUtf8Bytes(call.Arguments, AIJsonUtilities.DefaultOptions.GetTypeInfo<IDictionary<string, object?>?>()))))
             .ToList();
 
         AssistantChatMessage raw;

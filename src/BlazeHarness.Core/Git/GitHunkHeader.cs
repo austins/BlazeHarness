@@ -34,8 +34,8 @@ internal readonly record struct GitHunkHeader(int OldStart, int OldCount, int Ne
 
         var ranges = line[3..end].Split(' ');
         if (ranges.Length != 2
-            || !ranges[0].StartsWith('-')
-            || !ranges[1].StartsWith('+')
+            || !ranges[0].StartsWith('-', StringComparison.Ordinal)
+            || !ranges[1].StartsWith('+', StringComparison.Ordinal)
             || !TryRange(ranges[0], out var oldStart, out var oldCount)
             || !TryRange(ranges[1], out var newStart, out var newCount))
         {

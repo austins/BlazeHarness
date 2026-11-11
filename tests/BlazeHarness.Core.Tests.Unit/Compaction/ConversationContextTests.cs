@@ -119,10 +119,12 @@ public sealed class ConversationContextTests
         // Arrange
         var sut = new ConversationContext(1_000, _summarizer);
         var messages = Conversation(10);
-        messages.Insert(1, new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("t1", "update_todos", new Dictionary<string, object?>
-        {
-            ["items"] = new[] { new Dictionary<string, object?> { ["text"] = "write tests", ["status"] = "in_progress" } },
-        })]));
+        messages.Insert(1, new ChatMessage(ChatRole.Assistant, [
+            new FunctionCallContent("t1", "update_todos", new Dictionary<string, object?>
+            {
+                ["items"] = new[] { new Dictionary<string, object?> { ["text"] = "write tests", ["status"] = "in_progress" } },
+            })
+        ]));
         messages.Insert(2, new ChatMessage(ChatRole.Tool, [new FunctionResultContent("t1", "Todo list updated: 0 of 1 done.")]));
 
         // Act
@@ -144,10 +146,12 @@ public sealed class ConversationContextTests
         // Arrange
         var sut = new ConversationContext(1_000, _summarizer) { KeepsTodos = false };
         var messages = Conversation(10);
-        messages.Insert(1, new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("t1", "update_todos", new Dictionary<string, object?>
-        {
-            ["items"] = new[] { new Dictionary<string, object?> { ["text"] = "write tests", ["status"] = "in_progress" } },
-        })]));
+        messages.Insert(1, new ChatMessage(ChatRole.Assistant, [
+            new FunctionCallContent("t1", "update_todos", new Dictionary<string, object?>
+            {
+                ["items"] = new[] { new Dictionary<string, object?> { ["text"] = "write tests", ["status"] = "in_progress" } },
+            })
+        ]));
         messages.Insert(2, new ChatMessage(ChatRole.Tool, [new FunctionResultContent("t1", "Todo list updated: 0 of 1 done.")]));
 
         // Act
@@ -831,13 +835,15 @@ public sealed class ConversationContextTests
 
     private static List<string> TextOf(IList<ChatMessage> messages)
     {
-        return [.. messages.Select(m => string.Concat(m.Contents.Select(c => c switch
-        {
-            TextContent text => text.Text,
-            FunctionResultContent result => result.CallId + ":" + result.Result,
-            FunctionCallContent call => call.CallId + "=" + call.Name,
-            _ => string.Empty,
-        })))];
+        return [
+            .. messages.Select(m => string.Concat(m.Contents.Select(c => c switch
+            {
+                TextContent text => text.Text,
+                FunctionResultContent result => result.CallId + ":" + result.Result,
+                FunctionCallContent call => call.CallId + "=" + call.Name,
+                _ => string.Empty,
+            })))
+        ];
     }
 
     private static ChatMessage[] ToolRound(string callId, string tool, string result)

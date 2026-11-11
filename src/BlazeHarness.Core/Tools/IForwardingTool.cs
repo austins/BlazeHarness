@@ -12,5 +12,5 @@ internal interface IForwardingTool : ITool
     /// <param name="cancellationToken">A token to cancel the wait, as the target's server may have to start.</param>
     /// <returns>The tool to run and its arguments, or the reason there is none.</returns>
     /// <exception cref="ToolArgumentException">The arguments are not valid.</exception>
-    Task<ForwardedCall> ResolveAsync(ToolArguments arguments, CancellationToken cancellationToken);
+    public Task<ForwardedCall> ResolveAsync(ToolArguments arguments, CancellationToken cancellationToken);
 }

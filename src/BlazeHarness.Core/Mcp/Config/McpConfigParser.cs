@@ -84,7 +84,7 @@ internal static partial class McpConfigParser
     private static string? TryParseServer(string name, JsonNode? node, out McpServerConfig? server)
     {
         server = null;
-        if (!NamePattern().IsMatch(name) || name.Contains("__", StringComparison.Ordinal) || name.EndsWith('_'))
+        if (!NamePattern().IsMatch(name) || name.Contains("__", StringComparison.Ordinal) || name.EndsWith('_', StringComparison.Ordinal))
         {
             return $"the name can only have letters, digits, - and single _ characters (not at the end), up to {Tools.McpToolNames.MaxServerLength} of them.";
         }

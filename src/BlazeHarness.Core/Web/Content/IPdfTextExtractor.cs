@@ -15,5 +15,5 @@ internal interface IPdfTextExtractor
     /// <param name="cancellationToken">A token that stops the reading between pages.</param>
     /// <returns>The text, with a marker line before each page.</returns>
     /// <exception cref="WebFetchException">The file is not a readable PDF, is protected by a password, or has no text.</exception>
-    ExtractedDocument Extract(byte[] pdf, CancellationToken cancellationToken);
+    public ExtractedDocument Extract(byte[] pdf, CancellationToken cancellationToken);
 }

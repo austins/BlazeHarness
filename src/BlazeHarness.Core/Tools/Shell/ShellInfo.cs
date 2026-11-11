@@ -25,9 +25,11 @@ public sealed record ShellInfo(string Name, string Executable, bool IsPowerShell
     {
         if (isWindows)
         {
-            return FindOnPath("pwsh.exe", pathVariable) is { } pwsh ? new ShellInfo("pwsh", pwsh, IsPowerShell: true)
-                : FindOnPath("powershell.exe", pathVariable) is { } legacy ? new ShellInfo("powershell", legacy, IsPowerShell: true)
-                : null;
+            return FindOnPath("pwsh.exe", pathVariable) is { } pwsh
+                ? new ShellInfo("pwsh", pwsh, IsPowerShell: true)
+                : FindOnPath("powershell.exe", pathVariable) is { } legacy
+                    ? new ShellInfo("powershell", legacy, IsPowerShell: true)
+                    : null;
         }
 
         if (!string.IsNullOrWhiteSpace(shellVariable) && File.Exists(shellVariable))

@@ -15,5 +15,5 @@ public interface ITitleGenerator
     /// <param name="replyText">The assistant's reply to it.</param>
     /// <param name="cancellationToken">A token that stops the request.</param>
     /// <returns>The title, or null when none could be made.</returns>
-    Task<string?> GenerateAsync(ChatTarget target, string userText, string replyText, CancellationToken cancellationToken = default);
+    public Task<string?> GenerateAsync(ChatTarget target, string userText, string replyText, CancellationToken cancellationToken = default);
 }

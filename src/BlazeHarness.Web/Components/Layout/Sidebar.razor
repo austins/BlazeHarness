@@ -274,7 +274,14 @@
             // Lets the same file be chosen again after a failed import.
             if (_importInput?.Element is { } input)
             {
-                await JS.InvokeVoidAsync("bhChat.clearPicker", input);
+                try
+                {
+                    await JS.InvokeVoidAsync("bhChat.clearPicker", input);
+                }
+                catch (JSDisconnectedException)
+                {
+                    // The circuit is gone, and the page with it.
+                }
             }
         }
     }
@@ -296,15 +303,29 @@
     {
         if (firstRender)
         {
-            _dark = await JS.InvokeAsync<bool>("bhTheme.isDark");
-            _sort = Enum.TryParse<ChatSortOrder>(await JS.InvokeAsync<string?>("bhChatSort.get"), out var saved) ? saved : ChatSortOrder.Updated;
-            StateHasChanged();
+            try
+            {
+                _dark = await JS.InvokeAsync<bool>("bhTheme.isDark");
+                _sort = Enum.TryParse<ChatSortOrder>(await JS.InvokeAsync<string?>("bhChatSort.get"), out var saved) ? saved : ChatSortOrder.Updated;
+                StateHasChanged();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
 
         if (_showMenuAt is var (x, y))
         {
             _showMenuAt = null;
-            await JS.InvokeVoidAsync("bhUi.showContextMenu", _menu, x, y);
+            try
+            {
+                await JS.InvokeVoidAsync("bhUi.showContextMenu", _menu, x, y);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
 
         if (_focusSearch)
@@ -317,7 +338,14 @@
     private async Task SetSortAsync(ChatSortOrder order)
     {
         _sort = order;
-        await JS.InvokeVoidAsync("bhChatSort.set", order.ToString());
+        try
+        {
+            await JS.InvokeVoidAsync("bhChatSort.set", order.ToString());
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 
     private void ToggleSearch()
@@ -433,6 +461,13 @@
     private async Task ToggleThemeAsync()
     {
         _dark = !_dark;
-        await JS.InvokeVoidAsync("bhTheme.set", _dark ? "dark" : "light");
+        try
+        {
+            await JS.InvokeVoidAsync("bhTheme.set", _dark ? "dark" : "light");
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 }

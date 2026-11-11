@@ -33,12 +33,14 @@ internal sealed class SdkMcpConnection : IMcpConnection
     public async Task<IReadOnlyList<McpToolInfo>> ListToolsAsync(CancellationToken cancellationToken)
     {
         var tools = await _client.ListToolsAsync(cancellationToken: cancellationToken);
-        return [.. tools.Select(t => new McpToolInfo(
-            t.ProtocolTool.Name,
-            t.ProtocolTool.Description ?? string.Empty,
-            t.ProtocolTool.InputSchema.GetRawText(),
-            t.ProtocolTool.Annotations?.ReadOnlyHint,
-            t.ProtocolTool.Annotations?.DestructiveHint))];
+        return [
+            .. tools.Select(t => new McpToolInfo(
+                t.ProtocolTool.Name,
+                t.ProtocolTool.Description ?? string.Empty,
+                t.ProtocolTool.InputSchema.GetRawText(),
+                t.ProtocolTool.Annotations?.ReadOnlyHint,
+                t.ProtocolTool.Annotations?.DestructiveHint))
+        ];
     }
 
     /// <inheritdoc />

@@ -82,7 +82,7 @@ public sealed class ToolSetTests
 
         // Assert
         sut.Declarations.Select(d => d.Name).Should().Equal("read_file", "write_file", "edit_file", "list_files", "search_files");
-        sut.Tools.Select(t => JsonDocument.Parse(t.InputSchema).RootElement.GetProperty("type").GetString()).Should().AllBe("object");
+        sut.Tools.Select(t => JsonElement.Parse(t.InputSchema).GetProperty("type").GetString()).Should().AllBe("object");
     }
 
     [Fact]

@@ -34,13 +34,13 @@ internal sealed class GitIgnore
             }
 
             line = TrimUnescapedTrailingSpaces(line);
-            var negated = line.StartsWith('!');
+            var negated = line.StartsWith('!', StringComparison.Ordinal);
             if (negated)
             {
                 line = line[1..];
             }
 
-            var directoryOnly = line.EndsWith('/');
+            var directoryOnly = line.EndsWith('/', StringComparison.Ordinal);
             line = line.TrimEnd('/');
             if (line.StartsWith("\\#", StringComparison.Ordinal) || line.StartsWith("\\!", StringComparison.Ordinal))
             {

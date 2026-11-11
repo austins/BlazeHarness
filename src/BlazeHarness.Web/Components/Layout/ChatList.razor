@@ -88,13 +88,27 @@
         if (_focusRename)
         {
             _focusRename = false;
-            await JS.InvokeVoidAsync("bhUi.focusSelect", _renameInput);
+            try
+            {
+                await JS.InvokeVoidAsync("bhUi.focusSelect", _renameInput);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
 
         if (_showMenuAt is var (x, y))
         {
             _showMenuAt = null;
-            await JS.InvokeVoidAsync("bhUi.showContextMenu", _menu, x, y);
+            try
+            {
+                await JS.InvokeVoidAsync("bhUi.showContextMenu", _menu, x, y);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
     }
 
@@ -130,8 +144,15 @@
 
     private async Task CopyReferenceAsync(ChatInfo chat)
     {
-        var copied = await JS.InvokeAsync<bool>("bhChat.copyText", ChatReference.Format(chat.Id));
-        Toasts.Show(copied ? WebStrings.ChatListReferenceCopied : WebStrings.ChatListCopyReferenceFailed, copied ? ToastKind.Success : ToastKind.Error);
+        try
+        {
+            var copied = await JS.InvokeAsync<bool>("bhChat.copyText", ChatReference.Format(chat.Id));
+            Toasts.Show(copied ? WebStrings.ChatListReferenceCopied : WebStrings.ChatListCopyReferenceFailed, copied ? ToastKind.Success : ToastKind.Error);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 
     internal static string DisplayTitle(ChatInfo chat)

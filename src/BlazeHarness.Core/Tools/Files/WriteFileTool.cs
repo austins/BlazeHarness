@@ -76,7 +76,7 @@ internal sealed class WriteFileTool : ITool
         }
 
         AtomicFile.Write(full, bytes);
-        var lines = content.Length == 0 ? 0 : content.Count(c => c == '\n') + (content.EndsWith('\n') ? 0 : 1);
+        var lines = content.Length == 0 ? 0 : content.Count(c => c == '\n') + (content.EndsWith('\n', StringComparison.Ordinal) ? 0 : 1);
         return Task.FromResult(ToolResult.Ok(string.Create(
             CultureInfo.InvariantCulture,
             $"{(existed ? "Replaced" : "Created")} {context.Relative(full)} ({lines} lines, {bytes.Length} bytes).")));

@@ -108,7 +108,7 @@ internal static class RootedPath
 
         return pathTrimmed.Length > rootTrimmed.Length
             && pathTrimmed.StartsWith(rootTrimmed, OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)
-            && (pathTrimmed[rootTrimmed.Length] == Path.DirectorySeparatorChar || pathTrimmed[rootTrimmed.Length] == Path.AltDirectorySeparatorChar || rootTrimmed.EndsWith(Path.DirectorySeparatorChar));
+            && (pathTrimmed[rootTrimmed.Length] == Path.DirectorySeparatorChar || pathTrimmed[rootTrimmed.Length] == Path.AltDirectorySeparatorChar || rootTrimmed.EndsWith(Path.DirectorySeparatorChar, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -131,7 +131,7 @@ internal static class RootedPath
         }
 
         var firstColon = text.IndexOf(':', StringComparison.Ordinal);
-        return firstColon >= 0 && (firstColon != 1 || text.IndexOf(':', 2) >= 0);
+        return firstColon >= 0 && (firstColon != 1 || text.IndexOf(':', 2, StringComparison.Ordinal) >= 0);
     }
 
     private static string? RealPath(string fullPath, int depth)

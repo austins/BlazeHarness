@@ -79,9 +79,16 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && await JS.InvokeAsync<bool>("bhUi.restoreSettingsAfterCultureChange"))
+        try
         {
-            State.Open();
+            if (firstRender && await JS.InvokeAsync<bool>("bhUi.restoreSettingsAfterCultureChange"))
+            {
+                State.Open();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
         }
     }
 

@@ -127,10 +127,12 @@ internal static class RefusedFiles
             try
             {
                 // A link is not followed: what it points at is reached, and checked, by its own path.
-                children = [.. new FileSystemEnumerable<(string Path, string Name, bool IsFolder)>(
-                    next.Folder,
-                    static (ref entry) => (entry.ToFullPath(), entry.FileName.ToString(), entry.IsDirectory && !entry.Attributes.HasFlag(FileAttributes.ReparsePoint)),
-                    Options)];
+                children = [
+                    .. new FileSystemEnumerable<(string Path, string Name, bool IsFolder)>(
+                        next.Folder,
+                        static (ref entry) => (entry.ToFullPath(), entry.FileName.ToString(), entry.IsDirectory && !entry.Attributes.HasFlag(FileAttributes.ReparsePoint)),
+                        Options)
+                ];
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {

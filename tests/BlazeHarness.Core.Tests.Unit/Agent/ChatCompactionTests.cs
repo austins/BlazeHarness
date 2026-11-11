@@ -481,13 +481,15 @@ public sealed class ChatCompactionTests
 
     private static List<string> TextOf(IEnumerable<ChatMessage> messages)
     {
-        return [.. messages.Select(m => string.Concat(m.Contents.Select(c => c switch
-        {
-            TextContent text => text.Text,
-            FunctionResultContent result => result.CallId + ":" + result.Result,
-            FunctionCallContent call => call.CallId + "=" + call.Name,
-            _ => string.Empty,
-        })))];
+        return [
+            .. messages.Select(m => string.Concat(m.Contents.Select(c => c switch
+            {
+                TextContent text => text.Text,
+                FunctionResultContent result => result.CallId + ":" + result.Result,
+                FunctionCallContent call => call.CallId + "=" + call.Name,
+                _ => string.Empty,
+            })))
+        ];
     }
 
     private static ChatTarget SmallWindow()

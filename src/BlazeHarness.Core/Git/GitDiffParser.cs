@@ -34,7 +34,7 @@ internal static class GitDiffParser
 
         foreach (var raw in output.Split('\n'))
         {
-            var line = raw.EndsWith('\r') ? raw[..^1] : raw;
+            var line = raw.EndsWith('\r', StringComparison.Ordinal) ? raw[..^1] : raw;
             if (line.StartsWith("@@ ", StringComparison.Ordinal))
             {
                 if (lines is not null)

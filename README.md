@@ -26,7 +26,7 @@ To check that a download was built from this repository, run `gh attestation ver
 
 ## Running
 
-To run from source, install the [.NET 10 SDK](https://dotnet.microsoft.com/download), then:
+To run from source, install the [.NET 11 SDK](https://dotnet.microsoft.com/download), then:
 
 ```bash
 dotnet run --project src/BlazeHarness.Web

@@ -28,7 +28,7 @@ public static class GitBranchName
             return false;
         }
 
-        return !name.Split('/').Any(part => part.StartsWith('.') || part.EndsWith(".lock", StringComparison.Ordinal));
+        return !name.Split('/').Any(part => part.StartsWith('.', StringComparison.Ordinal) || part.EndsWith(".lock", StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -56,7 +56,7 @@ public static class GitBranchName
         var result = name.ToString().TrimEnd('-');
         if (result.Length > MaxSuggestedLength)
         {
-            var cut = result.LastIndexOf('-', MaxSuggestedLength);
+            var cut = result.LastIndexOf('-', MaxSuggestedLength, StringComparison.Ordinal);
             result = cut > 0 ? result[..cut] : result[..MaxSuggestedLength];
         }
 

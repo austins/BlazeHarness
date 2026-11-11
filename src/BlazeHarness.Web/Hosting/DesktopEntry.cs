@@ -30,7 +30,7 @@ internal static class DesktopEntry
         foreach (var raw in content.Split('\n'))
         {
             var line = raw.Trim();
-            if (line.StartsWith('['))
+            if (line.StartsWith('[', StringComparison.Ordinal))
             {
                 inGroup = line == Group;
                 continue;

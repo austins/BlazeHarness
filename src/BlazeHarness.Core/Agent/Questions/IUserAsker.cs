@@ -17,5 +17,5 @@ internal interface IUserAsker
     /// <param name="cancellationToken">A token that is cancelled when the run stops.</param>
     /// <returns>How the user answered.</returns>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before the user answered.</exception>
-    Task<UserAnswer> AskAsync(string callId, UserQuestion question, CancellationToken cancellationToken);
+    public Task<UserAnswer> AskAsync(string callId, UserQuestion question, CancellationToken cancellationToken);
 }

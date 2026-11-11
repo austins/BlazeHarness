@@ -29,7 +29,7 @@ internal sealed class GitProcessRunner(TimeProvider time) : IGitRunner
 
         List<string> safeArguments = [];
         foreach (var driver in filters.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries)
-            .Select(key => key[..key.LastIndexOf('.')]).Distinct(StringComparer.Ordinal))
+            .Select(key => key[..key.LastIndexOf('.', StringComparison.Ordinal)]).Distinct(StringComparer.Ordinal))
         {
             foreach (var setting in (string[])["clean=", "smudge=", "process=", "required=false"])
             {

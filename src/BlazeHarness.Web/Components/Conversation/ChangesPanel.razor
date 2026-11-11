@@ -259,14 +259,28 @@ else
     {
         if (firstRender)
         {
-            _wrap = await JS.InvokeAsync<bool>("bhDiffWrap.get");
-            StateHasChanged();
+            try
+            {
+                _wrap = await JS.InvokeAsync<bool>("bhDiffWrap.get");
+                StateHasChanged();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
 
         if (_resetScroll)
         {
             _resetScroll = false;
-            await JS.InvokeVoidAsync("bhChanges.resetScroll");
+            try
+            {
+                await JS.InvokeVoidAsync("bhChanges.resetScroll");
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
     }
 
@@ -387,7 +401,14 @@ else
     private async Task ToggleWrapAsync()
     {
         _wrap = !_wrap;
-        await JS.InvokeVoidAsync("bhDiffWrap.set", _wrap);
+        try
+        {
+            await JS.InvokeVoidAsync("bhDiffWrap.set", _wrap);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 
     private void ToggleViewed(GitChangedFile file) => Review.SetViewed(file, !Review.IsViewed(file));
@@ -425,8 +446,15 @@ else
 
     private async Task CopyAsync(string text)
     {
-        var copied = await JS.InvokeAsync<bool>("bhChat.copyText", text);
-        Toasts.Show(copied ? WebStrings.UiCopied : WebStrings.UiCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
+        try
+        {
+            var copied = await JS.InvokeAsync<bool>("bhChat.copyText", text);
+            Toasts.Show(copied ? WebStrings.UiCopied : WebStrings.UiCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 
     private string FullPath(GitChangedFile file) =>
@@ -461,9 +489,16 @@ else
     {
         await OnComment.InvokeAsync(comment.ToMessage());
         Toasts.Show(WebStrings.ChangesCommentInserted, ToastKind.Success);
-        if (await JS.InvokeAsync<bool>("bhUi.isNarrow"))
+        try
         {
-            State.Close();
+            if (await JS.InvokeAsync<bool>("bhUi.isNarrow"))
+            {
+                State.Close();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
         }
     }
 

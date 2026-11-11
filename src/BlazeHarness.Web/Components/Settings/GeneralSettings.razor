@@ -161,10 +161,17 @@ var reversed = new string(chars);</code></pre>
     {
         if (firstRender)
         {
-            _ui = await JS.InvokeAsync<string>("bhSize.get", UiKind);
-            _chat = await JS.InvokeAsync<string>("bhSize.get", ChatKind);
-            _fullChatWidth = await JS.InvokeAsync<bool>("bhChatWidth.get");
-            StateHasChanged();
+            try
+            {
+                _ui = await JS.InvokeAsync<string>("bhSize.get", UiKind);
+                _chat = await JS.InvokeAsync<string>("bhSize.get", ChatKind);
+                _fullChatWidth = await JS.InvokeAsync<bool>("bhChatWidth.get");
+                StateHasChanged();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
     }
 
@@ -191,14 +198,28 @@ var reversed = new string(chars);</code></pre>
     {
         if (e.Value is string { Length: > 0 } culture)
         {
-            await JS.InvokeVoidAsync("bhUi.setCulture", culture);
+            try
+            {
+                await JS.InvokeVoidAsync("bhUi.setCulture", culture);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
     }
 
     private async Task OnChatWidthChangedAsync(ChangeEventArgs e)
     {
         _fullChatWidth = e.Value is true;
-        await JS.InvokeVoidAsync("bhChatWidth.set", _fullChatWidth);
+        try
+        {
+            await JS.InvokeVoidAsync("bhChatWidth.set", _fullChatWidth);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 
     private async Task SetAsync(string kind, string step)
@@ -212,6 +233,13 @@ var reversed = new string(chars);</code></pre>
             _chat = step;
         }
 
-        await JS.InvokeVoidAsync("bhSize.set", kind, step);
+        try
+        {
+            await JS.InvokeVoidAsync("bhSize.set", kind, step);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 }

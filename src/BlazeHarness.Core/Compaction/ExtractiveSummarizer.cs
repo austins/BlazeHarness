@@ -64,7 +64,7 @@ internal sealed class ExtractiveSummarizer : ISummarizer
         List<string>? current = null;
         foreach (var line in summary.Split('\n'))
         {
-            if (line.StartsWith('[') && line.EndsWith(']'))
+            if (line.StartsWith('[', StringComparison.Ordinal) && line.EndsWith(']', StringComparison.Ordinal))
             {
                 current = sections.GetValueOrDefault(line[1..^1]);
             }

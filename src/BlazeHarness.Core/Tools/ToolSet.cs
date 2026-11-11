@@ -52,7 +52,7 @@ public sealed class ToolSet
         }
 
         _byName = Tools.ToDictionary(t => t.Name, StringComparer.Ordinal);
-        Declarations = [.. known, .. Tools.Skip(known.Count).Select(t => AIFunctionFactory.CreateDeclaration(t.Name, t.Description, JsonDocument.Parse(t.InputSchema).RootElement.Clone()))];
+        Declarations = [.. known, .. Tools.Skip(known.Count).Select(t => AIFunctionFactory.CreateDeclaration(t.Name, t.Description, JsonElement.Parse(t.InputSchema)))];
     }
 
     /// <summary>

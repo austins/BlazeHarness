@@ -74,7 +74,7 @@ internal sealed class PosixShellProcess : IShellProcess
         var attributes = Marshal.AllocHGlobal(512);
         var actionsReady = false;
         var attributesReady = false;
-        List<IntPtr> strings = [];
+        List<nint> strings = [];
         try
         {
             Check(ActionsInit(actions));
@@ -183,16 +183,16 @@ internal sealed class PosixShellProcess : IShellProcess
         }
     }
 
-    private static IntPtr Pointers(IEnumerable<string> values, List<IntPtr> owned)
+    private static nint Pointers(IEnumerable<string> values, List<nint> owned)
     {
-        var pointers = values.Select(value => Utf8(value, owned)).Append(IntPtr.Zero).ToArray();
-        var array = Marshal.AllocCoTaskMem(pointers.Length * IntPtr.Size);
+        var pointers = values.Select(value => Utf8(value, owned)).Append(nint.Zero).ToArray();
+        var array = Marshal.AllocCoTaskMem(pointers.Length * nint.Size);
         owned.Add(array);
         Marshal.Copy(pointers, 0, array, pointers.Length);
         return array;
     }
 
-    private static IntPtr Utf8(string value, List<IntPtr> owned)
+    private static nint Utf8(string value, List<nint> owned)
     {
         var pointer = Marshal.StringToCoTaskMemUTF8(value);
         owned.Add(pointer);
@@ -210,47 +210,47 @@ internal sealed class PosixShellProcess : IShellProcess
 #pragma warning disable SYSLIB1054 // These small POSIX bindings avoid enabling unsafe code for the project.
     [DllImport("libc", EntryPoint = "posix_spawn_file_actions_init")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int ActionsInit(IntPtr actions);
+    private static extern int ActionsInit(nint actions);
 
     [DllImport("libc", EntryPoint = "posix_spawn_file_actions_destroy")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int ActionsDestroy(IntPtr actions);
+    private static extern int ActionsDestroy(nint actions);
 
     [DllImport("libc", EntryPoint = "posix_spawnattr_init")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int AttributesInit(IntPtr attributes);
+    private static extern int AttributesInit(nint attributes);
 
     [DllImport("libc", EntryPoint = "posix_spawnattr_destroy")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int AttributesDestroy(IntPtr attributes);
+    private static extern int AttributesDestroy(nint attributes);
 
     [DllImport("libc", EntryPoint = "posix_spawnattr_setflags")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int SetFlags(IntPtr attributes, short flags);
+    private static extern int SetFlags(nint attributes, short flags);
 
     [DllImport("libc", EntryPoint = "posix_spawnattr_setpgroup")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int SetGroup(IntPtr attributes, int group);
+    private static extern int SetGroup(nint attributes, int group);
 
     [DllImport("libc", EntryPoint = "posix_spawn_file_actions_addchdir_np")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int ChangeDirectory(IntPtr actions, IntPtr path);
+    private static extern int ChangeDirectory(nint actions, nint path);
 
     [DllImport("libc", EntryPoint = "posix_spawn_file_actions_addopen")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int Open(IntPtr actions, int fd, IntPtr path, int flags, uint mode);
+    private static extern int Open(nint actions, int fd, nint path, int flags, uint mode);
 
     [DllImport("libc", EntryPoint = "posix_spawn_file_actions_adddup2")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int Duplicate(IntPtr actions, SafePipeHandle fd, int target);
+    private static extern int Duplicate(nint actions, SafePipeHandle fd, int target);
 
     [DllImport("libc", EntryPoint = "posix_spawn")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int Spawn(out int pid, IntPtr path, IntPtr actions, IntPtr attributes, IntPtr arguments, IntPtr environment);
+    private static extern int Spawn(out int pid, nint path, nint actions, nint attributes, nint arguments, nint environment);
 
     [DllImport("libc", EntryPoint = "waitid", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int WaitId(int type, uint pid, IntPtr info, int options);
+    private static extern int WaitId(int type, uint pid, nint info, int options);
 
     [DllImport("libc", EntryPoint = "waitpid", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]

@@ -16,14 +16,14 @@ internal sealed class WindowsProcessJob : IDisposable
 
     internal WindowsProcessJob()
     {
-        _handle = CreateJob(IntPtr.Zero, null);
+        _handle = CreateJob(nint.Zero, null);
         if (_handle.IsInvalid)
         {
             _handle.Dispose();
             throw new Win32Exception(Marshal.GetLastPInvokeError());
         }
 
-        var size = IntPtr.Size == 8 ? 144 : 112;
+        var size = nint.Size == 8 ? 144 : 112;
         var limits = Marshal.AllocHGlobal(size);
         try
         {
@@ -61,12 +61,12 @@ internal sealed class WindowsProcessJob : IDisposable
 #pragma warning disable SYSLIB1054 // These small Windows bindings avoid enabling unsafe code for the project.
     [DllImport("kernel32.dll", EntryPoint = "CreateJobObjectW", CharSet = CharSet.Unicode, SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern SafeFileHandle CreateJob(IntPtr security, string? name);
+    private static extern SafeFileHandle CreateJob(nint security, string? name);
 
     [DllImport("kernel32.dll", EntryPoint = "SetInformationJobObject", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetLimits(SafeFileHandle job, int informationClass, IntPtr information, uint length);
+    private static extern bool SetLimits(SafeFileHandle job, int informationClass, nint information, uint length);
 
     [DllImport("kernel32.dll", EntryPoint = "AssignProcessToJobObject", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

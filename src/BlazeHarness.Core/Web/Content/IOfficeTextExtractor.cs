@@ -15,5 +15,5 @@ internal interface IOfficeTextExtractor
     /// <param name="cancellationToken">A token that stops the reading between blocks.</param>
     /// <returns>The text as Markdown: headings and tables are kept, and a spreadsheet or presentation has one section per sheet or slide.</returns>
     /// <exception cref="WebFetchException">The file is not a readable Office file, is protected by a password or in an old format, is too large, or has no text.</exception>
-    ExtractedDocument Extract(byte[] document, CancellationToken cancellationToken);
+    public ExtractedDocument Extract(byte[] document, CancellationToken cancellationToken);
 }

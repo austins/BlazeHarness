@@ -147,7 +147,7 @@ public static class SyntaxHighlighter
             {
                 // Text never contains a raw '<': the highlighter encodes it, so this is always a tag.
                 case '<':
-                    var end = html.IndexOf('>', i);
+                    var end = html.IndexOf('>', i, StringComparison.Ordinal);
                     var tag = html[i..(end + 1)];
                     if (tag.StartsWith("</", StringComparison.Ordinal))
                     {

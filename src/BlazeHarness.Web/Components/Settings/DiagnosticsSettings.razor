@@ -118,8 +118,15 @@
             Recent log:
             {string.Join('\n', _lines)}
             """;
-        var copied = await JS.InvokeAsync<bool>("bhChat.copyText", report);
-        Toasts.Show(copied ? WebStrings.DiagnosticsSettingsReportCopied : WebStrings.DiagnosticsSettingsCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
+        try
+        {
+            var copied = await JS.InvokeAsync<bool>("bhChat.copyText", report);
+            Toasts.Show(copied ? WebStrings.DiagnosticsSettingsReportCopied : WebStrings.DiagnosticsSettingsCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 
     private static string LogRetention() =>

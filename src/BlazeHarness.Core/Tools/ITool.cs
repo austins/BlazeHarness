@@ -13,44 +13,44 @@ public interface ITool
     /// <summary>
     /// Gets the name the model calls the tool by.
     /// </summary>
-    string Name { get; }
+    public string Name { get; }
 
     /// <summary>
     /// Gets the description the model reads to decide when to use the tool.
     /// </summary>
-    string Description { get; }
+    public string Description { get; }
 
     /// <summary>
     /// Gets the JSON Schema of the arguments object, as JSON text.
     /// </summary>
-    string InputSchema { get; }
+    public string InputSchema { get; }
 
     /// <summary>
     /// Gets a value indicating whether the tool never changes anything, so it may run without approval and alongside other tools.
     /// </summary>
-    bool IsReadOnly { get; }
+    public bool IsReadOnly { get; }
 
     /// <summary>
     /// Gets the names of the arguments that hold a file or folder path, which the permission check looks at before a call runs.
     /// </summary>
-    IReadOnlyList<string> PathArguments => [];
+    public IReadOnlyList<string> PathArguments => [];
 
     /// <summary>
     /// Gets a value indicating whether the tool runs commands, which can do anything its process can.
     /// </summary>
-    bool RunsCommands => false;
+    public bool RunsCommands => false;
 
     /// <summary>
     /// Gets how long one call may run before it is stopped.
     /// </summary>
-    TimeSpan Timeout { get; }
+    public TimeSpan Timeout { get; }
 
     /// <summary>
     /// Describe a call in a few words, for the one-line summary in the UI and the approval prompt.
     /// </summary>
     /// <param name="arguments">The call arguments.</param>
     /// <returns>A short description such as the path a file tool works on.</returns>
-    string Summarize(JsonElement arguments);
+    public string Summarize(JsonElement arguments);
 
     /// <summary>
     /// Run the tool.
@@ -62,5 +62,5 @@ public interface ITool
     /// <param name="context">What the call runs against.</param>
     /// <param name="cancellationToken">A token that stops the call.</param>
     /// <returns>The result sent back to the model.</returns>
-    Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken);
+    public Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken);
 }

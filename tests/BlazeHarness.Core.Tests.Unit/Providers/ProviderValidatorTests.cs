@@ -46,7 +46,7 @@ public sealed class ProviderValidatorTests
     public void Validate_ExtraKeyThatCannotBeAPath_ReportsIssue(string key)
     {
         // Arrange
-        var model = Valid.Models[0] with { SamplingParams = new SamplingParams { Extra = new Dictionary<string, JsonElement> { [key] = JsonDocument.Parse("1").RootElement } } };
+        var model = Valid.Models[0] with { SamplingParams = new SamplingParams { Extra = new Dictionary<string, JsonElement> { [key] = JsonElement.Parse("1") } } };
 
         // Act
         var issues = ProviderValidator.Validate(Valid with { Models = [model] });
@@ -59,7 +59,7 @@ public sealed class ProviderValidatorTests
     public void Validate_ExtraKeyWithDotsAndDashes_IsValid()
     {
         // Arrange
-        var model = Valid.Models[0] with { SamplingParams = new SamplingParams { Extra = new Dictionary<string, JsonElement> { ["chat_template_kwargs.enable-thinking"] = JsonDocument.Parse("true").RootElement } } };
+        var model = Valid.Models[0] with { SamplingParams = new SamplingParams { Extra = new Dictionary<string, JsonElement> { ["chat_template_kwargs.enable-thinking"] = JsonElement.Parse("true") } } };
 
         // Act
         var issues = ProviderValidator.Validate(Valid with { Models = [model] });

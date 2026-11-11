@@ -12,5 +12,5 @@ public interface IMcpConnector
     /// <param name="cancellationToken">A token to cancel the attempt.</param>
     /// <returns>The connection.</returns>
     /// <exception cref="McpConnectException">The server could not be started or reached.</exception>
-    Task<IMcpConnection> ConnectAsync(McpServerConfig config, CancellationToken cancellationToken);
+    public Task<IMcpConnection> ConnectAsync(McpServerConfig config, CancellationToken cancellationToken);
 }

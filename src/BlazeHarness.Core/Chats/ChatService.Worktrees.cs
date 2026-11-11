@@ -4,9 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace BlazeHarness.Core.Chats;
 
-/// <summary>
+/// <content>
 /// Moves folder chats into git worktrees of their own and back.
-/// </summary>
+/// </content>
 public sealed partial class ChatService
 {
     /// <summary>

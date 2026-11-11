@@ -166,7 +166,7 @@ internal static class SearchWords
                 lastBase = rune.Value;
             }
 
-            folded.Append(rune.ToString());
+            folded.Append(rune);
         }
 
         return folded.ToString().Normalize(NormalizationForm.FormC);

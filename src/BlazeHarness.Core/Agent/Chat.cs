@@ -140,7 +140,11 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     /// </remarks>
     public ProjectContext? Project
     {
-        get => Volatile.Read(ref _project);
+        get
+        {
+            return Volatile.Read(ref _project);
+        }
+
         set
         {
             Volatile.Write(ref _project, value);
@@ -157,7 +161,11 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
     /// </remarks>
     public SkillSet? Skills
     {
-        get => Volatile.Read(ref _skills);
+        get
+        {
+            return Volatile.Read(ref _skills);
+        }
+
         set
         {
             Volatile.Write(ref _skills, value);

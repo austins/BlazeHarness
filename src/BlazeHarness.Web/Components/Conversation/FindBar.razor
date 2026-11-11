@@ -61,7 +61,14 @@
     /// <returns>A task that completes when the box has the focus.</returns>
     public async Task FocusAsync()
     {
-        await JS.InvokeVoidAsync("bhUi.focusSelect", _input);
+        try
+        {
+            await JS.InvokeVoidAsync("bhUi.focusSelect", _input);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 
     protected override void OnParametersSet()

@@ -44,7 +44,7 @@ internal static class ListeningPorts
                 continue;
             }
 
-            var colon = fields[1].LastIndexOf(':');
+            var colon = fields[1].LastIndexOf(':', StringComparison.Ordinal);
             if (colon < 0 || !int.TryParse(fields[1].AsSpan(colon + 1), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var port) || port == 0)
             {
                 continue;

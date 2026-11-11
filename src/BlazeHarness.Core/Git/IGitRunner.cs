@@ -13,5 +13,5 @@ internal interface IGitRunner
     /// <param name="cancellationToken">A token that stops the run.</param>
     /// <param name="timeout">How long git may take, or null for the default of 20 seconds.</param>
     /// <returns>The result; <see cref="GitResult.Unavailable"/> when git is missing or took too long.</returns>
-    Task<GitResult> RunAsync(string workingDirectory, IReadOnlyList<string> arguments, CancellationToken cancellationToken, TimeSpan? timeout = null);
+    public Task<GitResult> RunAsync(string workingDirectory, IReadOnlyList<string> arguments, CancellationToken cancellationToken, TimeSpan? timeout = null);
 }

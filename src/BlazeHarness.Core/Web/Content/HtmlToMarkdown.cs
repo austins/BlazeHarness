@@ -357,7 +357,7 @@ internal sealed partial class HtmlToMarkdown
 
     private string? LinkTarget(string href)
     {
-        if (string.IsNullOrWhiteSpace(href) || href.StartsWith('#'))
+        if (string.IsNullOrWhiteSpace(href) || href.StartsWith('#', StringComparison.Ordinal))
         {
             return null;
         }

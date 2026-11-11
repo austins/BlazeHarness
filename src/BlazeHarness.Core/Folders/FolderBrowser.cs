@@ -40,7 +40,7 @@ public static class FolderBrowser
         {
             var folders = new DirectoryInfo(full)
                 .EnumerateDirectories("*", options)
-                .Where(d => includeHidden || !d.Name.StartsWith('.'))
+                .Where(d => includeHidden || !d.Name.StartsWith('.', StringComparison.Ordinal))
                 .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(d => new FolderEntry(d.Name, d.FullName))
                 .ToList();

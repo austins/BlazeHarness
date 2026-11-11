@@ -8,7 +8,7 @@ internal interface ISearchProvider
     /// <summary>
     /// Gets the id saved in the settings, one of <see cref="WebProviders.All"/>.
     /// </summary>
-    string Id { get; }
+    public string Id { get; }
 
     /// <summary>
     /// Search the web.
@@ -18,5 +18,5 @@ internal interface ISearchProvider
     /// <param name="cancellationToken">A token that stops the search.</param>
     /// <returns>The results in the provider's order; empty when nothing matched.</returns>
     /// <exception cref="SearchProviderException">The provider could not be used.</exception>
-    Task<IReadOnlyList<SearchResult>> SearchAsync(string query, int maxResults, CancellationToken cancellationToken);
+    public Task<IReadOnlyList<SearchResult>> SearchAsync(string query, int maxResults, CancellationToken cancellationToken);
 }

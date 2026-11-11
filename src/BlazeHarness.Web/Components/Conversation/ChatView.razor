@@ -303,13 +303,27 @@ else
         if (_highlight is { } shown)
         {
             _highlight = null;
-            await JS.InvokeVoidAsync("bhChat.highlight", _scroll, shown.Query, shown.EntryId.ToString());
+            try
+            {
+                await JS.InvokeVoidAsync("bhChat.highlight", _scroll, shown.Query, shown.EntryId.ToString());
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
 
         if (!_missing && !_watching)
         {
             _watching = true;
-            await JS.InvokeVoidAsync("bhChat.watch", _root, _scroll);
+            try
+            {
+                await JS.InvokeVoidAsync("bhChat.watch", _root, _scroll);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
         }
     }
 
@@ -369,15 +383,29 @@ else
     {
         _finding = false;
         _highlight = null;
-        await JS.InvokeVoidAsync("bhChat.clearHighlight");
-        await JS.InvokeVoidAsync("bhUi.skipToChat");
+        try
+        {
+            await JS.InvokeVoidAsync("bhChat.clearHighlight");
+            await JS.InvokeVoidAsync("bhUi.skipToChat");
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 
     private async Task ShowMatchAsync((Guid EntryId, string Query) match)
     {
         if (match.EntryId == Guid.Empty)
         {
-            await JS.InvokeVoidAsync("bhChat.clearHighlight");
+            try
+            {
+                await JS.InvokeVoidAsync("bhChat.clearHighlight");
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone, and the page with it.
+            }
             return;
         }
 
@@ -616,7 +644,14 @@ else
 
     private async Task FollowAsync()
     {
-        await JS.InvokeVoidAsync("bhChat.follow", _root);
+        try
+        {
+            await JS.InvokeVoidAsync("bhChat.follow", _root);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the page with it.
+        }
     }
 
     private async Task ChangePermissionsAsync(PermissionSettings settings)

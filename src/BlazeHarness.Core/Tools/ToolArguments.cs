@@ -34,7 +34,7 @@ public sealed class ToolArguments
 
         try
         {
-            return new ToolArguments(JsonDocument.Parse(json).RootElement.Clone());
+            return new ToolArguments(JsonElement.Parse(json));
         }
         catch (JsonException ex)
         {

@@ -229,7 +229,7 @@ public sealed class SkillSet
         }
 
         var fence = open - start;
-        var at = text.IndexOf('`', open);
+        var at = text.IndexOf('`', open, StringComparison.Ordinal);
         while (at >= 0)
         {
             var run = at;
@@ -243,7 +243,7 @@ public sealed class SkillSet
                 return run;
             }
 
-            at = text.IndexOf('`', run);
+            at = text.IndexOf('`', run, StringComparison.Ordinal);
         }
 
         return open;

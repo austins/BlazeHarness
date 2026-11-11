@@ -60,7 +60,7 @@ public sealed class StreamingMarkdown(MarkdownRenderer renderer, string? chatId 
         var boundary = _settled;
         while (true)
         {
-            var end = text.IndexOf('\n', _scanned);
+            var end = text.IndexOf('\n', _scanned, StringComparison.Ordinal);
             if (end < 0)
             {
                 return boundary;

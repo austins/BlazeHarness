@@ -241,7 +241,6 @@
         if (folder is not null)
         {
             _refreshing = true;
-            StateHasChanged();
             try
             {
                 status = await Git.GetStatusAsync(folder, _scope, _stop.Token);
@@ -275,7 +274,9 @@
             }
         }
 
+#pragma warning disable BL0012 // Needed when RefreshAsync runs unawaited (_ = RefreshAsync()), where nothing renders after it completes.
         StateHasChanged();
+#pragma warning restore BL0012
     }
 
     private Task ChangeScopeAsync(GitChangeScope scope)

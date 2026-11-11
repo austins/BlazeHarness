@@ -77,7 +77,7 @@ public sealed class McpToolTests
         var normalized = McpTool.NormalizeSchema("""{"type":"object"}""");
 
         // Assert
-        JsonDocument.Parse(normalized).RootElement.TryGetProperty("properties", out _).Should().BeTrue();
+        JsonElement.Parse(normalized).TryGetProperty("properties", out _).Should().BeTrue();
     }
 
     [Fact]

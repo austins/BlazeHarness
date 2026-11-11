@@ -46,7 +46,7 @@ public sealed class PermissionEngine
     private const string FileGrantPrefix = "file:";
     private const string NeverAsksRefusal = "This chat never asks, so it was refused. Do not retry it; say in your reply what you wanted to do and why.";
 
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private readonly ConcurrentDictionary<string, byte> _grants = new(StringComparer.Ordinal);
     private PermissionSettings _settings = PermissionSettings.Default;
 
