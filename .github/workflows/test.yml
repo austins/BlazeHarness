@@ -42,14 +42,14 @@ jobs:
           brew install bubblewrap socat
           echo "$HOMEBREW_PREFIX/bin" >> "$GITHUB_PATH"
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-      - name: Playwright cache
+      - name: Cache Playwright
         if: matrix.part != 'sandbox'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
           # The E2E project declares the Playwright version, which decides the browser build.
           key: ${{ runner.os }}-playwright-${{ hashFiles('tests/BlazeHarness.Web.Tests.E2E/BlazeHarness.Web.Tests.E2E.csproj') }}
-      - name: Puppeteer cache
+      - name: Cache Puppeteer
         if: matrix.part != 'sandbox'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
