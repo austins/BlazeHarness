@@ -1,3 +1,4 @@
+@inherits ExternalEventComponent
 @using System.Globalization
 @using BlazeHarness.Core.Compaction
 @using BlazeHarness.Core.Config
@@ -79,7 +80,7 @@
 
     private void OnExternalChange(object? sender, EventArgs e)
     {
-        _ = InvokeAsync(() =>
+        RunOnRenderer(() =>
         {
             if (!Dirty)
             {

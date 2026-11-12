@@ -1,3 +1,4 @@
+@inherits ExternalEventComponent
 @using BlazeHarness.Core
 @using BlazeHarness.Core.Skills
 @implements IDisposable
@@ -119,7 +120,7 @@
 
     private void OnCatalogChanged(object? sender, EventArgs e)
     {
-        _ = InvokeAsync(() =>
+        RunOnRenderer(() =>
         {
             _resolution = Catalog.Resolve(null);
             StateHasChanged();

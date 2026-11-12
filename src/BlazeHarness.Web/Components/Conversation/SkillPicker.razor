@@ -1,3 +1,4 @@
+@inherits ExternalEventComponent
 @using BlazeHarness.Core.Chats
 @using BlazeHarness.Core.Skills
 @implements IDisposable
@@ -19,7 +20,7 @@
             <ul class="panel-list">
                 @foreach (var skill in _available.Skills)
                 {
-                    <li>
+                    <li @key="skill.Name">
                         <label class="panel-check" title="@skill.Description">
                             <input type="checkbox" checked="@IsOn(skill)" @onchange="e => SetAsync(skill.Name, (bool)e.Value!)" />
                             <span class="panel-option-text">
@@ -35,7 +36,7 @@
             </ul>
             <p class="panel-note">
                 <Icon Name="info" /> <span>@WebStrings.SkillPickerScopeNote</span>
-                <button type="button" class="link-button" @onclick="() => SettingsState.Open(SettingsSection.Skills)">@WebStrings.SkillPickerManage</button>
+                <button type="button" class="link-button" @onclick="() => SettingsState.OpenAsync(SettingsSection.Skills)">@WebStrings.SkillPickerManage</button>
             </p>
         </ChildContent>
     </Popover>
@@ -111,7 +112,7 @@
 
     private void OnCatalogChanged(object? sender, EventArgs e)
     {
-        _ = InvokeAsync(() =>
+        RunOnRenderer(() =>
         {
             _available = AvailableSkills();
             StateHasChanged();

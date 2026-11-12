@@ -1,3 +1,4 @@
+@inherits ExternalEventComponent
 @using BlazeHarness.Core.Compaction
 @using System.Globalization
 @using BlazeHarness.Core.Mcp
@@ -288,7 +289,7 @@
 
     private void OnFileChanged(object? sender, EventArgs e)
     {
-        _ = InvokeAsync(() =>
+        RunOnRenderer(() =>
         {
             if (!Dirty)
             {
@@ -302,7 +303,7 @@
 
     private void OnManagerChanged(object? sender, EventArgs e)
     {
-        _ = InvokeAsync(() =>
+        RunOnRenderer(() =>
         {
             _statuses = Manager.Statuses();
             StateHasChanged();

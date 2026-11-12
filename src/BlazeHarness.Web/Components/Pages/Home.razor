@@ -1,6 +1,7 @@
 @page "/"
 @page "/chat/{Id}"
 @using BlazeHarness.Core
+@inherits ExternalEventComponent
 @implements IDisposable
 @inject ProviderService Service
 @inject SettingsDialogState SettingsState
@@ -13,7 +14,7 @@
         <div class="card empty">
             <h1>@WebStrings.HomeHeading</h1>
             <p>@WebStrings.HomeProviderHint</p>
-            <button type="button" class="btn btn-primary" @onclick="() => SettingsState.Open(SettingsSection.Providers)">@WebStrings.HomeSetUpProvider</button>
+            <button type="button" class="btn btn-primary" @onclick="() => SettingsState.OpenAsync(SettingsSection.Providers)">@WebStrings.HomeSetUpProvider</button>
         </div>
     </div>
 }
@@ -37,16 +38,11 @@ else
 
     public void Dispose()
     {
-        Service.Changed -= OnProvidersChanged;
+        Service.Changed -= RenderOnEvent;
     }
 
     protected override void OnInitialized()
     {
-        Service.Changed += OnProvidersChanged;
-    }
-
-    private void OnProvidersChanged(object? sender, EventArgs e)
-    {
-        _ = InvokeAsync(StateHasChanged);
+        Service.Changed += RenderOnEvent;
     }
 }

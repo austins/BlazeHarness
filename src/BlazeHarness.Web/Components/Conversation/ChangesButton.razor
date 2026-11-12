@@ -1,3 +1,4 @@
+@inherits ExternalEventComponent
 @implements IDisposable
 @inject SidePanelState State
 
@@ -39,7 +40,7 @@
     {
         if (!_disposed)
         {
-            _ = InvokeAsync(StateHasChanged);
+            RunOnRenderer(StateHasChanged);
         }
     }
 }

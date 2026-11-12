@@ -1,3 +1,4 @@
+@inherits ExternalEventComponent
 @using BlazeHarness.Core.Git
 @using BlazeHarness.Core.Web
 @using BlazeHarness.Core.Web.Browser
@@ -313,7 +314,7 @@
 
     private void OnStateChanged(object? sender, EventArgs e)
     {
-        _ = InvokeAsync(() =>
+        RunOnRenderer(() =>
         {
             if (_stop.IsCancellationRequested)
             {
@@ -345,7 +346,7 @@
             return;
         }
 
-        _ = InvokeAsync(() =>
+        RunOnRenderer(() =>
         {
             if (e.ChatId != _chatId || _stop.IsCancellationRequested)
             {

@@ -9,14 +9,18 @@ public sealed class SettingsDialogStateTests
 
     public SettingsDialogStateTests()
     {
-        _sut.Changed += (_, _) => _changes++;
+        _sut.Changed += () =>
+        {
+            _changes++;
+            return Task.CompletedTask;
+        };
     }
 
     [Fact]
-    public void Open_NoSection_ShowsGeneral()
+    public async Task Open_NoSection_ShowsGeneral()
     {
         // Act
-        _sut.Open();
+        await _sut.OpenAsync();
 
         // Assert
         _sut.Section.Should().Be(SettingsSection.General);
@@ -24,39 +28,77 @@ public sealed class SettingsDialogStateTests
     }
 
     [Fact]
-    public void Open_OtherSection_SwitchesSection()
+    public async Task Open_OtherSection_SwitchesSection()
     {
         // Arrange
-        _sut.Open();
+        await _sut.OpenAsync();
 
         // Act
-        _sut.Open(SettingsSection.Mcp);
+        await _sut.OpenAsync(SettingsSection.Mcp);
 
         // Assert
         _sut.Section.Should().Be(SettingsSection.Mcp);
     }
 
     [Fact]
-    public void Close_WhileClosed_RaisesNothing()
+    public async Task Close_WhileClosed_RaisesNothing()
     {
         // Act
-        _sut.Close();
+        await _sut.CloseAsync();
 
         // Assert
         _changes.Should().Be(0);
     }
 
     [Fact]
-    public void Close_WhileOpen_ClearsSection()
+    public async Task Close_WhileOpen_ClearsSection()
     {
         // Arrange
-        _sut.Open();
+        await _sut.OpenAsync();
 
         // Act
-        _sut.Close();
+        await _sut.CloseAsync();
 
         // Assert
         _sut.Section.Should().BeNull();
         _changes.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Open_SlowHandler_CompletesAfterEveryHandler()
+    {
+        // Arrange
+        var gate = new TaskCompletionSource();
+        var secondRan = false;
+#pragma warning disable VSTHRD003 // The test holds the handler open with its own gate.
+        _sut.Changed += async () => await gate.Task;
+#pragma warning restore VSTHRD003
+        _sut.Changed += () =>
+        {
+            secondRan = true;
+            return Task.CompletedTask;
+        };
+
+        // Act
+        var open = _sut.OpenAsync();
+
+        // Assert
+        secondRan.Should().BeTrue();
+        open.IsCompleted.Should().BeFalse();
+        gate.SetResult();
+        await open;
+    }
+
+    [Fact]
+    public async Task Open_HandlerThrows_FaultsTheReturnedTask()
+    {
+        // Arrange
+        _sut.Changed += () => Task.FromException(new InvalidOperationException());
+
+        // Act
+        var open = () => _sut.OpenAsync();
+
+        // Assert
+        await open.Should().ThrowAsync<InvalidOperationException>();
     }
 }

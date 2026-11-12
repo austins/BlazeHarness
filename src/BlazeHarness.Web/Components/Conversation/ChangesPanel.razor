@@ -42,7 +42,7 @@ else
             <ul class="changes-list">
                 @foreach (var file in _groups[0].Files)
                 {
-                    <li>@FileRow(file, showFolder: true)</li>
+                    <li @key="file.Path">@FileRow(file, showFolder: true)</li>
                 }
             </ul>
         }
@@ -51,7 +51,7 @@ else
             @foreach (var group in _groups)
             {
                 var collapsed = Review.CollapsedFolders.Contains(group.Folder);
-                <div class="changes-group">
+                <div class="changes-group" @key="group.Folder">
                     <button type="button" class="changes-folder" aria-expanded="@(collapsed ? "false" : "true")" @onclick="() => ToggleFolder(group.Folder)">
                         <Icon Name="@(collapsed ? "chevron-right" : "chevron-down")" />
                         <bdi class="changes-folder-name">@(group.Folder.Length == 0 ? WebStrings.ChangesRootFolder : group.Folder)</bdi>
@@ -62,7 +62,7 @@ else
                         <ul class="changes-list">
                             @foreach (var file in group.Files)
                             {
-                                <li>@FileRow(file, showFolder: false)</li>
+                                <li @key="file.Path">@FileRow(file, showFolder: false)</li>
                             }
                         </ul>
                     }

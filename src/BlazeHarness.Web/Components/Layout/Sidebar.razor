@@ -166,7 +166,7 @@
 
     <div class="sidebar-footer">
         <div class="sidebar-links">
-            <button type="button" class="nav-link" data-shortcut="settings" title="@WebStrings.SidebarSettingsTooltip" @onclick="() => SettingsState.Open()"><Icon Name="settings" /> @WebStrings.SidebarSettings</button>
+            <button type="button" class="nav-link" data-shortcut="settings" title="@WebStrings.SidebarSettingsTooltip" @onclick="() => SettingsState.OpenAsync()"><Icon Name="settings" /> @WebStrings.SidebarSettings</button>
         </div>
         <button type="button" class="nav-link nav-link-icon" @onclick="ToggleThemeAsync"
                 title="@ThemeToggleLabel"

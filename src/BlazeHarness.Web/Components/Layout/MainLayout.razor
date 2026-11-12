@@ -48,13 +48,13 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
-        SettingsState.Changed -= OnSettingsChanged;
+        SettingsState.Changed -= OnSettingsChangedAsync;
     }
 
     protected override void OnInitialized()
     {
         Navigation.LocationChanged += OnLocationChanged;
-        SettingsState.Changed += OnSettingsChanged;
+        SettingsState.Changed += OnSettingsChangedAsync;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -89,21 +89,10 @@
     /// Close the drawer before showing settings on a narrow screen.
     /// </summary>
     /// <remarks>The settings dialog opens over the drawer.</remarks>
-    /// <param name="sender">The settings event sender.</param>
-    /// <param name="e">The settings change event.</param>
-    private async void OnSettingsChanged(object? sender, EventArgs e)
+    /// <returns>A task that completes when the drawer is settled.</returns>
+    private Task OnSettingsChangedAsync()
     {
-        if (SettingsState.Section is not null)
-        {
-            try
-            {
-                await InvokeAsync(CollapseIfNarrowAsync);
-            }
-            catch (Exception ex) when (ex is JSException or JSDisconnectedException or OperationCanceledException or InvalidOperationException or ObjectDisposedException)
-            {
-                // An async void handler has nowhere to send a circuit teardown error.
-            }
-        }
+        return SettingsState.Section is null ? Task.CompletedTask : InvokeAsync(CollapseIfNarrowAsync);
     }
 
     private async Task CollapseIfNarrowAsync()

@@ -1,3 +1,4 @@
+@inherits ExternalEventComponent
 @using System.Globalization
 @using System.Text.Json
 @using BlazeHarness.Core.Agent
@@ -81,7 +82,7 @@
 
     @foreach (var pending in Call.PendingHosts)
     {
-        <div class="tool-approval" role="alert">
+        <div class="tool-approval" role="alert" @key="pending.Host">
             <span>@ResourceMessageFormatter.Web.FormatMarkup(nameof(WebStrings.ToolCallHostPrompt), new Dictionary<string, object?> { ["host"] = pending.Host })</span>
             <button type="button" class="btn btn-primary btn-sm" @onclick="() => OnDecideHost.InvokeAsync(new HostAnswer(Call.CallId, pending.Host, ApprovalChoice.AllowOnce))"><Icon Name="check" /> @WebStrings.ToolCallViewAllowOnce</button>
             @if (pending.CanRemember)
@@ -282,7 +283,7 @@
         var ticking = Call.Status == ToolCallStatus.Running && Call.StartedAt is not null;
         if (ticking && _tick is null)
         {
-            _tick = Time.CreateTimer(_ => InvokeAsync(StateHasChanged), null, TickInterval, TickInterval);
+            _tick = Time.CreateTimer(_ => RunOnRenderer(StateHasChanged), null, TickInterval, TickInterval);
         }
         else if (!ticking && _tick is not null)
         {

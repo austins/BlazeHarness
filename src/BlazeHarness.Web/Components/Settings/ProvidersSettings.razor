@@ -1,3 +1,4 @@
+@inherits ExternalEventComponent
 @using System.Text.Json
 @using System.Globalization
 @using BlazeHarness.Core.Config
@@ -301,12 +302,12 @@
 
     public void Dispose()
     {
-        Service.Changed -= OnProvidersChanged;
+        Service.Changed -= RenderOnEvent;
     }
 
     protected override async Task OnInitializedAsync()
     {
-        Service.Changed += OnProvidersChanged;
+        Service.Changed += RenderOnEvent;
         var cfg = Service.Config;
         var first = Service.Configured.FirstOrDefault(p => p.Id == cfg.DefaultProviderId) ?? Service.Configured.FirstOrDefault();
         if (first is not null)
@@ -315,8 +316,6 @@
             await RefreshKeyAsync();
         }
     }
-
-    private void OnProvidersChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
 
     private async Task RefreshKeyAsync()
     {

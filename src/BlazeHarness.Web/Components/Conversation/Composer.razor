@@ -1,3 +1,4 @@
+@inherits ExternalEventComponent
 @implements IDisposable
 @inject ProviderService Providers
 @inject IJSRuntime JS
@@ -14,7 +15,7 @@
 {
     <div class="composer composer-empty">
         <p class="muted">@WebStrings.ComposerNoModelsHint</p>
-        <button type="button" class="btn btn-primary btn-sm" @onclick="() => SettingsState.Open(SettingsSection.Providers)">@WebStrings.ComposerOpenProviders</button>
+        <button type="button" class="btn btn-primary btn-sm" @onclick="() => SettingsState.OpenAsync(SettingsSection.Providers)">@WebStrings.ComposerOpenProviders</button>
     </div>
 }
 else
@@ -28,7 +29,7 @@ else
             <ul id="@_suggestionsId" class="composer-suggestions" role="listbox" aria-label="@WebStrings.ComposerSkillsLabel" data-for="@_text[SkillWordStart()..]">
                 @foreach (var skill in suggestions)
                 {
-                    <li role="none">
+                    <li role="none" @key="skill.Name">
                         <button type="button" id="skill-suggestion-@skill.Name" class="btn btn-ghost btn-sm" role="option" aria-selected="false" tabindex="-1" @onclick="() => ChooseSkillAsync(skill)">
                             <strong>/@skill.Name</strong> <span class="muted">@ShortDescription(skill)</span>
                         </button>
@@ -369,7 +370,7 @@ else
 
     private void OnProvidersChanged(object? sender, EventArgs e)
     {
-        _ = InvokeAsync(() =>
+        RunOnRenderer(() =>
         {
             LoadModels();
             if (_models.Exists(m => m.Key == _selected))

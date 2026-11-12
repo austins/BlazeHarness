@@ -2,13 +2,13 @@
 @inject IJSRuntime JS
 @inject SettingsDialogState State
 
-<Dialog Title="@WebStrings.SettingsDialogTitle" Open="State.Section is not null" Class="dialog-settings" OnClose="State.Close">
+<Dialog Title="@WebStrings.SettingsDialogTitle" Open="State.Section is not null" Class="dialog-settings" OnClose="State.CloseAsync">
     <div class="settings">
         <nav class="settings-nav" aria-label="@WebStrings.SettingsDialogSectionsLabel">
             @foreach (var (section, icon) in Sections)
             {
                 <button type="button" class="nav-link@(State.Section == section ? " active" : "")"
-                        aria-current="@(State.Section == section ? "page" : null)" @onclick="() => State.Open(section)">
+                        aria-current="@(State.Section == section ? "page" : null)" @onclick="() => State.OpenAsync(section)">
                     <Icon Name="@icon" /> @SectionLabel(section)
                 </button>
             }
@@ -74,7 +74,7 @@
 
     protected override void OnInitialized()
     {
-        State.Changed += OnChanged;
+        State.Changed += OnChangedAsync;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -83,7 +83,7 @@
         {
             if (firstRender && await JS.InvokeAsync<bool>("bhUi.restoreSettingsAfterCultureChange"))
             {
-                State.Open();
+                await State.OpenAsync();
             }
         }
         catch (JSDisconnectedException)
@@ -92,13 +92,10 @@
         }
     }
 
+    private Task OnChangedAsync() => InvokeAsync(StateHasChanged);
+
     public void Dispose()
     {
-        State.Changed -= OnChanged;
-    }
-
-    private void OnChanged(object? sender, EventArgs e)
-    {
-        _ = InvokeAsync(StateHasChanged);
+        State.Changed -= OnChangedAsync;
     }
 }

@@ -1,3 +1,4 @@
+@inherits ExternalEventComponent
 @using BlazeHarness.Core.Chats
 @using BlazeHarness.Core.Mcp
 @implements IDisposable
@@ -20,7 +21,7 @@
                 @foreach (var status in _servers)
                 {
                     var server = status.Config;
-                    <li>
+                    <li @key="server.Name">
                         <label class="panel-check">
                             <input type="checkbox" checked="@IsOn(status)" @onchange="e => SetAsync(server.Name, (bool)e.Value!)" />
                             <span class="panel-option-text">
@@ -40,7 +41,7 @@
             </ul>
             <p class="panel-note">
                 <Icon Name="info" /> <span>@WebStrings.McpPickerScopeNote</span>
-                <button type="button" class="link-button" @onclick="() => SettingsState.Open(SettingsSection.Mcp)">@WebStrings.McpPickerManage</button>
+                <button type="button" class="link-button" @onclick="() => SettingsState.OpenAsync(SettingsSection.Mcp)">@WebStrings.McpPickerManage</button>
             </p>
         </ChildContent>
     </Popover>
@@ -108,7 +109,7 @@
 
     private void OnManagerChanged(object? sender, EventArgs e)
     {
-        _ = InvokeAsync(() =>
+        RunOnRenderer(() =>
         {
             _servers = Manager.Statuses();
             StateHasChanged();

@@ -11,7 +11,10 @@ public sealed class SettingsDialogState
     /// <summary>
     /// Raised after the dialog opened, closed or changed section.
     /// </summary>
-    public event EventHandler? Changed;
+    /// <remarks>Every handler runs at once, and <see cref="OpenAsync"/> and <see cref="CloseAsync"/> complete when all of them have.</remarks>
+#pragma warning disable CA1003, S3264 // A handler returns the task the raiser awaits, which EventHandler can't; RaiseChangedAsync invokes it through GetInvocationList.
+    public event Func<Task>? Changed;
+#pragma warning restore CA1003, S3264
 
     /// <summary>
     /// Gets the section shown, or null while the dialog is closed.
@@ -22,23 +25,32 @@ public sealed class SettingsDialogState
     /// Open the dialog, or switch it to another section.
     /// </summary>
     /// <param name="section">The section to show.</param>
-    public void Open(SettingsSection section = SettingsSection.General)
+    /// <returns>A task that completes when every <see cref="Changed"/> handler has.</returns>
+    public Task OpenAsync(SettingsSection section = SettingsSection.General)
     {
         Section = section;
-        Changed?.Invoke(this, EventArgs.Empty);
+        return RaiseChangedAsync();
     }
 
     /// <summary>
     /// Close the dialog.
     /// </summary>
-    public void Close()
+    /// <returns>A task that completes when every <see cref="Changed"/> handler has.</returns>
+    public Task CloseAsync()
     {
         if (Section is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         Section = null;
-        Changed?.Invoke(this, EventArgs.Empty);
+        return RaiseChangedAsync();
+    }
+
+    private Task RaiseChangedAsync()
+    {
+        return Changed is { } handlers
+            ? Task.WhenAll(handlers.GetInvocationList().Select(handler => ((Func<Task>)handler)()))
+            : Task.CompletedTask;
     }
 }
