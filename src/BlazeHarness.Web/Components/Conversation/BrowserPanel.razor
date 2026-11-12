@@ -3,7 +3,7 @@
 @using BlazeHarness.Web.Hosting
 @implements IAsyncDisposable
 @inject WebServices Web
-@inject IJSRuntime JS
+@inject BrowserScripts BrowserScripts
 
 <div class="browser-bar">
     <Icon Name="globe" />
@@ -41,8 +41,15 @@
     public async ValueTask DisposeAsync()
     {
         _disposed = true;
-        await StopStreamAsync();
-        _self?.Dispose();
+        try
+        {
+            await BrowserScripts.StopAsync();
+        }
+        finally
+        {
+            // A failed stop must not leave this reference registered for the life of the circuit.
+            _self?.Dispose();
+        }
     }
 
     /// <summary>
@@ -92,26 +99,7 @@
 
         _bound = key;
         _self ??= DotNetObjectReference.Create(this);
-        try
-        {
-            await JS.InvokeVoidAsync("bhBrowser.bind", _view, _image, _self, BrowserEndpoints.StreamAddressOf(ChatId));
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone; there is nothing left to bind.
-        }
-    }
-
-    private async ValueTask StopStreamAsync()
-    {
-        try
-        {
-            await JS.InvokeVoidAsync("bhBrowser.stop");
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        await BrowserScripts.BindAsync(_view, _image, _self, BrowserEndpoints.StreamAddressOf(ChatId));
     }
 
     private async Task Forward(Func<string, Task> send)

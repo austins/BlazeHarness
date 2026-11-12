@@ -1,5 +1,5 @@
 @implements IDisposable
-@inject IJSRuntime JS
+@inject UiScripts UiScripts
 @inject SettingsDialogState State
 
 <Dialog Title="@WebStrings.SettingsDialogTitle" Open="State.Section is not null" Class="dialog-settings" OnClose="State.CloseAsync">
@@ -79,16 +79,9 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        try
+        if (firstRender && await UiScripts.RestoreSettingsAfterCultureChangeAsync())
         {
-            if (firstRender && await JS.InvokeAsync<bool>("bhUi.restoreSettingsAfterCultureChange"))
-            {
-                await State.OpenAsync();
-            }
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
+            await State.OpenAsync();
         }
     }
 

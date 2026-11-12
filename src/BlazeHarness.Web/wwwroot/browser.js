@@ -1,4 +1,10 @@
 // Browser panel: draws the pictures of the page the assistant has open, and passes the user's clicks, keys and scrolling on to it.
+
+// A call that lands after the panel closed or the circuit went away has nowhere to go and is dropped.
+const forward = (target, method, ...args) => {
+    target.invokeMethodAsync(method, ...args).catch(() => {});
+};
+
 // Keep in step with PuppeteerBrowserEngine's list of keys.
 const forwardedKeys = new Set([
     "Enter", "Backspace", "Delete", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown",
@@ -91,7 +97,7 @@ window.bhBrowser = {
             const at = fractions(event);
             if (at) {
                 view.focus();
-                target.invokeMethodAsync("Click", at[0], at[1]);
+                forward(target, "Click", at[0], at[1]);
             }
         };
         // The pointer moves far faster than the page can follow, so one move is in flight at a time and the newest one waits behind it.
@@ -130,7 +136,7 @@ window.bhBrowser = {
 
             if (event.key.length === 1 || forwardedKeys.has(event.key)) {
                 event.preventDefault();
-                target.invokeMethodAsync("Key", event.key);
+                forward(target, "Key", event.key);
             }
         };
         const onWheel = event => {
@@ -138,7 +144,7 @@ window.bhBrowser = {
             if (at) {
                 event.preventDefault();
                 const pixels = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
-                target.invokeMethodAsync("Scroll", at[0], at[1], pixels);
+                forward(target, "Scroll", at[0], at[1], pixels);
             }
         };
 

@@ -1,7 +1,7 @@
 @using BlazeHarness.Core
 @inherits LayoutComponentBase
 @implements IDisposable
-@inject IJSRuntime JS
+@inject UiScripts UiScripts
 @inject NavigationManager Navigation
 @inject SettingsDialogState SettingsState
 
@@ -62,7 +62,7 @@
         if (firstRender)
         {
             _connected = true;
-            _collapsed = await IsNarrowAsync();
+            _collapsed = await UiScripts.IsNarrowAsync();
             StateHasChanged();
         }
     }
@@ -97,22 +97,10 @@
 
     private async Task CollapseIfNarrowAsync()
     {
-        if (!_collapsed && await IsNarrowAsync())
+        if (!_collapsed && await UiScripts.IsNarrowAsync())
         {
             _collapsed = true;
             StateHasChanged();
-        }
-    }
-
-    private async Task<bool> IsNarrowAsync()
-    {
-        try
-        {
-            return await JS.InvokeAsync<bool>("bhUi.isNarrow");
-        }
-        catch (Exception ex) when (ex is JSException or JSDisconnectedException or OperationCanceledException or InvalidOperationException or ObjectDisposedException)
-        {
-            return false;
         }
     }
 }

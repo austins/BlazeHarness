@@ -1,4 +1,4 @@
-@inject IJSRuntime JS
+@inject UiScripts UiScripts
 @using System.Globalization
 
 <div class="find-bar" role="search" aria-label="@WebStrings.FindBarLabel">
@@ -61,14 +61,7 @@
     /// <returns>A task that completes when the box has the focus.</returns>
     public async Task FocusAsync()
     {
-        try
-        {
-            await JS.InvokeVoidAsync("bhUi.focusSelect", _input);
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        await UiScripts.FocusSelectAsync(_input);
     }
 
     protected override void OnParametersSet()

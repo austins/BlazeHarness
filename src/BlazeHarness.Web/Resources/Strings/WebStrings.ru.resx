@@ -1388,7 +1388,7 @@
     <value>Вы можете включить «Сжимать без модели (извлечение)» в разделе «Настройки &gt; Общие».</value>
   </data>
   <data name="ChatViewSummarizeFailed" xml:space="preserve">
-    <value>Не удалось сжать диалог: {error}{hint}</value>
+    <value>Не удалось сжать диалог.{hint}</value>
   </data>
   <data name="ChatViewPermissionSaveFailure" xml:space="preserve">
     <value>Не удалось сохранить разрешения: не удалось записать файл чата.</value>

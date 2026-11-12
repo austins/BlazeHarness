@@ -1388,7 +1388,7 @@
     <value>你可以在“设置 &gt; 通用”下开启“不使用模型压缩（提取）”。</value>
   </data>
   <data name="ChatViewSummarizeFailed" xml:space="preserve">
-    <value>无法总结对话：{error}{hint}</value>
+    <value>无法总结对话。{hint}</value>
   </data>
   <data name="ChatViewPermissionSaveFailure" xml:space="preserve">
     <value>无法保存权限，因为无法写入该聊天的文件。</value>

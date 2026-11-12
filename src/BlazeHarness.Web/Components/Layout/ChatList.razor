@@ -1,6 +1,7 @@
 @using BlazeHarness.Core
 @using BlazeHarness.Web.Hosting
-@inject IJSRuntime JS
+@inject UiScripts UiScripts
+@inject ChatScripts ChatScripts
 @inject ChatService ChatService
 @inject NavigationManager Navigation
 @inject ToastService Toasts
@@ -114,27 +115,13 @@
         if (_focusRename)
         {
             _focusRename = false;
-            try
-            {
-                await JS.InvokeVoidAsync("bhUi.focusSelect", _renameInput);
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await UiScripts.FocusSelectAsync(_renameInput);
         }
 
         if (_showMenuAt is var (x, y))
         {
             _showMenuAt = null;
-            try
-            {
-                await JS.InvokeVoidAsync("bhUi.showContextMenu", _menu, x, y);
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await UiScripts.ShowContextMenuAsync(_menu, x, y);
         }
     }
 
@@ -175,15 +162,8 @@
 
     private async Task CopyReferenceAsync(ChatInfo chat)
     {
-        try
-        {
-            var copied = await JS.InvokeAsync<bool>("bhChat.copyText", ChatReference.Format(chat.Id));
-            Toasts.Show(copied ? WebStrings.ChatListReferenceCopied : WebStrings.ChatListCopyReferenceFailed, copied ? ToastKind.Success : ToastKind.Error);
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        var copied = await ChatScripts.CopyTextAsync(ChatReference.Format(chat.Id));
+        Toasts.Show(copied ? WebStrings.ChatListReferenceCopied : WebStrings.ChatListCopyReferenceFailed, copied ? ToastKind.Success : ToastKind.Error);
     }
 
     internal static string DisplayTitle(ChatInfo chat)

@@ -1,7 +1,7 @@
 @inherits ExternalEventComponent
 @implements IDisposable
 @inject ProviderService Providers
-@inject IJSRuntime JS
+@inject ChatScripts ChatScripts
 @inject SkillCatalog Catalog
 @inject ChatService ChatService
 @inject SettingsDialogState SettingsState
@@ -47,7 +47,7 @@ else
                     <li class="chip">
                         <span class="badge badge-accent">@(queued.Mode == QueueMode.Steer ? WebStrings.ComposerSteerBadge : WebStrings.ComposerQueuedBadge)</span>
                         <span class="chip-name" title="@queued.Text">@queued.Text</span>
-                        <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.ComposerRemoveQueued" @onclick="() => OnRemoveQueued?.Invoke(index, queued.Text)"><Icon Name="close" /></button>
+                        <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="@WebStrings.ComposerRemoveQueued" @onclick="() => OnRemoveQueued.InvokeAsync((index, queued.Text))"><Icon Name="close" /></button>
                     </li>
                 }
             </ul>
@@ -264,10 +264,10 @@ else
     public Func<string, QueueMode, bool>? OnQueue { get; set; }
 
     /// <summary>
-    /// Gets or sets the action that removes a waiting message, given its position in <see cref="Queued"/> and its text.
+    /// Gets or sets the callback that removes a waiting message, given its position in <see cref="Queued"/> and its text.
     /// </summary>
     [Parameter]
-    public Action<int, string>? OnRemoveQueued { get; set; }
+    public EventCallback<(int Index, string Text)> OnRemoveQueued { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the last reply can be retried.
@@ -442,27 +442,13 @@ else
         if (!_wired)
         {
             _wired = true;
-            try
-            {
-                await JS.InvokeVoidAsync("bhChat.initComposer", _input, _form);
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await ChatScripts.InitComposerAsync(_input, _form);
         }
 
         if (_resize)
         {
             _resize = false;
-            try
-            {
-                await JS.InvokeVoidAsync("bhChat.resize", _input);
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await ChatScripts.ResizeAsync(_input);
         }
     }
 
@@ -722,16 +708,9 @@ else
             _files.Add(await PendingFile.ReadAsync(browserFile));
         }
 
-        if (_picker is not null)
+        if (_picker?.Element is { } picker)
         {
-            try
-            {
-                await JS.InvokeVoidAsync("bhChat.clearPicker", _picker.Element);
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await ChatScripts.ClearPickerAsync(picker);
         }
     }
 

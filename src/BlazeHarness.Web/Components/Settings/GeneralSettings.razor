@@ -1,7 +1,8 @@
 @using System.Globalization
 @using BlazeHarness.Core.Compaction
 @using BlazeHarness.Core.Config
-@inject IJSRuntime JS
+@inject UiScripts UiScripts
+@inject PreferenceScripts PreferenceScripts
 @inject JsonFileStore<AppConfig> Config
 @inject ToastService Toasts
 @inject UiLanguages Languages
@@ -67,7 +68,7 @@
                 @foreach (var step in Steps)
                 {
                     <label class="size-option">
-                        <input type="radio" name="ui-size" value="@step.Key" checked="@(_ui == step.Key)" @onchange="() => SetAsync(UiKind, step.Key)" />
+                        <input type="radio" name="ui-size" value="@step.Key" checked="@(_ui == step.Key)" @onchange="() => SetAsync(TextSizeKind.Ui, step.Key)" />
                         <span>@StepLabel(step)</span>
                         <span class="muted">@step.Percent</span>
                     </label>
@@ -82,7 +83,7 @@
                 @foreach (var step in Steps)
                 {
                     <label class="size-option">
-                        <input type="radio" name="chat-size" value="@step.Key" checked="@(_chat == step.Key)" @onchange="() => SetAsync(ChatKind, step.Key)" />
+                        <input type="radio" name="chat-size" value="@step.Key" checked="@(_chat == step.Key)" @onchange="() => SetAsync(TextSizeKind.Chat, step.Key)" />
                         <span>@StepLabel(step)</span>
                         <span class="muted">@step.Percent</span>
                     </label>
@@ -129,9 +130,6 @@ var reversed = new string(chars);</code></pre>
 </div>
 
 @code {
-    private const string UiKind = "ui";
-    private const string ChatKind = "chat";
-
     private sealed record Step(string Key, string Percent);
 
     /// <summary>
@@ -161,17 +159,10 @@ var reversed = new string(chars);</code></pre>
     {
         if (firstRender)
         {
-            try
-            {
-                _ui = await JS.InvokeAsync<string>("bhSize.get", UiKind);
-                _chat = await JS.InvokeAsync<string>("bhSize.get", ChatKind);
-                _fullChatWidth = await JS.InvokeAsync<bool>("bhChatWidth.get");
-                StateHasChanged();
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            _ui = await PreferenceScripts.GetTextSizeAsync(TextSizeKind.Ui);
+            _chat = await PreferenceScripts.GetTextSizeAsync(TextSizeKind.Chat);
+            _fullChatWidth = await PreferenceScripts.GetFullChatWidthAsync();
+            StateHasChanged();
         }
     }
 
@@ -198,33 +189,19 @@ var reversed = new string(chars);</code></pre>
     {
         if (e.Value is string { Length: > 0 } culture)
         {
-            try
-            {
-                await JS.InvokeVoidAsync("bhUi.setCulture", culture);
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await UiScripts.SetCultureAsync(culture);
         }
     }
 
     private async Task OnChatWidthChangedAsync(ChangeEventArgs e)
     {
         _fullChatWidth = e.Value is true;
-        try
-        {
-            await JS.InvokeVoidAsync("bhChatWidth.set", _fullChatWidth);
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        await PreferenceScripts.SetFullChatWidthAsync(_fullChatWidth);
     }
 
-    private async Task SetAsync(string kind, string step)
+    private async Task SetAsync(TextSizeKind kind, string step)
     {
-        if (kind == UiKind)
+        if (kind == TextSizeKind.Ui)
         {
             _ui = step;
         }
@@ -233,13 +210,6 @@ var reversed = new string(chars);</code></pre>
             _chat = step;
         }
 
-        try
-        {
-            await JS.InvokeVoidAsync("bhSize.set", kind, step);
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        await PreferenceScripts.SetTextSizeAsync(kind, step);
     }
 }

@@ -1,5 +1,5 @@
 @implements IAsyncDisposable
-@inject IJSRuntime JS
+@inject UiScripts UiScripts
 
 @if (Open)
 {
@@ -69,27 +69,14 @@
     {
         if (Open && !_shown)
         {
+            // Set after the call so a failed one is tried again on the next render; showModal ignores a dialog that is already open.
+            await UiScripts.ShowModalAsync(_dialog);
             _shown = true;
-            try
-            {
-                await JS.InvokeVoidAsync("bhUi.showModal", _dialog);
-            }
-            catch (Exception ex) when (ex is JSException or JSDisconnectedException or TaskCanceledException or InvalidOperationException or ObjectDisposedException)
-            {
-                // The circuit or page is gone.
-            }
         }
         else if (!Open && _shown)
         {
             _shown = false;
-            try
-            {
-                await JS.InvokeVoidAsync("bhUi.restoreFocus");
-            }
-            catch (Exception ex) when (ex is JSException or JSDisconnectedException or TaskCanceledException or InvalidOperationException or ObjectDisposedException)
-            {
-                // The circuit or page is gone.
-            }
+            await UiScripts.RestoreFocusAsync();
         }
     }
 
@@ -104,13 +91,6 @@
         }
 
         _shown = false;
-        try
-        {
-            await JS.InvokeVoidAsync("bhUi.restoreFocus");
-        }
-        catch (Exception ex) when (ex is JSException or JSDisconnectedException or TaskCanceledException or InvalidOperationException or ObjectDisposedException)
-        {
-            // The circuit or page is gone.
-        }
+        await UiScripts.RestoreFocusAsync();
     }
 }

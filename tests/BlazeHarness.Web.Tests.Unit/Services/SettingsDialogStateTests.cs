@@ -17,7 +17,7 @@ public sealed class SettingsDialogStateTests
     }
 
     [Fact]
-    public async Task Open_NoSection_ShowsGeneral()
+    public async Task OpenAsync_NoSection_ShowsGeneral()
     {
         // Act
         await _sut.OpenAsync();
@@ -28,7 +28,7 @@ public sealed class SettingsDialogStateTests
     }
 
     [Fact]
-    public async Task Open_OtherSection_SwitchesSection()
+    public async Task OpenAsync_OtherSection_SwitchesSection()
     {
         // Arrange
         await _sut.OpenAsync();
@@ -41,7 +41,7 @@ public sealed class SettingsDialogStateTests
     }
 
     [Fact]
-    public async Task Close_WhileClosed_RaisesNothing()
+    public async Task CloseAsync_WhileClosed_RaisesNothing()
     {
         // Act
         await _sut.CloseAsync();
@@ -51,7 +51,7 @@ public sealed class SettingsDialogStateTests
     }
 
     [Fact]
-    public async Task Close_WhileOpen_ClearsSection()
+    public async Task CloseAsync_WhileOpen_ClearsSection()
     {
         // Arrange
         await _sut.OpenAsync();
@@ -65,7 +65,7 @@ public sealed class SettingsDialogStateTests
     }
 
     [Fact]
-    public async Task Open_SlowHandler_CompletesAfterEveryHandler()
+    public async Task OpenAsync_SlowHandler_CompletesAfterEveryHandler()
     {
         // Arrange
         var gate = new TaskCompletionSource();
@@ -90,7 +90,7 @@ public sealed class SettingsDialogStateTests
     }
 
     [Fact]
-    public async Task Open_HandlerThrows_FaultsTheReturnedTask()
+    public async Task OpenAsync_HandlerThrows_FaultsTheReturnedTask()
     {
         // Arrange
         _sut.Changed += () => Task.FromException(new InvalidOperationException());

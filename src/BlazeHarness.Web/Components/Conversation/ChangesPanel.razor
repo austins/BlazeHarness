@@ -1,10 +1,14 @@
 @using BlazeHarness.Core.Git
 @using BlazeHarness.Web.Hosting
+@implements IDisposable
 @inject GitChangesReader Git
 @inject GitChangeReverter Reverter
 @inject EditorLauncher Editor
 @inject ToastService Toasts
-@inject IJSRuntime JS
+@inject ChangesScripts ChangesScripts
+@inject ChatScripts ChatScripts
+@inject PreferenceScripts PreferenceScripts
+@inject UiScripts UiScripts
 @inject SidePanelState State
 @inject ILogger<ChangesPanel> Logger
 
@@ -169,6 +173,7 @@ else
     private bool _reverting;
     private bool _resetScroll;
     private int _loadVersion;
+    private CancellationTokenSource? _load;
     private List<Group> _groups = [];
     private List<GitChangedFile> _visible = [];
     private Pending? _pending;
@@ -259,28 +264,14 @@ else
     {
         if (firstRender)
         {
-            try
-            {
-                _wrap = await JS.InvokeAsync<bool>("bhDiffWrap.get");
-                StateHasChanged();
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            _wrap = await PreferenceScripts.GetDiffWrapAsync();
+            StateHasChanged();
         }
 
         if (_resetScroll)
         {
             _resetScroll = false;
-            try
-            {
-                await JS.InvokeVoidAsync("bhChanges.resetScroll");
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await ChangesScripts.ResetScrollAsync();
         }
     }
 
@@ -401,14 +392,7 @@ else
     private async Task ToggleWrapAsync()
     {
         _wrap = !_wrap;
-        try
-        {
-            await JS.InvokeVoidAsync("bhDiffWrap.set", _wrap);
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        await PreferenceScripts.SetDiffWrapAsync(_wrap);
     }
 
     private void ToggleViewed(GitChangedFile file) => Review.SetViewed(file, !Review.IsViewed(file));
@@ -446,15 +430,8 @@ else
 
     private async Task CopyAsync(string text)
     {
-        try
-        {
-            var copied = await JS.InvokeAsync<bool>("bhChat.copyText", text);
-            Toasts.Show(copied ? WebStrings.UiCopied : WebStrings.UiCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        var copied = await ChatScripts.CopyTextAsync(text);
+        Toasts.Show(copied ? WebStrings.UiCopied : WebStrings.UiCopyFailed, copied ? ToastKind.Success : ToastKind.Error);
     }
 
     private string FullPath(GitChangedFile file) =>
@@ -489,16 +466,9 @@ else
     {
         await OnComment.InvokeAsync(comment.ToMessage());
         Toasts.Show(WebStrings.ChangesCommentInserted, ToastKind.Success);
-        try
+        if (await UiScripts.IsNarrowAsync())
         {
-            if (await JS.InvokeAsync<bool>("bhUi.isNarrow"))
-            {
-                State.Close();
-            }
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
+            State.Close();
         }
     }
 
@@ -539,6 +509,7 @@ else
     private async Task SelectAsync(GitChangedFile? file, bool look = true)
     {
         var version = ++_loadVersion;
+        CancelLoad();
         var switched = file?.Path != _selected?.Path;
         _selected = file;
         _failed = false;
@@ -561,17 +532,24 @@ else
             Review.Look(file);
         }
 
+        _load = new CancellationTokenSource();
+        var token = _load.Token;
         _loading = true;
         GitFileDiff? diff = null;
         string? image = null;
         var failed = false;
         try
         {
-            diff = await Git.GetDiffAsync(Status.Root, Scope, file, Review.ContextLines);
-            if (diff?.IsBinary == true && await Git.GetImageAsync(Status.Root, file) is { } picture)
+            diff = await Git.GetDiffAsync(Status.Root, Scope, file, Review.ContextLines, token);
+            if (diff?.IsBinary == true && await Git.GetImageAsync(Status.Root, file, token) is { } picture)
             {
                 image = $"data:{picture.MediaType};base64,{Convert.ToBase64String(picture.Content)}";
             }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            // Another file was chosen, or the panel closed, while this one loaded.
+            return;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
@@ -590,4 +568,14 @@ else
         _image = image;
         _resetScroll = switched;
     }
+
+    private void CancelLoad()
+    {
+        _load?.Cancel();
+        _load?.Dispose();
+        _load = null;
+    }
+
+    /// <inheritdoc />
+    public void Dispose() => CancelLoad();
 }

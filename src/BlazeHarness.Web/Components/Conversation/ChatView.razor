@@ -10,7 +10,8 @@
 @inject FolderRegistry Folders
 @inject NavigationManager Navigation
 @inject TimeProvider Time
-@inject IJSRuntime JS
+@inject ChatScripts ChatScripts
+@inject UiScripts UiScripts
 @inject ToastService Toasts
 @inject ILogger<ChatView> Logger
 @using BlazeHarness.Core.Attachments
@@ -303,27 +304,13 @@ else
         if (_highlight is { } shown)
         {
             _highlight = null;
-            try
-            {
-                await JS.InvokeVoidAsync("bhChat.highlight", _scroll, shown.Query, shown.EntryId.ToString());
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await ChatScripts.HighlightAsync(_scroll, shown.Query, shown.EntryId);
         }
 
         if (!_missing && !_watching)
         {
             _watching = true;
-            try
-            {
-                await JS.InvokeVoidAsync("bhChat.watch", _root, _scroll);
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await ChatScripts.WatchAsync(_root, _scroll);
         }
     }
 
@@ -383,29 +370,15 @@ else
     {
         _finding = false;
         _highlight = null;
-        try
-        {
-            await JS.InvokeVoidAsync("bhChat.clearHighlight");
-            await JS.InvokeVoidAsync("bhUi.skipToChat");
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        await ChatScripts.ClearHighlightAsync();
+        await UiScripts.SkipToChatAsync();
     }
 
     private async Task ShowMatchAsync((Guid EntryId, string Query) match)
     {
         if (match.EntryId == Guid.Empty)
         {
-            try
-            {
-                await JS.InvokeVoidAsync("bhChat.clearHighlight");
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await ChatScripts.ClearHighlightAsync();
             return;
         }
 
@@ -474,7 +447,7 @@ else
 
     private bool Queue(string text, QueueMode mode) => _chat?.Queue(text, mode) ?? false;
 
-    private void RemoveQueued(int index, string text) => _chat?.RemoveQueued(index, text);
+    private void RemoveQueued((int Index, string Text) queued) => _chat?.RemoveQueued(queued.Index, queued.Text);
 
     private void Announce()
     {
@@ -635,23 +608,18 @@ else
         }
         catch (InvalidOperationException ex)
         {
+            // The message can echo provider output, so it goes to the log, not the toast.
+            Logger.LogWarning(ex, "Summarizing the conversation failed.");
             var hint = Config.Current.Compaction == CompactionMode.Model ? WebStrings.ChatViewEnableExtractionHint : string.Empty;
             Toasts.Show(ResourceMessageFormatter.Web.Format(
                 nameof(WebStrings.ChatViewSummarizeFailed),
-                new Dictionary<string, object?> { ["error"] = ex.Message, ["hint"] = hint }), ToastKind.Error);
+                new Dictionary<string, object?> { ["hint"] = hint }), ToastKind.Error);
         }
     }
 
     private async Task FollowAsync()
     {
-        try
-        {
-            await JS.InvokeVoidAsync("bhChat.follow", _root);
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        await ChatScripts.FollowAsync(_root);
     }
 
     private async Task ChangePermissionsAsync(PermissionSettings settings)

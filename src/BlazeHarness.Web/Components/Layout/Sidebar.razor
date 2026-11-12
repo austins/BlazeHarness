@@ -5,7 +5,9 @@
 @using BlazeHarness.Web.Hosting
 @using BlazeHarness.Web.Services
 @implements IDisposable
-@inject IJSRuntime JS
+@inject UiScripts UiScripts
+@inject ChatScripts ChatScripts
+@inject PreferenceScripts PreferenceScripts
 @inject ChatService ChatService
 @inject NavigationManager Navigation
 @inject FolderRegistry Folders
@@ -281,14 +283,7 @@
             // Lets the same file be chosen again after a failed import.
             if (_importInput?.Element is { } input)
             {
-                try
-                {
-                    await JS.InvokeVoidAsync("bhChat.clearPicker", input);
-                }
-                catch (JSDisconnectedException)
-                {
-                    // The circuit is gone, and the page with it.
-                }
+                await ChatScripts.ClearPickerAsync(input);
             }
         }
     }
@@ -310,29 +305,15 @@
     {
         if (firstRender)
         {
-            try
-            {
-                _dark = await JS.InvokeAsync<bool>("bhTheme.isDark");
-                _sort = Enum.TryParse<ChatSortOrder>(await JS.InvokeAsync<string?>("bhChatSort.get"), out var saved) ? saved : ChatSortOrder.Updated;
-                StateHasChanged();
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            _dark = await PreferenceScripts.IsDarkAsync();
+            _sort = Enum.TryParse<ChatSortOrder>(await PreferenceScripts.GetChatSortAsync(), out var saved) ? saved : ChatSortOrder.Updated;
+            StateHasChanged();
         }
 
         if (_showMenuAt is var (x, y))
         {
             _showMenuAt = null;
-            try
-            {
-                await JS.InvokeVoidAsync("bhUi.showContextMenu", _menu, x, y);
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, and the page with it.
-            }
+            await UiScripts.ShowContextMenuAsync(_menu, x, y);
         }
 
         if (_focusSearch)
@@ -345,14 +326,7 @@
     private async Task SetSortAsync(ChatSortOrder order)
     {
         _sort = order;
-        try
-        {
-            await JS.InvokeVoidAsync("bhChatSort.set", order.ToString());
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        await PreferenceScripts.SetChatSortAsync(order.ToString());
     }
 
     private void ToggleSearch()
@@ -473,13 +447,6 @@
     private async Task ToggleThemeAsync()
     {
         _dark = !_dark;
-        try
-        {
-            await JS.InvokeVoidAsync("bhTheme.set", _dark ? "dark" : "light");
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, and the page with it.
-        }
+        await PreferenceScripts.SetDarkAsync(_dark);
     }
 }
