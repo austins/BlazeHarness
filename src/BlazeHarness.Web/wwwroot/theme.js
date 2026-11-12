@@ -1,5 +1,15 @@
 // Applies the saved theme before first paint so the page does not flash the wrong colors.
 (function () {
+    const readStorage = (name) => {
+        try { return localStorage.getItem(name); } catch { return null; }
+    };
+    const writeStorage = (name, value) => {
+        try { localStorage.setItem(name, value); } catch { /* Storage may be disabled. */ }
+    };
+    const removeStorage = (name) => {
+        try { localStorage.removeItem(name); } catch { /* Storage may be disabled. */ }
+    };
+
     const key = "blazeharness.theme";
     const apply = (mode) => {
         if (mode === "light" || mode === "dark") {
@@ -9,7 +19,7 @@
         }
     };
 
-    apply(localStorage.getItem(key));
+    apply(readStorage(key));
 
     // Text size steps, as a multiplier of the default size. The interface size scales the root, so everything in rem follows.
     const steps = { small: 0.875, default: 1, large: 1.15, xlarge: 1.3 };
@@ -20,12 +30,12 @@
     };
 
     for (const kind of Object.keys(sizeKeys)) {
-        applySize(kind, localStorage.getItem(sizeKeys[kind]));
+        applySize(kind, readStorage(sizeKeys[kind]));
     }
 
     window.bhSize = {
         get: (kind) => {
-            const step = localStorage.getItem(sizeKeys[kind]);
+            const step = readStorage(sizeKeys[kind]);
             return step in steps ? step : "default";
         },
         set: (kind, step) => {
@@ -34,9 +44,9 @@
             }
 
             if (step === "default") {
-                localStorage.removeItem(sizeKeys[kind]);
+                removeStorage(sizeKeys[kind]);
             } else {
-                localStorage.setItem(sizeKeys[kind], step);
+                writeStorage(sizeKeys[kind], step);
             }
             applySize(kind, step);
         },
@@ -44,15 +54,15 @@
 
     const chatWidthKey = "blazeharness.chat-width";
     const applyChatWidth = (full) => document.documentElement.toggleAttribute("data-chat-full-width", full);
-    applyChatWidth(localStorage.getItem(chatWidthKey) === "full");
+    applyChatWidth(readStorage(chatWidthKey) === "full");
 
     window.bhChatWidth = {
-        get: () => localStorage.getItem(chatWidthKey) === "full",
+        get: () => readStorage(chatWidthKey) === "full",
         set: (full) => {
             if (full) {
-                localStorage.setItem(chatWidthKey, "full");
+                writeStorage(chatWidthKey, "full");
             } else {
-                localStorage.removeItem(chatWidthKey);
+                removeStorage(chatWidthKey);
             }
             applyChatWidth(full);
         },
@@ -60,31 +70,31 @@
 
     const diffWrapKey = "blazeharness.diff-wrap";
     const applyDiffWrap = (wrap) => document.documentElement.toggleAttribute("data-diff-wrap", wrap);
-    applyDiffWrap(localStorage.getItem(diffWrapKey) === "on");
+    applyDiffWrap(readStorage(diffWrapKey) === "on");
 
     window.bhDiffWrap = {
-        get: () => localStorage.getItem(diffWrapKey) === "on",
+        get: () => readStorage(diffWrapKey) === "on",
         set: (wrap) => {
             if (wrap) {
-                localStorage.setItem(diffWrapKey, "on");
+                writeStorage(diffWrapKey, "on");
             } else {
-                localStorage.removeItem(diffWrapKey);
+                removeStorage(diffWrapKey);
             }
             applyDiffWrap(wrap);
         },
     };
 
     window.bhTheme = {
-        get: () => localStorage.getItem(key) || "system",
+        get: () => readStorage(key) || "system",
         isDark: () => {
-            const mode = localStorage.getItem(key);
+            const mode = readStorage(key);
             return mode ? mode === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
         },
         set: (mode) => {
             if (mode === "light" || mode === "dark") {
-                localStorage.setItem(key, mode);
+                writeStorage(key, mode);
             } else {
-                localStorage.removeItem(key);
+                removeStorage(key);
             }
             apply(mode);
         },
@@ -92,7 +102,7 @@
 
     const chatSortKey = "blazeharness.chat-sort";
     window.bhChatSort = {
-        get: () => localStorage.getItem(chatSortKey),
-        set: (order) => localStorage.setItem(chatSortKey, order),
+        get: () => readStorage(chatSortKey),
+        set: (order) => writeStorage(chatSortKey, order),
     };
 })();

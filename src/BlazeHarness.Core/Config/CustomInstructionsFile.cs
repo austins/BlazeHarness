@@ -8,15 +8,10 @@ namespace BlazeHarness.Core.Config;
 /// <remarks>
 /// Saves are atomic, and edits made outside the app are picked up. A file that cannot be read keeps the last good text.
 /// </remarks>
-public sealed partial class CustomInstructionsFile : IDisposable
+public sealed class CustomInstructionsFile : IDisposable
 {
-    private const int DebounceMilliseconds = 200;
-
     private readonly string _path;
-    private readonly ILogger _logger;
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly FileSystemWatcher? _watcher;
-    private readonly ITimer _debounce;
+    private readonly WatchedFile _file;
     private string _text;
 
     /// <summary>
@@ -32,24 +27,8 @@ public sealed partial class CustomInstructionsFile : IDisposable
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(time);
         _path = path;
-        _logger = logger;
-        _text = ReadText() ?? string.Empty;
-        _debounce = time.CreateTimer(_ => OnExternalChange(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-
-        if (watch)
-        {
-            var directory = Path.GetDirectoryName(Path.GetFullPath(_path))!;
-            Directory.CreateDirectory(directory);
-            _watcher = new FileSystemWatcher(directory, Path.GetFileName(_path))
-            {
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size,
-                EnableRaisingEvents = true,
-            };
-            _watcher.Changed += (_, _) => Schedule();
-            _watcher.Created += (_, _) => Schedule();
-            _watcher.Deleted += (_, _) => Schedule();
-            _watcher.Renamed += (_, _) => Schedule();
-        }
+        _file = new WatchedFile(path, logger, time, watch, watchDelete: true, ReloadUnderLock);
+        _text = _file.ReadInitialText() ?? string.Empty;
     }
 
     /// <summary>
@@ -71,7 +50,7 @@ public sealed partial class CustomInstructionsFile : IDisposable
     public async Task SaveAsync(string text, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(text);
-        await _lock.WaitAsync(cancellationToken);
+        await _file.WaitAsync(cancellationToken);
         try
         {
             await AtomicFile.WriteAllOwnerOnlyTextAsync(_path, text, cancellationToken);
@@ -79,96 +58,33 @@ public sealed partial class CustomInstructionsFile : IDisposable
         }
         finally
         {
-            _lock.Release();
+            _file.Release();
         }
     }
 
     /// <inheritdoc />
-    public void Dispose()
-    {
-        _watcher?.Dispose();
-        _debounce.Dispose();
-        _lock.Dispose();
-    }
+    public void Dispose() => _file.Dispose();
 
     /// <summary>
     /// Read the file again after an edit made outside the app, and raise <see cref="ExternalChange"/> when its text differs.
     /// </summary>
-    internal void OnExternalChange()
-    {
-        bool changed;
-        try
-        {
-            changed = Reload();
-        }
-        catch (ObjectDisposedException)
-        {
-            // A callback that was already queued when the file was disposed has nothing left to do, and must not fault a thread-pool thread.
-            return;
-        }
+    internal void OnExternalChange() => _file.OnExternalChange();
 
-        if (changed)
-        {
-            ExternalChange?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
-    private void Schedule()
+    private Action? ReloadUnderLock()
     {
-        try
+        // Often the writer still holds the file. Keep the text that was loaded instead of treating it as empty, and try again shortly.
+        if (!_file.TryReadCurrentText(out var raw))
         {
-            _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
-        }
-        catch (ObjectDisposedException)
-        {
-            // A watcher event can still arrive just after disposal.
-        }
-    }
-
-    private string? ReadText()
-    {
-        try
-        {
-            return File.Exists(_path) ? File.ReadAllText(_path) : string.Empty;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            LogReadFailed(ex, Path.GetFileName(_path));
             return null;
         }
-    }
 
-    private bool Reload()
-    {
-        _lock.Wait();
-        try
+        var text = raw ?? string.Empty;
+        if (text == _text)
         {
-            string text;
-            try
-            {
-                text = File.Exists(_path) ? File.ReadAllText(_path) : string.Empty;
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                // Often the writer still holds the file. Keep the text that was loaded instead of treating it as empty, and try again shortly.
-                Schedule();
-                return false;
-            }
-
-            if (text == _text)
-            {
-                return false;
-            }
-
-            Volatile.Write(ref _text, text);
-            return true;
+            return null;
         }
-        finally
-        {
-            _lock.Release();
-        }
+
+        Volatile.Write(ref _text, text);
+        return () => ExternalChange?.Invoke(this, EventArgs.Empty);
     }
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not read {File}.")]
-    private partial void LogReadFailed(Exception ex, string file);
 }

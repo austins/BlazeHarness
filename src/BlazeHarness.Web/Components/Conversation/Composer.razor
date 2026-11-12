@@ -19,11 +19,13 @@
 }
 else
 {
+    var suggestions = Suggestions();
+    var hasSuggestions = suggestions is { Count: > 0 };
     <div class="composer">
     <form class="composer-form" @onsubmit="SubmitAsync" novalidate @ref="_form">
-        @if (Suggestions() is { Count: > 0 } suggestions)
+        @if (suggestions is { Count: > 0 })
         {
-            <ul class="composer-suggestions" role="listbox" aria-label="@WebStrings.ComposerSkillsLabel">
+            <ul id="@_suggestionsId" class="composer-suggestions" role="listbox" aria-label="@WebStrings.ComposerSkillsLabel" data-for="@_text[SkillWordStart()..]">
                 @foreach (var skill in suggestions)
                 {
                     <li role="none">
@@ -83,6 +85,8 @@ else
             }
         }
         <textarea class="composer-input" rows="1" @ref="_input" @bind="_text" @bind:event="oninput"
+                  role="combobox" aria-autocomplete="list" aria-expanded="@(hasSuggestions ? "true" : "false")"
+                  aria-controls="@(hasSuggestions ? _suggestionsId : null)"
                   placeholder="@Placeholder" aria-label="@WebStrings.ComposerMessageLabel"></textarea>
         <div class="composer-bar">
             @if (Editing is null)
@@ -110,13 +114,13 @@ else
             @if (_levels.Count > 0)
             {
                 <Menu Label="@WebStrings.ComposerThinkingMenuLabel" Title="@WebStrings.ComposerThinkingTooltip">
-                    <Trigger><Icon Name="bulb" /> <span class="menu-trigger-text">@_level</span></Trigger>
+                    <Trigger><Icon Name="bulb" /> <span class="menu-trigger-text">@(Enum.TryParse<ThinkingLevel>(_level, out var chosenLevel) ? ThinkingSendLabels.Level(chosenLevel) : _level)</span></Trigger>
                     <ChildContent>
                         <div class="menu-heading">@WebStrings.ComposerThinkingHeading</div>
                         @foreach (var level in _levels)
                         {
                             var name = level.ToString();
-                            <MenuItem Label="@name" Checked="name == _level" OnSelect="() => SelectLevel(name)" />
+                            <MenuItem Label="@ThinkingSendLabels.Level(level)" Checked="name == _level" OnSelect="() => SelectLevel(name)" />
                         }
                     </ChildContent>
                 </Menu>
@@ -194,6 +198,7 @@ else
     private const int SuggestionDescriptionLength = 90;
     private const int MaxSuggestions = 8;
 
+    private readonly string _suggestionsId = $"composer-suggestions-{Guid.NewGuid():N}";
     private readonly List<PendingFile> _files = [];
     private Guid? _previewing;
     private ElementReference _form;

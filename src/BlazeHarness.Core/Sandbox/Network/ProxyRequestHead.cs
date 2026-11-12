@@ -73,15 +73,16 @@ internal sealed record ProxyRequestHead(string Method, string Host, int Port, bo
             return null;
         }
 
+        var host = Normalize(uri.DnsSafeHost);
+        var port = uri.Port > 0 ? uri.Port : DefaultHttpPort;
+        var stripped = StrippedHeaders(lines);
         var forward = new StringBuilder();
         forward.Append(method).Append(' ').Append(uri.PathAndQuery).Append(' ').Append(version).Append("\r\n");
+        forward.Append("Host: ").Append(FormatAuthority(host, port)).Append("\r\n");
         foreach (var line in lines.Skip(1))
         {
             var name = line.Split(':', 2)[0].Trim();
-            if (name.Equals("Proxy-Connection", StringComparison.OrdinalIgnoreCase)
-                || name.Equals("Proxy-Authorization", StringComparison.OrdinalIgnoreCase)
-                || name.Equals("Connection", StringComparison.OrdinalIgnoreCase)
-                || name.Equals("Keep-Alive", StringComparison.OrdinalIgnoreCase))
+            if (name.Length == 0 || stripped.Contains(name))
             {
                 continue;
             }
@@ -91,7 +92,31 @@ internal sealed record ProxyRequestHead(string Method, string Host, int Port, bo
 
         // One request per connection, so what comes after it can never be sent to another host than the one that was checked.
         forward.Append("Connection: close\r\n\r\n");
-        return new ProxyRequestHead(method, Normalize(uri.DnsSafeHost), uri.Port > 0 ? uri.Port : DefaultHttpPort, IsTunnel: false, Encoding.ASCII.GetBytes(forward.ToString()));
+        return new ProxyRequestHead(method, host, port, IsTunnel: false, Encoding.Latin1.GetBytes(forward.ToString()));
+    }
+
+    private static HashSet<string> StrippedHeaders(string[] lines)
+    {
+        HashSet<string> stripped = [with(StringComparer.OrdinalIgnoreCase), "Host", "Proxy-Connection", "Proxy-Authorization", "Connection", "Keep-Alive", "Upgrade"];
+        foreach (var line in lines.Skip(1))
+        {
+            var parts = line.Split(':', 2);
+            if (parts.Length == 2 && parts[0].Trim().Equals("Connection", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var token in parts[1].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    stripped.Add(token);
+                }
+            }
+        }
+
+        return stripped;
+    }
+
+    private static string FormatAuthority(string host, int port)
+    {
+        var bracketed = host.Contains(':', StringComparison.Ordinal) ? "[" + host + "]" : host;
+        return port == DefaultHttpPort ? bracketed : string.Create(CultureInfo.InvariantCulture, $"{bracketed}:{port}");
     }
 
     private static bool IsValid(string host) => host.Length is > 0 and <= 253 && Uri.CheckHostName(host) != UriHostNameType.Unknown;

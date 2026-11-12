@@ -62,6 +62,35 @@ public static class FolderPaths
     }
 
     /// <summary>
+    /// Resolve a relative file path inside <paramref name="root"/>, following symbolic links and junctions and refusing anything that leaves the folder.
+    /// </summary>
+    /// <param name="root">The folder the file must stay inside.</param>
+    /// <param name="relativePath">The path relative to <paramref name="root"/>.</param>
+    /// <param name="realPath">The resolved real file path when the result is non-null, otherwise empty.</param>
+    /// <returns>The path to open when the file exists inside <paramref name="root"/>, otherwise null.</returns>
+    public static string? ResolveFileInside(string root, string relativePath, out string realPath)
+    {
+        realPath = string.Empty;
+        if (string.IsNullOrEmpty(root) || string.IsNullOrEmpty(relativePath) || Path.IsPathRooted(relativePath))
+        {
+            return null;
+        }
+
+        var canonicalRoot = RootedPath.CanonicalRoot(root);
+        if (!RootedPath.TryResolve(canonicalRoot, relativePath, out var resolved, out _) || !File.Exists(resolved))
+        {
+            return null;
+        }
+
+        realPath = resolved;
+        var fullRoot = TrimTrailingSeparators(Path.GetFullPath(root));
+        var combined = Path.GetFullPath(Path.Combine(fullRoot, relativePath));
+        var sameRelativePath = RootedPath.IsInside(fullRoot, combined)
+            && string.Equals(RootedPath.Relative(canonicalRoot, resolved), RootedPath.Relative(fullRoot, combined), StringComparison.Ordinal);
+        return sameRelativePath ? combined : resolved;
+    }
+
+    /// <summary>
     /// Get the name to show for a folder: the last part of its path, or the root itself for a drive or <c>/</c>.
     /// </summary>
     /// <param name="fullPath">A full path.</param>

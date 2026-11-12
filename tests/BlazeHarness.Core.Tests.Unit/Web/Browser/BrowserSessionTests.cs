@@ -68,4 +68,19 @@ public sealed class BrowserSessionTests
         // Assert
         result.Should().BeNull();
     }
+
+    [Fact]
+    public void AddProblem_SurrogatePairOnCutBoundary_DoesNotLeaveUnpairedHighSurrogate()
+    {
+        // Arrange
+        var text = new string('a', 299) + "😀tail";
+
+        // Act
+        _sut.AddProblem(text);
+        var problems = _sut.TakeProblems();
+
+        // Assert
+        problems.Should().ContainSingle();
+        problems[0].Should().Be(new string('a', 299) + "…");
+    }
 }

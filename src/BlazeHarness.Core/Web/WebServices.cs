@@ -21,7 +21,7 @@ public sealed class WebServices : IDisposable
 #pragma warning disable IDISP008 // The engine is always handed over for this class to own: the public constructor creates it and tests pass a fake.
     private readonly IBrowserEngine _browser;
 #pragma warning restore IDISP008
-    private readonly int? _appPort;
+    private readonly Func<int?> _appPort;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WebServices"/> class.
@@ -33,16 +33,36 @@ public sealed class WebServices : IDisposable
     /// <param name="browserDirectory">The folder the browser the browser tools use is downloaded to.</param>
     /// <param name="appPort">The port Blaze Harness listens on, which the browser tools refuse to open, or null when it is not known.</param>
     public WebServices(Func<WebSettings> settings, HttpClient searchClient, ILoggerFactory loggers, TimeProvider time, string browserDirectory, int? appPort = null)
+        : this(settings, searchClient, loggers, time, browserDirectory, () => appPort)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WebServices"/> class with a lazily resolved application port.
+    /// </summary>
+    /// <param name="settings">Reads the current web settings; it is called on every turn, so changes apply at once.</param>
+    /// <param name="searchClient">The HTTP client the search providers use.</param>
+    /// <param name="loggers">Creates the logger.</param>
+    /// <param name="time">The clock.</param>
+    /// <param name="browserDirectory">The folder the browser the browser tools use is downloaded to.</param>
+    /// <param name="appPort">Returns the port Blaze Harness listens on once bound, or null when not known.</param>
+    public WebServices(Func<WebSettings> settings, HttpClient searchClient, ILoggerFactory loggers, TimeProvider time, string browserDirectory, Func<int?> appPort)
         : this(settings, searchClient, loggers, time, appPort, CreateBrowser(loggers, time, browserDirectory, appPort))
     {
     }
 
     internal WebServices(Func<WebSettings> settings, HttpClient searchClient, ILoggerFactory loggers, TimeProvider time, int? appPort, IBrowserEngine browser)
+        : this(settings, searchClient, loggers, time, () => appPort, browser)
+    {
+    }
+
+    internal WebServices(Func<WebSettings> settings, HttpClient searchClient, ILoggerFactory loggers, TimeProvider time, Func<int?> appPort, IBrowserEngine browser)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(searchClient);
         ArgumentNullException.ThrowIfNull(loggers);
         ArgumentNullException.ThrowIfNull(time);
+        ArgumentNullException.ThrowIfNull(appPort);
         ArgumentNullException.ThrowIfNull(browser);
         _settings = settings;
         _browser = browser;
@@ -56,7 +76,7 @@ public sealed class WebServices : IDisposable
             ],
             time,
             loggers.CreateLogger<SearchOrchestrator>());
-        _client = new SafeWebClient();
+        _client = new SafeWebClient(time: time);
         _cache = new WebCache(time);
         _reader = new WebPageReader(_client, new ContentExtractor(new PdfPigTextExtractor(), new OpenXmlTextExtractor()), _cache);
     }
@@ -208,7 +228,7 @@ public sealed class WebServices : IDisposable
         return tools;
     }
 
-    private static PuppeteerBrowserEngine CreateBrowser(ILoggerFactory loggers, TimeProvider time, string browserDirectory, int? appPort)
+    private static PuppeteerBrowserEngine CreateBrowser(ILoggerFactory loggers, TimeProvider time, string browserDirectory, Func<int?> appPort)
     {
         ArgumentNullException.ThrowIfNull(loggers);
         return new PuppeteerBrowserEngine(appPort, browserDirectory, loggers.CreateLogger<PuppeteerBrowserEngine>(), time);

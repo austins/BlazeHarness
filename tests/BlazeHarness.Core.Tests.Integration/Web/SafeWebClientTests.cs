@@ -148,6 +148,19 @@ public sealed class SafeWebClientTests : IDisposable
             .And.Contain("presentationml.presentation");
     }
 
+    [Fact]
+    public async Task FetchAsync_BodyReadStalls_ThrowsWebFetchException()
+    {
+        // Arrange
+        using var sut = new SafeWebClient(_ => true, idleTimeout: TimeSpan.FromMilliseconds(150));
+
+        // Act
+        var act = async () => await sut.FetchAsync(new Uri(_prefix + "stall-body"), TestContext.Current.CancellationToken);
+
+        // Assert
+        await act.Should().ThrowAsync<WebFetchException>().WithMessage("*took too long*");
+    }
+
     [Theory]
     [InlineData("docx")]
     [InlineData("docx-octet")]
@@ -202,6 +215,21 @@ public sealed class SafeWebClientTests : IDisposable
                 case "/accept":
                     response.ContentType = "text/plain";
                     await response.OutputStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(context.Request.Headers["Accept"] ?? string.Empty), _stop.Token);
+                    break;
+                case "/stall-body":
+                    response.ContentType = "text/html";
+                    response.SendChunked = true;
+                    await response.OutputStream.WriteAsync("<p>start"u8.ToArray(), _stop.Token);
+                    await response.OutputStream.FlushAsync(_stop.Token);
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(5), _stop.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+
                     break;
                 case "/docx":
                 case "/docx-octet":

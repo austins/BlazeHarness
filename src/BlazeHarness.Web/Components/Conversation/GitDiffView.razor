@@ -2,7 +2,7 @@
 @using BlazeHarness.Core.Git
 @using System.Globalization
 
-<div class="gdiff" role="table" aria-label="@WebStrings.ChangesDiffLabel" data-pick-label="@PickLabel">
+<div class="gdiff" role="table" aria-label="@WebStrings.ChangesDiffLabel" data-pick-label="@PickLabel" style="--gdiff-digits: @(_digits)ch">
     @* ui.js copies this under a text selection that spans several lines. *@
     <div class="gdiff-pick-template" hidden>
         <button type="button" class="btn btn-sm gdiff-pick"><Icon Name="chat" /><span></span></button>
@@ -41,11 +41,7 @@
                 <span class="gdiff-num" role="cell" aria-hidden="true">@row.Old</span>
                 <span class="gdiff-num" role="cell" aria-hidden="true">@row.New</span>
                 <span class="gdiff-sign" role="cell" aria-hidden="true">@row.Sign</span>
-                <code class="gdiff-code" role="cell">@row.Code</code>
-                @if (row.Hidden is { } hidden)
-                {
-                    <span class="visually-hidden">@hidden</span>
-                }
+                <code class="gdiff-code" role="cell">@row.Code@if (row.Hidden is { } hidden) { <span class="visually-hidden"> @hidden</span> }</code>
             </div>
             @if (_editHunk == hunkIndex && lineIndex == Math.Max(_anchorLine, _editLine))
             {
@@ -76,6 +72,7 @@
 
     private GitFileDiff? _seen;
     private List<HunkRows> _rows = [];
+    private int _digits = 3;
     private int _editHunk = -1;
     private int _editLine = -1;
     private int _anchorLine = -1;
@@ -136,6 +133,7 @@
         _seen = Diff;
         var language = Path.GetExtension(Diff.Path).TrimStart('.');
         _rows = [.. Diff.Hunks.Select(hunk => new HunkRows(hunk.Header, hunk, ToRows(hunk, language)))];
+        _digits = _rows.SelectMany(h => h.Lines).Aggregate(3, static (max, r) => Math.Max(max, Math.Max(r.Old.Length, r.New.Length)));
         RestoreDraft();
     }
 

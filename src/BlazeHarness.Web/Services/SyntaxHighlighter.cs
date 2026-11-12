@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using System.Diagnostics;
 using System.Net;
 using System.Text;
 using TextMateSharp.Grammars;
@@ -68,18 +67,19 @@ public static class SyntaxHighlighter
 
     private static readonly Lock GrammarsLock = new();
 
-    private static readonly Dictionary<string, IGrammar?> Grammars = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, LockedGrammar?> Grammars = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Color a piece of code.
     /// </summary>
     /// <param name="code">The code.</param>
     /// <param name="info">The info string after the opening code fence, whose first word names the language.</param>
+    /// <param name="time">Measures the tokenization time budget; defaults to the system clock.</param>
     /// <returns>HTML for the inside of a code element, with token spans, or null when the language is unknown, the code is too long or it can't be colored in time.</returns>
-    public static string? TryHighlight(string code, string? info)
+    public static string? TryHighlight(string code, string? info, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(code);
-        return Highlight(code, info, MaxLength) is { } lines ? string.Join('\n', lines) : null;
+        return Highlight(code, info, MaxLength, time ?? TimeProvider.System) is { } lines ? string.Join('\n', lines) : null;
     }
 
     /// <summary>
@@ -90,14 +90,15 @@ public static class SyntaxHighlighter
     /// </remarks>
     /// <param name="code">The lines of code, separated by <c>\n</c>.</param>
     /// <param name="info">The language name or file extension.</param>
+    /// <param name="time">Measures the tokenization time budget; defaults to the system clock.</param>
     /// <returns>One HTML string per line of <paramref name="code"/>, or null when the language is unknown, the code is too long or it can't be colored in time.</returns>
-    public static IReadOnlyList<string>? TryHighlightLines(string code, string? info)
+    public static IReadOnlyList<string>? TryHighlightLines(string code, string? info, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(code);
-        return Highlight(code, info, MaxLinesLength);
+        return Highlight(code, info, MaxLinesLength, time ?? TimeProvider.System);
     }
 
-    private static List<string>? Highlight(string code, string? info, int maxLength)
+    private static List<string>? Highlight(string code, string? info, int maxLength, TimeProvider time)
     {
         if (code.Length == 0 || code.Length > maxLength || info is null)
         {
@@ -111,34 +112,37 @@ public static class SyntaxHighlighter
             name = name[..space];
         }
 
-        if (!ScopeNames.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out var scopeName) || GrammarFor(scopeName) is not { } grammar)
+        if (!ScopeNames.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out var scopeName) || GrammarFor(scopeName) is not { } entry)
         {
             return null;
         }
 
-        var started = Stopwatch.GetTimestamp();
         var lines = new List<string>();
         var builder = new StringBuilder();
-        IStateStack? state = null;
-        foreach (var range in code.AsSpan().Split('\n'))
+        lock (entry.Gate)
         {
-            var remaining = TimeLimit - Stopwatch.GetElapsedTime(started);
-            if (remaining <= TimeSpan.Zero)
+            var started = time.GetTimestamp();
+            IStateStack? state = null;
+            foreach (var range in code.AsSpan().Split('\n'))
             {
-                return null;
+                var remaining = TimeLimit - time.GetElapsedTime(started);
+                if (remaining <= TimeSpan.Zero)
+                {
+                    return null;
+                }
+
+                var line = code.AsMemory(range);
+                var result = entry.Grammar.TokenizeLine(line, state, remaining);
+
+                // A line that ran out of time ends with tokens short of its end, and the lines after it would start in the wrong state.
+                if (result.Tokens.Length == 0 || result.Tokens[^1].EndIndex < line.Length)
+                {
+                    return null;
+                }
+
+                state = result.RuleStack;
+                lines.Add(ToHtml(line.Span, result.Tokens, builder));
             }
-
-            var line = code.AsMemory(range);
-            var result = grammar.TokenizeLine(line, state, remaining);
-
-            // A line that ran out of time ends with tokens short of its end, and the lines after it would start in the wrong state.
-            if (result.Tokens.Length == 0 || result.Tokens[^1].EndIndex < line.Length)
-            {
-                return null;
-            }
-
-            state = result.RuleStack;
-            lines.Add(ToHtml(line.Span, result.Tokens, builder));
         }
 
         return lines;
@@ -150,19 +154,21 @@ public static class SyntaxHighlighter
     /// <remarks>
     /// A new grammar tokenizes one empty line before it is returned, which compiles its top-level patterns.
     /// That one-time cost doesn't depend on the code and can take seconds on a busy machine, so it stays outside <see cref="TimeLimit"/>.
+    /// Nested rules compile lazily on first match inside <c>IGrammar.TokenizeLine</c>, so each grammar carries its own lock.
     /// </remarks>
-    private static IGrammar? GrammarFor(string scopeName)
+    private static LockedGrammar? GrammarFor(string scopeName)
     {
         lock (GrammarsLock)
         {
-            if (!Grammars.TryGetValue(scopeName, out var grammar))
+            if (!Grammars.TryGetValue(scopeName, out var entry))
             {
-                grammar = Registry.LoadGrammar(scopeName);
+                var grammar = Registry.LoadGrammar(scopeName);
                 grammar?.TokenizeLine(string.Empty);
-                Grammars[scopeName] = grammar;
+                entry = grammar is null ? null : new LockedGrammar(grammar, new Lock());
+                Grammars[scopeName] = entry;
             }
 
-            return grammar;
+            return entry;
         }
     }
 
@@ -256,4 +262,6 @@ public static class SyntaxHighlighter
 
         return names.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
+
+    private sealed record LockedGrammar(IGrammar Grammar, Lock Gate);
 }

@@ -89,7 +89,7 @@ internal sealed class SearchFilesTool : ITool
         Regex? files;
         try
         {
-            search = new Regex(arguments.OptionalBool("literal") ? Regex.Escape(pattern) : pattern, options, _regexTimeout);
+            search = CreateRegex(pattern, arguments.OptionalBool("literal"), options, _regexTimeout);
             files = string.IsNullOrEmpty(glob) ? null : Glob.ForTool(glob);
         }
         catch (ArgumentException ex)
@@ -197,7 +197,7 @@ internal sealed class SearchFilesTool : ITool
 
                 var text = line.Trim();
                 output.Append(entry.RelativePath).Append(':').Append(number).Append(": ")
-                    .Append(text.Length > MaxLineCharacters ? text[..MaxLineCharacters] + " [line cut]" : text).Append('\n');
+                    .Append(text.Length > MaxLineCharacters ? TextClip.Start(text, MaxLineCharacters) + " [line cut]" : text).Append('\n');
                 matches++;
             }
         }
@@ -207,5 +207,19 @@ internal sealed class SearchFilesTool : ITool
         }
 
         return true;
+    }
+
+    private static Regex CreateRegex(string pattern, bool literal, RegexOptions options, TimeSpan timeout)
+    {
+        var expression = literal ? Regex.Escape(pattern) : pattern;
+        try
+        {
+            return new Regex(expression, options | RegexOptions.NonBacktracking, timeout);
+        }
+        catch (NotSupportedException)
+        {
+            // Backreferences and lookarounds require the backtracking engine.
+            return new Regex(expression, options, timeout);
+        }
     }
 }

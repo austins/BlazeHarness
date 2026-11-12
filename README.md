@@ -36,7 +36,7 @@ The app listens on `127.0.0.1:5380`, prints its URL, and opens your browser.
 
 | Option | Environment variable | Effect |
 |---|---|---|
-| `--host ADDRESS` | `BLAZEHARNESS_HOST` | `localhost` or `127.0.0.1` (default) listens on this machine only. `0.0.0.0` listens on all interfaces so other devices can connect by IP address. |
+| `--host ADDRESS` | `BLAZEHARNESS_HOST` | `localhost` or `127.0.0.1` (default) listens on this machine only; any unrecognized value also falls back to `127.0.0.1`. `0.0.0.0` listens on all interfaces so other devices can connect by IP address. |
 | `--port N` | `BLAZEHARNESS_PORT` | Listen on this port instead of 5380. The app exits with a message if the port is taken. |
 | `--no-browser` | `BLAZEHARNESS_NO_BROWSER=1` | Don't open the browser on startup. |
 

@@ -10,15 +10,10 @@ namespace BlazeHarness.Core.Mcp.Config;
 /// The file is read as text instead of a typed model, because it is shared with other tools
 /// and the user edits it directly. Saves are atomic, and edits made outside the app are picked up.
 /// </remarks>
-public sealed partial class McpConfigFile : IDisposable
+public sealed class McpConfigFile : IDisposable
 {
-    private const int DebounceMilliseconds = 200;
-
     private readonly string _path;
-    private readonly ILogger _logger;
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly FileSystemWatcher? _watcher;
-    private readonly ITimer _debounce;
+    private readonly WatchedFile _file;
     private Snapshot _current;
 
     /// <summary>
@@ -34,24 +29,8 @@ public sealed partial class McpConfigFile : IDisposable
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(time);
         _path = path;
-        _logger = logger;
-        _current = Snapshot.Of(ReadText() ?? string.Empty);
-        _debounce = time.CreateTimer(_ => OnExternalChange(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-
-        if (watch)
-        {
-            var directory = Path.GetDirectoryName(Path.GetFullPath(_path))!;
-            Directory.CreateDirectory(directory);
-            _watcher = new FileSystemWatcher(directory, Path.GetFileName(_path))
-            {
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size,
-                EnableRaisingEvents = true,
-            };
-            _watcher.Changed += (_, _) => Schedule();
-            _watcher.Created += (_, _) => Schedule();
-            _watcher.Deleted += (_, _) => Schedule();
-            _watcher.Renamed += (_, _) => Schedule();
-        }
+        _file = new WatchedFile(path, logger, time, watch, watchDelete: true, ReloadUnderLock);
+        _current = Snapshot.Of(_file.ReadInitialText() ?? string.Empty);
     }
 
     /// <summary>
@@ -105,7 +84,7 @@ public sealed partial class McpConfigFile : IDisposable
             return snapshot.Result;
         }
 
-        await _lock.WaitAsync(cancellationToken);
+        await _file.WaitAsync(cancellationToken);
         try
         {
             await AtomicFile.WriteAllOwnerOnlyTextAsync(_path, text, cancellationToken);
@@ -113,10 +92,10 @@ public sealed partial class McpConfigFile : IDisposable
         }
         finally
         {
-            _lock.Release();
+            _file.Release();
         }
 
-        Changed?.Invoke(this, EventArgs.Empty);
+        _file.SafeInvoke(() => Changed?.Invoke(this, EventArgs.Empty));
         return snapshot.Result;
     }
 
@@ -127,15 +106,12 @@ public sealed partial class McpConfigFile : IDisposable
     /// <param name="disabled">True to turn the server off.</param>
     /// <param name="cancellationToken">A token to cancel the write.</param>
     /// <returns>True when the file was changed or already had that state; false when the server or the file could not be edited.</returns>
-    public async Task<bool> SetDisabledAsync(string server, bool disabled, CancellationToken cancellationToken = default)
+    public Task<bool> SetDisabledAsync(string server, bool disabled, CancellationToken cancellationToken = default)
     {
-        var edited = McpConfigEditor.SetDisabled(Text, server, disabled);
-        if (edited is null)
-        {
-            return false;
-        }
-
-        return (await SaveAsync(edited, cancellationToken)).Errors.Count == 0;
+        return MutateAsync(
+            (text, _) => McpConfigEditor.SetDisabled(text, server, disabled) is { } edited ? (edited, true) : (null, false),
+            onParseError: _ => false,
+            cancellationToken);
     }
 
     /// <summary>
@@ -146,105 +122,88 @@ public sealed partial class McpConfigFile : IDisposable
     /// <param name="excluded">True to keep the tool from the model.</param>
     /// <param name="cancellationToken">A token to cancel the write.</param>
     /// <returns>True when the file was changed or already had that state; false when the server or the file could not be edited.</returns>
-    public async Task<bool> SetToolExcludedAsync(string server, string tool, bool excluded, CancellationToken cancellationToken = default)
+    public Task<bool> SetToolExcludedAsync(string server, string tool, bool excluded, CancellationToken cancellationToken = default)
     {
-        var edited = McpConfigEditor.SetToolExcluded(Text, server, tool, excluded);
-        if (edited is null)
-        {
-            return false;
-        }
-
-        return (await SaveAsync(edited, cancellationToken)).Errors.Count == 0;
+        return MutateAsync(
+            (text, _) => McpConfigEditor.SetToolExcluded(text, server, tool, excluded) is { } edited ? (edited, true) : (null, false),
+            onParseError: _ => false,
+            cancellationToken);
     }
 
     /// <inheritdoc />
-    public void Dispose()
-    {
-        _watcher?.Dispose();
-        _debounce.Dispose();
-        _lock.Dispose();
-    }
+    public void Dispose() => _file.Dispose();
 
     /// <summary>
     /// Read the file again after an edit made outside the app, and raise <see cref="Changed"/> when its text differs.
     /// </summary>
-    internal void OnExternalChange()
+    internal void OnExternalChange() => _file.OnExternalChange();
+
+    /// <summary>
+    /// Edit the current file text under the file lock and write the result atomically when valid.
+    /// </summary>
+    /// <typeparam name="TResult">The caller's result type.</typeparam>
+    /// <param name="edit">Builds the edited text (or null to write nothing) and result from the current text and parsed servers.</param>
+    /// <param name="onParseError">Maps parse errors in the edited text to a result without writing.</param>
+    /// <param name="cancellationToken">A token to cancel waiting or writing.</param>
+    /// <returns>The outcome of the edit.</returns>
+    internal async Task<TResult> MutateAsync<TResult>(
+        Func<string, McpParseResult, (string? EditedText, TResult Result)> edit,
+        Func<IReadOnlyList<string>, TResult> onParseError,
+        CancellationToken cancellationToken = default)
     {
-        bool changed;
+        bool wrote = false;
+        TResult outcome;
+        await _file.WaitAsync(cancellationToken);
         try
         {
-            changed = Reload();
-        }
-        catch (ObjectDisposedException)
-        {
-            // A callback that was already queued when the file was disposed has nothing left to do, and must not fault a thread-pool thread.
-            return;
-        }
-
-        if (changed)
-        {
-            Changed?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
-    private void Schedule()
-    {
-        try
-        {
-            _debounce.Change(TimeSpan.FromMilliseconds(DebounceMilliseconds), Timeout.InfiniteTimeSpan);
-        }
-        catch (ObjectDisposedException)
-        {
-            // A watcher event can still arrive just after disposal.
-        }
-    }
-
-    private string? ReadText()
-    {
-        try
-        {
-            return File.Exists(_path) ? File.ReadAllText(_path) : string.Empty;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            LogReadFailed(ex, Path.GetFileName(_path));
-            return null;
-        }
-    }
-
-    private bool Reload()
-    {
-        _lock.Wait();
-        try
-        {
-            string text;
-            try
+            var current = Volatile.Read(ref _current);
+            var (edited, result) = edit(current.Text, current.Result);
+            if (edited is null)
             {
-                text = File.Exists(_path) ? File.ReadAllText(_path) : string.Empty;
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                // Often the writer still holds the file. Keep the servers that were loaded instead of treating it as empty, and try again shortly.
-                Schedule();
-                return false;
+                return result;
             }
 
-            if (text == _current.Text)
+            var snapshot = Snapshot.Of(edited);
+            if (snapshot.Result.Errors.Count > 0)
             {
-                return false;
+                return onParseError(snapshot.Result.Errors);
             }
 
-            Volatile.Write(ref _current, Snapshot.Of(text, _current));
-            return true;
+            await AtomicFile.WriteAllOwnerOnlyTextAsync(_path, edited, cancellationToken);
+            Volatile.Write(ref _current, snapshot);
+            wrote = true;
+            outcome = result;
         }
         finally
         {
-            _lock.Release();
+            _file.Release();
         }
+
+        if (wrote)
+        {
+            _file.SafeInvoke(() => Changed?.Invoke(this, EventArgs.Empty));
+        }
+
+        return outcome;
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not read {File}.")]
-    private partial void LogReadFailed(Exception ex, string file);
+    private Action? ReloadUnderLock()
+    {
+        // Often the writer still holds the file. Keep the servers that were loaded instead of treating it as empty, and try again shortly.
+        if (!_file.TryReadCurrentText(out var raw))
+        {
+            return null;
+        }
+
+        var text = raw ?? string.Empty;
+        if (text == _current.Text)
+        {
+            return null;
+        }
+
+        Volatile.Write(ref _current, Snapshot.Of(text, _current));
+        return () => Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     private sealed record Snapshot(string Text, McpParseResult Result, IReadOnlyList<McpServerConfig> Servers)
     {

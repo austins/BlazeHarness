@@ -192,7 +192,6 @@ public sealed class ProviderService
     /// <returns>A task that completes once the provider is removed.</returns>
     public async Task RemoveAsync(string providerId, CancellationToken cancellationToken = default)
     {
-        await _secrets.DeleteAsync(SecretStoreFactory.KeyFor(providerId), cancellationToken);
         await _providers.UpdateAsync(current => current with { Providers = current.Providers.Where(p => p.Id != providerId).ToList() }, cancellationToken);
         await _config.UpdateAsync(
             next =>
@@ -208,7 +207,15 @@ public sealed class ProviderService
             },
             cancellationToken);
 
-        Changed?.Invoke(this, EventArgs.Empty);
+        // The provider is already gone from the files, so views must refresh even when the keychain refuses the delete.
+        try
+        {
+            await _secrets.DeleteAsync(SecretStoreFactory.KeyFor(providerId), cancellationToken);
+        }
+        finally
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     /// <summary>

@@ -200,6 +200,36 @@ public sealed class SearchFilesToolTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_LongLineEndingMidSurrogatePair_DoesNotSplitSurrogatePair()
+    {
+        // Arrange
+        _root.Write("a.txt", "needle " + new string('x', 492) + "🔥tail");
+
+        // Act
+        var result = await RunAsync(new { pattern = "needle" });
+
+        // Assert
+        result.Output.Should().EndWith("[line cut]");
+        result.Output.EnumerateRunes().Any(r => r == System.Text.Rune.ReplacementChar).Should().BeFalse();
+        result.Output.Any(char.IsSurrogate).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CatastrophicPatternWithoutBackreferences_CompletesInLinearTime()
+    {
+        // Arrange
+        _root.Write("a.txt", new string('a', 60) + "!");
+        var sut = new SearchFilesTool(TimeSpan.FromMilliseconds(200));
+
+        // Act
+        var result = await sut.ExecuteAsync(TempRoot.Args(new { pattern = "^(a+)+$" }), _root.Context, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Output.Should().Be("[No matches.]");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_SlowPattern_ReportsATimeoutInsteadOfHanging()
     {
         // Arrange
@@ -207,7 +237,7 @@ public sealed class SearchFilesToolTests : IDisposable
         var sut = new SearchFilesTool(TimeSpan.FromMilliseconds(50));
 
         // Act
-        var result = await sut.ExecuteAsync(TempRoot.Args(new { pattern = "^(a+)+$" }), _root.Context, TestContext.Current.CancellationToken);
+        var result = await sut.ExecuteAsync(TempRoot.Args(new { pattern = @"^(a+)+\1?$" }), _root.Context, TestContext.Current.CancellationToken);
 
         // Assert
         result.IsError.Should().BeTrue();

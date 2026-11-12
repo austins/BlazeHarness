@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Config;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace BlazeHarness.Core.Secrets;
@@ -40,7 +41,7 @@ internal abstract class FileBackedSecretStore(
         try
         {
             var all = await ReadAsync(cancellationToken);
-            return all.TryGetValue(key, out var stored) ? unprotect(stored) : null;
+            return all.TryGetValue(key, out var stored) ? TryUnprotect(stored) : null;
         }
         finally
         {
@@ -110,6 +111,18 @@ internal abstract class FileBackedSecretStore(
         {
             File.Move(path, path + ".corrupt", overwrite: true);
             return [];
+        }
+    }
+
+    private string? TryUnprotect(string stored)
+    {
+        try
+        {
+            return unprotect(stored);
+        }
+        catch (Exception ex) when (ex is CryptographicException or FormatException)
+        {
+            return null;
         }
     }
 

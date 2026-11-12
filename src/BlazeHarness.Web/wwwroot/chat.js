@@ -263,8 +263,19 @@ window.bhChat = {
         });
 
         // The suggestion list stays mouse-driven markup; the arrows move a highlight through it while focus stays in the box.
-        // Escape hides it until the text changes, so Tab can leave the box again.
+        // Escape hides it until the text changes, so Tab can leave the box again. It comes back only once the server has
+        // rendered the list for the new text (data-for holds the /word it matched), so a stale list doesn't flash first.
         const list = () => form.querySelector(".composer-suggestions");
+        let revealPending = false;
+        const reveal = () => {
+            const current = list();
+            if (revealPending && current?.hidden && input.value.endsWith(current.dataset.for ?? "")) {
+                revealPending = false;
+                current.hidden = false;
+                input.setAttribute("aria-expanded", "true");
+            }
+        };
+        new MutationObserver(reveal).observe(form, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-for"] });
         const suggestions = () => (list()?.hidden ? [] : [...(list()?.querySelectorAll("button") ?? [])]);
         const highlight = (index) => {
             const items = suggestions();
@@ -304,6 +315,8 @@ window.bhChat = {
                     e.preventDefault();
                     e.stopPropagation();
                     list().hidden = true;
+                    revealPending = false;
+                    input.setAttribute("aria-expanded", "false");
                     highlight(-1);
                     return;
                 }
@@ -325,10 +338,8 @@ window.bhChat = {
             }
         });
         input.addEventListener("input", () => {
-            if (list()) {
-                list().hidden = false;
-            }
-
+            revealPending = list()?.hidden === true;
+            reveal();
             highlight(-1);
             window.bhChat.resize(input);
         });

@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Web.Content;
+using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
 
@@ -25,16 +26,23 @@ internal sealed class SafeWebClient : IDisposable
     private const int MaxRedirects = 5;
     private const int MaxErrorBodyBytes = 64 * 1024;
     private const string UserAgent = $"Mozilla/5.0 (compatible; {AppConstants.AppId}/1.0)";
+    private static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(30);
 
     private readonly HttpClient _client;
+    private readonly TimeProvider _time;
+    private readonly TimeSpan _idleTimeout;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SafeWebClient"/> class.
     /// </summary>
     /// <param name="isAllowed">Tells whether an address may be connected to; public internet addresses only when null.</param>
     /// <param name="handler">The handler to send with, which tests use to avoid the network; a handler that applies the address check when null.</param>
-    public SafeWebClient(Func<IPAddress, bool>? isAllowed = null, HttpMessageHandler? handler = null)
+    /// <param name="time">Times stalled header and body reads; defaults to the system clock.</param>
+    /// <param name="idleTimeout">How long one header wait or body read may stall before failing; 30 seconds when null.</param>
+    public SafeWebClient(Func<IPAddress, bool>? isAllowed = null, HttpMessageHandler? handler = null, TimeProvider? time = null, TimeSpan? idleTimeout = null)
     {
+        _time = time ?? TimeProvider.System;
+        _idleTimeout = idleTimeout ?? IdleTimeout;
 #pragma warning disable CA2000 // The client owns the handler and disposes it.
         _client = new HttpClient(handler ?? CreateHandler(isAllowed ?? WebAddressPolicy.IsPublic)) { Timeout = Timeout.InfiniteTimeSpan };
 #pragma warning restore CA2000
@@ -166,9 +174,11 @@ internal sealed class SafeWebClient : IDisposable
 
     private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        using var clockTimeout = new CancellationTokenSource(_idleTimeout, _time);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, clockTimeout.Token);
         try
         {
-            return await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            return await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linked.Token);
         }
         catch (HttpRequestException ex) when (ex.InnerException is WebFetchException blocked)
         {
@@ -184,35 +194,63 @@ internal sealed class SafeWebClient : IDisposable
         }
     }
 
-    private static async Task<FetchResponse> ReadAsync(Uri address, HttpResponseMessage response, CancellationToken cancellationToken)
+    private async Task<FetchResponse> ReadAsync(Uri address, HttpResponseMessage response, CancellationToken cancellationToken)
     {
         var type = response.Content.Headers.ContentType;
         var media = type?.MediaType;
         var success = response.IsSuccessStatusCode;
         var limit = success ? (string.Equals(media, "application/pdf", StringComparison.OrdinalIgnoreCase) || OfficeMediaTypes.IsOffice(media) ? MaxDocumentBytes : MaxPageBytes) : MaxErrorBodyBytes;
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var memory = new MemoryStream();
-        var buffer = new byte[32 * 1024];
+        var buffer = ArrayPool<byte>.Shared.Rent(32 * 1024);
         var truncated = false;
         try
         {
-            int read;
-            while ((read = await stream.ReadAsync(buffer, cancellationToken)) > 0)
+            Stream stream;
+            using (var openTimeout = new CancellationTokenSource(_idleTimeout, _time))
+            using (var linkedOpen = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, openTimeout.Token))
             {
-                var room = limit - (int)memory.Length;
-                if (read > room)
-                {
-                    await memory.WriteAsync(buffer.AsMemory(0, room), cancellationToken);
-                    truncated = true;
-                    break;
-                }
-
-                await memory.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                stream = await response.Content.ReadAsStreamAsync(linkedOpen.Token);
             }
+
+            await using (stream)
+            {
+                while (true)
+                {
+                    int read;
+                    using (var chunkTimeout = new CancellationTokenSource(_idleTimeout, _time))
+                    using (var linkedRead = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, chunkTimeout.Token))
+                    {
+                        read = await stream.ReadAsync(buffer, linkedRead.Token);
+                    }
+
+                    if (read <= 0)
+                    {
+                        break;
+                    }
+
+                    var room = limit - (int)memory.Length;
+                    if (read > room)
+                    {
+                        await memory.WriteAsync(buffer.AsMemory(0, room), cancellationToken);
+                        truncated = true;
+                        break;
+                    }
+
+                    await memory.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new WebFetchException("The site took too long to answer.");
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException)
         {
             throw new WebFetchException("The connection broke while the page was being read.");
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
 
         var body = memory.ToArray();

@@ -295,6 +295,23 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         && (role == ChatRole.Assistant ? status is EntryStatus.Failed or EntryStatus.Cancelled or EntryStatus.Interrupted : role == ChatRole.User && origin is not null);
 
     /// <summary>
+    /// Gets the number of subscribers currently attached to <see cref="Changed"/>.
+    /// </summary>
+    internal int ListenerCount
+    {
+        get
+        {
+            var count = 0;
+            foreach (var _ in Delegate.EnumerateInvocationList(Changed))
+            {
+                count++;
+            }
+
+            return count;
+        }
+    }
+
+    /// <summary>
     /// Rebuild the conversation from a saved log.
     /// </summary>
     /// <remarks>
@@ -677,7 +694,7 @@ public sealed partial class Chat : IDisposable, IToolApprover, IRunInbox, IUserA
         try
         {
             using var content = new MemoryStream(image.Data.ToArray(), writable: false);
-            return await store.SaveAsync(toolName + ".png", content);
+            return await store.SaveAsync(toolName + ImageFiles.ExtensionOf(image.MediaType), content);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or AttachmentException)
         {

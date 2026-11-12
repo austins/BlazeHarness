@@ -196,6 +196,50 @@ public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)
         File.Exists(ProjectFolder.Combine("note.txt")).Should().BeFalse();
     }
 
+    [Fact]
+    public async Task SkillSuggestions_EscapeThenBackspace_ShowOnlyTheListForTheNewText()
+    {
+        // Arrange
+        var skillFolder = ProjectFolder.Combine(".agents", "skills", "example-skill");
+        Directory.CreateDirectory(skillFolder);
+        await File.WriteAllTextAsync(
+            Path.Combine(skillFolder, "SKILL.md"),
+            "---\nname: example-skill\ndescription: A test skill\n---\nTest instructions.",
+            TestContext.Current.CancellationToken);
+        Factory.Services.GetRequiredService<SkillCatalog>().Refresh();
+        await Factory.Services.GetRequiredService<FolderRegistry>().OpenAsync(ProjectFolder.Root, TestContext.Current.CancellationToken);
+        await LaunchAsync("/?folder=" + Uri.EscapeDataString(ProjectFolder.Root));
+        var input = Page.GetByPlaceholder("Message the model");
+        var list = Page.Locator(".composer-suggestions");
+        await input.PressSequentiallyAsync("/ex");
+        await Expect(list).ToHaveAttributeAsync("data-for", "/ex");
+        await input.PressAsync("Escape");
+        await Expect(list).ToBeHiddenAsync();
+
+        // Records whether the list ever shows while it still holds the suggestions for other text.
+        await Page.EvaluateAsync(
+            """
+            () => {
+                window.staleShown = false;
+                const list = document.querySelector(".composer-suggestions");
+                const input = document.querySelector(".composer-input");
+                new MutationObserver(() => {
+                    if (!list.hidden && !input.value.endsWith(list.dataset.for)) {
+                        window.staleShown = true;
+                    }
+                }).observe(list, { attributes: true, attributeFilter: ["hidden", "data-for"] });
+            }
+            """);
+
+        // Act
+        await input.PressAsync("Backspace");
+
+        // Assert
+        await Expect(list).ToBeVisibleAsync();
+        await Expect(list).ToHaveAttributeAsync("data-for", "/e");
+        (await Page.EvaluateAsync<bool>("() => window.staleShown")).Should().BeFalse();
+    }
+
     protected override string[]? ChunksFor(string body)
     {
         if (body.Contains("\"role\":\"tool\"", StringComparison.Ordinal))

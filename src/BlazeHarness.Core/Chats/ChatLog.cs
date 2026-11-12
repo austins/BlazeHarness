@@ -145,13 +145,7 @@ public sealed partial class ChatLog : IChatLog, IDisposable
         var path = OutputPath(file);
         await AtomicFile.WriteAllOwnerOnlyTextAsync(path, result.Output, cancellationToken);
 
-        var length = PreviewLength;
-        if (char.IsHighSurrogate(result.Output[length - 1]))
-        {
-            length--;
-        }
-
-        return result with { Output = result.Output[..length], OutputFile = file };
+        return result with { Output = TextClip.Start(result.Output, PreviewLength), OutputFile = file };
     }
 
     private async Task<ToolResultEvent> LoadOutputAsync(ToolResultEvent stored, CancellationToken cancellationToken)

@@ -59,7 +59,51 @@ public sealed partial class ChatService : IDisposable
     private readonly ConcurrentDictionary<string, Task> _titling = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, int> _titleFailures = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, Chat> _live = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, long> _touched = new(StringComparer.Ordinal);
     private readonly KeyedGate _opening = new();
+    private readonly int _maxIdleChats;
+    private long _touchOrder;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ChatService"/> class using grouped <see cref="ChatServiceOptions"/>.
+    /// </summary>
+    /// <param name="store">The saved chats.</param>
+    /// <param name="clientFactory">Creates the chat client for a target.</param>
+    /// <param name="loggers">Creates loggers for the chats.</param>
+    /// <param name="time">The clock for timestamps.</param>
+    /// <param name="options">Optional collaborators and retention settings.</param>
+    public ChatService(
+        ChatStore store,
+        Func<ChatTarget, CancellationToken, Task<IChatClient>> clientFactory,
+        ILoggerFactory loggers,
+        TimeProvider time,
+        ChatServiceOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(clientFactory);
+        ArgumentNullException.ThrowIfNull(loggers);
+        ArgumentNullException.ThrowIfNull(time);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentOutOfRangeException.ThrowIfLessThan(options.MaxIdleChats, 1);
+        _store = store;
+        _clientFactory = clientFactory;
+        _loggers = loggers;
+        _time = time;
+        _titles = options.Titles;
+        _skills = options.Skills;
+        _sandbox = options.Sandbox ?? new NoShellSandbox("No sandbox is set up.");
+        _defaults = options.Defaults;
+        _mcp = options.Mcp;
+        _web = options.Web;
+        _compactionMode = options.CompactionMode;
+        _todosEnabled = options.TodosEnabled;
+        _customInstructions = options.CustomInstructions;
+        _providers = options.Providers;
+        _folders = options.Folders;
+        _maxIdleChats = options.MaxIdleChats;
+        _worktrees = new GitWorktrees(time);
+        _log = loggers.CreateLogger<ChatService>();
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ChatService"/> class.
@@ -95,28 +139,26 @@ public sealed partial class ChatService : IDisposable
         Func<string?>? customInstructions = null,
         ProviderService? providers = null,
         FolderRegistry? folders = null)
+        : this(
+            store,
+            clientFactory,
+            loggers,
+            time,
+            new ChatServiceOptions
+            {
+                Titles = titles,
+                Sandbox = sandbox,
+                Defaults = defaults,
+                Mcp = mcp,
+                Skills = skills,
+                CompactionMode = compactionMode,
+                Web = web,
+                TodosEnabled = todosEnabled,
+                CustomInstructions = customInstructions,
+                Providers = providers,
+                Folders = folders,
+            })
     {
-        ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(clientFactory);
-        ArgumentNullException.ThrowIfNull(loggers);
-        ArgumentNullException.ThrowIfNull(time);
-        _store = store;
-        _clientFactory = clientFactory;
-        _loggers = loggers;
-        _time = time;
-        _titles = titles;
-        _skills = skills;
-        _sandbox = sandbox ?? new NoShellSandbox("No sandbox is set up.");
-        _defaults = defaults;
-        _mcp = mcp;
-        _web = web;
-        _compactionMode = compactionMode;
-        _todosEnabled = todosEnabled;
-        _customInstructions = customInstructions;
-        _providers = providers;
-        _folders = folders;
-        _worktrees = new GitWorktrees(time);
-        _log = loggers.CreateLogger<ChatService>();
     }
 
     /// <summary>
@@ -147,7 +189,9 @@ public sealed partial class ChatService : IDisposable
         var chat = await NewChatAsync(info.Id);
         chat.Permissions.Settings = info.Permissions;
         _live[info.Id] = chat;
+        Touch(info.Id);
         await ApplyFolderAsync(info.Id, chat, CancellationToken.None);
+        await EvictIdleAsync(info.Id);
         return info;
     }
 
@@ -229,15 +273,14 @@ public sealed partial class ChatService : IDisposable
             return null;
         }
 
-        if (_live.TryGetValue(id, out var live))
-        {
-            return live;
-        }
-
+        // Even a live chat is taken under the gate: eviction closes chats under it and skips one touched since its scan,
+        // so an eviction already under way can't close a chat this call has just touched and returned.
+        Chat? opened;
         using (await _opening.EnterAsync(id, cancellationToken))
         {
-            if (_live.TryGetValue(id, out live))
+            if (_live.TryGetValue(id, out var live))
             {
+                Touch(id);
                 return live;
             }
 
@@ -262,17 +305,20 @@ public sealed partial class ChatService : IDisposable
                 }
 
                 _live[id] = chat;
-                var opened = chat;
+                Touch(id);
 #pragma warning disable IDISP003 // Ownership transferred to the live registry; only failed initialization is disposed here.
+                opened = chat;
                 chat = null;
 #pragma warning restore IDISP003
-                return opened;
             }
             finally
             {
                 chat?.Dispose();
             }
         }
+
+        await EvictIdleAsync(id);
+        return opened;
     }
 
     /// <summary>
@@ -579,6 +625,7 @@ public sealed partial class ChatService : IDisposable
             }
 
             _live.TryRemove(id, out _);
+            _touched.TryRemove(id, out _);
             chat.Dispose();
         }
 
@@ -593,6 +640,7 @@ public sealed partial class ChatService : IDisposable
 
             await _store.DeleteAsync(id, CancellationToken.None);
             _titleFailures.TryRemove(id, out _);
+            _touched.TryRemove(id, out _);
 
             if (_live.TryRemove(id, out var late))
             {
@@ -727,10 +775,17 @@ public sealed partial class ChatService : IDisposable
         return new SearchChatTool(() => chat.Entries, async cancellationToken =>
         {
             List<(string Title, IReadOnlyList<ChatEntry> Entries)> others = [];
-            foreach (var other in _store.List().Where(s => s.Id != id && string.Equals(s.FolderPath, folderPath, StringComparison.Ordinal)).Take(MaxSearchedChats))
+            foreach (var other in _store.List().Where(s => s.Id != id && SameFolder(s.FolderPath, folderPath)).Take(MaxSearchedChats))
             {
-                var events = await _store.GetLog(other.Id).ReadAsync(cancellationToken);
-                others.Add((other.Title, ChatReplay.Replay(events)));
+                if (_live.TryGetValue(other.Id, out var open))
+                {
+                    others.Add((other.Title, open.Entries));
+                }
+                else
+                {
+                    var events = await _store.GetLog(other.Id).ReadAsync(cancellationToken);
+                    others.Add((other.Title, ChatReplay.Replay(events)));
+                }
             }
 
             return others;
@@ -904,12 +959,38 @@ public sealed partial class ChatService : IDisposable
     private static string Placeholder(string text)
     {
         var words = string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-        if (words.Length <= PlaceholderLength)
-        {
-            return words;
-        }
+        return words.Length <= PlaceholderLength
+            ? words
+            : TextClip.Start(words, PlaceholderLength).TrimEnd() + "…";
+    }
 
-        var cut = char.IsHighSurrogate(words[PlaceholderLength - 1]) ? PlaceholderLength - 1 : PlaceholderLength;
-        return words[..cut].TrimEnd() + "…";
+    private void Touch(string id) => _touched[id] = Interlocked.Increment(ref _touchOrder);
+
+    private static bool IsIdleCandidate(Chat chat) =>
+        chat.ListenerCount <= 1 && !chat.IsRunning && !chat.NeedsUser && chat.Queued.Count == 0 && chat.BackgroundShells.Jobs.Count == 0;
+
+    private async Task EvictIdleAsync(string keepId)
+    {
+        var candidates = _live
+            .Where(pair => pair.Key != keepId && IsIdleCandidate(pair.Value))
+            .Select(pair => (pair.Key, Touched: _touched.GetValueOrDefault(pair.Key)))
+            .OrderBy(candidate => candidate.Touched)
+            .ToList();
+        var excess = candidates.Count - (_maxIdleChats - 1);
+        for (var i = 0; i < excess; i++)
+        {
+            var (id, touched) = candidates[i];
+            using (await _opening.EnterAsync(id, CancellationToken.None))
+            {
+                // A chat opened since the snapshot is in use again and stays live.
+                if (_touched.GetValueOrDefault(id) == touched
+                    && _live.TryGetValue(id, out var chat) && IsIdleCandidate(chat) && chat.TryClose())
+                {
+                    _live.TryRemove(id, out _);
+                    _touched.TryRemove(id, out _);
+                    chat.Dispose();
+                }
+            }
+        }
     }
 }

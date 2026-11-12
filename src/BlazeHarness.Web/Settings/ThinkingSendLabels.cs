@@ -16,8 +16,23 @@ internal static class ThinkingSendLabels
     public static string Short(ThinkingSendMode mode) => mode switch
     {
         ThinkingSendMode.ReasoningEffort => "reasoning_effort",
-        ThinkingSendMode.ReasoningObject => "reasoning object",
+        ThinkingSendMode.ReasoningObject => WebStrings.ThinkingSendLabelsReasoningObjectShort,
         _ => WebStrings.ThinkingSendLabelsCustomFieldShort,
+    };
+
+    /// <summary>
+    /// Gets the localized display name of a thinking level.
+    /// </summary>
+    /// <param name="level">The thinking level.</param>
+    /// <returns>The localized name.</returns>
+    public static string Level(ThinkingLevel level) => level switch
+    {
+        ThinkingLevel.Off => WebStrings.ThinkingLevelOff,
+        ThinkingLevel.Minimal => WebStrings.ThinkingLevelMinimal,
+        ThinkingLevel.Low => WebStrings.ThinkingLevelLow,
+        ThinkingLevel.Medium => WebStrings.ThinkingLevelMedium,
+        ThinkingLevel.High => WebStrings.ThinkingLevelHigh,
+        _ => WebStrings.ThinkingLevelExtraHigh,
     };
 
     /// <summary>

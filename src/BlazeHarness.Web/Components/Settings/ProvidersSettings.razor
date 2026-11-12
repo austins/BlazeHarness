@@ -4,6 +4,7 @@
 @implements IDisposable
 @inject ProviderService Service
 @inject IHttpClientFactory HttpFactory
+@inject TimeProvider Time
 @inject ToastService Toasts
 
 <div class="page">
@@ -371,7 +372,7 @@
         {
             var config = _edit.ToConfig();
             var key = string.IsNullOrEmpty(_edit.NewApiKey) ? await Service.ResolveKeyAsync(config) : _edit.NewApiKey;
-            _test = await ProviderConnectionTester.TestAsync(config, key, HttpFactory.CreateClient());
+            _test = await ProviderConnectionTester.TestAsync(config, key, HttpFactory.CreateClient(ProviderConnectionTester.HttpClientName), time: Time);
         }
         finally
         {

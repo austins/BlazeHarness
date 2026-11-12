@@ -10,7 +10,7 @@
     <span class="browser-url" title="@Frame.Url">@Frame.Url</span>
     <a class="btn btn-icon" href="@BrowserEndpoints.ScreenshotAddressOf(ChatId)" download="@BrowserEndpoints.ScreenshotFileName" aria-label="@WebStrings.BrowserPanelSaveScreenshot" title="@WebStrings.BrowserPanelSaveScreenshot"><Icon Name="image" /></a>
 </div>
-<div class="browser-view" tabindex="0" title="@WebStrings.BrowserPanelHint" @ref="_view">
+<div class="browser-view" role="region" aria-label="@(Frame.Title.Length > 0 ? Frame.Title : WebStrings.BrowserPanelImageAlt)" tabindex="0" title="@WebStrings.BrowserPanelHint" @ref="_view">
     <canvas role="img" aria-label="@(Frame.Title.Length > 0 ? Frame.Title : WebStrings.BrowserPanelImageAlt)" @ref="_image"></canvas>
 </div>
 @if (Frame.Title.Length > 0)
@@ -41,8 +41,8 @@
     public async ValueTask DisposeAsync()
     {
         _disposed = true;
-        _self?.Dispose();
         await StopStreamAsync();
+        _self?.Dispose();
     }
 
     /// <summary>

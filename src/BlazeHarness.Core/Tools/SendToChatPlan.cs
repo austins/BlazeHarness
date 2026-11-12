@@ -9,7 +9,7 @@ namespace BlazeHarness.Core.Tools;
 /// <param name="ChatId">The id of the receiving chat, or null when the call creates a new one.</param>
 /// <param name="Title">The title of the receiving chat, or null for a new one.</param>
 /// <param name="FolderPath">The folder the receiving chat works in, or null for a general chat.</param>
-/// <param name="SameScope">True when the receiving chat has the same folder as the sending chat, or both have none.</param>
+/// <param name="SameScope">True when the receiving chat has the same folder as the sending chat (or both have none) and no broader permissions or MCP tools.</param>
 /// <param name="Message">What the sending agent wrote.</param>
 internal sealed record SendToChatPlan(string? ChatId, string? Title, string? FolderPath, bool SameScope, string Message)
 {

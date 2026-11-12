@@ -85,4 +85,27 @@ public sealed class FileSecretStoreTests : IDisposable
         // Assert
         File.GetUnixFileMode(Path.Combine(_temp.Root, "secrets.json")).Should().Be(UnixFileMode.UserRead | UnixFileMode.UserWrite);
     }
+
+    [Fact]
+    public async Task GetAsync_UnprotectThrowsFormatOrCryptoFailure_ReturnsNull()
+    {
+        // Arrange
+        var path = Path.Combine(_temp.Root, "protected.json");
+        await File.WriteAllTextAsync(path, """{"k":"not-base64!!!"}""", TestContext.Current.CancellationToken);
+        using var sut = new ThrowingUnprotectStore(path);
+
+        // Act
+        var value = await sut.GetAsync("k", TestContext.Current.CancellationToken);
+
+        // Assert
+        value.Should().BeNull();
+    }
+
+    private sealed class ThrowingUnprotectStore(string path)
+        : FileBackedSecretStore(path, v => v, _ => throw new FormatException("bad"))
+    {
+        public override string Name => "test";
+
+        public override bool IsSecure => true;
+    }
 }

@@ -178,6 +178,38 @@ public sealed class McpConfigFileTests : IDisposable
     }
 
     [Fact]
+    public async Task SetToolExcludedAsync_ConcurrentCalls_KeepEveryChange()
+    {
+        // Arrange
+        await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, TimeProvider.System, watch: false);
+
+        // Act
+        var results = await Task.WhenAll(
+            Enumerable.Range(0, 8).Select(i => sut.SetToolExcludedAsync("files", $"tool-{i}", excluded: true, TestContext.Current.CancellationToken)));
+
+        // Assert
+        results.Should().AllBeEquivalentTo(true);
+        var server = sut.Servers.Single();
+        Enumerable.Range(0, 8).All(i => server.IsExcluded($"tool-{i}")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task OnExternalChange_HandlerThrows_DoesNotPropagate()
+    {
+        // Arrange
+        using var sut = new McpConfigFile(_path, NullLogger<McpConfigFile>.Instance, TimeProvider.System, watch: false);
+        sut.Changed += (_, _) => throw new InvalidOperationException("boom");
+        await File.WriteAllTextAsync(_path, OneServer, TestContext.Current.CancellationToken);
+
+        // Act
+        var act = sut.OnExternalChange;
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact]
     public async Task SetDisabledAsync_UnknownServer_ReturnsFalse()
     {
         // Arrange

@@ -41,7 +41,7 @@ var paths = AppPaths.FromConfiguration(builder.Configuration);
 HostLauncher.ConfigureLogging(builder.Logging, paths.LogsDirectory, TimeProvider.System);
 builder.Services.AddSingleton(paths);
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton(await SecretStoreFactory.CreateAsync(paths));
+builder.Services.AddSingleton(await SecretStoreFactory.CreateAsync(paths, time: TimeProvider.System));
 builder.Services.AddSingleton<ApiKeyResolver>();
 builder.Services.AddSingleton(sp => new JsonFileStore<AppConfig>(
     paths.ConfigFile,
@@ -78,25 +78,30 @@ builder.Services.AddSingleton(sp => new WebServices(
     sp.GetRequiredService<ILoggerFactory>(),
     sp.GetRequiredService<TimeProvider>(),
     paths.BrowserDirectory,
-    HostLauncher.ListeningPort(sp.GetRequiredService<IServer>())));
+    () => HostLauncher.ListeningPort(sp.GetRequiredService<IServer>())));
 builder.Services.AddSingleton(sp => new ChatService(
     sp.GetRequiredService<ChatStore>(),
     sp.GetRequiredService<ChatClientSource>().CreateAsync,
     sp.GetRequiredService<ILoggerFactory>(),
     sp.GetRequiredService<TimeProvider>(),
-    new ModelTitleGenerator(sp.GetRequiredService<ChatClientSource>().CreateAsync, sp.GetRequiredService<TimeProvider>()),
-    sp.GetRequiredService<IShellSandbox>(),
-    sp.GetRequiredService<PermissionDefaults>(),
-    sp.GetRequiredService<McpManager>(),
-    sp.GetRequiredService<SkillCatalog>(),
-    () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.Compaction,
-    sp.GetRequiredService<WebServices>(),
-    () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.TodosEnabled,
-    () => sp.GetRequiredService<CustomInstructionsFile>().Text,
-    sp.GetRequiredService<ProviderService>(),
-    sp.GetRequiredService<FolderRegistry>()));
+    new ChatServiceOptions
+    {
+        Titles = new ModelTitleGenerator(sp.GetRequiredService<ChatClientSource>().CreateAsync, sp.GetRequiredService<TimeProvider>()),
+        Sandbox = sp.GetRequiredService<IShellSandbox>(),
+        Defaults = sp.GetRequiredService<PermissionDefaults>(),
+        Mcp = sp.GetRequiredService<McpManager>(),
+        Skills = sp.GetRequiredService<SkillCatalog>(),
+        CompactionMode = () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.Compaction,
+        Web = sp.GetRequiredService<WebServices>(),
+        TodosEnabled = () => sp.GetRequiredService<JsonFileStore<AppConfig>>().Current.TodosEnabled,
+        CustomInstructions = () => sp.GetRequiredService<CustomInstructionsFile>().Text,
+        Providers = sp.GetRequiredService<ProviderService>(),
+        Folders = sp.GetRequiredService<FolderRegistry>(),
+    }));
 builder.Services.AddSingleton(sp => new FolderRegistry(paths, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<TimeProvider>()));
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient(ProviderConnectionTester.HttpClientName)
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false, PooledConnectionLifetime = TimeSpan.FromMinutes(2) });
 builder.Services.AddHttpClient(WebSearchClientName, client => client.Timeout = TimeSpan.FromSeconds(30))
     .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false, PooledConnectionLifetime = TimeSpan.FromMinutes(2) });
 builder.Services.AddHttpClient(ChatClientSource.HttpClientName, client => client.Timeout = Timeout.InfiniteTimeSpan);

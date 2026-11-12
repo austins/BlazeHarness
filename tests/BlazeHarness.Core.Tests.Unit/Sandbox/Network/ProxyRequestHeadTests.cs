@@ -47,6 +47,22 @@ public sealed class ProxyRequestHeadTests
         Encoding.ASCII.GetString(parsed.Forward).Should().StartWith("GET / HTTP/1.1\r\n");
     }
 
+    [Fact]
+    public void TryParse_SpoofedHostAndHopByHopHeaders_RewritesHostAndPreservesLatin1Bytes()
+    {
+        // Arrange
+        var head = "GET http://allowed.example.com:8080/p HTTP/1.1\r\nHost: evil.example.net\r\nConnection: keep-alive, X-Hop\r\nX-Hop: drop-me\r\nX-Note: caf\u00e9";
+
+        // Act
+        var parsed = ProxyRequestHead.TryParse(head);
+
+        // Assert
+        parsed.Should().NotBeNull();
+        var text = Encoding.Latin1.GetString(parsed.Forward);
+        text.Should().Contain("\r\nHost: allowed.example.com:8080\r\n").And.Contain("X-Note: caf\u00e9\r\n");
+        text.Should().NotContain("evil.example.net").And.NotContain("X-Hop");
+    }
+
     [Theory]
     [InlineData("GET /relative HTTP/1.1\r\nHost: example.com")]
     [InlineData("GET https://example.com/ HTTP/1.1")]

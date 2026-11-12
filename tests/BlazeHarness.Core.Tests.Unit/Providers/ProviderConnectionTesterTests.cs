@@ -150,6 +150,58 @@ public sealed class ProviderConnectionTesterTests
         handler.Requests.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task TestAsync_CrossOriginRedirect_DoesNotForwardKeyOrHeaders()
+    {
+        // Arrange
+        using var handler = new StubHandler(req => req.RequestUri!.Host == "host"
+            ? new HttpResponseMessage(HttpStatusCode.Found) { Headers = { Location = new Uri("https://evil.example/v1/models") } }
+            : Json("""{"data":[{"id":"x"}]}"""));
+        using var client = new HttpClient(handler);
+        var provider = Provider with { Headers = new Dictionary<string, string> { ["x-api-key"] = "secret" } };
+
+        // Act
+        var result = await ProviderConnectionTester.TestAsync(provider, "k", client, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        handler.Requests.Should().ContainSingle();
+        handler.Requests[0].RequestUri!.Host.Should().Be("host");
+    }
+
+    [Fact]
+    public async Task TestAsync_SameOriginRedirect_FollowsAndReturnsModels()
+    {
+        // Arrange
+        using var handler = new StubHandler(req => req.RequestUri!.AbsolutePath == "/v1/models"
+            ? new HttpResponseMessage(HttpStatusCode.MovedPermanently) { Headers = { Location = new Uri("http://host/v1/models/") } }
+            : Json("""{"data":[{"id":"m1"}]}"""));
+        using var client = new HttpClient(handler);
+
+        // Act
+        var result = await ProviderConnectionTester.TestAsync(Provider, "k", client, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        result.ModelIds.Should().Equal("m1");
+    }
+
+    [Fact]
+    public async Task TestAsync_RedirectToAMalformedLocation_FailsWithoutFollowing()
+    {
+        // Arrange
+        using var handler = new StubHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.Found) { Headers = { Location = new Uri("//host:abc/v1/models", UriKind.Relative) } });
+        using var client = new HttpClient(handler);
+
+        // Act
+        var result = await ProviderConnectionTester.TestAsync(Provider, "k", client, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        handler.Requests.Should().ContainSingle();
+    }
+
     private static HttpResponseMessage Json(string body)
     {
         return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) };

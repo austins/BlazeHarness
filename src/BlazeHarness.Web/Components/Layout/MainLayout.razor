@@ -75,7 +75,14 @@
     /// <param name="e">The new location.</param>
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        await CollapseIfNarrowAsync();
+        try
+        {
+            await CollapseIfNarrowAsync();
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or OperationCanceledException or InvalidOperationException or ObjectDisposedException)
+        {
+            // An async void handler has nowhere to send a circuit teardown error.
+        }
     }
 
     /// <summary>
@@ -88,7 +95,14 @@
     {
         if (SettingsState.Section is not null)
         {
-            await InvokeAsync(CollapseIfNarrowAsync);
+            try
+            {
+                await InvokeAsync(CollapseIfNarrowAsync);
+            }
+            catch (Exception ex) when (ex is JSException or JSDisconnectedException or OperationCanceledException or InvalidOperationException or ObjectDisposedException)
+            {
+                // An async void handler has nowhere to send a circuit teardown error.
+            }
         }
     }
 
@@ -107,7 +121,7 @@
         {
             return await JS.InvokeAsync<bool>("bhUi.isNarrow");
         }
-        catch (Exception ex) when (ex is JSDisconnectedException or TaskCanceledException or ObjectDisposedException)
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or OperationCanceledException or InvalidOperationException or ObjectDisposedException)
         {
             return false;
         }

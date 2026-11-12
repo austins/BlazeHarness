@@ -1,3 +1,4 @@
+@implements IAsyncDisposable
 @inject IJSRuntime JS
 
 @if (Open)
@@ -73,9 +74,9 @@
             {
                 await JS.InvokeVoidAsync("bhUi.showModal", _dialog);
             }
-            catch (JSDisconnectedException)
+            catch (Exception ex) when (ex is JSException or JSDisconnectedException or TaskCanceledException or InvalidOperationException or ObjectDisposedException)
             {
-                // The circuit is gone, and the page with it.
+                // The circuit or page is gone.
             }
         }
         else if (!Open && _shown)
@@ -85,12 +86,31 @@
             {
                 await JS.InvokeVoidAsync("bhUi.restoreFocus");
             }
-            catch (JSDisconnectedException)
+            catch (Exception ex) when (ex is JSException or JSDisconnectedException or TaskCanceledException or InvalidOperationException or ObjectDisposedException)
             {
-                // The circuit is gone, and the page with it.
+                // The circuit or page is gone.
             }
         }
     }
 
     private Task Close() => OnClose.InvokeAsync();
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        if (!_shown)
+        {
+            return;
+        }
+
+        _shown = false;
+        try
+        {
+            await JS.InvokeVoidAsync("bhUi.restoreFocus");
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or TaskCanceledException or InvalidOperationException or ObjectDisposedException)
+        {
+            // The circuit or page is gone.
+        }
+    }
 }

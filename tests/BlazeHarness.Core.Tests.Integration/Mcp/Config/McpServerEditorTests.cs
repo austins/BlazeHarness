@@ -157,6 +157,31 @@ public sealed class McpServerEditorTests : IAsyncDisposable
         _file.Parsed.Servers.Single().Command.Should().Be("npx");
     }
 
+    [Fact]
+    public async Task SaveAsync_NewServerNameTakenWhileReadingSecrets_KeepsTheSavedServersSecret()
+    {
+        // Arrange
+        var store = Substitute.For<ISecretStore>();
+        store.GetAsync("mcp:MCP_OLD_TOKEN", Arg.Any<CancellationToken>()).Returns(async _ =>
+        {
+            var first = LocalDraft("files");
+            first.Env.Add(new McpDraftEntry { Name = "TOKEN", Value = "original", Secret = true });
+            await _sut.SaveAsync(first, TestContext.Current.CancellationToken);
+            return (string?)"copied";
+        });
+        var racing = new McpServerEditor(_file, store, _manager);
+        var second = LocalDraft("files");
+        second.Env.Add(new McpDraftEntry { Name = "TOKEN", Secret = true, StoredVariable = "MCP_OLD_TOKEN" });
+
+        // Act
+        var problems = await racing.SaveAsync(second, TestContext.Current.CancellationToken);
+
+        // Assert
+        problems.Should().ContainSingle().Which.Should().Contain("already");
+        await store.DidNotReceiveWithAnyArgs().SetAsync(default!, default!, TestContext.Current.CancellationToken);
+        (await _secrets.GetAsync("mcp:MCP_FILES_TOKEN", TestContext.Current.CancellationToken)).Should().Be("original");
+    }
+
     [Theory]
     [InlineData("", "npx")]
     [InlineData("files", "")]

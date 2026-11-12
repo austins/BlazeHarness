@@ -1,4 +1,5 @@
 using BlazeHarness.Core.Config;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Tests.Shared;
 using BlazeHarness.Web.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -58,6 +59,35 @@ public sealed class EditorLauncherTests : IDisposable
 
         // Assert
         path.Should().BeNull();
+    }
+
+    [Fact]
+    public void Resolve_ProtectedFile_ReturnsNull()
+    {
+        // Arrange
+        var sensitive = new SensitivePaths([_temp.Combine("repo", "secret")]);
+        _temp.CreateDirectory("repo", "secret");
+        File.WriteAllText(_temp.Combine("repo", "secret", "key.txt"), "secret");
+
+        // Act
+        var resolved = EditorLauncher.Resolve(_temp.Combine("repo"), "secret/key.txt", sensitive);
+
+        // Assert
+        resolved.Should().BeNull();
+    }
+
+    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
+    public void Resolve_SymlinkOutsideTheFolder_ReturnsNull()
+    {
+        // Arrange
+        var link = _temp.Combine("repo", "escape.cs");
+        File.CreateSymbolicLink(link, _temp.Combine("outside.cs"));
+
+        // Act
+        var resolved = EditorLauncher.Resolve(_temp.Combine("repo"), "escape.cs");
+
+        // Assert
+        resolved.Should().BeNull();
     }
 
     [Fact]

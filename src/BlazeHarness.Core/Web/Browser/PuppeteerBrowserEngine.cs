@@ -12,13 +12,19 @@ namespace BlazeHarness.Core.Web.Browser;
 /// <remarks>
 /// Every request a page makes passes an interceptor that applies <see cref="BrowserAddressPolicy"/>, so redirects, scripts and frames
 /// can't reach beyond localhost. Chrome itself is also pointed at a proxy that refuses everything, which loopback addresses bypass,
-/// so workers and anything else the interceptor doesn't see fail too. A page may only navigate its top frame to an address that was
-/// opened with <see cref="NavigateAsync"/>, which the caller has had approved. One lock serializes everything, which is enough for a
-/// single local user.
+/// so anything the interceptor doesn't see can't leave the computer. On top of that the whole browser is limited to the origins some chat
+/// has approved, which covers service workers that start before interception can attach; shared workers are turned off. A page may
+/// only navigate its top frame to an address that was opened with <see cref="NavigateAsync"/>, which the caller has had approved. One
+/// lock serializes everything, which is enough for a single local user.
 /// </remarks>
 internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
 {
     internal const int MaxSnapshotChars = 30_000;
+
+    /// <summary>
+    /// The allow list pattern used while no chat has approved an origin, because an empty list would mean no restriction at all.
+    /// </summary>
+    private const string NothingApproved = "https://nothing-approved.invalid/*";
 
     private const string MissingBrowserMessage = "The browser isn't installed yet. Tell the user to open Settings > Web and choose Install browser.";
 
@@ -28,13 +34,16 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     private const int ScrollStep = ViewportHeight * 4 / 5;
     private const int ScrollToEnd = 1_000_000;
 
-    private static readonly HashSet<string> UserKeys = new(StringComparer.Ordinal)
-    {
-        "Enter", "Backspace", "Delete", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown",
-    };
+    private static readonly HashSet<string> UserKeys = [with(StringComparer.Ordinal), "Enter", "Backspace", "Delete", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"];
 
     private static readonly TimeSpan NavigationTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan SettleTimeout = TimeSpan.FromSeconds(3);
+
+    /// <summary>
+    /// The schemes an approved origin is allowed over, with each one's default port.
+    /// </summary>
+    private static readonly (string Scheme, string DefaultPort)[] AllowedSchemes = [("http", "80"), ("https", "443"), ("ws", "80"), ("wss", "443")];
+
     private static readonly TimeSpan SweepInterval = TimeSpan.FromMinutes(1);
 
     /// <summary>
@@ -52,7 +61,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     /// <remarks>Reading the title is a round trip to the page.</remarks>
     private static readonly TimeSpan TitleMaxAge = TimeSpan.FromSeconds(1);
 
-    private readonly int? _appPort;
+    private readonly Func<int?> _appPort;
     private readonly BrowserFetcher _fetcher;
     private readonly string _downloadRoot;
     private readonly string? _executablePath;
@@ -66,6 +75,11 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     private readonly ConcurrentDictionary<string, BrowserFrame> _frames = new(StringComparer.Ordinal);
     private IBrowser? _browser;
     private ITimer? _sweeper;
+
+    /// <summary>
+    /// The URL patterns the running browser is limited to, or null before the first restriction.
+    /// </summary>
+    private string[]? _allowlist;
     private bool _disposed;
 
     /// <summary>
@@ -86,7 +100,30 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         TimeSpan? idleLimit = null,
         string? executablePath = null,
         TimeSpan? downloadTimeout = null)
+        : this(() => appPort, browserDirectory, logger, time, idleLimit, executablePath, downloadTimeout)
     {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PuppeteerBrowserEngine"/> class with a lazily read application port.
+    /// </summary>
+    /// <param name="appPort">Returns the port Blaze Harness listens on once bound, or null when it is not known.</param>
+    /// <param name="browserDirectory">The folder the browser is downloaded to.</param>
+    /// <param name="logger">The logger.</param>
+    /// <param name="time">The clock.</param>
+    /// <param name="idleLimit">How long a chat's page stays open without being used; ten minutes by default.</param>
+    /// <param name="executablePath">A Chrome program to use instead of the downloaded one, or null.</param>
+    /// <param name="downloadTimeout">How long a download may take once it was started; a minute by default.</param>
+    public PuppeteerBrowserEngine(
+        Func<int?> appPort,
+        string browserDirectory,
+        ILogger<PuppeteerBrowserEngine> logger,
+        TimeProvider time,
+        TimeSpan? idleLimit = null,
+        string? executablePath = null,
+        TimeSpan? downloadTimeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(appPort);
         ArgumentException.ThrowIfNullOrEmpty(browserDirectory);
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(time);
@@ -138,7 +175,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
     {
         ArgumentException.ThrowIfNullOrEmpty(chatId);
         ArgumentNullException.ThrowIfNull(url);
-        if (BrowserAddressPolicy.Refusal(url, _appPort) is { } refusal)
+        if (BrowserAddressPolicy.Refusal(url, _appPort()) is { } refusal)
         {
             throw new BrowserException(refusal);
         }
@@ -149,6 +186,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
             var session = await SessionAsync(chatId, cancellationToken);
             session.Touch(_time.GetUtcNow());
             session.Approve(BrowserAddressPolicy.OriginOf(url));
+            await RestrictToApprovedAsync();
             session.TakeProblems();
             IResponse? response;
             try
@@ -435,7 +473,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         }
 
         var clipped = snapshot.Length > MaxSnapshotChars;
-        return new BrowserPageView(new Uri(page.Url), title, status, clipped ? snapshot[..MaxSnapshotChars] : snapshot, clipped, session.TakeProblems());
+        return new BrowserPageView(new Uri(page.Url), title, status, clipped ? TextClip.Start(snapshot, MaxSnapshotChars) : snapshot, clipped, session.TakeProblems());
     }
 
     private static long ParseRef(string elementRef) =>
@@ -518,6 +556,23 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         var browserClient = await browser.CreateCDPSessionAsync();
         await BrowserDownloader.DenyAsync(browserClient, context.Id);
         var session = new BrowserSession(context, page, client, browserClient, _time.GetUtcNow());
+
+        // The page's own interception already covers dedicated workers; shared and service workers run outside it.
+        context.TargetCreated += (_, args) =>
+        {
+            if (args.Target.Type is TargetType.SharedWorker or TargetType.ServiceWorker)
+            {
+                InterceptWorkerInBackground(session, args.Target);
+            }
+        };
+        context.TargetDestroyed += (_, args) =>
+        {
+            if (session.ForgetWorker(args.Target) is { } workerClient)
+            {
+                DetachInBackground(workerClient);
+            }
+        };
+
         await page.SetRequestInterceptionAsync(true);
         page.Request += (_, args) => OnRequestInBackground(session, args.Request);
         page.Console += (_, args) =>
@@ -618,7 +673,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
 
     private async Task OnRequestAsync(BrowserSession session, IRequest request)
     {
-        var refusal = RefusalFor(session, request);
+        var refusal = RefusalFor(session, request.Url, request.IsNavigationRequest && request.Frame?.ParentFrame is null, request.IsNavigationRequest);
         try
         {
             if (refusal is null)
@@ -637,21 +692,96 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         }
     }
 
-    private string? RefusalFor(BrowserSession session, IRequest request)
+    private void InterceptWorkerInBackground(BrowserSession session, ITarget target) => _ = InterceptWorkerAsync(session, target);
+
+    private static void DetachInBackground(ICDPSession client) => _ = DetachQuietlyAsync(client);
+
+    private void OnWorkerRequestInBackground(BrowserSession session, ICDPSession workerClient, JsonElement data) => _ = OnWorkerRequestAsync(session, workerClient, data);
+
+    private async Task InterceptWorkerAsync(BrowserSession session, ITarget target)
     {
-        if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri))
+        ICDPSession? workerClient = null;
+        try
+        {
+            workerClient = await target.CreateCDPSessionAsync();
+            var client = workerClient;
+            client.MessageReceived += (_, args) =>
+            {
+                if (args.MessageID == "Fetch.requestPaused")
+                {
+                    OnWorkerRequestInBackground(session, client, args.MessageData);
+                }
+            };
+            await client.SendAsync("Fetch.enable");
+            if (session.TrackWorker(target, client))
+            {
+                workerClient = null;
+            }
+        }
+        catch (Exception ex) when (ex is PuppeteerException or ObjectDisposedException)
+        {
+            // The worker ended before interception could attach.
+        }
+        finally
+        {
+            if (workerClient is not null)
+            {
+                await DetachQuietlyAsync(workerClient);
+            }
+        }
+    }
+
+    private async Task OnWorkerRequestAsync(BrowserSession session, ICDPSession workerClient, JsonElement data)
+    {
+        try
+        {
+            var requestId = data.GetProperty("requestId").GetString();
+            var url = data.GetProperty("request").GetProperty("url").GetString() ?? string.Empty;
+            if (requestId is null)
+            {
+                return;
+            }
+
+            if (RefusalFor(session, url, isTopNavigation: false, isNavigation: false) is { } refusal)
+            {
+                session.AddProblem(refusal);
+                await workerClient.SendAsync("Fetch.failRequest", new { requestId, errorReason = "BlockedByClient" });
+            }
+            else
+            {
+                await workerClient.SendAsync("Fetch.continueRequest", new { requestId });
+            }
+        }
+        catch (Exception ex) when (ex is PuppeteerException or JsonException or KeyNotFoundException or ObjectDisposedException)
+        {
+            // The worker or context closed while the request was handled.
+        }
+    }
+
+    private string? RefusalFor(BrowserSession session, string rawUrl, bool isTopNavigation, bool isNavigation)
+    {
+        if (!Uri.TryCreate(rawUrl, UriKind.Absolute, out var uri))
         {
             return "Blocked a request to an address that could not be read.";
         }
 
+        if (uri.Scheme is "data" or "blob")
+        {
+            return isTopNavigation
+                ? "Blocked a navigation to an inline address: open localhost pages with browser_navigate."
+                : null;
+        }
+
         var origin = BrowserAddressPolicy.OriginOf(uri);
-        if (BrowserAddressPolicy.Refusal(uri, _appPort) is not null)
+        if (BrowserAddressPolicy.Refusal(uri, _appPort()) is not null)
         {
             return $"Blocked a request to {origin}: the browser only loads localhost pages, and not {AppConstants.AppName} itself.";
         }
 
-        return request.IsNavigationRequest && request.Frame?.ParentFrame is null && !session.IsApproved(origin)
-            ? $"Blocked a navigation to {origin}: open it with browser_navigate first."
+        return !session.IsApproved(origin)
+            ? isNavigation
+                ? $"Blocked a navigation to {origin}: open it with browser_navigate first."
+                : $"Blocked a request to {origin}: open that origin with browser_navigate first."
             : null;
     }
 
@@ -666,6 +796,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         {
             stale.MarkClosed();
             PublishClosed(chatId);
+            await DetachSessionClientsAsync(stale);
         }
 
         _sessions.Clear();
@@ -684,7 +815,8 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
                 // On Windows 11 and Server 2025 Chrome's port randomization makes loopback connections fail now and then with
                 // ERR_NO_BUFFER_SPACE when many open and close, as when a page talks to a local dev server
                 // (https://github.com/microsoft/playwright/issues/43545). PuppeteerSharp merges this into its own disabled features.
-                Args = ["--proxy-server=http://127.0.0.1:1", "--disable-features=TcpPortRandomizationWin"],
+                // Shared workers start before interception can attach and outlive the page, so pages can't create them.
+                Args = ["--proxy-server=http://127.0.0.1:1", "--disable-features=TcpPortRandomizationWin", "--disable-blink-features=SharedWorker"],
             }).WaitAsync(cancellationToken);
         }
         catch (Exception ex) when (ex is PuppeteerException or IOException)
@@ -693,6 +825,8 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
             throw new BrowserException("The browser could not be started. On Linux the system libraries it needs may be missing; see the app log.");
         }
 
+        _allowlist = null;
+        await RestrictToApprovedAsync();
         _sweeper ??= _time.CreateTimer(_ => SweepInBackground(), null, SweepInterval, SweepInterval);
         return _browser;
     }
@@ -757,6 +891,7 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
 
         session.MarkClosed();
         PublishClosed(chatId);
+        await DetachSessionClientsAsync(session);
         try
         {
             await session.Context.CloseAsync();
@@ -764,6 +899,77 @@ internal sealed partial class PuppeteerBrowserEngine : IBrowserEngine
         catch (PuppeteerException)
         {
             // Closing an already closed context is the same outcome as closing it.
+        }
+
+        await RestrictToApprovedAsync();
+    }
+
+    /// <summary>
+    /// Limit the whole browser's network to the origins some chat has approved.
+    /// </summary>
+    /// <remarks>
+    /// The interceptor already checks each page request against its own chat's approvals. A service worker runs before any interception
+    /// can attach to it, but Puppeteer applies these rules to each one before it starts and refuses to register one whose script is outside
+    /// them, so a worker can't reach a port no chat approved, or Blaze Harness itself. A worker can still reach an origin another chat approved.
+    /// </remarks>
+    private async Task RestrictToApprovedAsync()
+    {
+        if (_browser is not { IsConnected: true } browser)
+        {
+            return;
+        }
+
+        var origins = _sessions.Values.SelectMany(session => session.ApprovedOrigins()).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal);
+        string[] allowlist = [.. origins.SelectMany(AllowPatterns).DefaultIfEmpty(NothingApproved)];
+        if (_allowlist is not null && _allowlist.SequenceEqual(allowlist, StringComparer.Ordinal))
+        {
+            return;
+        }
+
+        await browser.RestrictNetworkAsync(new NetworkRestrictions { Allowlist = allowlist });
+        _allowlist = allowlist;
+    }
+
+    /// <summary>
+    /// Get the URL patterns that cover an approved origin for pages and web sockets.
+    /// </summary>
+    /// <param name="origin">The host and port, as <see cref="BrowserAddressPolicy.OriginOf"/> gives them.</param>
+    /// <returns>A pattern per scheme, plus one without the port for a scheme whose default port it is, since URLs leave that port out.</returns>
+    private static IEnumerable<string> AllowPatterns(string origin)
+    {
+        var colon = origin.LastIndexOf(':', StringComparison.Ordinal);
+        var host = origin[..colon];
+        var port = origin[(colon + 1)..];
+        foreach (var (scheme, defaultPort) in AllowedSchemes)
+        {
+            yield return $"{scheme}://{origin}/*";
+            if (port == defaultPort)
+            {
+                yield return $"{scheme}://{host}/*";
+            }
+        }
+    }
+
+    private static async Task DetachSessionClientsAsync(BrowserSession session)
+    {
+        foreach (var worker in session.TakeWorkerClients())
+        {
+            await DetachQuietlyAsync(worker);
+        }
+
+        await DetachQuietlyAsync(session.Client);
+        await DetachQuietlyAsync(session.BrowserClient);
+    }
+
+    private static async Task DetachQuietlyAsync(ICDPSession client)
+    {
+        try
+        {
+            await client.DetachAsync();
+        }
+        catch (Exception ex) when (ex is PuppeteerException or ObjectDisposedException)
+        {
+            // Already detached when the browser or page closed.
         }
     }
 

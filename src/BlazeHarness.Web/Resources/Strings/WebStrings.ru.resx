@@ -1288,6 +1288,27 @@
   <data name="ThinkingSendLabelsReasoningObjectOption" xml:space="preserve">
     <value>объект reasoning (OpenRouter)</value>
   </data>
+  <data name="ThinkingSendLabelsReasoningObjectShort" xml:space="preserve">
+    <value>объект reasoning</value>
+  </data>
+  <data name="ThinkingLevelOff" xml:space="preserve">
+    <value>Выкл.</value>
+  </data>
+  <data name="ThinkingLevelMinimal" xml:space="preserve">
+    <value>Минимальный</value>
+  </data>
+  <data name="ThinkingLevelLow" xml:space="preserve">
+    <value>Низкий</value>
+  </data>
+  <data name="ThinkingLevelMedium" xml:space="preserve">
+    <value>Средний</value>
+  </data>
+  <data name="ThinkingLevelHigh" xml:space="preserve">
+    <value>Высокий</value>
+  </data>
+  <data name="ThinkingLevelExtraHigh" xml:space="preserve">
+    <value>Максимальный</value>
+  </data>
   <data name="ModelTuningValueSentFor" xml:space="preserve">
     <value>Значение, отправляемое для {level}</value>
   </data>
@@ -1500,6 +1521,9 @@
   </data>
   <data name="SidebarFolderActionsFor" xml:space="preserve">
     <value>Действия с папкой {folder}</value>
+  </data>
+  <data name="ChatListActionsFor" xml:space="preserve">
+    <value>Действия с чатом {title}</value>
   </data>
   <data name="SidebarFolderActions" xml:space="preserve">
     <value>Действия с папкой</value>

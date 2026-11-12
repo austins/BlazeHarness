@@ -938,6 +938,35 @@ public sealed class ChatServiceTests : IDisposable
         sut.FindFolderImage(withoutFolder.Id, "a.png").Should().Match<AttachmentFile>(f => f.MediaType == "image/png");
     }
 
+    [Fact]
+    public async Task OpenAsync_ExceedingMaxIdleChats_EvictsOldestUnattachedAndKeepsAttached()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        using var client = new ScriptedChatClient([]);
+        var sut = Create(client, maxIdleChats: 2);
+
+        var pinnedInfo = await sut.CreateAsync(cancellationToken: ct);
+        var oldestIdleInfo = await sut.CreateAsync(cancellationToken: ct);
+        var recentIdleInfo = await sut.CreateAsync(cancellationToken: ct);
+        var newestIdleInfo = await sut.CreateAsync(cancellationToken: ct);
+
+        var pinned = await sut.OpenAsync(pinnedInfo.Id, ct);
+        EventHandler pinnedHandler = (_, _) => { };
+        pinned!.Changed += pinnedHandler;
+        var oldestIdle = await sut.OpenAsync(oldestIdleInfo.Id, ct);
+        var recentIdle = await sut.OpenAsync(recentIdleInfo.Id, ct);
+
+        // Act
+        _ = await sut.OpenAsync(newestIdleInfo.Id, ct);
+
+        // Assert
+        (await sut.OpenAsync(pinnedInfo.Id, ct)).Should().BeSameAs(pinned);
+        (await sut.OpenAsync(recentIdleInfo.Id, ct)).Should().BeSameAs(recentIdle);
+        (await sut.OpenAsync(oldestIdleInfo.Id, ct)).Should().NotBeSameAs(oldestIdle);
+        pinned.Changed -= pinnedHandler;
+    }
+
     private async Task<PermissionDefaults> NewDefaultsAsync(PermissionSettings settings, bool allowBypass)
     {
         var config = new JsonFileStore<AppConfig>(Path.Combine(_temp.Root, "config.json"), NullLogger<JsonFileStore<AppConfig>>.Instance, TimeProvider.System, watch: false);
@@ -947,10 +976,15 @@ public sealed class ChatServiceTests : IDisposable
         return defaults;
     }
 
-    private ChatService Create(IChatClient client, ITitleGenerator? titles = null, PermissionDefaults? defaults = null)
+    private ChatService Create(IChatClient client, ITitleGenerator? titles = null, PermissionDefaults? defaults = null, int maxIdleChats = 12)
     {
         var store = new ChatStore(_paths, NullLoggerFactory.Instance, TimeProvider.System);
-        var service = new ChatService(store, (_, _) => Task.FromResult(client), NullLoggerFactory.Instance, TimeProvider.System, titles: titles, defaults: defaults);
+        var service = new ChatService(
+            store,
+            (_, _) => Task.FromResult(client),
+            NullLoggerFactory.Instance,
+            TimeProvider.System,
+            new BlazeHarness.Core.Chats.ChatServiceOptions { Titles = titles, Defaults = defaults, MaxIdleChats = maxIdleChats });
         _disposables.Add(service);
         _disposables.Add(store);
         return service;

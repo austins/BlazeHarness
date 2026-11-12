@@ -1,5 +1,7 @@
 using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Mcp;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Tools;
 using Microsoft.Extensions.AI;
@@ -39,7 +41,7 @@ public sealed partial class ChatService
                 return Refuse($"'{folder}' is not a folder that is open in the app.");
             }
 
-            return new SendToChatResolution(new SendToChatPlan(null, null, path, SameFolder(source.FolderPath, path), message));
+            return new SendToChatResolution(new SendToChatPlan(null, null, path, WithinScope(source, path, StartingPermissions(path is not null), null), message));
         }
 
         var destination = _store.Find(ChatReference.IdOf(reference));
@@ -63,7 +65,7 @@ public sealed partial class ChatService
 
         return destination.Id == sourceId
             ? Refuse("A chat can't send a message to itself.")
-            : new SendToChatResolution(new SendToChatPlan(destination.Id, destination.Title, destination.FolderPath, SameFolder(source.FolderPath, destination.FolderPath), message));
+            : new SendToChatResolution(new SendToChatPlan(destination.Id, destination.Title, destination.FolderPath, WithinScope(source, destination.FolderPath, destination.Permissions, destination.McpServers), message));
     }
 
     internal async Task<ToolResult> SendToChatAsync(string sourceId, Chat sourceChat, SendToChatPlan plan, CancellationToken cancellationToken)
@@ -183,6 +185,38 @@ public sealed partial class ChatService
 
         var chosen = level is { } wanted && pick.Model.Levels?.ContainsKey(wanted) == true ? wanted : pick.Model.DefaultLevel;
         return new ChatTarget(pick.Provider, pick.Model, chosen);
+    }
+
+    private bool WithinScope(ChatInfo source, string? destinationFolder, PermissionSettings destinationPermissions, IReadOnlyDictionary<string, bool>? destinationMcp)
+    {
+        if (!SameFolder(source.FolderPath, destinationFolder))
+        {
+            return false;
+        }
+
+        var sourceEffective = EffectivePermissions(source.Permissions);
+        var destinationEffective = EffectivePermissions(destinationPermissions);
+        if (destinationEffective.Access > sourceEffective.Access || destinationEffective.Approvals > sourceEffective.Approvals)
+        {
+            return false;
+        }
+
+        if (_mcp is not null)
+        {
+            return _mcp.Statuses().All(s => !McpManager.IsEnabled(s.Config, destinationMcp) || McpManager.IsEnabled(s.Config, source.McpServers));
+        }
+
+        return source.McpServers?.Values.Contains(false) != true
+            && (destinationMcp?.All(kv => !kv.Value || (source.McpServers?.TryGetValue(kv.Key, out var on) == true && on)) ?? true);
+    }
+
+    private PermissionSettings EffectivePermissions(PermissionSettings settings)
+    {
+        return _defaults is { AllowBypass: false }
+            ? new PermissionSettings(
+                settings.Access == AccessLevel.Unrestricted ? AccessLevel.WriteInFolder : settings.Access,
+                settings.Approvals == ApprovalMode.NeverAsk ? ApprovalMode.AutoApprove : settings.Approvals)
+            : settings;
     }
 
     private static bool SameFolder(string? a, string? b)

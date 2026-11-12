@@ -17,7 +17,17 @@ public static class SecretStoreFactory
     /// <param name="paths">The app paths, for the file-backed stores.</param>
     /// <param name="cancellationToken">A token to cancel probing for the OS store.</param>
     /// <returns>The store. The caller owns it and must dispose it.</returns>
-    public static async Task<ISecretStore> CreateAsync(AppPaths paths, CancellationToken cancellationToken = default)
+    public static Task<ISecretStore> CreateAsync(AppPaths paths, CancellationToken cancellationToken = default)
+        => CreateAsync(paths, null, cancellationToken);
+
+    /// <summary>
+    /// Create the best secret store available on this machine.
+    /// </summary>
+    /// <param name="paths">The app paths, for the file-backed stores.</param>
+    /// <param name="time">Times keyring calls and the availability probe; defaults to the system clock.</param>
+    /// <param name="cancellationToken">A token to cancel probing for the OS store.</param>
+    /// <returns>The store. The caller owns it and must dispose it.</returns>
+    public static async Task<ISecretStore> CreateAsync(AppPaths paths, TimeProvider? time, CancellationToken cancellationToken = default)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -26,12 +36,12 @@ public static class SecretStoreFactory
 
         if (MacKeychainStore.IsAvailable())
         {
-            return new MacKeychainStore();
+            return new MacKeychainStore(time: time);
         }
 
-        if (await LibsecretStore.IsAvailableAsync(cancellationToken))
+        if (await LibsecretStore.IsAvailableAsync(time, cancellationToken))
         {
-            return new LibsecretStore();
+            return new LibsecretStore(time: time);
         }
 
         return new FileSecretStore(paths.SecretsFile);

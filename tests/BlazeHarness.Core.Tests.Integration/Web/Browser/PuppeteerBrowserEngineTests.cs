@@ -16,6 +16,7 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
     private readonly TempFolder _folder = new("bh-browser-");
     private readonly CancellationTokenSource _stop = new();
     private readonly int _port;
+    private int _workerHits;
 
     public PuppeteerBrowserEngineTests()
     {
@@ -221,6 +222,42 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
 
         // Assert
         view.Problems.Should().Contain(problem => problem.Contains("192.0.2.1:81", StringComparison.Ordinal));
+    }
+
+    [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    public async Task NavigateAsync_UnapprovedLocalhostSubframeAndFetch_Blocked()
+    {
+        // Arrange
+        using var sut = Create();
+
+        // Act
+        var view = await sut.NavigateAsync(Chat, Url("/cross-local"), TestContext.Current.CancellationToken).Bounded();
+
+        // Assert
+        view.Problems.Should().Contain(problem => problem.Contains($"localhost:{_port}", StringComparison.Ordinal));
+    }
+
+    [Theory(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
+    [InlineData("/worker", "worker: blocked")]
+    [InlineData("/shared-worker", "worker: unavailable")]
+    [InlineData("/service-worker", "worker: blocked")]
+    public async Task NavigateAsync_WorkerFetchesUnapprovedLocalhostAtStart_Blocked(string path, string expected)
+    {
+        // Arrange
+        using var sut = Create();
+
+        // Act
+        var view = await sut.NavigateAsync(Chat, Url(path), TestContext.Current.CancellationToken).Bounded();
+        using var timeout = new CancellationTokenSource(TestTimeouts.Default);
+        while (!view.Snapshot.Contains("worker:", StringComparison.Ordinal))
+        {
+            await Task.Delay(50, timeout.Token);
+            view = await sut.SnapshotAsync(Chat, TestContext.Current.CancellationToken).Bounded();
+        }
+
+        // Assert
+        view.Snapshot.Should().Contain(expected);
+        Volatile.Read(ref _workerHits).Should().Be(0);
     }
 
     [Fact(Skip = Reason, SkipUnless = nameof(TestChrome.IsAvailable), SkipType = typeof(TestChrome))]
@@ -518,6 +555,11 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
 
     private Uri Url(string path) => new($"http://127.0.0.1:{_port}{path}");
 
+    /// <summary>
+    /// Gets a script expression that fetches an unapproved origin at once and resolves to whether the fetch got through.
+    /// </summary>
+    private string WorkerFetch => $"fetch('http://localhost:{_port}/worker-hit', {{ mode: 'no-cors' }}).then(() => 'loaded', () => 'blocked')";
+
     private async Task ServeAsync()
     {
         while (!_stop.IsCancellationRequested)
@@ -589,6 +631,33 @@ public sealed class PuppeteerBrowserEngineTests : IDisposable
                     break;
                 case "/external":
                     body = Html("External", "<img src=\"http://192.0.2.1:81/x.png\">");
+                    break;
+                case "/cross-local":
+                    body = Html("Cross", $"<iframe src=\"http://localhost:{_port}/\"></iframe><script>fetch('http://localhost:{_port}/', {{ mode: 'no-cors' }}).catch(() => {{}});</script>");
+                    break;
+                case "/worker":
+                    body = Html("Worker", "<p id=\"out\">waiting</p><script>new Worker('/worker.js').onmessage = event => out.textContent = 'worker: ' + event.data;</script>");
+                    break;
+                case "/worker.js":
+                    response.ContentType = "text/javascript";
+                    body = $"{WorkerFetch}.then(postMessage);";
+                    break;
+                case "/shared-worker":
+                    body = Html("Shared worker", "<p id=\"out\">waiting</p><script>try { new SharedWorker('/shared-worker.js').port.onmessage = event => out.textContent = 'worker: ' + event.data; } catch { out.textContent = 'worker: unavailable'; }</script>");
+                    break;
+                case "/shared-worker.js":
+                    response.ContentType = "text/javascript";
+                    body = $"const result = {WorkerFetch}; onconnect = event => result.then(value => event.ports[0].postMessage(value));";
+                    break;
+                case "/service-worker":
+                    body = Html("Service worker", "<p id=\"out\">waiting</p><script>if (navigator.serviceWorker) { navigator.serviceWorker.onmessage = event => out.textContent = 'worker: ' + event.data; navigator.serviceWorker.register('/service-worker.js').catch(() => out.textContent = 'worker: unavailable'); } else { out.textContent = 'worker: unavailable'; }</script>");
+                    break;
+                case "/service-worker.js":
+                    response.ContentType = "text/javascript";
+                    body = $"const result = {WorkerFetch}; addEventListener('install', event => event.waitUntil(result.then(async value => {{ for (const client of await clients.matchAll({{ includeUncontrolled: true }})) client.postMessage(value); }})));";
+                    break;
+                case "/worker-hit":
+                    Interlocked.Increment(ref _workerHits);
                     break;
                 case "/cookie":
                     response.AppendHeader("Set-Cookie", "seen=1; Path=/");

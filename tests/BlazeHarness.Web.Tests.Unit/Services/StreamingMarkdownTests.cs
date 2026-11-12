@@ -111,4 +111,51 @@ public sealed class StreamingMarkdownTests
         sut.Settled.Should().Contain("code");
         sut.Tail.Should().Contain("after");
     }
+
+    [Fact]
+    public void Render_InlineTripleBackticksWithMoreBackticksOnSameLine_DoesNotOpenCodeFence()
+    {
+        // Arrange
+        var sut = new StreamingMarkdown(_renderer);
+        const string Markdown = "```inline``` text\n\nnext paragraph";
+
+        // Act
+        sut.Render(Markdown);
+
+        // Assert
+        sut.Settled.Should().Contain("<code>inline</code> text");
+        (sut.Settled + sut.Tail).Should().Be(_renderer.ToHtml(Markdown));
+    }
+
+    [Fact]
+    public void Render_IndentedBackticksAndThreeSpaceFences_FollowCommonMarkFenceRules()
+    {
+        // Arrange
+        var sut = new StreamingMarkdown(_renderer);
+        const string Markdown = "   ```txt\n    ```\n\nstill inside\n   ```\n\noutside";
+
+        // Act
+        sut.Render(Markdown);
+
+        // Assert
+        sut.Settled.Should().Contain("still inside");
+        sut.Tail.Should().Contain("outside");
+        (sut.Settled + sut.Tail).Should().Be(_renderer.ToHtml(Markdown));
+    }
+
+    [Fact]
+    public void Render_FenceIndentedUnderAListItem_StaysOneBlockAcrossItsBlankLine()
+    {
+        // Arrange
+        var sut = new StreamingMarkdown(_renderer);
+        const string Markdown = "- step\n    ```sh\n    one\n\n    two\n    ```\n\nafter";
+
+        // Act
+        sut.Render(Markdown);
+
+        // Assert
+        sut.Settled.Should().Contain("one").And.Contain("two");
+        sut.Tail.Should().Contain("after");
+        (sut.Settled + sut.Tail).Should().Be(_renderer.ToHtml(Markdown));
+    }
 }

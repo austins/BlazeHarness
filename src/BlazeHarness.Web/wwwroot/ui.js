@@ -33,13 +33,22 @@ window.bhUi = {
     setCulture: async (culture) => {
         // The server sets the cookie: one written to document.cookie can miss the reload that follows it.
         await fetch(`api/culture/${encodeURIComponent(culture)}`, { method: "POST" });
-        sessionStorage.setItem(settingsAfterCultureChangeKey, "true");
+        try {
+            sessionStorage.setItem(settingsAfterCultureChangeKey, "true");
+        } catch {
+            // Storage can be blocked; settings then stay closed after the reload.
+        }
         window.location.reload();
     },
     restoreSettingsAfterCultureChange: () => {
-        const reopen = sessionStorage.getItem(settingsAfterCultureChangeKey) === "true";
-        sessionStorage.removeItem(settingsAfterCultureChangeKey);
-        return reopen;
+        try {
+            const reopen = sessionStorage.getItem(settingsAfterCultureChangeKey) === "true";
+            sessionStorage.removeItem(settingsAfterCultureChangeKey);
+            return reopen;
+        } catch {
+            // Storage can be blocked.
+            return false;
+        }
     },
     skipToChat: () => {
         const target = document.querySelector(".composer-input") ?? document.querySelector("main");

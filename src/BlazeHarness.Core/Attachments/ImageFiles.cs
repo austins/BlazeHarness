@@ -91,6 +91,19 @@ internal static class ImageFiles
         return isSvgName && Encoding.UTF8.GetString(head).Contains("<svg", StringComparison.OrdinalIgnoreCase) ? "image/svg+xml" : null;
     }
 
+    /// <summary>
+    /// Get the file extension for a raster image media type, defaulting to <c>.png</c>.
+    /// </summary>
+    /// <param name="mediaType">The image media type.</param>
+    /// <returns>The matching file extension, starting with a dot.</returns>
+    public static string ExtensionOf(string? mediaType) => mediaType switch
+    {
+        _ when string.Equals(mediaType, "image/jpeg", StringComparison.OrdinalIgnoreCase) => ".jpg",
+        _ when string.Equals(mediaType, "image/gif", StringComparison.OrdinalIgnoreCase) => ".gif",
+        _ when string.Equals(mediaType, "image/webp", StringComparison.OrdinalIgnoreCase) => ".webp",
+        _ => ".png",
+    };
+
     private static ReadOnlySpan<byte> PngSignature => [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
     private static ReadOnlySpan<byte> JpegSignature => [0xFF, 0xD8, 0xFF];

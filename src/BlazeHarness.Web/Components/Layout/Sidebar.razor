@@ -2,6 +2,7 @@
 @using BlazeHarness.Core
 @using BlazeHarness.Core.Chats
 @using BlazeHarness.Core.Chats.Export
+@using BlazeHarness.Web.Hosting
 @using BlazeHarness.Web.Services
 @implements IDisposable
 @inject IJSRuntime JS
@@ -130,7 +131,7 @@
                                 <Menu Label="@FolderActionLabel(nameof(WebStrings.SidebarFolderActionsFor), folder.Name)" Title="@WebStrings.SidebarFolderActions" IconOnly="true">
                                     <Trigger><Icon Name="more" /></Trigger>
                                     <ChildContent>
-                                        @if (available)
+                                        @if (available && Client?.IsLocal == true)
                                         {
                                             <MenuItem IsAction="true" Label="@WebStrings.SidebarOpenFolderMenuItem" OnSelect="() => OpenFolder(folder)" />
                                         }
@@ -184,8 +185,11 @@
         {
             <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
                     @onclick="() => Navigation.NavigateTo(NewChatHref(target))"><Icon Name="plus" />@WebStrings.SidebarNewChatMenuItem</button>
-            <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                    @onclick="() => OpenFolder(target)"><Icon Name="folder" />@WebStrings.SidebarOpenFolderMenuItem</button>
+            @if (Client?.IsLocal == true)
+            {
+                <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                        @onclick="() => OpenFolder(target)"><Icon Name="folder" />@WebStrings.SidebarOpenFolderMenuItem</button>
+            }
         }
         else
         {
@@ -237,6 +241,9 @@
     /// </summary>
     [Parameter]
     public bool Collapsed { get; set; }
+
+    [CascadingParameter]
+    private ClientMachine? Client { get; set; }
 
     protected override void OnInitialized()
     {
@@ -427,6 +434,11 @@
 
     private void OpenFolder(FolderInfo folder)
     {
+        if (Client?.IsLocal != true)
+        {
+            return;
+        }
+
         try
         {
             using var process = Process.Start(new ProcessStartInfo(folder.Path) { UseShellExecute = true });

@@ -1,4 +1,5 @@
 @using BlazeHarness.Core
+@using BlazeHarness.Web.Hosting
 @inject IJSRuntime JS
 @inject ChatService ChatService
 @inject NavigationManager Navigation
@@ -30,6 +31,25 @@
                         <span class="chat-busy" role="status" title="@WebStrings.ChatListReplyingTooltip" aria-label="@WebStrings.ChatListReplyingLabel"><Icon Name="spinner" Spin="true" /></span>
                     }
                 </NavLink>
+                <div class="chat-actions">
+                    <Menu Label="@ActionLabel(chat)" Title="@WebStrings.ChatListActions" IconOnly="true">
+                        <Trigger><Icon Name="more" /></Trigger>
+                        <ChildContent>
+                            <MenuItem IsAction="true" Label="@WebStrings.ChatListRenameMenuItem" OnSelect="() => StartRename(chat)" />
+                            @if (chat.Worktree is null)
+                            {
+                                <MenuItem IsAction="true" Label="@WebStrings.ChatListMoveMenuItem" OnSelect="() => _moving = chat" />
+                            }
+                            @if (Client?.IsLocal == true)
+                            {
+                                <MenuItem IsAction="true" Label="@WebStrings.ChatListOpenDataMenuItem" OnSelect="() => OpenChatData(chat)" />
+                            }
+                            <MenuItem IsAction="true" Label="@WebStrings.ChatListCopyReferenceMenuItem" OnSelect="() => CopyReferenceAsync(chat)" />
+                            <div class="menu-sep" role="separator"></div>
+                            <MenuItem IsAction="true" Danger="true" Label="@WebStrings.ChatListDeleteMenuItem" OnSelect="() => _deleting = chat" />
+                        </ChildContent>
+                    </Menu>
+                </div>
             }
         </li>
     }
@@ -45,8 +65,11 @@
             <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
                     @onclick="() => _moving = target"><Icon Name="arrow-right" />@WebStrings.ChatListMoveMenuItem</button>
         }
-        <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
-                @onclick="() => OpenChatData(target)"><Icon Name="folder" />@WebStrings.ChatListOpenDataMenuItem</button>
+        @if (Client?.IsLocal == true)
+        {
+            <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
+                    @onclick="() => OpenChatData(target)"><Icon Name="folder" />@WebStrings.ChatListOpenDataMenuItem</button>
+        }
         <button type="button" class="menu-item" role="menuitem" popovertarget="@_menuId" popovertargetaction="hide"
                 @onclick="() => CopyReferenceAsync(target)"><Icon Name="copy" />@WebStrings.ChatListCopyReferenceMenuItem</button>
         <div class="menu-sep" role="separator"></div>
@@ -82,6 +105,9 @@
     /// </summary>
     [Parameter, EditorRequired]
     public IReadOnlyList<ChatInfo> Chats { get; set; } = [];
+
+    [CascadingParameter]
+    private ClientMachine? Client { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -125,6 +151,11 @@
 
     private void OpenChatData(ChatInfo chat)
     {
+        if (Client?.IsLocal != true)
+        {
+            return;
+        }
+
         var path = Paths.ChatDirectory(chat.Id);
         try
         {
@@ -159,6 +190,9 @@
     {
         return string.IsNullOrWhiteSpace(chat.Title) ? WebStrings.ChatListUntitledChat : chat.Title;
     }
+
+    private static string ActionLabel(ChatInfo chat) =>
+        ResourceMessageFormatter.Web.Format(nameof(WebStrings.ChatListActionsFor), new Dictionary<string, object?> { ["title"] = DisplayTitle(chat) });
 
     private void StartRename(ChatInfo chat)
     {

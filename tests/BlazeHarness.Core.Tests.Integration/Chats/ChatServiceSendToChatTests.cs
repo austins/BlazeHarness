@@ -2,6 +2,7 @@ using BlazeHarness.Core.Agent;
 using BlazeHarness.Core.Chats.Events;
 using BlazeHarness.Core.Chats.Titles;
 using BlazeHarness.Core.Config;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Providers;
 using BlazeHarness.Core.Secrets;
 using BlazeHarness.Core.Tools;
@@ -409,6 +410,39 @@ public sealed class ChatServiceSendToChatTests : IAsyncLifetime
         chat.CanRetry.Should().BeTrue();
         (await _store.GetLog(destination.Id).ReadAsync(ct)).OfType<UserMessageEvent>().Last().Source.Should().NotBeNull();
         gated.Release();
+    }
+
+    [Fact]
+    public async Task ResolveSendToChat_ChatWithBroaderPermissions_IsNotTheSameScope()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var work = _temp.CreateDirectory("work");
+        var source = await _sut.CreateAsync(work, ct);
+        var destination = await _sut.CreateAsync(work, ct);
+        await _sut.SetPermissionsAsync(destination.Id, new PermissionSettings(AccessLevel.Unrestricted, ApprovalMode.AutoApprove), ct);
+
+        // Act
+        var resolved = _sut.ResolveSendToChat(source.Id, ChatReferenceOf(destination.Id), null, "go");
+
+        // Assert
+        resolved.Plan!.SameScope.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ResolveSendToChat_NewChatWhenSenderRestrictedPermissions_IsNotTheSameScope()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var work = _temp.CreateDirectory("work");
+        var source = await _sut.CreateAsync(work, ct);
+        await _sut.SetPermissionsAsync(source.Id, new PermissionSettings(AccessLevel.ReadOnly, ApprovalMode.AskFirst), ct);
+
+        // Act
+        var resolved = _sut.ResolveSendToChat(source.Id, "new", null, "go");
+
+        // Assert
+        resolved.Plan!.SameScope.Should().BeFalse();
     }
 
     private ChatService CreateService(IChatClient client, ITitleGenerator? titles = null)

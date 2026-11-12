@@ -9,7 +9,13 @@ namespace BlazeHarness.Core.Providers;
 /// </summary>
 public static class ProviderConnectionTester
 {
+    /// <summary>
+    /// The name of the HTTP client configured for connection checks, with automatic redirects disabled so custom header keys never leave the provider's origin.
+    /// </summary>
+    public const string HttpClientName = "provider-test";
+
     private const int MaxBodyBytes = 4 * 1024 * 1024;
+    private const int MaxSameOriginRedirects = 3;
 
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
 
@@ -25,10 +31,27 @@ public static class ProviderConnectionTester
     /// <param name="httpClient">The HTTP client to use. The caller owns it.</param>
     /// <param name="cancellationToken">A token to cancel the test.</param>
     /// <returns>The result, including the model ids the endpoint listed.</returns>
+    public static Task<ConnectionTestResult> TestAsync(
+        ProviderConfig provider,
+        string? apiKey,
+        HttpClient httpClient,
+        CancellationToken cancellationToken = default)
+        => TestAsync(provider, apiKey, httpClient, null, cancellationToken);
+
+    /// <summary>
+    /// Check that an endpoint is reachable and accepts the credentials.
+    /// </summary>
+    /// <param name="provider">The provider to test. Only the base URL and extra headers are used.</param>
+    /// <param name="apiKey">The API key, or null for keyless local servers.</param>
+    /// <param name="httpClient">The HTTP client to use. The caller owns it.</param>
+    /// <param name="time">Times the connection check; defaults to the system clock.</param>
+    /// <param name="cancellationToken">A token to cancel the test.</param>
+    /// <returns>The result, including the model ids the endpoint listed.</returns>
     public static async Task<ConnectionTestResult> TestAsync(
         ProviderConfig provider,
         string? apiKey,
         HttpClient httpClient,
+        TimeProvider? time,
         CancellationToken cancellationToken = default)
     {
         if (!provider.BaseUrl.IsAbsoluteUri
@@ -38,35 +61,39 @@ public static class ProviderConnectionTester
             return Fail(ConnectionTestCode.InvalidBaseUrl, "The base URL is not a valid http or https address.");
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-
-        // Replace rather than append, like the real requests do, so a header never ends up with two values.
-        foreach (var (name, value) in provider.Headers ?? new Dictionary<string, string>())
-        {
-            request.Headers.Remove(name);
-            request.Headers.TryAddWithoutValidation(name, value);
-        }
-
-        if (!string.IsNullOrEmpty(apiKey))
-        {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-        }
-
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(Timeout);
+        using var clockTimeout = new CancellationTokenSource(Timeout, time ?? TimeProvider.System);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, clockTimeout.Token);
 
         try
         {
-            using var response = await httpClient.SendAsync(request, timeout.Token);
-            if (!response.IsSuccessStatusCode)
+            var current = uri;
+            for (var hop = 0; hop <= MaxSameOriginRedirects; hop++)
             {
-                return DescribeStatus(response.StatusCode);
+                using var request = BuildRequest(provider, apiKey, current);
+                using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+                if (IsRedirect(response.StatusCode) && response.Headers.Location is { } location)
+                {
+                    if (Uri.TryCreate(current, location, out var next) && SameOriginOrUpgrade(uri, next))
+                    {
+                        current = next;
+                        continue;
+                    }
+
+                    return DescribeStatus(response.StatusCode);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return DescribeStatus(response.StatusCode);
+                }
+
+                var body = await ReadCappedAsync(response.Content, timeout.Token);
+                return body is null
+                    ? Fail(ConnectionTestCode.ModelListTooLarge, "The server's model list is too large to be an OpenAI-style answer.")
+                    : ParseModels(body);
             }
 
-            var body = await ReadCappedAsync(response.Content, timeout.Token);
-            return body is null
-                ? Fail(ConnectionTestCode.ModelListTooLarge, "The server's model list is too large to be an OpenAI-style answer.")
-                : ParseModels(body);
+            return DescribeStatus(HttpStatusCode.Redirect);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -83,6 +110,35 @@ public static class ProviderConnectionTester
                 new Dictionary<string, object?> { ["detail"] = ex.Message });
         }
     }
+
+    private static HttpRequestMessage BuildRequest(ProviderConfig provider, string? apiKey, Uri uri)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+        // Replace rather than append, like the real requests do, so a header never ends up with two values.
+        foreach (var (name, value) in provider.Headers ?? new Dictionary<string, string>())
+        {
+            request.Headers.Remove(name);
+            request.Headers.TryAddWithoutValidation(name, value);
+        }
+
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        }
+
+        return request;
+    }
+
+    private static bool IsRedirect(HttpStatusCode status) =>
+        status is HttpStatusCode.MovedPermanently or HttpStatusCode.Found or HttpStatusCode.SeeOther or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
+
+    private static bool SameOriginOrUpgrade(Uri origin, Uri target) =>
+        target.IsAbsoluteUri
+        && target.Scheme is "http" or "https"
+        && !(origin.Scheme == "https" && target.Scheme == "http")
+        && string.Equals(origin.DnsSafeHost, target.DnsSafeHost, StringComparison.OrdinalIgnoreCase)
+        && (origin.Port == target.Port || (origin.Scheme == "http" && origin.IsDefaultPort && target.Scheme == "https" && target.IsDefaultPort));
 
     private static async Task<string?> ReadCappedAsync(HttpContent content, CancellationToken cancellationToken)
     {

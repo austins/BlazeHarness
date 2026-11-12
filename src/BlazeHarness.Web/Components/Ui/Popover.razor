@@ -1,7 +1,8 @@
 @* A button that opens a panel of free content in a popover below it. The browser closes it on Escape or a click outside. *@
-<button type="button" class="btn btn-ghost btn-sm popover-trigger" popovertarget="@_id" title="@Title" style="anchor-name: --@_id">
+<button type="button" class="@(IconOnly ? "btn btn-ghost btn-sm btn-icon popover-trigger" : "btn btn-ghost btn-sm popover-trigger")"
+        popovertarget="@_id" aria-haspopup="dialog" aria-label="@(IconOnly ? Label : null)" title="@Title" style="anchor-name: --@_id">
     @Trigger
-    @if (ShowChevron)
+    @if (ShowChevron && !IconOnly)
     {
         <Icon Name="chevron-down" />
     }
@@ -30,6 +31,12 @@
     /// </summary>
     [Parameter]
     public bool ShowChevron { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the button shows only an icon and has no visible text.
+    /// </summary>
+    [Parameter]
+    public bool IconOnly { get; set; }
 
     /// <summary>
     /// Gets or sets the content of the button.

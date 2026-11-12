@@ -97,8 +97,8 @@ public sealed class McpServerEditor
             return ["The server needs a name."];
         }
 
-        var existing = _file.Parsed.Servers.FirstOrDefault(s => s.Name == name);
-        if (draft.IsNew && existing is not null)
+        var initial = _file.Parsed.Servers.FirstOrDefault(s => s.Name == name);
+        if (draft.IsNew && initial is not null)
         {
             return [$"There is already a server called {name}."];
         }
@@ -115,7 +115,7 @@ public sealed class McpServerEditor
             return problems;
         }
 
-        var config = new McpServerConfig(
+        McpServerConfig BuildConfig(McpServerConfig? existing) => new(
             name,
             draft.Transport,
             isLocal ? draft.Command.Trim() : null,
@@ -130,32 +130,49 @@ public sealed class McpServerEditor
             AlwaysLoad = draft.AlwaysLoadAll ? ["*"] : [.. existing?.AlwaysLoad.Where(p => p != "*") ?? []],
         };
 
-        var merged = McpConfigEditor.Upsert(_file.Text, config);
-        if (merged.Text is null)
+        var preview = McpConfigEditor.Upsert(_file.Text, BuildConfig(initial));
+        if (preview.Text is null)
         {
-            return [merged.Error ?? "The server could not be saved."];
+            return [preview.Error ?? "The server could not be saved."];
         }
 
-        var parsed = McpConfigParser.Parse(merged.Text);
-        if (parsed.Errors.Count > 0)
+        var previewParsed = McpConfigParser.Parse(preview.Text);
+        if (previewParsed.Errors.Count > 0)
         {
-            return parsed.Errors;
+            return previewParsed.Errors;
         }
 
+        var (errors, before, after) = await _file.MutateAsync<(IReadOnlyList<string> Errors, McpServerConfig? Before, McpServerConfig? After)>(
+            (text, parsed) =>
+            {
+                var current = parsed.Servers.FirstOrDefault(s => s.Name == name);
+                if (draft.IsNew && current is not null)
+                {
+                    return (null, ([$"There is already a server called {name}."], null, null));
+                }
+
+                var updated = BuildConfig(current);
+                var merged = McpConfigEditor.Upsert(text, updated);
+                return merged.Text is null
+                    ? (null, ([merged.Error ?? "The server could not be saved."], null, null))
+                    : (merged.Text, ([], current, updated));
+            },
+            parseErrors => (parseErrors, null, null),
+            cancellationToken);
+        if (errors.Count > 0)
+        {
+            return errors;
+        }
+
+        // Stored only once the file took the change, so a rejected save leaves the secrets of the server already saved alone.
         foreach (var (variable, value) in toStore)
         {
-            await _secrets.SetAsync(McpSecretVariables.StoreKey(variable), value, cancellationToken);
+            await _secrets.SetAsync(McpSecretVariables.StoreKey(variable), value, CancellationToken.None);
         }
 
-        var saved = await _file.SaveAsync(merged.Text, cancellationToken);
-        if (saved.Errors.Count > 0)
+        if (before is not null && after is not null)
         {
-            return saved.Errors;
-        }
-
-        if (existing is not null)
-        {
-            await DeleteUnusedAsync(existing, config, cancellationToken);
+            await DeleteUnusedAsync(before, after, cancellationToken);
         }
 
         // A changed secret doesn't change the file, so the running connection would keep the old one.
@@ -173,19 +190,22 @@ public sealed class McpServerEditor
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
 
-        var existing = _file.Parsed.Servers.FirstOrDefault(s => s.Name == name);
-        if (existing is null || McpConfigEditor.Remove(_file.Text, name) is not { } text)
+        var removed = await _file.MutateAsync<McpServerConfig?>(
+            (text, parsed) =>
+            {
+                var existing = parsed.Servers.FirstOrDefault(s => s.Name == name);
+                return existing is not null && McpConfigEditor.Remove(text, name) is { } updated
+                    ? (updated, existing)
+                    : (null, null);
+            },
+            _ => null,
+            cancellationToken);
+        if (removed is null)
         {
             return false;
         }
 
-        var saved = await _file.SaveAsync(text, cancellationToken);
-        if (saved.Errors.Count > 0)
-        {
-            return false;
-        }
-
-        foreach (var variable in McpSecretVariables.Referenced(existing))
+        foreach (var variable in McpSecretVariables.Referenced(removed))
         {
             await _secrets.DeleteAsync(McpSecretVariables.StoreKey(variable), cancellationToken);
         }

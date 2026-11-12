@@ -21,4 +21,4 @@ namespace BlazeHarness.Core.Chats.Events;
 [JsonDerivedType(typeof(PermissionsChangedEvent), "permissionsChanged")]
 [JsonDerivedType(typeof(CompactionEvent), "compaction")]
 [JsonDerivedType(typeof(ContextTrimEvent), "contextTrim")]
-public abstract record ChatEvent(DateTimeOffset At);
+public closed record ChatEvent(DateTimeOffset At);

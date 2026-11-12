@@ -1,5 +1,5 @@
 @* One choice or action in a Menu. Choosing it closes the menu. *@
-<button type="button" class="menu-item" role="@(IsAction ? "menuitem" : "menuitemradio")" aria-checked="@AriaChecked" popovertarget="@Menu?.Id" popovertargetaction="hide" title="@Title" @onclick="OnSelect">
+<button type="button" class="@(Danger ? "menu-item menu-item-danger" : "menu-item")" role="@(IsAction ? "menuitem" : "menuitemradio")" aria-checked="@AriaChecked" popovertarget="@Menu?.Id" popovertargetaction="hide" title="@Title" @onclick="OnSelect">
     @if (!IsAction)
     {
         <span class="menu-check"><Icon Name="check" /></span>
@@ -49,6 +49,12 @@
     /// </summary>
     [Parameter]
     public bool IsAction { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the item performs a destructive action.
+    /// </summary>
+    [Parameter]
+    public bool Danger { get; set; }
 
     /// <summary>
     /// Gets or sets the callback for the user choosing the item.

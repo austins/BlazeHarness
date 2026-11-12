@@ -95,13 +95,8 @@ public sealed class ToolSet
             return output;
         }
 
-        var keep = MaxOutputCharacters;
-        if (char.IsHighSurrogate(output[keep - 1]))
-        {
-            keep--;
-        }
-
-        return string.Create(CultureInfo.InvariantCulture, $"{output[..keep]}\n[Output cut: {output.Length - keep} more characters were left out.]");
+        var kept = TextClip.Start(output, MaxOutputCharacters);
+        return string.Create(CultureInfo.InvariantCulture, $"{kept}\n[Output cut: {output.Length - kept.Length} more characters were left out.]");
     }
 
     /// <summary>

@@ -7,7 +7,8 @@ namespace BlazeHarness.Core.Secrets;
 /// Values are passed to <c>secret-tool</c> over stdin so they never appear in the process list.
 /// </remarks>
 /// <param name="serviceName">The service attribute the secrets are filed under. Tests use a throwaway name.</param>
-internal sealed class LibsecretStore(string serviceName = "blazeharness") : ISecretStore
+/// <param name="time">Times keyring calls so a locked keyring cannot hang forever; defaults to the system clock.</param>
+internal sealed class LibsecretStore(string serviceName = "blazeharness", TimeProvider? time = null) : ISecretStore
 {
     private const string Tool = "secret-tool";
 
@@ -16,6 +17,10 @@ internal sealed class LibsecretStore(string serviceName = "blazeharness") : ISec
     /// </summary>
     /// <remarks>A locked keyring can wait on a prompt forever, which would otherwise hang startup.</remarks>
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(5);
+
+    private static readonly TimeSpan CallTimeout = TimeSpan.FromSeconds(10);
+
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
 
     /// <inheritdoc />
     public string Name => "Secret Service (libsecret)";
@@ -28,15 +33,24 @@ internal sealed class LibsecretStore(string serviceName = "blazeharness") : ISec
     /// </summary>
     /// <param name="cancellationToken">A token to cancel the probe.</param>
     /// <returns>True when the store can be used; always false on other operating systems.</returns>
-    public static async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    public static Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => IsAvailableAsync(null, cancellationToken);
+
+    /// <summary>
+    /// Check whether <c>secret-tool</c> exists and a Secret Service answers on the session bus.
+    /// </summary>
+    /// <param name="time">Times the probe; defaults to the system clock.</param>
+    /// <param name="cancellationToken">A token to cancel the probe.</param>
+    /// <returns>True when the store can be used; always false on other operating systems.</returns>
+    public static async Task<bool> IsAvailableAsync(TimeProvider? time, CancellationToken cancellationToken = default)
     {
         if (!OperatingSystem.IsLinux())
         {
             return false;
         }
 
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(ProbeTimeout);
+        using var clockTimeout = new CancellationTokenSource(ProbeTimeout, time ?? TimeProvider.System);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, clockTimeout.Token);
         try
         {
             // A lookup of a key that cannot exist exits 1 with no output when the service works.
@@ -65,15 +79,14 @@ internal sealed class LibsecretStore(string serviceName = "blazeharness") : ISec
     /// <inheritdoc />
     public async Task<string?> GetAsync(string key, CancellationToken cancellationToken = default)
     {
-        var result = await ProcessRunner.RunAsync(Tool, ["lookup", "service", serviceName, "account", key], null, cancellationToken);
+        var result = await RunBoundedAsync(["lookup", "service", serviceName, "account", key], null, cancellationToken);
         return result.ExitCode == 0 && result.StdOut.Length > 0 ? result.StdOut : null;
     }
 
     /// <inheritdoc />
     public async Task SetAsync(string key, string value, CancellationToken cancellationToken = default)
     {
-        var result = await ProcessRunner.RunAsync(
-            Tool,
+        var result = await RunBoundedAsync(
             ["store", $"--label={AppConstants.AppName} {key}", "service", serviceName, "account", key],
             value,
             cancellationToken);
@@ -86,6 +99,20 @@ internal sealed class LibsecretStore(string serviceName = "blazeharness") : ISec
     /// <inheritdoc />
     public Task DeleteAsync(string key, CancellationToken cancellationToken = default)
     {
-        return ProcessRunner.RunAsync(Tool, ["clear", "service", serviceName, "account", key], null, cancellationToken);
+        return RunBoundedAsync(["clear", "service", serviceName, "account", key], null, cancellationToken);
+    }
+
+    private async Task<ProcessResult> RunBoundedAsync(IReadOnlyList<string> arguments, string? stdin, CancellationToken cancellationToken)
+    {
+        using var clockTimeout = new CancellationTokenSource(CallTimeout, _time);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, clockTimeout.Token);
+        try
+        {
+            return await ProcessRunner.RunAsync(Tool, arguments, stdin, timeout.Token);
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new IOException("The Secret Service did not answer in time; the keyring may be locked.", ex);
+        }
     }
 }

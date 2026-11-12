@@ -1288,6 +1288,27 @@
   <data name="ThinkingSendLabelsReasoningObjectOption" xml:space="preserve">
     <value>reasoning 对象 (OpenRouter)</value>
   </data>
+  <data name="ThinkingSendLabelsReasoningObjectShort" xml:space="preserve">
+    <value>reasoning 对象</value>
+  </data>
+  <data name="ThinkingLevelOff" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="ThinkingLevelMinimal" xml:space="preserve">
+    <value>最低</value>
+  </data>
+  <data name="ThinkingLevelLow" xml:space="preserve">
+    <value>低</value>
+  </data>
+  <data name="ThinkingLevelMedium" xml:space="preserve">
+    <value>中</value>
+  </data>
+  <data name="ThinkingLevelHigh" xml:space="preserve">
+    <value>高</value>
+  </data>
+  <data name="ThinkingLevelExtraHigh" xml:space="preserve">
+    <value>超高</value>
+  </data>
   <data name="ModelTuningValueSentFor" xml:space="preserve">
     <value>为 {level} 发送的值</value>
   </data>
@@ -1500,6 +1521,9 @@
   </data>
   <data name="SidebarFolderActionsFor" xml:space="preserve">
     <value>{folder} 的操作</value>
+  </data>
+  <data name="ChatListActionsFor" xml:space="preserve">
+    <value>{title} 的操作</value>
   </data>
   <data name="SidebarFolderActions" xml:space="preserve">
     <value>文件夹操作</value>

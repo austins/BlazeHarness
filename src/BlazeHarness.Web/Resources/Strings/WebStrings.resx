@@ -1382,6 +1382,13 @@
   <data name="ThinkingSendLabelsCustomFieldShort" xml:space="preserve"><value>custom body field</value><comment>Short name, shown after "Same as provider:" in the model tuning dialog, for sending the thinking level in a custom request body field.</comment></data>
   <data name="ThinkingSendLabelsCustomFieldOption" xml:space="preserve"><value>Custom body field</value><comment>Select option in the provider and model editors for sending the thinking level in a custom request body field.</comment></data>
   <data name="ThinkingSendLabelsReasoningObjectOption" xml:space="preserve"><value>reasoning object (OpenRouter)</value><comment>Select option in the provider and model editors for sending the thinking level as a reasoning object in the request. Do not translate the product name.</comment></data>
+  <data name="ThinkingSendLabelsReasoningObjectShort" xml:space="preserve"><value>reasoning object</value><comment>Short name, shown after "Same as provider:" in the model tuning dialog, for sending the thinking level as a reasoning object. Do not translate the field name reasoning.</comment></data>
+  <data name="ThinkingLevelOff" xml:space="preserve"><value>Off</value><comment>Thinking level choice in the composer when reasoning before answering is turned off.</comment></data>
+  <data name="ThinkingLevelMinimal" xml:space="preserve"><value>Minimal</value><comment>Smallest thinking effort choice in the composer.</comment></data>
+  <data name="ThinkingLevelLow" xml:space="preserve"><value>Low</value><comment>Low thinking effort choice in the composer.</comment></data>
+  <data name="ThinkingLevelMedium" xml:space="preserve"><value>Medium</value><comment>Medium thinking effort choice in the composer.</comment></data>
+  <data name="ThinkingLevelHigh" xml:space="preserve"><value>High</value><comment>High thinking effort choice in the composer.</comment></data>
+  <data name="ThinkingLevelExtraHigh" xml:space="preserve"><value>Extra high</value><comment>Highest thinking effort choice in the composer.</comment></data>
   <data name="ModelTuningValueSentFor" xml:space="preserve"><value>Value sent for {level}</value><comment>Accessible label for a thinking-level value field; level is the thinking-level name.</comment></data>
   <data name="ProvidersSettingsHeaderBefore" xml:space="preserve"><value>Connect any OpenAI-compatible endpoint. Keys are kept in</value><comment>First part of the providers settings description before the name of the secret store.</comment></data>
   <data name="ProvidersSettingsSecureSuffix" xml:space="preserve"><value>.</value><comment>Ending when the key store is secure.</comment></data>
@@ -1501,6 +1508,7 @@
   <data name="SidebarNewChatInFolder" xml:space="preserve"><value>New chat in {folder}</value><comment>Accessible label for creating a chat in a folder; folder is its name.</comment></data>
   <data name="SidebarFindFolder" xml:space="preserve"><value>Find {folder}</value><comment>Accessible label for locating a missing folder; folder is its name.</comment></data>
   <data name="SidebarFolderActionsFor" xml:space="preserve"><value>Actions for {folder}</value><comment>Accessible label for the button that opens a folder's actions menu in the sidebar; folder is its name.</comment></data>
+  <data name="ChatListActionsFor" xml:space="preserve"><value>Actions for {title}</value><comment>Accessible label for the button that opens a chat's actions menu in the sidebar; title is the chat title.</comment></data>
   <data name="SidebarFolderActions" xml:space="preserve"><value>Folder actions</value><comment>Accessible label for the folder context menu.</comment></data>
   <data name="SidebarSwitchToLightTheme" xml:space="preserve"><value>Switch to light theme</value><comment>Accessible label for switching to the light theme.</comment></data>
   <data name="SidebarSwitchToDarkTheme" xml:space="preserve"><value>Switch to dark theme</value><comment>Accessible label for switching to the dark theme.</comment></data>

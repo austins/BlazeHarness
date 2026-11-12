@@ -1,4 +1,6 @@
 using BlazeHarness.Core.Config;
+using BlazeHarness.Core.Folders;
+using BlazeHarness.Core.Permissions;
 using BlazeHarness.Core.Tools.Shell;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -14,9 +16,17 @@ namespace BlazeHarness.Web.Hosting;
 /// </remarks>
 /// <param name="config">The app settings holding the editor command.</param>
 /// <param name="logger">The logger.</param>
-internal sealed partial class EditorLauncher(JsonFileStore<AppConfig> config, ILogger<EditorLauncher> logger)
+/// <param name="permissions">Supplies the protected folders that may not be opened, or null in tests without one.</param>
+/// <param name="time">Times looking up the system's text editor; defaults to the system clock.</param>
+internal sealed partial class EditorLauncher(
+    JsonFileStore<AppConfig> config,
+    ILogger<EditorLauncher> logger,
+    PermissionDefaults? permissions = null,
+    TimeProvider? time = null)
 {
     private static readonly TimeSpan QueryTimeout = TimeSpan.FromSeconds(5);
+
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
 
     /// <summary>
     /// Open a file in the configured editor, or the system's text editor when none is set.
@@ -27,13 +37,13 @@ internal sealed partial class EditorLauncher(JsonFileStore<AppConfig> config, IL
     /// <returns>Whether the editor started.</returns>
     public async Task<EditorOpenResult> OpenAsync(string root, string relativePath, CancellationToken cancellationToken = default)
     {
-        if (Resolve(root, relativePath) is not { } path)
+        if (Resolve(root, relativePath, permissions?.Sensitive()) is not { } path)
         {
             return EditorOpenResult.NotFound;
         }
 
         var configured = EditorCommandLine.Split(config.Current.EditorCommand);
-        var command = configured.Count > 0 ? [.. configured, path] : await SystemCommandAsync(path, cancellationToken);
+        var command = configured.Count > 0 ? [.. configured, path] : await SystemCommandAsync(path, _time, cancellationToken);
         if (command is null)
         {
             return EditorOpenResult.NoEditor;
@@ -62,28 +72,23 @@ internal sealed partial class EditorLauncher(JsonFileStore<AppConfig> config, IL
     }
 
     /// <summary>
-    /// Get the full path of a file when it is inside the folder and exists.
+    /// Get the full path of a file when it is inside the folder, follows no link outside it, is not protected, and exists.
     /// </summary>
     /// <param name="root">The folder.</param>
     /// <param name="relativePath">The file's path relative to <paramref name="root"/>.</param>
+    /// <param name="sensitive">Protected folders that must not be opened, or null.</param>
     /// <returns>The full path, or null.</returns>
-    internal static string? Resolve(string root, string relativePath)
+    internal static string? Resolve(string root, string relativePath, SensitivePaths? sensitive = null)
     {
-        if (string.IsNullOrEmpty(root) || string.IsNullOrEmpty(relativePath) || Path.IsPathRooted(relativePath))
-        {
-            return null;
-        }
-
-        var comparison = OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-        var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
-        var path = Path.GetFullPath(Path.Combine(fullRoot, relativePath));
-        return path.StartsWith(fullRoot, comparison) && File.Exists(path) ? path : null;
+        return FolderPaths.ResolveFileInside(root, relativePath, out var real) is { } path && sensitive?.IsProtected(real) != true
+            ? path
+            : null;
     }
 
     /// <summary>
     /// Find the command of the system's text editor.
     /// </summary>
-    private static async Task<IReadOnlyList<string>?> SystemCommandAsync(string path, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<string>?> SystemCommandAsync(string path, TimeProvider time, CancellationToken cancellationToken)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -95,7 +100,7 @@ internal sealed partial class EditorLauncher(JsonFileStore<AppConfig> config, IL
             return ["open", "-t", path];
         }
 
-        if (await DefaultTextAppAsync(cancellationToken) is not { } id)
+        if (await DefaultTextAppAsync(time, cancellationToken) is not { } id)
         {
             return null;
         }
@@ -116,7 +121,7 @@ internal sealed partial class EditorLauncher(JsonFileStore<AppConfig> config, IL
     /// Ask <c>xdg-mime</c> for the desktop entry of the app that opens plain text.
     /// </summary>
     /// <returns>The desktop entry's file name, such as <c>org.kde.kate.desktop</c>, or null.</returns>
-    private static async Task<string?> DefaultTextAppAsync(CancellationToken cancellationToken)
+    private static async Task<string?> DefaultTextAppAsync(TimeProvider time, CancellationToken cancellationToken)
     {
         if (ShellInfo.FindOnPath("xdg-mime", Environment.GetEnvironmentVariable("PATH")) is not { } xdgMime)
         {
@@ -133,8 +138,8 @@ internal sealed partial class EditorLauncher(JsonFileStore<AppConfig> config, IL
         startInfo.ArgumentList.Add("query");
         startInfo.ArgumentList.Add("default");
         startInfo.ArgumentList.Add("text/plain");
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(QueryTimeout);
+        using var clockTimeout = new CancellationTokenSource(QueryTimeout, time);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, clockTimeout.Token);
         try
         {
             using var process = Process.Start(startInfo);

@@ -13,6 +13,7 @@ internal sealed class BrowserSession
     private readonly Lock _gate = new();
     private readonly HashSet<string> _approved = new(StringComparer.Ordinal);
     private readonly List<string> _problems = [];
+    private readonly Dictionary<ITarget, ICDPSession> _workers = [];
     private DateTimeOffset _lastUsed;
     private bool _closed;
     private Uri? _titleUrl;
@@ -97,6 +98,18 @@ internal sealed class BrowserSession
     }
 
     /// <summary>
+    /// Get the origins this chat has opened with a navigation.
+    /// </summary>
+    /// <returns>A copy of the approved origins.</returns>
+    public IReadOnlyList<string> ApprovedOrigins()
+    {
+        lock (_gate)
+        {
+            return [.. _approved];
+        }
+    }
+
+    /// <summary>
     /// Gets the title read for an address if it is still fresh enough to show again.
     /// </summary>
     /// <param name="url">The address of the page.</param>
@@ -126,7 +139,7 @@ internal sealed class BrowserSession
         var line = text.ReplaceLineEndings(" ");
         if (line.Length > MaxProblemChars)
         {
-            line = line[..MaxProblemChars] + "…";
+            line = TextClip.Start(line, MaxProblemChars) + "…";
         }
 
         lock (_gate)
@@ -144,6 +157,49 @@ internal sealed class BrowserSession
         {
             var taken = _problems.ToList();
             _problems.Clear();
+            return taken;
+        }
+    }
+
+    /// <summary>
+    /// Remember the session that intercepts a worker's requests, so it can be detached when the worker or page ends.
+    /// </summary>
+    /// <param name="target">The worker.</param>
+    /// <param name="client">The session that intercepts its requests.</param>
+    /// <returns>False when the page has closed, so the caller detaches the session itself.</returns>
+    public bool TrackWorker(ITarget target, ICDPSession client)
+    {
+        lock (_gate)
+        {
+            if (_closed)
+            {
+                return false;
+            }
+
+            _workers[target] = client;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Stop tracking an ended worker.
+    /// </summary>
+    /// <param name="target">The worker.</param>
+    /// <returns>The session that intercepted its requests, or null when there was none.</returns>
+    public ICDPSession? ForgetWorker(ITarget target)
+    {
+        lock (_gate)
+        {
+            return _workers.Remove(target, out var client) ? client : null;
+        }
+    }
+
+    public IReadOnlyList<ICDPSession> TakeWorkerClients()
+    {
+        lock (_gate)
+        {
+            var taken = _workers.Values.ToList();
+            _workers.Clear();
             return taken;
         }
     }

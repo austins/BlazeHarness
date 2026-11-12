@@ -13,11 +13,13 @@ namespace BlazeHarness.Web.Services;
 public sealed class StreamingMarkdown(MarkdownRenderer renderer, string? chatId = null)
 {
     private const int MinFenceLength = 3;
+    private const int MaxFenceIndent = 3;
 
     private int _settled;
     private int _scanned;
     private char _fenceMarker;
     private int _fenceLength;
+    private bool _inList;
 
     /// <summary>
     /// Gets the HTML of the settled text, which only changes when another block settles, so a view can leave it out of an update.
@@ -43,6 +45,7 @@ public sealed class StreamingMarkdown(MarkdownRenderer renderer, string? chatId 
             _scanned = 0;
             _fenceMarker = '\0';
             _fenceLength = 0;
+            _inList = false;
         }
 
         var boundary = AdvanceScan(text);
@@ -66,28 +69,93 @@ public sealed class StreamingMarkdown(MarkdownRenderer renderer, string? chatId 
                 return boundary;
             }
 
-            var line = text.AsSpan(_scanned, end - _scanned).Trim();
+            var rawLine = text.AsSpan(_scanned, end - _scanned).TrimEnd('\r');
             _scanned = end + 1;
-            if (TrackFence(line))
+            if (TrackFence(rawLine))
             {
                 continue;
             }
 
-            if (line.IsEmpty && _fenceMarker == '\0')
+            if (rawLine.Trim().IsEmpty)
             {
-                boundary = _scanned;
+                if (_fenceMarker == '\0')
+                {
+                    boundary = _scanned;
+                }
+            }
+            else if (_fenceMarker == '\0')
+            {
+                TrackList(rawLine);
             }
         }
     }
 
     /// <summary>
+    /// Track whether the text is inside a list, where a fence can be indented by the item's content offset.
+    /// </summary>
+    /// <remarks>An unindented line that doesn't start an item ends the list.</remarks>
+    /// <param name="rawLine">A non-blank line outside a code fence, without its line ending.</param>
+    private void TrackList(ReadOnlySpan<char> rawLine)
+    {
+        var line = rawLine.TrimStart(' ');
+        if (IsListItem(line))
+        {
+            _inList = true;
+        }
+        else if (line.Length == rawLine.Length)
+        {
+            _inList = false;
+        }
+    }
+
+    private static bool IsListItem(ReadOnlySpan<char> line)
+    {
+        var marker = 0;
+        if (line.Length > 0 && line[0] is '-' or '*' or '+')
+        {
+            marker = 1;
+        }
+        else
+        {
+            while (marker < line.Length && marker < 9 && char.IsAsciiDigit(line[marker]))
+            {
+                marker++;
+            }
+
+            if (marker == 0 || marker >= line.Length || line[marker] is not ('.' or ')'))
+            {
+                return false;
+            }
+
+            marker++;
+        }
+
+        return marker == line.Length || line[marker] is ' ' or '\t';
+    }
+
+    /// <summary>
     /// Track whether a line opens or closes a code fence.
     /// </summary>
-    /// <remarks>A fence closes only with the same character, at least as long, and nothing after it.</remarks>
-    /// <param name="line">The line to inspect.</param>
+    /// <remarks>
+    /// Follows CommonMark §4.5: at most three leading spaces (any number inside a list, whose items indent their content), backtick info strings may not contain backticks,
+    /// and a fence closes only with the same character, at least as long, and only whitespace after it.
+    /// </remarks>
+    /// <param name="rawLine">The line without its line ending.</param>
     /// <returns>True when the line opens or closes a fence.</returns>
-    private bool TrackFence(ReadOnlySpan<char> line)
+    private bool TrackFence(ReadOnlySpan<char> rawLine)
     {
+        var indent = 0;
+        while (indent < rawLine.Length && rawLine[indent] == ' ')
+        {
+            indent++;
+        }
+
+        if (indent > MaxFenceIndent && !_inList)
+        {
+            return false;
+        }
+
+        var line = rawLine[indent..];
         if (line.Length < MinFenceLength || (line[0] != '`' && line[0] != '~'))
         {
             return false;
@@ -105,14 +173,20 @@ public sealed class StreamingMarkdown(MarkdownRenderer renderer, string? chatId 
             return false;
         }
 
+        var rest = line[length..];
         if (_fenceMarker == '\0')
         {
+            if (marker == '`' && rest.Contains('`'))
+            {
+                return false;
+            }
+
             _fenceMarker = marker;
             _fenceLength = length;
             return true;
         }
 
-        if (marker == _fenceMarker && length >= _fenceLength && length == line.Length)
+        if (marker == _fenceMarker && length >= _fenceLength && rest.TrimEnd([' ', '\t']).IsEmpty)
         {
             _fenceMarker = '\0';
             _fenceLength = 0;

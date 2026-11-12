@@ -179,6 +179,29 @@ public sealed class MarkdownRendererTests
     }
 
     [Fact]
+    public void ToCachedHtml_DifferentUiCultures_RendersCopyLabelForEachCulture()
+    {
+        // Arrange
+        const string Code = "```csharp\nvar x = 1;\n```";
+        var original = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            // Act
+            System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo("en");
+            var en = _sut.ToCachedHtml(Code);
+            System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo("ru");
+            var ru = _sut.ToCachedHtml(Code);
+
+            // Assert
+            ru.Should().NotBe(en);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = original;
+        }
+    }
+
+    [Fact]
     public void ToCachedHtml_ManyDistinctTexts_StillRendersCorrectly()
     {
         // Act

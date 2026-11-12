@@ -154,4 +154,19 @@ public sealed class SyntaxHighlighterTests
         // Assert
         lines.Should().BeNull();
     }
+
+    [Fact]
+    public void TryHighlight_ConcurrentCallsOnSameGrammar_ReturnConsistentOutput()
+    {
+        // Arrange
+        const string Code = "public sealed class Sample\n{\n    public string Greet(int n) => $\"hi {n}\"; // comment\n}";
+        var expected = SyntaxHighlighter.TryHighlight(Code, "csharp");
+        var results = new string?[64];
+
+        // Act
+        Parallel.For(0, results.Length, i => results[i] = SyntaxHighlighter.TryHighlight(Code, "csharp"));
+
+        // Assert
+        results.Should().AllBe(expected);
+    }
 }

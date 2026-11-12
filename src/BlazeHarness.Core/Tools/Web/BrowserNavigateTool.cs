@@ -10,9 +10,14 @@ internal sealed class BrowserNavigateTool : IWebTool
 
     private readonly IBrowserEngine _engine;
     private readonly string _chatId;
-    private readonly int? _appPort;
+    private readonly Func<int?> _appPort;
 
     public BrowserNavigateTool(IBrowserEngine engine, string chatId, int? appPort)
+        : this(engine, chatId, () => appPort)
+    {
+    }
+
+    public BrowserNavigateTool(IBrowserEngine engine, string chatId, Func<int?> appPort)
     {
         _engine = engine;
         _chatId = chatId;
@@ -45,7 +50,7 @@ internal sealed class BrowserNavigateTool : IWebTool
 
     public WebRequest? Describe(JsonElement arguments)
     {
-        if (!WebUrl.TryParse(ToolSupport.Text(arguments, "url"), out var uri, out _) || BrowserAddressPolicy.Refusal(uri, _appPort) is not null)
+        if (!WebUrl.TryParse(ToolSupport.Text(arguments, "url"), out var uri, out _) || BrowserAddressPolicy.Refusal(uri, _appPort()) is not null)
         {
             return null;
         }
