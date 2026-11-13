@@ -7,12 +7,15 @@ namespace BlazeHarness.Core.Tests.Integration.Git;
 public sealed class GitChangeReverterTests : IDisposable
 {
     private const string Reason = "git is not installed.";
+    private const string SymlinkReason = "git is not installed, or symbolic links can't be created here.";
 
     private readonly TempFolder _folder = new("bh-git-revert-");
     private readonly GitChangeReverter _sut = new(TimeProvider.System);
     private readonly GitChangesReader _reader = new(TimeProvider.System);
 
     public static bool CanUseUnixMode => TestGit.IsAvailable && !OperatingSystem.IsWindows();
+
+    public static bool CanUseSymlinks => TestGit.IsAvailable && SymlinkSupport.CanCreate;
 
     public void Dispose() => _folder.Dispose();
 
@@ -216,7 +219,7 @@ public sealed class GitChangeReverterTests : IDisposable
         File.Exists(target).Should().BeTrue();
     }
 
-    [Fact(Skip = SymlinkSupport.Reason, SkipUnless = nameof(SymlinkSupport.CanCreate), SkipType = typeof(SymlinkSupport))]
+    [Fact(Skip = SymlinkReason, SkipUnless = nameof(CanUseSymlinks))]
     public async Task RevertFileAsync_FileBehindASymlinkedFolder_IsNotAllowed()
     {
         // Arrange
