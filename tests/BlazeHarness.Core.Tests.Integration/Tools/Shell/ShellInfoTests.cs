@@ -44,6 +44,38 @@ public sealed class ShellInfoTests : IDisposable
     }
 
     [Fact]
+    public void Detect_WindowsWithOnlyAStorePwsh_FallsBackToPowerShell()
+    {
+        // Arrange
+        var store = Path.Combine(_temp.Root, "WindowsApps");
+        Directory.CreateDirectory(store);
+        File.WriteAllText(Path.Combine(store, "pwsh.exe"), string.Empty);
+        var legacy = Touch("powershell.exe");
+
+        // Act
+        var shell = ShellInfo.Detect(isWindows: true, shellVariable: null, store + Path.PathSeparator + _temp.Root);
+
+        // Assert
+        shell.Should().Be(new ShellInfo("powershell", legacy, IsPowerShell: true));
+    }
+
+    [Fact]
+    public void Detect_WindowsWithAStorePwshFirstOnPath_UsesTheInstalledPwsh()
+    {
+        // Arrange
+        var store = Path.Combine(_temp.Root, "windowsapps");
+        Directory.CreateDirectory(store);
+        File.WriteAllText(Path.Combine(store, "pwsh.exe"), string.Empty);
+        var pwsh = Touch("pwsh.exe");
+
+        // Act
+        var shell = ShellInfo.Detect(isWindows: true, shellVariable: null, store + Path.PathSeparator + _temp.Root);
+
+        // Assert
+        shell.Should().Be(new ShellInfo("pwsh", pwsh, IsPowerShell: true));
+    }
+
+    [Fact]
     public void Detect_WindowsWithNoPowerShell_ReturnsNull()
     {
         // Act

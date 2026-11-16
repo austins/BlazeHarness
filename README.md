@@ -8,6 +8,16 @@ A local web app for chatting and coding with any OpenAI-compatible LLM. It runs 
 ## Requirements
 
 * An OpenAI-compatible endpoint and API key. You add providers in the app's settings.
+* Optional, on Windows (x64): one of these Windows 11 builds or later (check with `ver`), for the command sandbox. Without it, commands run directly, behind approvals.
+
+  | Windows 11 release | Minimum build |
+  | --- | --- |
+  | 24H2 | 26100.9278 |
+  | 25H2 | 26200.9278 |
+  | 26H2 | 26300.9550 |
+  | 26H1 | 28000.2804 |
+
+  Commands use PowerShell 7 if it's on `PATH`, otherwise Windows PowerShell. The Store/`winget` build of PowerShell 7 can't run in the sandbox and is skipped; to use 7, install it from the [`win-x64.zip`](https://github.com/PowerShell/PowerShell/releases) instead.
 * Optional, on Linux:
   * `bubblewrap` (`bwrap`), for the command sandbox. Without it, commands run directly, behind approvals. The sandbox also needs unprivileged user namespaces, which some distributions restrict.
   * `socat` and `nsenter` (util-linux), so servers that sandboxed commands start can be reached (see [Background commands](#background-commands)).
@@ -66,6 +76,8 @@ You can still edit settings and instructions in a text editor running as the sam
 | `logs/` | One log file per day, capped at 5 MB; files older than 7 days are deleted. Holds warnings and errors, and the app's own information messages. Exception messages are left out because they can echo prompts or replies |
 
 API keys are kept in your OS secret store (Windows Credential Manager, macOS Keychain or Linux Secret Service). If none is available, they fall back to an owner-only file. They are never written to `config.json`, `providers.json`, chat files or logs.
+
+The app sends no telemetry. On Windows, the command sandbox ([MXC](https://github.com/microsoft/mxc)) sends Microsoft required [diagnostic data](https://github.com/microsoft/mxc/blob/main/docs/telemetry.md) that can't be turned off.
 
 ## Features
 

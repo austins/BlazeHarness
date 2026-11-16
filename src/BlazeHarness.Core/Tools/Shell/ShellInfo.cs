@@ -14,8 +14,9 @@ public sealed record ShellInfo(string Name, string Executable, bool IsPowerShell
     /// Pick the shell for an operating system.
     /// </summary>
     /// <remarks>
-    /// Windows prefers <c>pwsh</c>, then <c>powershell.exe</c>. Linux and macOS prefer the user's <c>SHELL</c> when it is
-    /// bash, zsh or sh, then bash, then sh.
+    /// Windows prefers <c>pwsh</c>, then <c>powershell.exe</c>. It skips a <c>pwsh</c> under a <c>WindowsApps</c> folder, the
+    /// Microsoft Store (MSIX) package and its execution alias, because the Windows sandbox can't reliably start a packaged app.
+    /// Linux and macOS prefer the user's <c>SHELL</c> when it is bash, zsh or sh, then bash, then sh.
     /// </remarks>
     /// <param name="isWindows">True to pick a Windows shell.</param>
     /// <param name="shellVariable">The value of the <c>SHELL</c> environment variable, when there is one.</param>
@@ -25,7 +26,7 @@ public sealed record ShellInfo(string Name, string Executable, bool IsPowerShell
     {
         if (isWindows)
         {
-            return FindOnPath("pwsh.exe", pathVariable) is { } pwsh
+            return FindAllOnPath("pwsh.exe", pathVariable).FirstOrDefault(path => !IsPackaged(path)) is { } pwsh
                 ? new ShellInfo("pwsh", pwsh, IsPowerShell: true)
                 : FindOnPath("powershell.exe", pathVariable) is { } legacy
                     ? new ShellInfo("powershell", legacy, IsPowerShell: true)
@@ -74,12 +75,27 @@ public sealed record ShellInfo(string Name, string Executable, bool IsPowerShell
     /// <param name="fileName">The executable's file name, such as <c>git</c>.</param>
     /// <param name="pathVariable">The <c>PATH</c> value.</param>
     /// <returns>The full path of the first match, or null.</returns>
-    public static string? FindOnPath(string fileName, string? pathVariable)
+    public static string? FindOnPath(string fileName, string? pathVariable) => FindAllOnPath(fileName, pathVariable).FirstOrDefault();
+
+    private static IEnumerable<string> FindAllOnPath(string fileName, string? pathVariable)
     {
         return (pathVariable ?? string.Empty)
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(Path.IsPathFullyQualified)
             .Select(directory => Path.Combine(directory, fileName))
-            .FirstOrDefault(File.Exists);
+            .Where(File.Exists);
+    }
+
+    /// <summary>
+    /// Tell whether a program is a Microsoft Store (MSIX) app or its execution alias.
+    /// </summary>
+    /// <remarks>Both live under a <c>WindowsApps</c> folder; MXC recognizes packaged apps the same way.</remarks>
+    /// <param name="path">The program's full path.</param>
+    /// <returns>True when a folder in the path is named <c>WindowsApps</c>.</returns>
+    private static bool IsPackaged(string path)
+    {
+        return Path.GetDirectoryName(path)?
+            .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries)
+            .Contains("WindowsApps", StringComparer.OrdinalIgnoreCase) == true;
     }
 }
