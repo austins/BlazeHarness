@@ -21,6 +21,13 @@ window.addEventListener("blur", () => {
     pendingContextMenu = null;
 });
 
+// Enter that confirms an IME candidate must not reach Blazor's handlers; keyCode 229 covers Safari, which ends composition before keydown.
+window.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.isComposing || e.keyCode === 229)) {
+        e.stopImmediatePropagation();
+    }
+}, true);
+
 window.bhUi = {
     // Keep in sync with the @media (max-width: 48rem) breakpoint in app.css.
     isNarrow: () => window.matchMedia("(max-width: 48rem)").matches,
@@ -137,8 +144,10 @@ document.addEventListener("keydown", (event) => {
 
 // Click-to-enlarge for chat images. The image opens in a dialog, not by navigating to the file, so an SVG is never opened as a page.
 document.addEventListener("click", (event) => {
-    const image = event.target instanceof Element ? event.target.closest(".chat-thread img.msg-image") : null;
-    if (!image || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey) {
+    const target = event.target instanceof Element ? event.target : null;
+    // Enter on the wrapping link targets the link, not the image inside it.
+    const image = target?.closest(".chat-thread img.msg-image") ?? target?.closest(".chat-thread a")?.querySelector("img.msg-image");
+    if (!image || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
         return;
     }
 

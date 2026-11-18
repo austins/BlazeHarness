@@ -208,7 +208,7 @@ else
     private ContextStatus? _context;
     private string? _suggestedFor;
     private List<SkillInfo>? _suggestions;
-    private bool _resize;
+    private bool _refocus;
     private bool _applied;
     private bool _wired;
     private bool _creating;
@@ -347,7 +347,7 @@ else
     public void Restore(string text)
     {
         _text = string.IsNullOrWhiteSpace(_text) ? text : $"{text}\n\n{_text}";
-        _resize = true;
+        _refocus = true;
         StateHasChanged();
     }
 
@@ -358,7 +358,7 @@ else
     public void Append(string text)
     {
         _text = string.IsNullOrWhiteSpace(_text) ? text : $"{_text.TrimEnd()}\n\n{text}";
-        _resize = true;
+        _refocus = true;
         StateHasChanged();
     }
 
@@ -402,7 +402,7 @@ else
             }
 
             _loadedEdit = Editing?.Id;
-            _resize = true;
+            _refocus = true;
         }
 
         if (!_applied || ChatId != _appliedFor)
@@ -445,10 +445,10 @@ else
             await ChatScripts.InitComposerAsync(_input, _form);
         }
 
-        if (_resize)
+        if (_refocus)
         {
-            _resize = false;
-            await ChatScripts.ResizeAsync(_input);
+            _refocus = false;
+            await ChatScripts.FocusAsync(_input);
         }
     }
 
@@ -591,7 +591,7 @@ else
     {
         var start = Math.Max(SkillWordStart(), 0);
         _text = $"{_text[..start]}/{skill.Name} ";
-        _resize = true;
+        _refocus = true;
         await _input.FocusAsync();
     }
 
@@ -639,7 +639,7 @@ else
         _text = string.Empty;
         _files.Clear();
         _note = null;
-        _resize = true;
+        _refocus = true;
         var error = await OnSend(new ComposerMessage(text, files, target));
         if (error is not null)
         {
@@ -647,7 +647,7 @@ else
             _text = text;
             _files.AddRange(files);
             _note = error;
-            _resize = true;
+            _refocus = true;
         }
     }
 
@@ -668,7 +668,7 @@ else
         {
             _text = string.Empty;
             _note = null;
-            _resize = true;
+            _refocus = true;
         }
         else
         {
@@ -748,7 +748,7 @@ else
         var text = Encoding.UTF8.GetString(file.Content.Span);
         _text = _text.Length == 0 || _text.EndsWith('\n') ? _text + text : _text + "\n" + text;
         _files.Remove(file);
-        _resize = true;
+        _refocus = true;
     }
 
     private bool ModelSeesImages => _models.Find(m => m.Key == _selected) is { } choice && AttachmentPolicy.AcceptsImages(choice.Model);

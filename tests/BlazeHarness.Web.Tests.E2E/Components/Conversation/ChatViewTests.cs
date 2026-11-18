@@ -240,6 +240,53 @@ public sealed class ChatViewTests(BrowserFixture browser) : TestBase(browser)
         (await Page.EvaluateAsync<bool>("() => window.staleShown")).Should().BeFalse();
     }
 
+    [Fact]
+    public async Task SkillSuggestions_TabWithNoneHighlighted_MovesFocusAndKeepsTheText()
+    {
+        // Arrange
+        var skillFolder = ProjectFolder.Combine(".agents", "skills", "example-skill");
+        Directory.CreateDirectory(skillFolder);
+        await File.WriteAllTextAsync(
+            Path.Combine(skillFolder, "SKILL.md"),
+            "---\nname: example-skill\ndescription: A test skill\n---\nTest instructions.",
+            TestContext.Current.CancellationToken);
+        Factory.Services.GetRequiredService<SkillCatalog>().Refresh();
+        await Factory.Services.GetRequiredService<FolderRegistry>().OpenAsync(ProjectFolder.Root, TestContext.Current.CancellationToken);
+        await LaunchAsync("/?folder=" + Uri.EscapeDataString(ProjectFolder.Root));
+        var input = Page.GetByPlaceholder("Message the model");
+        var list = Page.Locator(".composer-suggestions");
+        await input.PressSequentiallyAsync("/ex");
+        await Expect(list).ToBeVisibleAsync();
+        await Expect(list).ToHaveAttributeAsync("data-for", "/ex");
+
+        // Act
+        await input.PressAsync("Tab");
+
+        // Assert
+        await Expect(input).Not.ToBeFocusedAsync();
+        await Expect(input).ToHaveValueAsync("/ex");
+    }
+
+    [Fact]
+    public async Task ImageAttachment_EnterOnTheLink_OpensTheLightbox()
+    {
+        // Arrange
+        await LaunchAsync();
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+        await Page.Locator(".composer input[type=file]").SetInputFilesAsync(new FilePayload { Name = "pixel.png", MimeType = "image/png", Buffer = png });
+        await Expect(Page.Locator(".composer-files .chip-name")).ToHaveTextAsync("pixel.png");
+        await SendAsync("Look");
+        await Expect(Page.Locator("[data-role=assistant]")).ToHaveAttributeAsync("data-status", "done");
+        var link = Page.Locator("[data-role=user] a:has(img.msg-image)");
+
+        // Act
+        await link.FocusAsync();
+        await Page.Keyboard.PressAsync("Enter");
+
+        // Assert
+        await Expect(Page.Locator("dialog.lightbox[open]")).ToBeVisibleAsync();
+    }
+
     protected override string[]? ChunksFor(string body)
     {
         if (body.Contains("\"role\":\"tool\"", StringComparison.Ordinal))

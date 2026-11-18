@@ -13,9 +13,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <BasePath />
     <script src="@Assets["theme.js"]"></script>
-    <script src="@Assets["ui.js"]"></script>
-    <script src="@Assets["chat.js"]"></script>
-    <script src="@Assets["browser.js"]"></script>
     <script src="@Assets["layout.js"]"></script>
     <ResourcePreloader />
     <link rel="stylesheet" href="@Assets["app.css"]" />
@@ -27,6 +24,9 @@
 <body>
     <Routes @rendermode="InteractiveServer" LocalClient="@IsLocalClient" />
     <ReconnectModal />
+    <script src="@Assets["ui.js"]"></script>
+    <script src="@Assets["chat.js"]"></script>
+    <script src="@Assets["browser.js"]"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
 

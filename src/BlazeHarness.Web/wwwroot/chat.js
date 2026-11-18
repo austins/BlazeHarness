@@ -2,7 +2,6 @@
 const nearBottomPx = 40;
 const nearTopPx = 160;
 const copiedResetMs = 1500;
-const maxComposerHeightPx = 240;
 const longPaste = { characters: 5000, lines: 100 };
 // Keep in step with PendingFile.PastedNamePrefix.
 const pastedNamePrefix = "pasted-text-";
@@ -171,19 +170,14 @@ window.bhChat = {
         }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["datetime"] });
         scan(document.documentElement);
     },
-    resize: (input) => {
-        if (input) {
-            input.style.height = "auto";
-            input.style.height = Math.min(input.scrollHeight, maxComposerHeightPx) + "px";
-            input.focus();
-        }
-    },
     pick: (button) => {
         const picker = button.closest("form")?.querySelector("input[type=file]");
         if (picker) {
             picker.click();
         }
     },
+
+    focus: (element) => element?.focus(),
 
     clearPicker: (picker) => {
         if (picker) {
@@ -207,7 +201,7 @@ window.bhChat = {
         picker.dispatchEvent(new Event("change", { bubbles: true }));
     },
 
-    // Enter sends, Alt+Enter queues while a reply runs, Shift+Enter adds a line; the box grows with its text.
+    // Enter sends, Alt+Enter queues while a reply runs, Shift+Enter adds a line.
     initComposer: (input, form) => {
         if (!input) {
             return;
@@ -321,9 +315,9 @@ window.bhChat = {
                     return;
                 }
 
-                if (e.key === "Tab" || (e.key === "Enter" && at >= 0)) {
+                if ((e.key === "Tab" || e.key === "Enter") && at >= 0) {
                     e.preventDefault();
-                    choose(Math.max(at, 0));
+                    choose(at);
                     return;
                 }
             }
@@ -341,7 +335,6 @@ window.bhChat = {
             revealPending = list()?.hidden === true;
             reveal();
             highlight(-1);
-            window.bhChat.resize(input);
         });
         input.focus();
     },

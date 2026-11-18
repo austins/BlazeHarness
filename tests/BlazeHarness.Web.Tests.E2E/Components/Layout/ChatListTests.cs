@@ -37,6 +37,29 @@ public sealed class ChatListTests(BrowserFixture browser) : TestBase(browser)
     }
 
     [Fact]
+    public async Task Rename_EnterConfirmsImeComposition_DoesNotCommit()
+    {
+        // Arrange
+        await Factory.Services.GetRequiredService<ChatService>().CreateAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await LaunchAsync();
+        var chat = Page.Locator(".chat-link");
+        await chat.DispatchEventAsync("contextmenu", new { button = 0, buttons = 0 });
+        await Page.Locator("[id^=chat-menu-]").GetByRole(AriaRole.Menuitem, new LocatorGetByRoleOptions { Name = "Rename", Exact = true }).ClickAsync();
+        var input = Page.GetByRole(AriaRole.Textbox, new PageGetByRoleOptions { Name = "Chat name" });
+        await Expect(input).ToBeFocusedAsync();
+        await input.FillAsync("Composed name");
+
+        // Act: the composing Enter must be ignored, so the editor stays open and takes a second title; a commit would have closed it.
+        await input.DispatchEventAsync("keydown", new { key = "Enter", keyCode = 229, isComposing = true, bubbles = true });
+        await input.FillAsync("Confirmed name");
+        await input.PressAsync("Enter");
+
+        // Assert
+        await Expect(chat).ToContainTextAsync("Confirmed name");
+        await Expect(chat).Not.ToContainTextAsync("Composed name");
+    }
+
+    [Fact]
     public async Task ContextMenu_WithoutPressedButtons_FocusesFirstItemAndEscapeCloses()
     {
         // Arrange

@@ -47,7 +47,7 @@ internal sealed class ChatScripts(IJSRuntime js) : ScriptInterop(js)
     public ValueTask ClearHighlightAsync() => InvokeVoidAsync("bhChat.clearHighlight");
 
     /// <summary>
-    /// Wire up the message box: Enter sends, Alt+Enter queues, Shift+Enter adds a line, and the box grows with its text.
+    /// Wire up the message box: Enter sends, Alt+Enter queues, Shift+Enter adds a line.
     /// </summary>
     /// <param name="input">The message box.</param>
     /// <param name="form">The form around it.</param>
@@ -55,11 +55,11 @@ internal sealed class ChatScripts(IJSRuntime js) : ScriptInterop(js)
     public ValueTask InitComposerAsync(ElementReference input, ElementReference form) => InvokeVoidAsync("bhChat.initComposer", input, form);
 
     /// <summary>
-    /// Fit the message box to its text and focus it.
+    /// Move the keyboard focus to an element; does nothing when the element is gone or the circuit is.
     /// </summary>
-    /// <param name="input">The message box.</param>
-    /// <returns>A task that completes when the box has its new height and focus.</returns>
-    public ValueTask ResizeAsync(ElementReference input) => InvokeVoidAsync("bhChat.resize", input);
+    /// <param name="element">The element to focus.</param>
+    /// <returns>A task that completes when the element has been focused, or when the circuit is gone.</returns>
+    public ValueTask FocusAsync(ElementReference element) => InvokeVoidAsync("bhChat.focus", element);
 
     /// <summary>
     /// Empty a file picker, so the browser accepts the same file again.
