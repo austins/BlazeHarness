@@ -61,7 +61,7 @@ jobs:
         run: dotnet test --no-restore -c Release --project tests/BlazeHarness.Core.Tests.Integration --results-directory ./test-results -- --report-xunit-ctrf --filter-class ${{ env.SANDBOX_TESTS }}
       - if: matrix.part != 'sandbox'
         run: dotnet test --no-restore -c Release --results-directory ./test-results -- --report-xunit-ctrf ${{ runner.os == 'Windows' && format('--filter-not-class {0}', env.SANDBOX_TESTS) || '' }}
-      - uses: ctrf-io/github-test-reporter@dbb08957b5b2af918b39136ab2c5532002c7649b # v1.3.2
+      - uses: ctrf-io/github-test-reporter@c2e2997afb89a9a515d83121ce7499e272630446 # v1.4.0
         if: always()
         with:
           report-path: ./test-results/*.ctrf
